@@ -18,7 +18,8 @@
       "DOM"
     ],
     "types": [
-      "node"
+      "node",
+      "jest"
     ],
     "outDir": "./dist",
     "baseUrl": ".",
@@ -29,5 +30,6 @@
   "exclude": [
     "dist",
     "node_modules",
+    "**/*.test.ts"
   ]
 }
