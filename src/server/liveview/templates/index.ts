@@ -69,3 +69,15 @@ export class HtmlSafeString {
 export default function escapeHtml(statics: TemplateStringsArray, ...dynamics: unknown[]) {
   return new HtmlSafeString(statics, dynamics)
 }
+
+export const templateTag = (strings: TemplateStringsArray, ...keys: unknown[]) => {
+  return ((...values: unknown[]) => {
+    let dict: any = values[values.length - 1] || {};
+    let result = [strings[0]];
+    keys.forEach((key: any, i) => {
+      let value = Number.isInteger(key) ? values[key] : dict[key];
+      result.push(value, strings[i + 1]);
+    });
+    return result.join('');
+  });
+}

@@ -1,5 +1,5 @@
 
-import escapeHtml, { HtmlSafeString } from './index';
+import escapeHtml, { HtmlSafeString, templateTag } from './index';
 
 describe("test escapeHtml", () => {
   it("combines statics and dynamics properly", () => {
@@ -33,6 +33,13 @@ describe("test escapeHtml", () => {
     result = template(false);
     console.log('result', result.dynamics, result.statics);
     expect(result.toString()).toBe('beforeafter');
+
+  });
+
+  it("try template", () => {
+
+    templateTag`${1}${2}${3}`;
+    console.log("templateTag", templateTag);
 
   });
 });

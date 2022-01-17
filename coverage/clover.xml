@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1642366843415" clover="3.2.0">
-  <project timestamp="1642366843415" name="All files">
-    <metrics statements="25" coveredstatements="16" conditionals="6" coveredconditionals="0" methods="9" coveredmethods="5" elements="40" coveredelements="21" complexity="0" loc="25" ncloc="25" packages="1" files="1" classes="1"/>
+<coverage generated="1642367661744" clover="3.2.0">
+  <project timestamp="1642367661744" name="All files">
+    <metrics statements="33" coveredstatements="18" conditionals="10" coveredconditionals="0" methods="12" coveredmethods="6" elements="55" coveredelements="24" complexity="0" loc="33" ncloc="33" packages="1" files="1" classes="1"/>
     <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs-poc/src/server/liveview/templates/index.ts">
-      <metrics statements="25" coveredstatements="16" conditionals="6" coveredconditionals="0" methods="9" coveredmethods="5"/>
+      <metrics statements="33" coveredstatements="18" conditionals="10" coveredconditionals="0" methods="12" coveredmethods="6"/>
       <line num="8" count="1" type="stmt"/>
       <line num="19" count="1" type="stmt"/>
       <line num="21" count="1" type="stmt"/>
@@ -29,6 +29,14 @@
       <line num="65" count="0" type="stmt"/>
       <line num="69" count="1" type="stmt"/>
       <line num="70" count="7" type="stmt"/>
+      <line num="73" count="1" type="stmt"/>
+      <line num="74" count="1" type="stmt"/>
+      <line num="75" count="0" type="cond" truecount="0" falsecount="2"/>
+      <line num="76" count="0" type="stmt"/>
+      <line num="77" count="0" type="stmt"/>
+      <line num="78" count="0" type="cond" truecount="0" falsecount="2"/>
+      <line num="79" count="0" type="stmt"/>
+      <line num="81" count="0" type="stmt"/>
     </file>
   </project>
 </coverage>
