@@ -46,12 +46,21 @@ function escapehtml(unsafe: unknown): string {
 
 export class HtmlSafeString {
   readonly statics: readonly string[]
-  readonly dynamics: readonly unknown[]
+  readonly _dynamics: readonly unknown[]
   readonly children: readonly HtmlSafeString[]
 
   constructor(statics: readonly string[], dynamics: readonly unknown[]) {
     this.statics = statics
-    this.dynamics = dynamics
+    this._dynamics = dynamics
+  }
+
+  get dynamics(): readonly string[] {
+    return this._dynamics.map((d) => {
+      if (d instanceof HtmlSafeString) {
+        return d.toString()
+      }
+      return String(d)
+    })
   }
 
   toString(): string {

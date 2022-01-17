@@ -19,6 +19,16 @@ const app: Application = createExpressServer({
 const server = new HTTPServer(app);
 const io = new SocketServer(server);
 
+// io.on('connection', (socket) => {
+//   console.log('a user connected');
+// });
+
+io.on('connection', (socket) => {
+  socket.onAny((...args) => {
+    console.log("any event", args);
+  })
+});
+
 useSocketServer(io, {
   controllers: [path.join(__dirname, '/socket/*controller.js')]
 });
