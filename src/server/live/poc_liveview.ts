@@ -16,8 +16,17 @@ export class POCLiveViewComponent implements
 
   render(context: LiveViewContext<LightContext>) {
     return escapeHtml`
-    <h1>Front Porch Light</h1>
-    <div id="light">
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+      socket.on("message_saved", function (message) {
+          console.log("Saved message received back: ", message);
+      });
+
+      function onClick() {
+          socket.emit("on", { text: "Turn on" });
+      }
+    </script>
     <h1>Front Porch Light</h1>
     <div id="light">
       <div class="meter">
@@ -38,7 +47,7 @@ export class POCLiveViewComponent implements
         <img src="images/up.svg">
       </button>
 
-      <button phx-click="on">
+      <button phx-click="on" onClick="onClick()">
         <img src="images/light-on.svg">
       </button>
     </div>

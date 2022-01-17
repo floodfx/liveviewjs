@@ -2,7 +2,10 @@ import "reflect-metadata";
 import path from "path"
 import express, { Application, Request, Response } from 'express'
 import { createExpressServer } from 'routing-controllers';
+import { useSocketServer } from 'socket-controllers';
 import { POCLiveViewComponent } from './live/poc_liveview'
+import { Server as HTTPServer } from 'http';
+import { Server as SocketServer } from 'socket.io';
 
 
 const publicPath = path.join(__dirname, "..", "dist/public");
@@ -10,10 +13,15 @@ const viewsPath = path.join(__dirname, "..", "views");
 
 
 const app: Application = createExpressServer({
-
   controllers: [path.join(__dirname, '/controllers/*controller.js')]
 })
 
+const server = new HTTPServer(app);
+const io = new SocketServer(server);
+
+useSocketServer(io, {
+  controllers: [path.join(__dirname, '/socket/*controller.js')]
+});
 
 app.use(express.static(publicPath))
 
@@ -28,6 +36,7 @@ app.get('/', (req: Request, res: Response) => {
 
 const port: number = 3002
 
-app.listen(port, function () {
+server.listen(port, function () {
   console.log(`App is listening on port ${port} !`)
 })
+
