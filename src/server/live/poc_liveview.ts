@@ -5,78 +5,75 @@ export interface LightContext {
   brightness: number;
 }
 
+export type PocEvent = "on" | "off" | "up" | "down";
+
+const _db: { [key: string]: LightContext } = {};
+
 export class POCLiveViewComponent implements
   LiveViewComponent<LightContext>,
   LiveViewExternalEventListener<LightContext, "on">,
   LiveViewExternalEventListener<LightContext, "off"> {
 
+
   mount(params: any, session: any, socket: any) {
-    return { data: { brightness: 10 } };
+    // store this somewhere durable
+    const ctx: LightContext = { brightness: 10 };
+    _db[socket.id] = ctx;
+    return { data: ctx };
   };
 
   render(context: LiveViewContext<LightContext>) {
     return escapeHtml`
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-      var socket = io();
-      socket.on("connect", () => {
-        console.log(socket.id); //
-        socket.emit("phx_join", ["4", "4", "lv:phx-FsrMvfqMqliBmgJF", "phx_join", {
-          params: {_csrf_token: "OnAPAm1NKwgPCQg4TAUMdnx3WSI6fj8Jm2Zk8yoEVhOgxUSG72hFT7se", _mounts: 0},
-          session: "SFMyNTY.g2gDaAJhBXQAAAAIZAACaWRtAAAAFHBoeC1Gc3JNdmZxTXFsaUJtZ0pGZAAMbGl2ZV9zZXNzaW9uaAJkAAdkZWZhdWx0bggAyL-egcCNyhZkAApwYXJlbnRfcGlkZAADbmlsZAAIcm9vdF9waWRkAANuaWxkAAlyb290X3ZpZXdkACJFbGl4aXIuTGl2ZVZpZXdTdHVkaW9XZWIuTGlnaHRMaXZlZAAGcm91dGVyZAAfRWxpeGlyLkxpdmVWaWV3U3R1ZGlvV2ViLlJvdXRlcmQAB3Nlc3Npb250AAAAAGQABHZpZXdkACJFbGl4aXIuTGl2ZVZpZXdTdHVkaW9XZWIuTGlnaHRMaXZlbgYAFjWyY34BYgABUYA.9ZElHc0CEv9Nu5S1JCoidU2S0uDDBqN1IsTcOMFTCrg",
-          static: "SFMyNTY.g2gDaAJhBXQAAAADZAAKYXNzaWduX25ld2pkAAVmbGFzaHQAAAAAZAACaWRtAAAAFHBoeC1Gc3JNdmZxTXFsaUJtZ0pGbgYAFjWyY34BYgABUYA.X73SFphVgh0CYME6vGp47u3Q4jKg5Rh6i_UCQEdl0ac",
-          url: "http://localhost:4000/light"}
-        ]);
-      });
-      socket.on("phx_reply", function (message) {
-          console.log("Reply: ", message);
-      });
-
-      function onClick() {
-          socket.emit("event", ["4", "64", "lv:phx-FssjlAMwe9RhogDq", "event", {type: "click", event: "on", value: {value: ""}}]);
-
-      }
-    </script>
-    <h1>Front Porch Light</h1>
     <div id="light">
+      <h1>Front Porch Light</h1>
       <div class="meter">
         <span style="width: ${context.data.brightness} %>%">
           ${context.data.brightness}%
         </span>
       </div>
 
-      <button phx-click="off">
+      <button phx-click="off" onClick="turnOff()">
         Off
       </button>
 
-      <button phx-click="down">
+      <button phx-click="down" onClick="turnDown()">
         Down
       </button>
 
-      <button phx-click="up">
+      <button phx-click="up" onClick="turnUp()">
         Up
       </button>
 
-      <button phx-click="on" onClick="onClick()">
+      <button phx-click="on" onClick="turnOn()">
         On
       </button>
     </div>
     `
   };
 
-  handleEvent(event: "on" | "off", params: any, socket: any) {
-    let brightness = 0;
+  handleEvent(event: PocEvent, params: any, socket: any) {
+    const ctx = _db[socket.id];
+    console.log("event:", event, socket, ctx);
     switch (event) {
       case 'off':
         console.log('off');
-        brightness = 0;
+        ctx.brightness = 0;
         break;
       case 'on':
         console.log('on');
-        brightness = 100;
+        ctx.brightness = 100;
+        break;
+      case 'up':
+        console.log('up');
+        ctx.brightness = Math.min(ctx.brightness + 10, 100);
+        break;
+      case 'down':
+        console.log('down');
+        ctx.brightness = Math.max(ctx.brightness - 10, 0);
         break;
     }
-    return { data: { brightness: 10 } };
+    _db[socket.id] = ctx;
+    return { data: ctx };
   }
 
 }

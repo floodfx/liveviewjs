@@ -8,26 +8,27 @@ import { Server as HTTPServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 
 
-const publicPath = path.join(__dirname, "..", "dist/public");
-const viewsPath = path.join(__dirname, "..", "views");
+const publicPath = path.join(__dirname, "..", "dist", "client");
+const viewsPath = path.join(__dirname, "..", "src", "server", "views");
+
+
 
 
 const app: Application = createExpressServer({
   controllers: [path.join(__dirname, '/controllers/*controller.js')]
 })
 
+app.set('view engine', 'ejs');
+app.set("views", viewsPath)
 const server = new HTTPServer(app);
 const io = new SocketServer(server);
 
+// Uncomment if you want to see all socket messages
 // io.on('connection', (socket) => {
-//   console.log('a user connected');
+//   socket.onAny((...args) => {
+//     console.log("any event ", args);
+//   })
 // });
-
-io.on('connection', (socket) => {
-  socket.onAny((...args) => {
-    console.log("any event", args);
-  })
-});
 
 useSocketServer(io, {
   controllers: [path.join(__dirname, '/socket/*controller.js')]
@@ -40,7 +41,12 @@ app.get('/', (req: Request, res: Response) => {
   const poc = new POCLiveViewComponent();
   const pocCtx = poc.mount({}, {}, {});
   const pocView = poc.render(pocCtx);
-  res.send(pocView.toString())
+
+  res.render("index", {
+    page_title: "POC",
+    csrf_meta_tag: "blahBlahCsrfMetaTag",
+    inner_content: pocView.toString()
+  })
 
 })
 

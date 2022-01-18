@@ -9,60 +9,9 @@ import {
   SocketId,
 } from 'socket-controllers';
 import { Socket } from 'socket.io';
-import { POCLiveViewComponent } from '../live/poc_liveview';
+import { PocEvent, POCLiveViewComponent } from '../live/poc_liveview';
+import { PhxJoin, PhxEvent, PhxReply, PhxSocketProtocolNames, RenderedNode } from './types';
 
-enum PhxSocketProtocolNames {
-  joinRef = 0,
-  messageRef,
-  topic,
-  event,
-  payload
-}
-
-type PhxSocketProtocol<Payload> = [
-  joinRef: number,
-  messageRef: number,
-  topic: number,
-  event: "phx_reply" | string,
-  payload: Payload
-]
-
-interface PhxJoinPayload {
-  params: { _csrf: string } & { [key: string]: string }
-  session: string
-  static: string
-  url: string
-}
-
-type PhxJoin = PhxSocketProtocol<PhxJoinPayload>;
-
-
-type Dynamics = { [key: number]: string | Dynamics }
-
-type RenderedNode = { [key: number]: string | RenderedNode } & { [key in "s"]: readonly string[] }
-
-interface Rendered {
-  rendered: RenderedNode
-}
-
-interface Diff {
-  diff: Dynamics
-}
-
-interface PhxReplyPayload {
-  response: Rendered | Diff | {}
-  status: "ok"
-}
-
-type PhxReply = PhxSocketProtocol<PhxReplyPayload>;
-
-interface PhxEventPayload<T> {
-  type: string,
-  event: string,
-  value: T
-}
-
-type PhxEvent<T> = PhxSocketProtocol<PhxEventPayload<T>>
 
 @SocketController()
 export class POCSocketController {
@@ -76,11 +25,12 @@ export class POCSocketController {
 
   @OnMessage('phx_join')
   phx_join(@ConnectedSocket() socket: any, @SocketId() socketId: string, @MessageBody() message: PhxJoin) {
-
+    console.log('socket:', socketId);
+    console.log('join:', message);
     // get current context for this socketid
     // render the view and send response
     const poc = new POCLiveViewComponent();
-    const pocCtx = poc.mount({}, {}, {});
+    const pocCtx = poc.mount({}, {}, { id: socketId });
     const pocView = poc.render(pocCtx);
 
     // map array of dynamics to object with indiceies as keys
@@ -89,11 +39,9 @@ export class POCSocketController {
       return acc;
     }, {} as { [key: number]: unknown })
 
-    const rendered: Rendered = {
-      rendered: {
-        ...dynamics,
-        s: pocView.statics
-      }
+    const rendered: RenderedNode = {
+      ...dynamics,
+      s: pocView.statics
     }
 
     const reply: PhxReply = [
@@ -103,39 +51,38 @@ export class POCSocketController {
       "phx_reply",
       {
         response: {
-          ...rendered
+          rendered
         },
         status: "ok"
       }
     ]
-    console.log("sending phx_reply", reply);
+
+    const statics = rendered.s;
+    let html = statics[0];
+    for (let i = 1; i < statics.length; i++) {
+      html += rendered[i - 1] + statics[i];
+    }
+
+    // console.log(html)
+    // console.log("sending phx_reply", reply);
     socket.emit('phx_reply', reply);
   }
 
   @OnMessage('event')
-  on(@ConnectedSocket() socket: any, @MessageBody() message: PhxEvent<any>) {
+  on(@ConnectedSocket() socket: any, @SocketId() socketId: string, @MessageBody() message: PhxEvent<PocEvent>) {
     // update context
     // rerun render
     // send back dynamics if they changed
-    console.log('socket:');
-    console.log('message:', message);
+    console.log('socket:', socketId);
+    console.log('event:', message);
 
     const poc = new POCLiveViewComponent();
-    const pocCtx = poc.mount({}, {}, {}); // Look up current ctx
 
-    let brightness = pocCtx.data.brightness;
     const payload = message[PhxSocketProtocolNames.payload];
 
-    switch (payload.event) {
-      case "on":
-        brightness = 100;
-        break;
-      case "off":
-        brightness = 0;
-        break;
-    }
+    const newPocCtx = poc.handleEvent(payload.event as PocEvent, payload.value, { id: socketId });
 
-    const pocView = poc.render({ ...pocCtx, data: { brightness } });
+    const pocView = poc.render(newPocCtx);
 
     // map array of dynamics to object with indiceies as keys
     const dynamics = pocView.dynamics.reduce((acc: { [key: number]: string }, cur: string, index: number) => {
@@ -143,12 +90,6 @@ export class POCSocketController {
       return acc;
     }, {} as { [key: string]: string })
 
-    const diff: Diff = {
-      diff: {
-        ...dynamics
-      }
-    }
-
     const reply: PhxReply = [
       message[0],
       message[1],
@@ -156,7 +97,9 @@ export class POCSocketController {
       "phx_reply",
       {
         response: {
-          ...diff
+          diff: {
+            ...dynamics
+          }
         },
         status: "ok"
       }
@@ -171,3 +114,5 @@ export class POCSocketController {
   }
 
 }
+
+

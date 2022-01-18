@@ -10,13 +10,13 @@ describe("test escapeHtml", () => {
   it("returns components of the template", () => {
     const result = escapeHtml`a${1}b${2}c`;
     expect(result.statics).toEqual(['a', 'b', 'c']);
-    expect(result.dynamics).toEqual([1, 2]);
+    expect(result.dynamics).toEqual(["1", "2"]);
   });
 
   it("returns components of the template with templates", () => {
     const result = escapeHtml`a${1}b${escapeHtml`sub${"sub1"}`}c`;
     expect(result.statics).toEqual(['a', 'b', 'c']);
-    expect(result.dynamics).toEqual([1, new HtmlSafeString(['sub', ''], ['sub1'])]);
+    expect(result.dynamics).toEqual(["1", "subsub1"]);
   });
 
   it("can apply different dynamics to a HtmlSafeString", () => {
