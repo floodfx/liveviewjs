@@ -7,10 +7,10 @@ export enum PhxSocketProtocolNames {
 }
 
 export type PhxSocketProtocol<Payload> = [
-  joinRef: number,
-  messageRef: number,
-  topic: number,
-  event: "phx_reply" | string,
+  joinRef: string | null, // number
+  messageRef: string, // number
+  topic: "phoenix" | string,
+  event: "phx_reply",
   payload: Payload
 ]
 
@@ -44,3 +44,19 @@ export interface PhxEventPayload<T> {
 }
 
 export type PhxEvent<T> = PhxSocketProtocol<PhxEventPayload<T>>
+
+//{type: "click", event: "down", value: {value: ""}}
+export type PhxClickEvent = PhxEvent<{ value: { value: string } }>
+
+export const newHeartbeatReply = (incoming: PhxSocketProtocol<{}>): PhxReply => {
+  return [
+    null,
+    incoming[PhxSocketProtocolNames.messageRef],
+    "phoenix",
+    "phx_reply",
+    {
+      response: {},
+      status: "ok"
+    }
+  ]
+}
