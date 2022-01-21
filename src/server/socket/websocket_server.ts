@@ -1,17 +1,17 @@
-import { PocEvent, POCLiveViewComponent } from '../live/poc_liveview';
+import { PocEvent, LightLiveViewComponent } from '../live/light_liveview';
 import { PhxJoin, PhxEvent, PhxReply, PhxSocketProtocolNames, RenderedNode, PhxSocketProtocol, newHeartbeatReply } from './types';
 import ws from 'ws';
+import { router } from '../live/router';
 
 const wsServer = new ws.Server({
   port: 3003,
 });
 
+const topicToPath: { [key: string]: string } = {}
+
 wsServer.on('connection', socket => {
   // console.log("socket connected", socket);
 
-  socket.on('open', () => {
-    console.log("socket opened");
-  });
   socket.on('message', message => {
     console.log("message", String(message));
     // get raw message to string
@@ -51,21 +51,31 @@ wsServer.on('connection', socket => {
 
 function onPhxJoin(socket: any, message: PhxJoin) {
   // console.log("phx_join", message);
-  // get current context for this socketid
-  // render the view and send response
-  const poc = new POCLiveViewComponent();
-  const pocCtx = poc.mount({}, {}, { id: message[PhxSocketProtocolNames.topic] });
-  const pocView = poc.render(pocCtx);
+
+  // use url to route join request to component
+  const [joinRef, messageRef, topic, event, payload] = message;
+  const url = new URL(payload.url);
+  const component = router[url.pathname];
+  if (!component) {
+    console.error("no component found for", url);
+    return;
+  }
+
+  // update topicToPath
+  topicToPath[topic] = url.pathname;
+
+  const ctx = component.mount({}, {}, { id: message[PhxSocketProtocolNames.topic] });
+  const view = component.render(ctx);
 
   // map array of dynamics to object with indiceies as keys
-  const dynamics = pocView.dynamics.reduce((acc: { [key: number]: unknown }, cur, index: number) => {
+  const dynamics = view.dynamics.reduce((acc: { [key: number]: unknown }, cur, index: number) => {
     acc[index] = cur;
     return acc;
   }, {} as { [key: number]: unknown })
 
   const rendered: RenderedNode = {
     ...dynamics,
-    s: pocView.statics
+    s: view.statics
   }
 
   const reply: PhxReply = [
@@ -105,14 +115,28 @@ function onPhxEvent(socket: any, message: PhxEvent<unknown>) {
 
   const [joinRef, messageRef, topic, event, payload] = message;
 
-  const poc = new POCLiveViewComponent();
+  // route using topic to lookup path
+  const path = topicToPath[topic];
+  const component = router[path];
+  if (!component) {
+    console.error("no mapping found topic", topic);
+    return;
+  }
 
-  const newPocCtx = poc.handleEvent(payload.event as PocEvent, payload.value, { id: topic });
+  // check if component has event handler
+  if(!(component as any).handleEvent) {
+    console.warn("no event handler for component", component);
+    return;
+  }
 
-  const pocView = poc.render(newPocCtx);
+  // TODO update types to have optional handleEvent???
+  // @ts-ignore
+  const ctx = component.handleEvent(payload.event, payload.value, { id: topic });
+
+  const view = component.render(ctx);
 
   // map array of dynamics to object with indiceies as keys
-  const dynamics = pocView.dynamics.reduce((acc: { [key: number]: string }, cur: string, index: number) => {
+  const dynamics = view.dynamics.reduce((acc: { [key: number]: string }, cur: string, index: number) => {
     acc[index] = cur;
     return acc;
   }, {} as { [key: string]: string })
@@ -131,7 +155,7 @@ function onPhxEvent(socket: any, message: PhxEvent<unknown>) {
       status: "ok"
     }
   ]
-  console.log("sending phx_reply", reply);
+  // console.log("sending phx_reply", reply);
   socket.send(JSON.stringify(reply), { binary: false }, (err: any) => {
     if (err) {
       console.error("error", err)
@@ -143,7 +167,6 @@ function onPhxEvent(socket: any, message: PhxEvent<unknown>) {
 // disconnect(@ConnectedSocket() socket: any) {
 //   console.log('client disconnected');
 // }
-
 // }
 
 function onHeartbeat(socket: any, message: PhxEvent<any>) {

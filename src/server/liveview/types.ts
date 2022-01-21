@@ -19,3 +19,7 @@ export interface LiveViewExternalEventListener<T, E extends string> {
   handleEvent: (event: Lowercase<E>, params: any, socket: any) => LiveViewContext<T>;
 }
 
+export interface LiveViewRouter {
+  [key: string]: LiveViewComponent<any>;
+}
+

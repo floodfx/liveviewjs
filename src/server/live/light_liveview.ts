@@ -9,7 +9,7 @@ export type PocEvent = "on" | "off" | "up" | "down";
 
 const _db: { [key: string]: LightContext } = {};
 
-export class POCLiveViewComponent implements
+export class LightLiveViewComponent implements
   LiveViewComponent<LightContext>,
   LiveViewExternalEventListener<LightContext, "on">,
   LiveViewExternalEventListener<LightContext, "off"> {
