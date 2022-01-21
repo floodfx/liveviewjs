@@ -1,25 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta name="csrf-token" content="<%= csrf_meta_tag %>"/>
-    <title><%= page_title %></title>
-    <script defer type="text/javascript" src="app.js"></script>
-  </head>
-  <body>
-    <header>
-    </header>
-    <div data-phx-main="true" data-phx-session="SFMyNTY.g2gDaAJhBXQAAAAIZAACaWRtAAAAFHBoeC1Gc3dHTS1HT0JvN0s2QUxwZAAMbGl2ZV9zZXNzaW9uaAJkAAdkZWZhdWx0bggAcGNh4Y21yxZkAApwYXJlbnRfcGlkZAADbmlsZAAIcm9vdF9waWRkAANuaWxkAAlyb290X3ZpZXdkACJFbGl4aXIuTGl2ZVZpZXdTdHVkaW9XZWIuTGlnaHRMaXZlZAAGcm91dGVyZAAfRWxpeGlyLkxpdmVWaWV3U3R1ZGlvV2ViLlJvdXRlcmQAB3Nlc3Npb250AAAAAGQABHZpZXdkACJFbGl4aXIuTGl2ZVZpZXdTdHVkaW9XZWIuTGlnaHRMaXZlbgYA7DM9eH4BYgABUYA.utPt_2HckhxLrIpxxmlFiDfhi_G4yms2-qA8Xx-zXng" data-phx-static="SFMyNTY.g2gDaAJhBXQAAAADZAAKYXNzaWduX25ld2pkAAVmbGFzaHQAAAAAZAACaWRtAAAAFHBoeC1Gc3dHTS1HT0JvN0s2QUxwbgYA7DM9eH4BYgABUYA.3jXC38oxjwGwXak4a6JpCqXRFenxqxvjVQ6yxYdkz3s" id="phx-FswGM-GOBo7K6ALp" class="phx-connected" data-phx-root-id="phx-FswGM-GOBo7K6ALp">
-      <main role="main" class="container">
+
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="<%= csrf_meta_tag %>" />
+  <title>
+    <%= page_title %>
+  </title>
+  <script defer type="text/javascript" src="app.js"></script>
+</head>
+
+<body>
+  <header>
+  </header>
+  <div data-phx-main="true" data-phx-session="some-session-data" data-phx-static="some-statics-data" id="phx-blahblah">
+    <main role="main" class="container">
       <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info"></p>
 
       <p class="alert alert-danger" role="alert" phx-click="lv:clear-flash" phx-value-key="error"></p>
 
       <%- inner_content %>
-    </main>
-    </div>
 
-  </body>
+    </main>
+  </div>
+</body>
+
 </html>
