@@ -6,12 +6,12 @@ import { useSocketServer } from 'socket-controllers';
 import { POCLiveViewComponent } from './live/poc_liveview'
 import { Server as HTTPServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
+import { wsServer } from "./socket/poc_ws_controller";
 
+wsServer.listenerCount
 
 const publicPath = path.join(__dirname, "..", "dist", "client");
 const viewsPath = path.join(__dirname, "..", "src", "server", "views");
-
-
 
 
 const app: Application = createExpressServer({
@@ -21,18 +21,10 @@ const app: Application = createExpressServer({
 app.set('view engine', 'ejs');
 app.set("views", viewsPath)
 const server = new HTTPServer(app);
-const io = new SocketServer(server);
 
-// Uncomment if you want to see all socket messages
-// io.on('connection', (socket) => {
-//   socket.onAny((...args) => {
-//     console.log("any event ", args);
-//   })
+// useSocketServer(wsServer, {
+//   controllers: [path.join(__dirname, '/socket/*controller.js')]
 // });
-
-useSocketServer(io, {
-  controllers: [path.join(__dirname, '/socket/*controller.js')]
-});
 
 app.use(express.static(publicPath))
 

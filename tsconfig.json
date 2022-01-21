@@ -12,6 +12,7 @@
     "strict": true,
     "skipLibCheck": true,
     "target": "es2019",
+    "allowJs": true,
     "lib": [
       "es2019",
       "esnext.asynciterable",

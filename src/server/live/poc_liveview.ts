@@ -32,19 +32,19 @@ export class POCLiveViewComponent implements
         </span>
       </div>
 
-      <button phx-click="off" onClick="turnOff()">
+      <button phx-click="off">
         Off
       </button>
 
-      <button phx-click="down" onClick="turnDown()">
+      <button phx-click="down">
         Down
       </button>
 
-      <button phx-click="up" onClick="turnUp()">
+      <button phx-click="up">
         Up
       </button>
 
-      <button phx-click="on" onClick="turnOn()">
+      <button phx-click="on">
         On
       </button>
     </div>
@@ -56,19 +56,15 @@ export class POCLiveViewComponent implements
     console.log("event:", event, socket, ctx);
     switch (event) {
       case 'off':
-        console.log('off');
         ctx.brightness = 0;
         break;
       case 'on':
-        console.log('on');
         ctx.brightness = 100;
         break;
       case 'up':
-        console.log('up');
         ctx.brightness = Math.min(ctx.brightness + 10, 100);
         break;
       case 'down':
-        console.log('down');
         ctx.brightness = Math.max(ctx.brightness - 10, 0);
         break;
     }
