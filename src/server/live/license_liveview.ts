@@ -1,5 +1,6 @@
 import escapeHtml from "../liveview/templates";
 import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener } from "../liveview/types";
+import { LightContext } from "./light_liveview";
 
 export interface LicenseContext {
   seats: number;
@@ -9,9 +10,8 @@ export interface LicenseContext {
 const _db: { [key: string]: LicenseContext } = {};
 
 export class LicenseLiveViewComponent implements
-  LiveViewComponent<LicenseContext>
-  // LiveViewExternalEventListener<LicenseContext, "on">,
-  // LiveViewExternalEventListener<LicenseContext, "off">
+  LiveViewComponent<LicenseContext>,
+  LiveViewExternalEventListener<LicenseContext, "update", Pick<LicenseContext, "seats">>
   {
 
 
@@ -52,26 +52,12 @@ export class LicenseLiveViewComponent implements
     `
   };
 
-  // handleEvent(event: PocEvent, params: any, socket: any) {
-  //   const ctx = _db[socket.id];
-  //   console.log("event:", event, socket, ctx);
-  //   switch (event) {
-  //     case 'off':
-  //       ctx.brightness = 0;
-  //       break;
-  //     case 'on':
-  //       ctx.brightness = 100;
-  //       break;
-  //     case 'up':
-  //       ctx.brightness = Math.min(ctx.brightness + 10, 100);
-  //       break;
-  //     case 'down':
-  //       ctx.brightness = Math.max(ctx.brightness - 10, 0);
-  //       break;
-  //   }
-  //   _db[socket.id] = ctx;
-  //   return { data: ctx };
-  // }
+  handleEvent(event: "update", params: {seats: number}, socket: any) {
+    console.log("event:", event, params, socket);
+    const { seats } = params;
+    const amount = calculateLicenseAmount(seats);
+    return { data: { seats, amount} };
+  }
 
 }
 

@@ -11,8 +11,8 @@ const _db: { [key: string]: LightContext } = {};
 
 export class LightLiveViewComponent implements
   LiveViewComponent<LightContext>,
-  LiveViewExternalEventListener<LightContext, "on">,
-  LiveViewExternalEventListener<LightContext, "off"> {
+  LiveViewExternalEventListener<LightContext, "on", any>,
+  LiveViewExternalEventListener<LightContext, "off", any> {
 
 
   mount(params: any, session: any, socket: any) {

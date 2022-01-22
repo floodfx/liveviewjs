@@ -6,7 +6,15 @@ export enum PhxSocketProtocolNames {
   payload
 }
 
-export type PhxSocketProtocol<Payload> = [
+export type PhxIncomingMessage<Payload> = [
+  joinRef: string | null, // number
+  messageRef: string, // number
+  topic: "phoenix" | string,
+  event: "phx_join" | "event" | "heartbeat",
+  payload: Payload
+]
+
+export type PhxOutgoingMessage<Payload> = [
   joinRef: string | null, // number
   messageRef: string, // number
   topic: "phoenix" | string,
@@ -21,7 +29,8 @@ export interface PhxJoinPayload {
   url: string
 }
 
-export type PhxJoin = PhxSocketProtocol<PhxJoinPayload>;
+export type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
+export type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
 
 export type Dynamics = { [key: number]: string | Dynamics }
 
@@ -35,20 +44,30 @@ export interface PhxReplyPayload {
   status: "ok"
 }
 
-export type PhxReply = PhxSocketProtocol<PhxReplyPayload>;
+export type PhxReply = PhxOutgoingMessage<PhxReplyPayload>;
 
-export interface PhxEventPayload<T> {
-  type: string,
+export interface PhxEventPayload<Type extends string,Value> {
+  type: Type,
   event: string,
-  value: T
+  value: Value
 }
 
-export type PhxEvent<T> = PhxSocketProtocol<PhxEventPayload<T>>
+export interface PhxEventUploads {
+  uploads: { [key: string]: unknown }
+}
 
 //{type: "click", event: "down", value: {value: ""}}
-export type PhxClickEvent = PhxEvent<{ value: { value: string } }>
+export type PhxClickPayload = PhxEventPayload<"click",{ value: { value: string } }>;
 
-export const newHeartbeatReply = (incoming: PhxSocketProtocol<{}>): PhxReply => {
+//{"type":"form","event":"update","value":"seats=3&_target=seats","uploads":{}}
+export type PhxFormPayload = PhxEventPayload<"form",{ value: string }> & PhxEventUploads;
+
+
+export type PhxClickEvent = PhxIncomingMessage<PhxClickPayload>
+export type PhxFormEvent = PhxIncomingMessage<PhxFormPayload>
+
+
+export const newHeartbeatReply = (incoming: PhxIncomingMessage<{}>): PhxReply => {
   return [
     null,
     incoming[PhxSocketProtocolNames.messageRef],
