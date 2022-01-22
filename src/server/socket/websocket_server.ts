@@ -180,7 +180,7 @@ function onPhxFormEvent(ws: WebSocket, message: PhxFormEvent) {
       status: "ok"
     }
   ]
-  // console.log("sending phx_reply", reply);
+  console.log("sending phx_reply", reply);
   ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
     if (err) {
       console.error("error", err)
