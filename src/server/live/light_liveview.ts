@@ -5,7 +5,7 @@ export interface LightContext {
   brightness: number;
 }
 
-export type PocEvent = "on" | "off" | "up" | "down";
+export type LightEvent = "on" | "off" | "up" | "down";
 
 const _db: { [key: string]: LightContext } = {};
 
@@ -51,7 +51,7 @@ export class LightLiveViewComponent implements
     `
   };
 
-  handleEvent(event: PocEvent, params: any, socket: any) {
+  handleEvent(event: LightEvent, params: any, socket: any) {
     const ctx = _db[socket.id];
     console.log("event:", event, socket, ctx);
     switch (event) {

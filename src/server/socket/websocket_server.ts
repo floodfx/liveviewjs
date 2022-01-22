@@ -1,4 +1,3 @@
-import { PocEvent, LightLiveViewComponent } from '../live/light_liveview';
 import { PhxJoin, PhxEvent, PhxReply, PhxSocketProtocolNames, RenderedNode, PhxSocketProtocol, newHeartbeatReply } from './types';
 import ws from 'ws';
 import { router } from '../live/router';
