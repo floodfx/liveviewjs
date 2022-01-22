@@ -59,13 +59,17 @@ export class HtmlSafeString {
       if (d instanceof HtmlSafeString) {
         return d.toString()
       }
+
+      if (Array.isArray(d)) {
+        return join(d, '').toString()
+      }
       return String(d)
     })
   }
 
   toString(): string {
     return this.statics.reduce((result, s, i) => {
-      const d = this.dynamics[i - 1]
+      const d = this._dynamics[i - 1]
       return result + escapehtml(d) + s
     })
   }
@@ -77,16 +81,4 @@ export class HtmlSafeString {
 
 export default function escapeHtml(statics: TemplateStringsArray, ...dynamics: unknown[]) {
   return new HtmlSafeString(statics, dynamics)
-}
-
-export const templateTag = (strings: TemplateStringsArray, ...keys: unknown[]) => {
-  return ((...values: unknown[]) => {
-    let dict: any = values[values.length - 1] || {};
-    let result = [strings[0]];
-    keys.forEach((key: any, i) => {
-      let value = Number.isInteger(key) ? values[key] : dict[key];
-      result.push(value, strings[i + 1]);
-    });
-    return result.join('');
-  });
 }
