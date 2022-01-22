@@ -1,5 +1,5 @@
 
-import escapeHtml, { HtmlSafeString, templateTag } from './index';
+import escapeHtml, { HtmlSafeString } from './index';
 
 describe("test escapeHtml", () => {
   it("combines statics and dynamics properly", () => {
@@ -36,10 +36,14 @@ describe("test escapeHtml", () => {
 
   });
 
-  it("try template", () => {
+  it("can join array without commas", () => {
+    const stuff = ["a", "b", "c"];
+    const result = escapeHtml`${stuff}`;
+    expect(result.toString()).toBe('abc');
+  });
 
-    templateTag`${1}${2}${3}`;
-    console.log("templateTag", templateTag);
-
+  it("teplates can have multiple levels", () => {
+    const result = escapeHtml`${escapeHtml`<a>${1}${2}${3}</a>`}`;
+    expect(result.toString()).toBe('<a>123</a>');
   });
 });

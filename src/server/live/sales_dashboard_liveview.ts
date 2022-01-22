@@ -28,6 +28,7 @@ export class SalesDashboardLiveViewComponent implements
 
   mount(params: any, session: any, socket: PhxSocket) {
     if(socket.connected) {
+      // TODO clean up interval on unmount
       const intervalId = setInterval(() => {
         sendInternalMessage(socket, this, "tick");
       }, 1000);

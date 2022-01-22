@@ -21,7 +21,7 @@ wsServer.on('connection', socket => {
 });
 
 
-function onMessage(socket: WebSocket, message: WebSocket.RawData) {
+function onMessage(ws: WebSocket, message: WebSocket.RawData) {
 
   console.log("message", String(message));
     // get raw message to string
@@ -37,10 +37,10 @@ function onMessage(socket: WebSocket, message: WebSocket.RawData) {
       const [joinRef, messageRef, topic, event, payload] = rawPhxMessage;
       switch (event) {
         case "phx_join":
-          onPhxJoin(socket, rawPhxMessage as PhxJoinIncoming);
+          onPhxJoin(ws, rawPhxMessage as PhxJoinIncoming);
           break;
         case "heartbeat":
-          onHeartbeat(socket, rawPhxMessage as PhxHeartbeatIncoming);
+          onHeartbeat(ws, rawPhxMessage as PhxHeartbeatIncoming);
           break;
         case "event":
           // map based on event type
@@ -48,10 +48,10 @@ function onMessage(socket: WebSocket, message: WebSocket.RawData) {
           console
           switch (type) {
             case "click":
-              onPhxClickEvent(socket, rawPhxMessage as PhxClickEvent);
+              onPhxClickEvent(ws, rawPhxMessage as PhxClickEvent);
               break;
             case "form":
-              onPhxFormEvent(socket, rawPhxMessage as PhxFormEvent);
+              onPhxFormEvent(ws, rawPhxMessage as PhxFormEvent);
               break;
             default:
               console.error("unhandeded event type", type);
@@ -67,7 +67,7 @@ function onMessage(socket: WebSocket, message: WebSocket.RawData) {
     }
 }
 
-function onPhxJoin(socket: WebSocket, message: PhxJoinIncoming) {
+function onPhxJoin(ws: WebSocket, message: PhxJoinIncoming) {
   // console.log("phx_join", message);
 
   // use url to route join request to component
@@ -85,7 +85,7 @@ function onPhxJoin(socket: WebSocket, message: PhxJoinIncoming) {
   const phxSocket: PhxSocket = {
     id: topic,
     connected: true, // websocket is connected
-    socket
+    ws,
   }
   const ctx = component.mount({}, {}, phxSocket);
   const view = component.render(ctx);
@@ -122,19 +122,19 @@ function onPhxJoin(socket: WebSocket, message: PhxJoinIncoming) {
 
   // console.log(html)
   // console.log("sending phx_reply", reply);
-  socket.send(JSON.stringify(reply), { binary: false }, (err: any) => {
+  ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
     if (err) {
       console.error("error", err)
     }
   });
 }
 
-function onPhxFormEvent(socket: any, message: PhxFormEvent) {
+function onPhxFormEvent(ws: WebSocket, message: PhxFormEvent) {
   // update context
   // rerun render
   // send back dynamics if they changed
   // console.log('socket:', socket);
-  console.log('event:', message);
+  console.log('onPhxFormEvent event:', message);
 
   const [joinRef, messageRef, topic, event, payload] = message;
 
@@ -181,14 +181,14 @@ function onPhxFormEvent(socket: any, message: PhxFormEvent) {
     }
   ]
   // console.log("sending phx_reply", reply);
-  socket.send(JSON.stringify(reply), { binary: false }, (err: any) => {
+  ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
     if (err) {
       console.error("error", err)
     }
   });
 }
 
-function onPhxClickEvent(socket: any, message: PhxClickEvent) {
+function onPhxClickEvent(ws: WebSocket, message: PhxClickEvent) {
   // update context
   // rerun render
   // send back dynamics if they changed
@@ -239,7 +239,7 @@ function onPhxClickEvent(socket: any, message: PhxClickEvent) {
     }
   ]
   // console.log("sending phx_reply", reply);
-  socket.send(JSON.stringify(reply), { binary: false }, (err: any) => {
+  ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
     if (err) {
       console.error("error", err)
     }
@@ -252,20 +252,20 @@ function onPhxClickEvent(socket: any, message: PhxClickEvent) {
 // }
 // }
 
-function onHeartbeat(socket: any, message: PhxHeartbeatIncoming) {
+function onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming) {
   // console.log("heartbeat", message);
 
   const hbReply = newHeartbeatReply(message);
 
   // console.log("sending hbReply", hbReply);
-  socket.send(JSON.stringify(hbReply), { binary: false }, (err: any) => {
+  ws.send(JSON.stringify(hbReply), { binary: false }, (err: any) => {
     if (err) {
       console.error("error", err)
     }
   });
 }
 
-export function sendInternalMessage(socket: PhxSocket, component: LiveViewComponent<any>, event: any) {
+export function sendInternalMessage(socket: PhxSocket, component: LiveViewComponent<any>, event: any, payload?: any) {
   console.log("internal message", event);
   // check if component has event handler
   if(!(component as any).handleInfo) {
@@ -291,8 +291,8 @@ export function sendInternalMessage(socket: PhxSocket, component: LiveViewCompon
     "diff",
     { ...dynamics }
   ]
-  // console.log("sending phx_reply", reply);
-  socket.socket?.send(JSON.stringify(reply), { binary: false }, (err: any) => {
+  console.log("sending internal message phx_reply", reply);
+  socket.ws!.send(JSON.stringify(reply), { binary: false }, (err: any) => {
     if (err) {
       console.error("error", err)
     }

@@ -3,7 +3,7 @@ import WebSocket from 'ws';
 export interface PhxSocket {
   id: string;
   connected: boolean; // true for websocket, false for http request
-  socket?: WebSocket;
+  ws?: WebSocket;
 }
 
 export enum PhxSocketProtocolNames {

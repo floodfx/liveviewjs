@@ -1,5 +1,5 @@
 import { PhxSocket } from "../socket/types";
-import escapeHtml, { HtmlSafeString } from "./templates";
+import { HtmlSafeString } from "./templates";
 
 
 export interface LiveViewContext<T> {
@@ -16,12 +16,14 @@ export interface LiveViewComponent<T> {
 
 }
 
+// TODO: support event returing Partial<T>?
 export interface LiveViewExternalEventListener<T, E extends string, P> {
   handleEvent: (event: Lowercase<E>, params: P, socket: PhxSocket) => LiveViewContext<T>;
 }
 
-export interface LiveViewInternalEventListener<T, E extends string> {
-  handleInfo: (event: Lowercase<E>, socket: PhxSocket) => LiveViewContext<T>;
+// TODO: support event returing Partial<T>?
+export interface LiveViewInternalEventListener<T, E> {
+  handleInfo: (event: E, socket: PhxSocket) => LiveViewContext<T>;
 }
 
 export interface LiveViewRouter {
