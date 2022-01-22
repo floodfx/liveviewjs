@@ -1,5 +1,6 @@
 import escapeHtml from "../liveview/templates";
 import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener } from "../liveview/types";
+import { PhxSocket } from "../socket/types";
 
 export interface LightContext {
   brightness: number;
@@ -15,7 +16,7 @@ export class LightLiveViewComponent implements
   LiveViewExternalEventListener<LightContext, "off", any> {
 
 
-  mount(params: any, session: any, socket: any) {
+  mount(params: any, session: any, socket: PhxSocket) {
     // store this somewhere durable
     const ctx: LightContext = { brightness: 10 };
     _db[socket.id] = ctx;
@@ -51,7 +52,7 @@ export class LightLiveViewComponent implements
     `
   };
 
-  handleEvent(event: LightEvent, params: any, socket: any) {
+  handleEvent(event: LightEvent, params: any, socket: PhxSocket) {
     const ctx = _db[socket.id];
     console.log("event:", event, socket, ctx);
     switch (event) {

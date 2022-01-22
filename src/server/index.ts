@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import session, {MemoryStore} from "express-session";
 import { nanoid } from "nanoid";
 import { wsServer } from "./socket/websocket_server";
+import { PhxSocket } from "./socket/types";
 
 // pull in websocket server to listen for events
 wsServer
@@ -49,11 +50,17 @@ declare module 'express-session' {
 // register each route path to the component to be rendered
 Object.keys(router).forEach(key => {
   app.get(key, (req: Request, res: Response) => {
-    // console.log("req.path", req.path)
+
+     // new LiveViewId per HTTP requess?
+    const liveViewId = nanoid();
+    const phxSocket: PhxSocket = {
+      id: liveViewId,
+      connected: false, // http request
+    }
 
     // render the component
     const component = router[key];
-    const ctx = component.mount({}, {}, {});
+    const ctx = component.mount({}, {}, phxSocket);
     const view = component.render(ctx);
 
     // lookup / gen csrf token for this session
@@ -65,7 +72,7 @@ Object.keys(router).forEach(key => {
     res.render("index", {
       page_title: "Live View",
       csrf_meta_tag: req.session.csrfToken,
-      liveViewId: nanoid(), // new LiveViewId per HTTP requess?
+      liveViewId,
       session: jwt.sign(JSON.stringify(req.session), SIGNING_SECRET),
       statics: jwt.sign(JSON.stringify(view.statics), SIGNING_SECRET),
       inner_content: view.toString()

@@ -1,5 +1,7 @@
 import escapeHtml from "../liveview/templates";
 import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener } from "../liveview/types";
+import { PhxSocket } from "../socket/types";
+import { numberToCurrency } from "../utils";
 import { LightContext } from "./light_liveview";
 
 export interface LicenseContext {
@@ -15,7 +17,7 @@ export class LicenseLiveViewComponent implements
   {
 
 
-  mount(params: any, session: any, socket: any) {
+  mount(params: any, session: any, socket: PhxSocket) {
     // store this somewhere durable
     const seats = 2;
     const amount = calculateLicenseAmount(seats);
@@ -52,8 +54,8 @@ export class LicenseLiveViewComponent implements
     `
   };
 
-  handleEvent(event: "update", params: {seats: number}, socket: any) {
-    console.log("event:", event, params, socket);
+  handleEvent(event: "update", params: {seats: number}, socket: PhxSocket) {
+    // console.log("event:", event, params, socket);
     const { seats } = params;
     const amount = calculateLicenseAmount(seats);
     return { data: { seats, amount} };
@@ -69,10 +71,3 @@ function calculateLicenseAmount(seats: number): number {
   }
 }
 
-function numberToCurrency(amount: number) {
-  var formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  });
-  return formatter.format(amount);
-}

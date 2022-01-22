@@ -1,10 +1,10 @@
-import { PhxReply, PhxSocketProtocolNames, RenderedNode, PhxOutgoingMessage, newHeartbeatReply, PhxJoinIncoming, PhxHeartbeatIncoming, PhxClickEvent, PhxFormEvent, PhxIncomingMessage, PhxClickPayload, PhxFormPayload } from './types';
-import ws from 'ws';
+import { PhxReply, PhxSocketProtocolNames, RenderedNode, PhxOutgoingMessage, newHeartbeatReply, PhxJoinIncoming, PhxHeartbeatIncoming, PhxClickEvent, PhxFormEvent, PhxIncomingMessage, PhxClickPayload, PhxFormPayload, PhxSocket, PhxDiffReply } from './types';
+import WebSocket from 'ws';
 import { router } from '../live/router';
-import qs from 'querystring';
 import { URLSearchParams } from 'url';
+import { LiveViewComponent } from '../liveview/types';
 
-const wsServer = new ws.Server({
+const wsServer = new WebSocket.Server({
   port: 3003,
 });
 
@@ -14,7 +14,16 @@ wsServer.on('connection', socket => {
   // console.log("socket connected", socket);
 
   socket.on('message', message => {
-    console.log("message", String(message));
+
+    onMessage(socket, message);
+
+  });
+});
+
+
+function onMessage(socket: WebSocket, message: WebSocket.RawData) {
+
+  console.log("message", String(message));
     // get raw message to string
     const stringMsg = message.toString();
     // console.log("message", stringMsg);
@@ -56,13 +65,9 @@ wsServer.on('connection', socket => {
       // unknown message type
       console.error("unknown message type", rawPhxMessage);
     }
+}
 
-    // decode phx protocol
-  });
-});
-
-
-function onPhxJoin(socket: any, message: PhxJoinIncoming) {
+function onPhxJoin(socket: WebSocket, message: PhxJoinIncoming) {
   // console.log("phx_join", message);
 
   // use url to route join request to component
@@ -77,7 +82,12 @@ function onPhxJoin(socket: any, message: PhxJoinIncoming) {
   // update topicToPath
   topicToPath[topic] = url.pathname;
 
-  const ctx = component.mount({}, {}, { id: message[PhxSocketProtocolNames.topic] });
+  const phxSocket: PhxSocket = {
+    id: topic,
+    connected: true, // websocket is connected
+    socket
+  }
+  const ctx = component.mount({}, {}, phxSocket);
   const view = component.render(ctx);
 
   // map array of dynamics to object with indiceies as keys
@@ -249,6 +259,40 @@ function onHeartbeat(socket: any, message: PhxHeartbeatIncoming) {
 
   // console.log("sending hbReply", hbReply);
   socket.send(JSON.stringify(hbReply), { binary: false }, (err: any) => {
+    if (err) {
+      console.error("error", err)
+    }
+  });
+}
+
+export function sendInternalMessage(socket: PhxSocket, component: LiveViewComponent<any>, event: any) {
+  console.log("internal message", event);
+  // check if component has event handler
+  if(!(component as any).handleInfo) {
+    console.warn("no info handler for component", component);
+    return;
+  }
+
+  // @ts-ignore
+  const ctx = component.handleInfo(event, socket);
+
+  const view = component.render(ctx);
+
+  // map array of dynamics to object with indiceies as keys
+  const dynamics = view.dynamics.reduce((acc: { [key: number]: string }, cur: string, index: number) => {
+    acc[index] = cur;
+    return acc;
+  }, {} as { [key: string]: string })
+
+  const reply: PhxDiffReply = [
+    null,
+    null,
+    socket.id,
+    "diff",
+    { ...dynamics }
+  ]
+  // console.log("sending phx_reply", reply);
+  socket.socket?.send(JSON.stringify(reply), { binary: false }, (err: any) => {
     if (err) {
       console.error("error", err)
     }

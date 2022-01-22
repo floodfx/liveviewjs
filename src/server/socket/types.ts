@@ -1,3 +1,11 @@
+import WebSocket from 'ws';
+
+export interface PhxSocket {
+  id: string;
+  connected: boolean; // true for websocket, false for http request
+  socket?: WebSocket;
+}
+
 export enum PhxSocketProtocolNames {
   joinRef = 0,
   messageRef,
@@ -16,9 +24,9 @@ export type PhxIncomingMessage<Payload> = [
 
 export type PhxOutgoingMessage<Payload> = [
   joinRef: string | null, // number
-  messageRef: string, // number
+  messageRef: string | null, // number
   topic: "phoenix" | string,
-  event: "phx_reply",
+  event: "phx_reply" | "diff",
   payload: Payload
 ]
 
@@ -45,6 +53,7 @@ export interface PhxReplyPayload {
 }
 
 export type PhxReply = PhxOutgoingMessage<PhxReplyPayload>;
+export type PhxDiffReply = PhxOutgoingMessage<Dynamics>;
 
 export interface PhxEventPayload<Type extends string,Value> {
   type: Type,
