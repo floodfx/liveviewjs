@@ -1,17 +1,15 @@
 import "reflect-metadata";
 import path from "path"
-import express, { Application, Request, Response } from 'express'
-import { createExpressServer } from 'routing-controllers';
-import { Server as HTTPServer } from 'http';
+import express, { Request, Response } from 'express'
 import { router } from "./live/router";
 import jwt from "jsonwebtoken";
 import session, {MemoryStore} from "express-session";
 import { nanoid } from "nanoid";
-import { wsServer } from "./socket/websocket_server";
 import { PhxSocket } from "./socket/types";
+import { Server } from "http";
 
-// pull in websocket server to listen for events
-wsServer
+
+const app = express();
 
 // TODO replace me with your own secret
 export const SIGNING_SECRET = "blah_secret";
@@ -20,14 +18,15 @@ export const sessionStore = new MemoryStore();
 const publicPath = path.join(__dirname, "..", "dist", "client");
 const viewsPath = path.join(__dirname, "..", "src", "server", "views");
 
-
-const app: Application = createExpressServer({
-  controllers: [path.join(__dirname, '/controllers/*controller.js')]
-})
-
 app.set('view engine', 'ejs');
 app.set("views", viewsPath)
-const server = new HTTPServer(app);
+const server = new Server(app);
+
+app.use((req: Request, res: Response, next: Function) => {
+  console.log("req.url", req.url);
+  // console.log("req.path", req.path);
+  next();
+});
 
 app.use(express.static(publicPath))
 
@@ -47,10 +46,13 @@ declare module 'express-session' {
   }
 }
 
+console.log("router", router);
+
 // register each route path to the component to be rendered
 Object.keys(router).forEach(key => {
+  console.log("register route", key);
   app.get(key, (req: Request, res: Response) => {
-
+    console.log("key", key);
      // new LiveViewId per HTTP requess?
     const liveViewId = nanoid();
     const phxSocket: PhxSocket = {
@@ -81,9 +83,11 @@ Object.keys(router).forEach(key => {
   })
 })
 
-const port: number = 3002
+export {app};
 
-server.listen(port, function () {
-  console.log(`App is listening on port ${port} !`)
-})
+// const port: number = 3002
+
+// server.listen(port, function () {
+//   console.log(`App is listening on port ${port} !`)
+// })
 

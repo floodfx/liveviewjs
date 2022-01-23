@@ -1,12 +1,18 @@
 import { PhxReply, PhxSocketProtocolNames, RenderedNode, PhxOutgoingMessage, newHeartbeatReply, PhxJoinIncoming, PhxHeartbeatIncoming, PhxClickEvent, PhxFormEvent, PhxIncomingMessage, PhxClickPayload, PhxFormPayload, PhxSocket, PhxDiffReply } from './types';
 import WebSocket from 'ws';
+import http, { Server, createServer } from 'http';
 import { router } from '../live/router';
 import { URLSearchParams } from 'url';
 import { LiveViewComponent } from '../liveview/types';
+import { app } from '../index';
 
+const server = new Server();
 const wsServer = new WebSocket.Server({
-  port: 3003,
+  server
 });
+
+// listen for http requests
+server.on('request', app);
 
 const topicToPath: { [key: string]: string } = {}
 
@@ -299,4 +305,10 @@ export function sendInternalMessage(socket: PhxSocket, component: LiveViewCompon
   });
 }
 
-export { wsServer };
+// export { wsServer };
+
+const port: number = 3002
+
+server.listen(port, function () {
+  console.log(`App is listening on port ${port} !`)
+})
