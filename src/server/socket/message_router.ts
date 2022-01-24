@@ -1,27 +1,36 @@
 import { PhxReply, PhxSocketProtocolNames, RenderedNode, PhxOutgoingMessage, newHeartbeatReply, PhxJoinIncoming, PhxHeartbeatIncoming, PhxClickEvent, PhxFormEvent, PhxIncomingMessage, PhxClickPayload, PhxFormPayload, PhxSocket, PhxDiffReply } from './types';
 import WebSocket from 'ws';
-import { router } from '../live/router';
+import http, { Server, createServer } from 'http';
+// import { router } from '../live/router';
 import { URLSearchParams } from 'url';
-import { LiveViewComponent } from '../liveview/types';
-
-const wsServer = new WebSocket.Server({
-  port: 3003,
-});
-
-const topicToPath: { [key: string]: string } = {}
-
-wsServer.on('connection', socket => {
-  // console.log("socket connected", socket);
-
-  socket.on('message', message => {
-
-    onMessage(socket, message);
-
-  });
-});
+import { LiveViewComponent } from '../types';
+import { app } from '../web/index';
+import { LiveViewRouter } from '../types';
 
 
-function onMessage(ws: WebSocket, message: WebSocket.RawData) {
+
+// const server = new Server();
+// const wsServer = new WebSocket.Server({
+//   server
+// });
+
+// // listen for http requests
+// server.on('request', app);
+
+// const topicToPath: { [key: string]: string } = {}
+
+// wsServer.on('connection', socket => {
+//   // console.log("socket connected", socket);
+
+//   socket.on('message', message => {
+
+//     onMessage(socket, message);
+
+//   });
+// });
+
+
+export function onMessage(ws: WebSocket, message: WebSocket.RawData, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
 
   console.log("message", String(message));
     // get raw message to string
@@ -37,10 +46,10 @@ function onMessage(ws: WebSocket, message: WebSocket.RawData) {
       const [joinRef, messageRef, topic, event, payload] = rawPhxMessage;
       switch (event) {
         case "phx_join":
-          onPhxJoin(ws, rawPhxMessage as PhxJoinIncoming);
+          onPhxJoin(ws, rawPhxMessage as PhxJoinIncoming, topicToPath, router);
           break;
         case "heartbeat":
-          onHeartbeat(ws, rawPhxMessage as PhxHeartbeatIncoming);
+          onHeartbeat(ws, rawPhxMessage as PhxHeartbeatIncoming, topicToPath, router);
           break;
         case "event":
           // map based on event type
@@ -48,10 +57,10 @@ function onMessage(ws: WebSocket, message: WebSocket.RawData) {
           console
           switch (type) {
             case "click":
-              onPhxClickEvent(ws, rawPhxMessage as PhxClickEvent);
+              onPhxClickEvent(ws, rawPhxMessage as PhxClickEvent, topicToPath, router);
               break;
             case "form":
-              onPhxFormEvent(ws, rawPhxMessage as PhxFormEvent);
+              onPhxFormEvent(ws, rawPhxMessage as PhxFormEvent, topicToPath, router);
               break;
             default:
               console.error("unhandeded event type", type);
@@ -67,7 +76,7 @@ function onMessage(ws: WebSocket, message: WebSocket.RawData) {
     }
 }
 
-function onPhxJoin(ws: WebSocket, message: PhxJoinIncoming) {
+export function onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
   // console.log("phx_join", message);
 
   // use url to route join request to component
@@ -129,7 +138,7 @@ function onPhxJoin(ws: WebSocket, message: PhxJoinIncoming) {
   });
 }
 
-function onPhxFormEvent(ws: WebSocket, message: PhxFormEvent) {
+export function onPhxFormEvent(ws: WebSocket, message: PhxFormEvent, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
   // update context
   // rerun render
   // send back dynamics if they changed
@@ -188,7 +197,7 @@ function onPhxFormEvent(ws: WebSocket, message: PhxFormEvent) {
   });
 }
 
-function onPhxClickEvent(ws: WebSocket, message: PhxClickEvent) {
+export function onPhxClickEvent(ws: WebSocket, message: PhxClickEvent, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
   // update context
   // rerun render
   // send back dynamics if they changed
@@ -252,7 +261,7 @@ function onPhxClickEvent(ws: WebSocket, message: PhxClickEvent) {
 // }
 // }
 
-function onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming) {
+export function onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
   // console.log("heartbeat", message);
 
   const hbReply = newHeartbeatReply(message);
@@ -299,4 +308,10 @@ export function sendInternalMessage(socket: PhxSocket, component: LiveViewCompon
   });
 }
 
-export { wsServer };
+// export { wsServer };
+
+// const port: number = 3002
+
+// server.listen(port, function () {
+//   console.log(`App is listening on port ${port} !`)
+// })

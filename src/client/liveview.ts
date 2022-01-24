@@ -3,9 +3,7 @@ import { Socket } from "phoenix"
 import NProgress from "nprogress"
 import { LiveSocket } from "phoenix_live_view"
 
-const url = "ws://localhost:3003/live"
-// const url = "/live"
-console.log("connecting to ", url);
+const url = "/live"
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket(url, Socket, { params: { _csrf_token: csrfToken } })
@@ -18,7 +16,7 @@ window.addEventListener("phx:page-loading-stop", info => NProgress.done())
 liveSocket.connect()
 
 // expose liveSocket on window for web console debug logs and latency simulation:
-liveSocket.enableDebug()
+// >> liveSocket.enableDebug()
 // >> liveSocket.enableLatencySim(1000)
 // @ts-ignore
 window.liveSocket = liveSocket

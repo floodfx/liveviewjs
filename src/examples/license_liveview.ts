@@ -1,7 +1,7 @@
-import escapeHtml from "../liveview/templates";
-import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener } from "../liveview/types";
-import { PhxSocket } from "../socket/types";
-import { numberToCurrency } from "../utils";
+import escapeHtml from "../server/templates";
+import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../server/types";
+import { PhxSocket } from "../server/socket/types";
+import { numberToCurrency } from "./utils";
 import { LightContext } from "./light_liveview";
 
 export interface LicenseContext {

@@ -26,7 +26,8 @@
     "baseUrl": ".",
   },
   "include": [
-    "src/server/**/*"
+    "src/server/**/*",
+    "src/examples/**/*",
   ],
   "exclude": [
     "dist",

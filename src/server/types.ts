@@ -1,4 +1,4 @@
-import { PhxSocket } from "../socket/types";
+import { PhxSocket } from "./socket/types";
 import { HtmlSafeString } from "./templates";
 
 
