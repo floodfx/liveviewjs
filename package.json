@@ -7,28 +7,24 @@
       "source": "src/client/liveview.ts",
       "context": "browser",
       "distDir": "dist/client"
-    },
-    "framework": {
-      "source": "src/server/index.ts",
-      "context": "node",
-      "isLibrary": true,
-      "distDir": "dist/framework"
-    },
-    "examples": {
-      "source": "src/examples/index.ts",
-      "context": "node",
-      "distDir": "dist/examples"
     }
   },
-  "source": "src/server/index.ts",
-  "types": "dist/types/index.d.ts",
+  "main": "dist/server/index.js",
+  "types": "dist/server/index.d.ts",
+  "files": [
+    "dist/server/**/*.js",
+    "dist/server/**/*.d.ts"
+  ],
   "scripts": {
-    "examples": "nodemon -e js -w dist dist/examples/index.js",
-    "preexamples": "npm run build",
-    "build": "rm -rf dist; npm run check; parcel build",
-    "watch": "parcel watch",
+    "examples": "npm run prepublish; npm run client-build;nodemon -e js -w dist dist/examples/index.js",
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "client-build": "npm run check; parcel build",
+    "client-watch": "parcel watch",
     "check": "tsc --noEmit",
-    "test": "jest --expand"
+    "clean": "rm -rf dist",
+    "test": "jest --expand",
+    "prepublish": "npm run clean; npm run build"
   },
   "keywords": ["liveviewjs","liveview", "phoenix", "typescript", "javascript", "framework"],
   "author": "Donnie Flood <donnie@floodfx.com>",
