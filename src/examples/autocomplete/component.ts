@@ -1,10 +1,10 @@
-import escapeHtml from "../../liveview/templates";
-import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "src/server/liveview/types";
-import { PhxSocket } from "../../socket/types";
-import { listCities, suggest } from "./data";
-import { sendInternalMessage } from "../../socket/websocket_server";
+import escapeHtml from "../../server/templates";
+import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../../server/types";
+import { PhxSocket } from "../../server/socket/types";
+import { sendInternalMessage } from "../../server/socket/message_router";
 import { WebSocket } from "ws";
 import { searchByCity, searchByZip, Store } from "../live-search/data";
+import { listCities, suggest } from "./data";
 
 
 export interface AutocompleteContext {

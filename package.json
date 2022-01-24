@@ -2,10 +2,23 @@
   "name": "liveviewjs-poc",
   "version": "1.0.0",
   "description": "",
+  "client": "dist/client/liveview.js",
+  "server": "dist/server/index.js",
+  "targets": {
+    "client": {
+      "source": "src/client/liveview.ts",
+      "context": "browser"
+    },
+    "server": {
+      "source": "./src/server/index.ts",
+      "context": "node",
+      "isLibrary": true
+    }
+  },
   "scripts": {
-    "server-build": "tsc --watch -p tsconfig.json",
-    "server": "nodemon -e js -w dist dist/socket/websocket_server.js",
-    "client-build": "parcel build src/client/*.ts --dist-dir dist/client",
+    "run": "nodemon -e js -w dist dist/examples/index.js",
+    "build": "parcel build",
+    "watch": "parcel watch",
     "test": "jest --expand"
   },
   "keywords": [],

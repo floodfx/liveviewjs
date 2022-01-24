@@ -1,6 +1,6 @@
-import escapeHtml from "../liveview/templates";
-import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener } from "../liveview/types";
-import { PhxSocket } from "../socket/types";
+import escapeHtml from "../server/templates";
+import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../server/types";
+import { PhxSocket } from "../server/socket/types";
 
 export interface LightContext {
   brightness: number;

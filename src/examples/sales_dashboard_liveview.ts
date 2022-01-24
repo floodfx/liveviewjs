@@ -1,8 +1,8 @@
-import escapeHtml from "../liveview/templates";
-import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../liveview/types";
-import { PhxSocket } from "../socket/types";
-import { sendInternalMessage } from "../socket/websocket_server";
-import { numberToCurrency } from "../utils";
+import escapeHtml from "../server/templates";
+import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../server/types";
+import { PhxSocket } from "../server/socket/types";
+import { numberToCurrency } from "./utils";
+import { sendInternalMessage } from "../server/socket/message_router";
 
 // generate a random number between min and max
 const random = (min: number, max: number): () => number => {
