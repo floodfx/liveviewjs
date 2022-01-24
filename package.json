@@ -26,7 +26,14 @@
     "test": "jest --expand",
     "prepublish": "npm run clean; npm run build"
   },
-  "keywords": ["liveviewjs","liveview", "phoenix", "typescript", "javascript", "framework"],
+  "keywords": [
+    "liveviewjs",
+    "liveview",
+    "phoenix",
+    "typescript",
+    "javascript",
+    "framework"
+  ],
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "ISC",
   "dependencies": {
@@ -50,7 +57,7 @@
     "@types/http-errors": "^1.8.1",
     "@types/jest": "^27.4.0",
     "@types/jsonwebtoken": "^8.5.8",
-    "@types/node": "^17.0.0",
+    "@types/node": "^17.0.10",
     "@types/ws": "^8.2.2",
     "eslint": "^8.5.0",
     "jest": "^27.4.7",

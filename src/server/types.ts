@@ -11,19 +11,23 @@ export interface LiveViewTemplate extends HtmlSafeString {
 
 export interface LiveViewComponent<T> {
 
-  mount: (params: any, session: any, socket: PhxSocket) => LiveViewContext<T>;
-  render: (context: LiveViewContext<T>) => LiveViewTemplate;
+  mount(params: any, session: any, socket: PhxSocket): LiveViewContext<T>;
+  render(context: LiveViewContext<T>): LiveViewTemplate;
 
 }
 
 // TODO: support event returing Partial<T>?
 export interface LiveViewExternalEventListener<T, E extends string, P> {
-  handleEvent: (event: Lowercase<E>, params: P, socket: PhxSocket) => LiveViewContext<T>;
+  handleEvent(event: Lowercase<E>, params: P, socket: PhxSocket): LiveViewContext<T>;
 }
 
 // TODO: support event returing Partial<T>?
 export interface LiveViewInternalEventListener<T, E> {
-  handleInfo: (event: E, socket: PhxSocket) => LiveViewContext<T>;
+  handleInfo(event: E, socket: PhxSocket): LiveViewContext<T>;
+}
+
+export interface LiveViewParamsHandler<T, P> {
+  handleParams(params: P, url: string, socket: PhxSocket): LiveViewContext<T>;
 }
 
 export interface LiveViewRouter {
