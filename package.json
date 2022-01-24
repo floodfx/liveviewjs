@@ -20,8 +20,10 @@
       "distDir": "dist/examples"
     }
   },
-  "source": "src/server/index.ts",
-  "types": "dist/types/index.d.ts",
+  "main": "dist/framework/index.ts",
+  "files": [
+    "dist/framework/**/*.js"
+  ],
   "scripts": {
     "examples": "nodemon -e js -w dist dist/examples/index.js",
     "preexamples": "npm run build",

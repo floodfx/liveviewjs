@@ -4,31 +4,7 @@ import http, { Server, createServer } from 'http';
 // import { router } from '../live/router';
 import { URLSearchParams } from 'url';
 import { LiveViewComponent } from '../types';
-import { app } from '../web/index';
 import { LiveViewRouter } from '../types';
-
-
-
-// const server = new Server();
-// const wsServer = new WebSocket.Server({
-//   server
-// });
-
-// // listen for http requests
-// server.on('request', app);
-
-// const topicToPath: { [key: string]: string } = {}
-
-// wsServer.on('connection', socket => {
-//   // console.log("socket connected", socket);
-
-//   socket.on('message', message => {
-
-//     onMessage(socket, message);
-
-//   });
-// });
-
 
 export function onMessage(ws: WebSocket, message: WebSocket.RawData, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
 
@@ -307,11 +283,3 @@ export function sendInternalMessage(socket: PhxSocket, component: LiveViewCompon
     }
   });
 }
-
-// export { wsServer };
-
-// const port: number = 3002
-
-// server.listen(port, function () {
-//   console.log(`App is listening on port ${port} !`)
-// })
