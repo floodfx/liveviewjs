@@ -18,7 +18,7 @@ export type PhxIncomingMessage<Payload> = [
   joinRef: string | null, // number
   messageRef: string, // number
   topic: "phoenix" | string,
-  event: "phx_join" | "event" | "heartbeat",
+  event: "phx_join" | "event" | "heartbeat" | "live_patch",
   payload: Payload
 ]
 
@@ -39,6 +39,7 @@ export interface PhxJoinPayload {
 
 export type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
 export type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
+export type PhxLivePatchIncoming = PhxIncomingMessage<{ url: string }>;
 
 export type Dynamics = { [key: number]: string | Dynamics }
 
@@ -55,7 +56,7 @@ export interface PhxReplyPayload {
 export type PhxReply = PhxOutgoingMessage<PhxReplyPayload>;
 export type PhxDiffReply = PhxOutgoingMessage<Dynamics>;
 
-export interface PhxEventPayload<Type extends string,Value> {
+export interface PhxEventPayload<Type extends string, Value> {
   type: Type,
   event: string,
   value: Value
@@ -66,10 +67,10 @@ export interface PhxEventUploads {
 }
 
 //{type: "click", event: "down", value: {value: ""}}
-export type PhxClickPayload = PhxEventPayload<"click",{ value: { value: string } }>;
+export type PhxClickPayload = PhxEventPayload<"click", { value: { value: string } }>;
 
 //{"type":"form","event":"update","value":"seats=3&_target=seats","uploads":{}}
-export type PhxFormPayload = PhxEventPayload<"form",{ value: string }> & PhxEventUploads;
+export type PhxFormPayload = PhxEventPayload<"form", { value: string }> & PhxEventUploads;
 
 
 export type PhxClickEvent = PhxIncomingMessage<PhxClickPayload>

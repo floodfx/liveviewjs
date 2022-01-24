@@ -5,6 +5,7 @@ import { LicenseLiveViewComponent } from './license_liveview';
 import { LightLiveViewComponent } from './light_liveview';
 import { SearchLiveViewComponent } from './live-search/component';
 import { SalesDashboardLiveViewComponent } from './sales_dashboard_liveview';
+import { ServersLiveViewComponent } from './servers/component';
 
 const lvServer = new LiveViewServer({
   // port: 3002,
@@ -18,13 +19,14 @@ export const router: LiveViewRouter = {
   '/sales-dashboard': new SalesDashboardLiveViewComponent(),
   '/search': new SearchLiveViewComponent(),
   "/autocomplete": new AutocompleteLiveViewComponent(),
+  "/light": new LightLiveViewComponent(),
 }
 
 // register all routes
 lvServer.registerLiveViewRoutes(router)
 
 // register single route
-lvServer.registerLiveViewRoute("/light", new LightLiveViewComponent())
+lvServer.registerLiveViewRoute("/servers", new ServersLiveViewComponent())
 
 // start server
 lvServer.start();
