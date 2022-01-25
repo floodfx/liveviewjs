@@ -1,4 +1,4 @@
-import escapeHtml from "../../server/templates";
+import html from "../../server/templates";
 import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../../server/types";
 import { PhxSocket } from "../../server/socket/types";
 import { sendInternalMessage } from "../../server/socket/message_router";
@@ -21,12 +21,12 @@ export class AutocompleteLiveViewComponent implements
   LiveViewComponent<AutocompleteContext>,
   LiveViewExternalEventListener<AutocompleteContext, "zip-search", Pick<AutocompleteContext, "zip">>,
   LiveViewExternalEventListener<AutocompleteContext, "suggest-city", Pick<AutocompleteContext, "city">>,
-  LiveViewInternalEventListener<AutocompleteContext, {type: "run_zip_search", zip: string}>,
-  LiveViewInternalEventListener<AutocompleteContext, {type: "run_city_search", city: string}>
-  {
+  LiveViewInternalEventListener<AutocompleteContext, { type: "run_zip_search", zip: string }>,
+  LiveViewInternalEventListener<AutocompleteContext, { type: "run_city_search", city: string }>
+{
 
   mount(params: any, session: any, socket: PhxSocket) {
-    if(socket.connected) {
+    if (socket.connected) {
       // TODO handle disconnect
       idToWs.set(socket.id, socket.ws!);
     }
@@ -35,19 +35,19 @@ export class AutocompleteLiveViewComponent implements
     const stores: Store[] = [];
     const matches: string[] = [];
     const loading = false
-    return { data: { zip, city, stores, matches, loading} };
+    return { data: { zip, city, stores, matches, loading } };
   };
 
   renderStoreStatus(store: Store) {
     if (store.open) {
-      return escapeHtml`<span class="open">🔓 Open</span>`;
+      return html`<span class="open">🔓 Open</span>`;
     } else {
-      return escapeHtml`<span class="closed">🔐 Closed</span>`;
+      return html`<span class="closed">🔐 Closed</span>`;
     }
   };
 
-  renderStore(store:Store) {
-    return escapeHtml`
+  renderStore(store: Store) {
+    return html`
     <li>
       <div class="first-line">
         <div class="name">
@@ -69,7 +69,7 @@ export class AutocompleteLiveViewComponent implements
   }
 
   renderLoading() {
-    return escapeHtml`
+    return html`
       <div class="loader">
         Loading...
       </div>
@@ -79,7 +79,7 @@ export class AutocompleteLiveViewComponent implements
 
 
   render(context: LiveViewContext<AutocompleteContext>) {
-    return escapeHtml`
+    return html`
     <h1>Find a Store</h1>
     <div id="search">
 
@@ -87,7 +87,7 @@ export class AutocompleteLiveViewComponent implements
         <input type="text" name="zip" value="${context.data.zip}"
               placeholder="Zip Code"
               autofocus autocomplete="off"
-              ${ context.data.loading ? "readonly" : ""} />
+              ${context.data.loading ? "readonly" : ""} />
 
         <button type="submit">
           📫🔎
@@ -100,7 +100,7 @@ export class AutocompleteLiveViewComponent implements
               autocomplete="off"
               list="matches"
               phx-debounce="1000"
-              ${ context.data.loading ? "readonly" : ""} />
+              ${context.data.loading ? "readonly" : ""} />
 
         <button type="submit">
           🏙🔎
@@ -108,52 +108,52 @@ export class AutocompleteLiveViewComponent implements
       </form>
 
       <datalist id="matches">
-        ${context.data.matches.map(match => escapeHtml`<option value="${match}">${match}</option>`)}
+        ${context.data.matches.map(match => html`<option value="${match}">${match}</option>`)}
       </datalist>
 
-      ${ context.data.loading ? this.renderLoading() : "" }
+      ${context.data.loading ? this.renderLoading() : ""}
 
       <div class="stores">
         <ul>
-          ${ context.data.stores.map(store => this.renderStore(store))}
+          ${context.data.stores.map(store => this.renderStore(store))}
         </ul>
       </div>
     </div>
     `
   };
 
-  handleEvent(event: "zip-search" | "suggest-city", params: {zip: string} | {city: string}, socket: PhxSocket) {
+  handleEvent(event: "zip-search" | "suggest-city", params: { zip: string } | { city: string }, socket: PhxSocket) {
     console.log("event:", event, params, socket);
     if (event === "zip-search") {
 
-        // @ts-ignore TODO better params types for different events
-        const { zip } = params;
-        // wait a second to send the message
-        setTimeout(() => {
-          sendInternalMessage(socket, this, {type: "run_zip_search", zip });
-        }, 1000);
-        return { data: { zip, city: "", stores:[], matches:[], loading: true } };
-      }
-      else if (event === "suggest-city") {
+      // @ts-ignore TODO better params types for different events
+      const { zip } = params;
+      // wait a second to send the message
+      setTimeout(() => {
+        sendInternalMessage(socket, this, { type: "run_zip_search", zip });
+      }, 1000);
+      return { data: { zip, city: "", stores: [], matches: [], loading: true } };
+    }
+    else if (event === "suggest-city") {
 
-        // @ts-ignore TODO better params types for different events
-        const { city } = params;
-        const matches = suggest(city);
-        console.log("matches:", matches);
-        return { data: { zip: "", city, stores:[], matches, loading: false } };
-      }
-      else if (event === "city-search") {
-        // @ts-ignore TODO better params types for different events
-        const { city } = params;
-        // wait a second to send the message
-        setTimeout(() => {
-          sendInternalMessage(socket, this, {type: "run_city_search", city });
-        }, 1000);
-        return { data: { zip: "", city, stores:[], matches:[], loading: true } };
-      }
-      else {
-        return { data: { zip: "", city: "", stores:[], matches: [], loading: false } };
-      }
+      // @ts-ignore TODO better params types for different events
+      const { city } = params;
+      const matches = suggest(city);
+      console.log("matches:", matches);
+      return { data: { zip: "", city, stores: [], matches, loading: false } };
+    }
+    else if (event === "city-search") {
+      // @ts-ignore TODO better params types for different events
+      const { city } = params;
+      // wait a second to send the message
+      setTimeout(() => {
+        sendInternalMessage(socket, this, { type: "run_city_search", city });
+      }, 1000);
+      return { data: { zip: "", city, stores: [], matches: [], loading: true } };
+    }
+    else {
+      return { data: { zip: "", city: "", stores: [], matches: [], loading: false } };
+    }
   }
 
   // handleEvent(event: "suggest-city", params: {zip: string}, socket: PhxSocket) {
@@ -167,12 +167,12 @@ export class AutocompleteLiveViewComponent implements
   //   return { data: { zip, city: "", stores:[], matches:[], loading: true } };
   // }
 
-  handleInfo(event: {type: "run_zip_search", zip: string} | {type: "run_city_search", city: string}, socket: PhxSocket){
+  handleInfo(event: { type: "run_zip_search", zip: string } | { type: "run_city_search", city: string }, socket: PhxSocket) {
     // lookup websocekt by id
     socket.ws = idToWs.get(socket.id);
 
     let stores: Store[] = [];
-    switch(event.type) {
+    switch (event.type) {
       case "run_zip_search":
         const { zip } = event;
         stores = searchByZip(zip);
@@ -197,13 +197,13 @@ export class AutocompleteLiveViewComponent implements
             loading: false
           }
         }
-      }
+    }
   }
 
 }
 
 function calculateLicenseAmount(seats: number): number {
-  if(seats <= 5) {
+  if (seats <= 5) {
     return seats * 20;
   } else {
     return 100 + (seats - 5) * 15;

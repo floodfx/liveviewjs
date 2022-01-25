@@ -1,4 +1,4 @@
-import escapeHtml from "../../server/templates";
+import html from "../../server/templates";
 import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewParamsHandler, LiveViewTemplate } from "../../server/types";
 import { PhxSocket } from "../../server/socket/types";
 import { WebSocket } from "ws";
@@ -35,7 +35,7 @@ export class ServersLiveViewComponent implements
   render(context: LiveViewContext<ServersContext>): LiveViewTemplate {
     const { servers, selectedServer } = context.data;
     console.log("rendering servers", servers, selectedServer);
-    return escapeHtml`
+    return html`
     <h1>Servers</h1>
     <div id="servers">
       <div class="sidebar">
@@ -89,7 +89,7 @@ export class ServersLiveViewComponent implements
   }
 
   private link_body(server: Server) {
-    return escapeHtml`
+    return html`
       🤖 ${server.name}
     `
   }

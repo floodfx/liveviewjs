@@ -1,4 +1,4 @@
-import escapeHtml from "../server/templates";
+import html from "../server/templates";
 import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../server/types";
 import { PhxSocket } from "../server/socket/types";
 import { numberToCurrency } from "./utils";
@@ -27,7 +27,7 @@ export class LicenseLiveViewComponent implements
   };
 
   render(context: LiveViewContext<LicenseContext>) {
-    return escapeHtml`
+    return html`
     <h1>Team License</h1>
     <div id="license">
       <div class="card">

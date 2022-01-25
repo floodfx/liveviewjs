@@ -1,4 +1,4 @@
-import escapeHtml from "../server/templates";
+import html from "../server/templates";
 import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../server/types";
 import { PhxSocket } from "../server/socket/types";
 
@@ -24,7 +24,7 @@ export class LightLiveViewComponent implements
   };
 
   render(context: LiveViewContext<LightContext>) {
-    return escapeHtml`
+    return html`
     <div id="light">
       <h1>Front Porch Light</h1>
       <div class="meter">

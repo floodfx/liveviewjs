@@ -1,4 +1,4 @@
-import escapeHtml, { HtmlSafeString } from "..";
+import html, { HtmlSafeString } from "..";
 
 interface LiveViewPatchHelperOptions {
   to: {
@@ -20,12 +20,12 @@ function buildHref(options: LiveViewPatchHelperOptions) {
 }
 
 export const live_patch = (anchorBody: HtmlSafeString | string, options: LiveViewPatchHelperOptions): HtmlSafeString => {
-  return escapeHtml`
+  return html`
     <a
       data-phx-link="patch"
       data-phx-link-state="push"
       href="${buildHref(options)}"
-      ${options.class ? escapeHtml`class="${options.class}"` : ""}
+      ${options.class ? html`class="${options.class}"` : ""}
     >
     ${anchorBody}
     </a>

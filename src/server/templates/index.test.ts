@@ -1,56 +1,60 @@
 
-import escapeHtml, { HtmlSafeString } from './index';
+import html, { HtmlSafeString } from './index';
 
 describe("test escapeHtml", () => {
   it("combines statics and dynamics properly", () => {
-    const result = escapeHtml`a${1}b${2}c`;
+    const result = html`a${1}b${2}c`;
     expect(result.toString()).toBe('a1b2c');
   });
 
   it("returns components of the template", () => {
-    const result = escapeHtml`a${1}b${2}c`;
-    expect(result.statics).toEqual(['a', 'b', 'c']);
-    expect(result.dynamics).toEqual(["1", "2"]);
+    const result = html`a${1}b${2}c`;
+    expect(result.partsTree()).toEqual({
+      0: '1',
+      1: '2',
+      s: ['a', 'b', 'c']
+    });
   });
 
   it("returns components of the template with templates", () => {
-    const result = escapeHtml`a${1}b${escapeHtml`sub${"sub1"}`}c`;
-    expect(result.statics).toEqual(['a', 'b', 'c']);
-    expect(result.dynamics).toEqual(["1", "subsub1"]);
+    const result = html`a${1}b${html`sub${"sub1"}`}c`;
+    expect(result.partsTree()).toEqual({
+      0: '1',
+      1: {
+        0: "sub1",
+        s: ['sub', ""]
+      },
+      s: ['a', 'b', 'c']
+    });
   });
 
   it("can apply different dynamics to a HtmlSafeString", () => {
-    const result = escapeHtml`before${"middle"}after`;
+    const result = html`before${"middle"}after`;
     expect(result.toString()).toBe('beforemiddleafter');
     expect(new HtmlSafeString(result.statics, ["diffmid"]).toString()).toBe('beforediffmidafter');
   });
 
   it("works for if/then controls", () => {
-    const template = (show: boolean) => escapeHtml`before${show ? "show" : ""}after`;
+    const template = (show: boolean) => html`before${show ? "show" : ""}after`;
     let result = template(true);
-    console.log('result', result.dynamics, result.statics);
     expect(result.toString()).toBe('beforeshowafter');
     result = template(false);
-    console.log('result', result.dynamics, result.statics);
     expect(result.toString()).toBe('beforeafter');
-
   });
 
   it("can join array without commas", () => {
     const stuff = ["a", "b", "c"];
-    const result = escapeHtml`${stuff}`;
+    const result = html`${stuff}`;
     expect(result.toString()).toBe('abc');
   });
 
   it("more join array without commas on multiple levels", () => {
-    const result = escapeHtml`${escapeHtml`<a>${1}${2}${3}</a>`}`;
+    const result = html`${html`<a>${1}${2}${3}</a>`}`;
     expect(result.toString()).toBe('<a>123</a>');
   });
 
   it("non-interpolated literal should just be a single static", () => {
-    const result = escapeHtml`abc`;
-    expect(result.dynamics).toEqual([]);
-    expect(result.statics).toEqual(['abc']);
+    const result = html`abc`;
     expect(result.partsTree()).toEqual({
       s: ["abc"]
     });
@@ -58,8 +62,6 @@ describe("test escapeHtml", () => {
 
   it("render empty stores has the right parts", () => {
     const empty = renderStores("", [], false);
-    expect(empty.statics.length).toBe(5);
-    expect(empty.dynamics.length).toBe(4);
     expect(empty.partsTree()).toEqual({
       '0': '',
       '1': '',
@@ -71,8 +73,6 @@ describe("test escapeHtml", () => {
 
   it("render loading stores has the right parts", () => {
     const loading = renderStores("80204", [], true);
-    expect(loading.statics.length).toBe(5);
-    expect(loading.dynamics.length).toBe(4);
     expect(loading.partsTree()).toEqual({
       '0': '80204',
       '1': 'readonly',
@@ -85,8 +85,6 @@ describe("test escapeHtml", () => {
   it("render loaded stores has the right parts", () => {
     const loaded = renderStores("80204", stores.slice(3), false);
     console.log('partsTree', JSON.stringify(loaded.partsTree(), null, 2));
-    expect(loaded.statics.length).toBe(5);
-    expect(loaded.dynamics.length).toBe(4);
     expect(loaded.partsTree()).toEqual({
       '0': '80204',
       '1': '',
@@ -139,18 +137,18 @@ interface Store {
 
 const renderStoreStatus = (store: Store) => {
   if (store.open) {
-    return escapeHtml`<span class="open">🔓 Open</span>`;
+    return html`<span class="open">🔓 Open</span>`;
   } else {
-    return escapeHtml`<span class="closed">🔐 Closed</span>`;
+    return html`<span class="closed">🔐 Closed</span>`;
   }
 };
 
 const renderLoading = () => {
-  return escapeHtml`<div class="loader">Loading...</div>`;
+  return html`<div class="loader">Loading...</div>`;
 }
 
 const renderStore = (store: Store) => {
-  return escapeHtml`
+  return html`
   <li>
     <div class="first-line">
       <div class="name">
@@ -172,7 +170,7 @@ const renderStore = (store: Store) => {
 }
 
 const renderStores = (zip: string, stores: Store[], loading: boolean) => {
-  return escapeHtml`
+  return html`
   <h1>Find a Store</h1>
     <div id="search">
 

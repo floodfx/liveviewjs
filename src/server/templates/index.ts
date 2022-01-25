@@ -31,10 +31,6 @@ export function join(array: (string | HtmlSafeString)[], separator: string | Htm
   return new HtmlSafeString(['', ...Array(array.length - 1).fill(separator), ''], array)
 }
 
-export function safe(value: unknown) {
-  return new HtmlSafeString([String(value)], [])
-}
-
 function escapehtml(unsafe: unknown): string {
   if (unsafe instanceof HtmlSafeString) {
     return unsafe.toString()
@@ -53,19 +49,6 @@ export class HtmlSafeString {
   constructor(statics: readonly string[], dynamics: readonly unknown[]) {
     this.statics = statics
     this._dynamics = dynamics
-  }
-
-  get dynamics(): readonly string[] {
-    return this._dynamics.map((d) => {
-      if (d instanceof HtmlSafeString) {
-        return d.toString()
-      }
-      if (Array.isArray(d)) {
-        return join(d, '').toString()
-      }
-
-      return String(d)
-    })
   }
 
   partsTree(includeStatics: boolean = true): { [key: string]: unknown } {
@@ -124,6 +107,6 @@ export class HtmlSafeString {
 
 }
 
-export default function escapeHtml(statics: TemplateStringsArray, ...dynamics: unknown[]) {
+export default function html(statics: TemplateStringsArray, ...dynamics: unknown[]) {
   return new HtmlSafeString(statics, dynamics)
 }
