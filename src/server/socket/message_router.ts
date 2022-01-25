@@ -5,10 +5,10 @@ import http, { Server, createServer } from 'http';
 import { URLSearchParams } from 'url';
 import { LiveViewComponent } from '../types';
 import { LiveViewRouter } from '../types';
+import jwt from 'jsonwebtoken';
 
 export function onMessage(ws: WebSocket, message: WebSocket.RawData, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
 
-  console.log("message", String(message));
   // get raw message to string
   const stringMsg = message.toString();
   // console.log("message", stringMsg);
@@ -55,14 +55,13 @@ export function onMessage(ws: WebSocket, message: WebSocket.RawData, topicToPath
   }
 }
 
+
 export function onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
-  // console.log("phx_join", message);
 
   // use url to route join request to component
   const [joinRef, messageRef, topic, event, payload] = message;
-  const url = new URL(payload.url);
-  // @ts-ignore - searchParams returns an entries but types are wrong
-  const params = Object.fromEntries(url.searchParams);
+  const { url: urlString } = payload;
+  const url = new URL(urlString);
   const component = router[url.pathname];
   if (!component) {
     console.error("no component found for", url);
@@ -72,72 +71,49 @@ export function onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, topicToPath: 
   // update topicToPath
   topicToPath[topic] = url.pathname;
 
+  // extract params, session and socket from payload
+  const { params: payloadParams, session: payloadSession, static: payloadStatic } = payload;
+
+  // TODO - use session from cookie
+  // const session = jwt.verify(payloadSession, signingSecret) as any;
+
   const phxSocket: PhxSocket = {
     id: topic,
     connected: true, // websocket is connected
-    ws,
+    ws, // the websocket
   }
+  // pass in phx_join payload params, session, and socket
+  let ctx = component.mount(payloadParams, {}, phxSocket);
 
-
-
-
-  let ctx = component.mount({}, {}, phxSocket);
-
-  // check if component has event handler
-  // this type of message goes to handleParams
+  // attempt to call handleParams if it exists
   if ((component as any).handleParams) {
+    // @ts-ignore - searchParams returns an entries but types are wrong
+    const urlParams = Object.fromEntries(url.searchParams);
     // @ts-ignore
-    ctx = component.handleParams(params, url, { id: topic });
+    const hpCtx = component.handleParams(urlParams, urlString, { id: topic });
+    // merge contexts
+    if (hpCtx) {
+      ctx = { ...ctx, ...hpCtx };
+    }
   }
 
-
+  // now render this component
   const view = component.render(ctx);
 
-  // map array of dynamics to object with indiceies as keys
-  const dynamics = view.dynamics.reduce((acc: { [key: number]: unknown }, cur, index: number) => {
-    acc[index] = cur;
-    return acc;
-  }, {} as { [key: number]: unknown })
-
-  const rendered: RenderedNode = {
-    ...dynamics,
-    s: view.statics
+  // send full view parts (statics & dynaimcs back)
+  const replyPayload = {
+    response: {
+      rendered: view.partsTree()
+    },
+    status: "ok"
   }
 
-  const reply: PhxReply = [
-    message[0],
-    message[1],
-    message[2],
-    "phx_reply",
-    {
-      response: {
-        rendered
-      },
-      status: "ok"
-    }
-  ]
-
-  const statics = rendered.s;
-  let html = statics[0];
-  for (let i = 1; i < statics.length; i++) {
-    html += rendered[i - 1] + statics[i];
-  }
-
-  // console.log(html)
-  // console.log("sending phx_reply", reply);
-  ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
-    if (err) {
-      console.error("error", err)
-    }
-  });
+  sendPhxReply(ws, newPhxReply(message, replyPayload));
 }
 
+
+
 export function onPhxLivePatch(ws: WebSocket, message: PhxLivePatchIncoming, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
-  // update context
-  // rerun render
-  // send back dynamics if they changed
-  // console.log('socket:', socket);
-  console.log('onPhxLivePatch event:', message);
 
   const [joinRef, messageRef, topic, event, payload] = message;
 
@@ -156,52 +132,31 @@ export function onPhxLivePatch(ws: WebSocket, message: PhxLivePatchIncoming, top
     return;
   }
 
-  const { url } = payload;
-  const parsedUrl = new URL(url);
+  const { url: urlString } = payload;
+  const url = new URL(urlString);
 
   // @ts-ignore - searchParams returns an entries but types are wrong
-  const params = Object.fromEntries(parsedUrl.searchParams);
+  const params = Object.fromEntries(url.searchParams);
   // TODO update types to have optional handleEvent???
   // alternatively have a abstract class defining empty handleParams?
   // @ts-ignore
-  const ctx = component.handleParams(params, url, { id: topic });
+  const ctx = component.handleParams(params, urlString, { id: topic });
 
   const view = component.render(ctx);
 
-  // map array of dynamics to object with indiceies as keys
-  const dynamics = view.dynamics.reduce((acc: { [key: number]: string }, cur: string, index: number) => {
-    acc[index] = cur;
-    return acc;
-  }, {} as { [key: string]: string })
+  const replyPayload = {
+    response: {
+      diff: {
+        ...view.partsTree(false)
+      }
+    },
+    status: "ok"
+  }
 
-  const reply: PhxReply = [
-    message[0],
-    message[1],
-    message[2],
-    "phx_reply",
-    {
-      response: {
-        diff: {
-          ...dynamics
-        }
-      },
-      status: "ok"
-    }
-  ]
-  console.log("sending phx_reply", reply);
-  ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
-    if (err) {
-      console.error("error", err)
-    }
-  });
+  sendPhxReply(ws, newPhxReply(message, replyPayload));
 }
 
 export function onPhxFormEvent(ws: WebSocket, message: PhxFormEvent, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
-  // update context
-  // rerun render
-  // send back dynamics if they changed
-  // console.log('socket:', socket);
-  console.log('onPhxFormEvent event:', message);
 
   const [joinRef, messageRef, topic, event, payload] = message;
 
@@ -223,44 +178,23 @@ export function onPhxFormEvent(ws: WebSocket, message: PhxFormEvent, topicToPath
   const params = new URLSearchParams(value);
   // TODO update types to have optional handleEvent???
   // @ts-ignore
-  const ctx = component.handleEvent(payload.event, Object.fromEntries(params), { id: topic });
+  const ctx = component.handleEvent(payloadEvent, Object.fromEntries(params), { id: topic });
 
   const view = component.render(ctx);
 
-  // map array of dynamics to object with indiceies as keys
-  const dynamics = view.dynamics.reduce((acc: { [key: number]: string }, cur: string, index: number) => {
-    acc[index] = cur;
-    return acc;
-  }, {} as { [key: string]: string })
+  const replyPayload = {
+    response: {
+      diff: {
+        ...view.partsTree(false)
+      }
+    },
+    status: "ok"
+  }
 
-  const reply: PhxReply = [
-    message[0],
-    message[1],
-    message[2],
-    "phx_reply",
-    {
-      response: {
-        diff: {
-          ...dynamics
-        }
-      },
-      status: "ok"
-    }
-  ]
-  console.log("sending phx_reply", reply);
-  ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
-    if (err) {
-      console.error("error", err)
-    }
-  });
+  sendPhxReply(ws, newPhxReply(message, replyPayload));
 }
 
 export function onPhxClickEvent(ws: WebSocket, message: PhxClickEvent, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
-  // update context
-  // rerun render
-  // send back dynamics if they changed
-  // console.log('socket:', socket);
-  console.log('event:', message);
 
   const [joinRef, messageRef, topic, event, payload] = message;
 
@@ -285,55 +219,22 @@ export function onPhxClickEvent(ws: WebSocket, message: PhxClickEvent, topicToPa
 
   const view = component.render(ctx);
 
-  // map array of dynamics to object with indiceies as keys
-  const dynamics = view.dynamics.reduce((acc: { [key: number]: string }, cur: string, index: number) => {
-    acc[index] = cur;
-    return acc;
-  }, {} as { [key: string]: string })
+  const replyPayload = {
+    response: {
+      diff: {
+        ...view.partsTree(false)
+      }
+    },
+    status: "ok"
+  }
 
-  const reply: PhxReply = [
-    message[0],
-    message[1],
-    message[2],
-    "phx_reply",
-    {
-      response: {
-        diff: {
-          ...dynamics
-        }
-      },
-      status: "ok"
-    }
-  ]
-  // console.log("sending phx_reply", reply);
-  ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
-    if (err) {
-      console.error("error", err)
-    }
-  });
+  sendPhxReply(ws, newPhxReply(message, replyPayload));
 }
 
-// @OnDisconnect()
-// disconnect(@ConnectedSocket() socket: any) {
-//   console.log('client disconnected');
-// }
-// }
 
-export function onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
-  // console.log("heartbeat", message);
-
-  const hbReply = newHeartbeatReply(message);
-
-  // console.log("sending hbReply", hbReply);
-  ws.send(JSON.stringify(hbReply), { binary: false }, (err: any) => {
-    if (err) {
-      console.error("error", err)
-    }
-  });
-}
 
 export function sendInternalMessage(socket: PhxSocket, component: LiveViewComponent<any>, event: any, payload?: any) {
-  console.log("internal message", event);
+
   // check if component has event handler
   if (!(component as any).handleInfo) {
     console.warn("no info handler for component", component);
@@ -345,23 +246,47 @@ export function sendInternalMessage(socket: PhxSocket, component: LiveViewCompon
 
   const view = component.render(ctx);
 
-  // map array of dynamics to object with indiceies as keys
-  const dynamics = view.dynamics.reduce((acc: { [key: number]: string }, cur: string, index: number) => {
-    acc[index] = cur;
-    return acc;
-  }, {} as { [key: string]: string })
-
   const reply: PhxDiffReply = [
-    null,
-    null,
+    null, // no join reference
+    null, // no message reference
     socket.id,
     "diff",
-    { ...dynamics }
+    view.partsTree(false) as any
   ]
-  console.log("sending internal message phx_reply", reply);
-  socket.ws!.send(JSON.stringify(reply), { binary: false }, (err: any) => {
+
+  sendPhxReply(socket.ws!, reply);
+}
+
+export function onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
+  // TODO keep track of last heartbeat and disconnect if no heartbeat for a while?
+  sendPhxReply(ws, newHeartbeatReply(message));
+}
+
+function newPhxReply(from: PhxIncomingMessage<unknown>, payload: any): PhxReply {
+  return [
+    from[0],
+    from[1],
+    from[2],
+    "phx_reply",
+    payload
+  ]
+}
+
+
+function sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {
+  ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
     if (err) {
-      console.error("error", err)
+      console.error("error", err);
     }
   });
+}
+
+
+function printHtml(rendered: RenderedNode) {
+  const statics = rendered.s;
+  let html = statics[0];
+  for (let i = 1; i < statics.length; i++) {
+    html += rendered[i - 1] + statics[i];
+  }
+  console.log("html:\n", html);
 }

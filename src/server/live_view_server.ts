@@ -12,7 +12,7 @@ import path from "path";
 // extend / define session interface
 declare module 'express-session' {
   interface SessionData {
-      csrfToken: string;
+    csrfToken: string;
   }
 }
 
@@ -29,7 +29,7 @@ export class LiveViewServer {
   private rootView: string = "index.html.ejs";
   private viewsPath: string = path.join(__dirname, "..", "..", "src", "server", "web", "views");
   private signingSecret: string = nanoid();
-  private sessionStore:session.Store = new MemoryStore();
+  private sessionStore: session.Store = new MemoryStore();
 
   private _router: LiveViewRouter = {};
 
@@ -65,15 +65,17 @@ export class LiveViewServer {
 
     // register websocket server ws requests
     wsServer.on('connection', socket => {
+
       // handle ws messages
       socket.on('message', message => {
         onMessage(socket, message, this._topicToPath, this._router);
       });
     });
 
-    httpServer.listen(this.port,  () => {
+    httpServer.listen(this.port, () => {
       console.log(`LiveView App is listening on port ${this.port} !`)
     })
+
   }
 
   private buildExpressApp() {
@@ -92,7 +94,7 @@ export class LiveViewServer {
       resave: false,
       rolling: true,
       saveUninitialized: true,
-      cookie: {secure: process.env.NODE_ENV === "production"},
+      cookie: { secure: process.env.NODE_ENV === "production" },
       store: this.sessionStore,
     }))
 
@@ -121,7 +123,7 @@ export class LiveViewServer {
       const view = component.render(ctx);
 
       // lookup / gen csrf token for this session
-      if(!req.session.csrfToken) {
+      if (!req.session.csrfToken) {
         req.session.csrfToken = nanoid();
       }
 

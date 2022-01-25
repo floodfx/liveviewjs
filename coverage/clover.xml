@@ -1,14 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1642888960109" clover="3.2.0">
-  <project timestamp="1642888960109" name="All files">
-    <metrics statements="5" coveredstatements="4" conditionals="1" coveredconditionals="0" methods="2" coveredmethods="2" elements="8" coveredelements="6" complexity="0" loc="5" ncloc="5" packages="1" files="1" classes="1"/>
-    <file name="data.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs-poc/src/server/live/autocomplete/data.ts">
-      <metrics statements="5" coveredstatements="4" conditionals="1" coveredconditionals="0" methods="2" coveredmethods="2"/>
-      <line num="3" count="1" type="stmt"/>
-      <line num="4" count="1" type="cond" truecount="0" falsecount="1"/>
-      <line num="5" count="0" type="stmt"/>
-      <line num="7" count="1001" type="stmt"/>
-      <line num="10" count="1" type="stmt"/>
+<coverage generated="1643089012034" clover="3.2.0">
+  <project timestamp="1643089012034" name="All files">
+    <metrics statements="45" coveredstatements="43" conditionals="17" coveredconditionals="16" methods="14" coveredmethods="12" elements="76" coveredelements="71" complexity="0" loc="45" ncloc="45" packages="1" files="1" classes="1"/>
+    <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/templates/index.ts">
+      <metrics statements="45" coveredstatements="43" conditionals="17" coveredconditionals="16" methods="14" coveredmethods="12"/>
+      <line num="8" count="1" type="stmt"/>
+      <line num="19" count="1" type="stmt"/>
+      <line num="21" count="1" type="stmt"/>
+      <line num="23" count="1" type="stmt"/>
+      <line num="24" count="4" type="cond" truecount="2" falsecount="1"/>
+      <line num="25" count="0" type="stmt"/>
+      <line num="27" count="4" type="cond" truecount="1" falsecount="0"/>
+      <line num="28" count="2" type="stmt"/>
+      <line num="31" count="2" type="stmt"/>
+      <line num="34" count="1" type="stmt"/>
+      <line num="35" count="0" type="stmt"/>
+      <line num="39" count="35" type="cond" truecount="1" falsecount="0"/>
+      <line num="40" count="9" type="stmt"/>
+      <line num="42" count="26" type="cond" truecount="1" falsecount="0"/>
+      <line num="43" count="1" type="stmt"/>
+      <line num="45" count="25" type="stmt"/>
+      <line num="48" count="1" type="stmt"/>
+      <line num="54" count="35" type="stmt"/>
+      <line num="55" count="35" type="stmt"/>
+      <line num="59" count="8" type="stmt"/>
+      <line num="60" count="18" type="cond" truecount="1" falsecount="0"/>
+      <line num="61" count="2" type="stmt"/>
+      <line num="63" count="16" type="cond" truecount="1" falsecount="0"/>
+      <line num="64" count="3" type="stmt"/>
+      <line num="67" count="13" type="stmt"/>
+      <line num="73" count="22" type="cond" truecount="1" falsecount="0"/>
+      <line num="74" count="10" type="stmt"/>
+      <line num="79" count="12" type="stmt"/>
+      <line num="80" count="48" type="cond" truecount="2" falsecount="0"/>
+      <line num="81" count="9" type="stmt"/>
+      <line num="85" count="39" type="cond" truecount="2" falsecount="0"/>
+      <line num="87" count="4" type="cond" truecount="2" falsecount="0"/>
+      <line num="88" count="2" type="stmt"/>
+      <line num="95" count="8" type="stmt"/>
+      <line num="98" count="8" type="stmt"/>
+      <line num="99" count="2" type="stmt"/>
+      <line num="105" count="35" type="stmt"/>
+      <line num="112" count="12" type="cond" truecount="1" falsecount="0"/>
+      <line num="113" count="4" type="stmt"/>
+      <line num="115" count="12" type="stmt"/>
+      <line num="119" count="22" type="stmt"/>
+      <line num="120" count="35" type="stmt"/>
+      <line num="121" count="35" type="stmt"/>
+      <line num="127" count="1" type="stmt"/>
+      <line num="128" count="30" type="stmt"/>
     </file>
   </project>
 </coverage>

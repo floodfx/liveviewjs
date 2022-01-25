@@ -41,9 +41,10 @@ export type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
 export type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
 export type PhxLivePatchIncoming = PhxIncomingMessage<{ url: string }>;
 
-export type Dynamics = { [key: number]: string | Dynamics }
 
-export type RenderedNode = { [key: number]: string | RenderedNode } & { [key in "s"]: readonly string[] }
+export type Dynamics = { [key: string]: string | Dynamics }
+
+export type RenderedNode = { [key: string]: string | RenderedNode } & { [key in "s"]: readonly string[] }
 
 export interface PhxReplyPayload {
   response: {
