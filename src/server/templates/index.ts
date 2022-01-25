@@ -1,4 +1,4 @@
-// COPIED from https://github.com/Janpot/escape-html-template-tag/blob/master/src/index.ts
+// Initially copied from https://github.com/Janpot/escape-html-template-tag/blob/master/src/index.ts
 // This is a modified version of escape-html-template-tag that builds a tree
 // of statics and dynamics that can be used to render the template.
 //
@@ -27,11 +27,8 @@ export function join(array: (string | HtmlSafeString)[], separator: string | Htm
   if (array.length <= 0) {
     return new HtmlSafeString([''], [])
   }
-  return new HtmlSafeString(['', ...Array(array.length - 1).fill(separator), ''], array)
-}
 
-export function safe(value: unknown) {
-  return new HtmlSafeString([String(value)], [])
+  return new HtmlSafeString(['', ...Array(array.length - 1).fill(separator), ''], array)
 }
 
 function escapehtml(unsafe: unknown): string {
@@ -54,17 +51,51 @@ export class HtmlSafeString {
     this._dynamics = dynamics
   }
 
-  get dynamics(): readonly string[] {
-    return this._dynamics.map((d) => {
-      if (d instanceof HtmlSafeString) {
-        return d.toString()
+  partsTree(includeStatics: boolean = true): { [key: string]: unknown } {
+    // if only statics, return just the statics
+    if (this._dynamics.length === 0) {
+      return {
+        s: this.statics
       }
-
-      if (Array.isArray(d)) {
-        return join(d, '').toString()
+    }
+    // else walk the dynamics and build the parts tree
+    const parts = this._dynamics.reduce((acc: { [key: string]: unknown }, cur: unknown, index: number) => {
+      if (cur instanceof HtmlSafeString) {
+        return {
+          ...acc,
+          [`${index}`]: cur.partsTree() // recurse to children
+        }
+      } else if (Array.isArray(cur)) {
+        // if array is empty just return empty string
+        if (cur.length === 0) {
+          return {
+            ...acc,
+            [`${index}`]: ""
+          }
+        }
+        else {
+          // collect all the dynamic partsTrees
+          const d = cur.map(c => Object.values(c.partsTree(false)))
+          // we know the statics are the same for all the children
+          // so we can just take the first one
+          const s = cur.map(c => c.statics)[0]
+          return {
+            ...acc,
+            [`${index}`]: { d, s }
+          }
+        }
+      } else {
+        return {
+          ...acc,
+          [`${index}`]: String(cur)
+        }
       }
-      return String(d)
-    })
+    }, {} as { [key: string]: unknown })
+    // appends the statics to the parts tree
+    if (includeStatics) {
+      parts["s"] = this.statics;
+    }
+    return parts
   }
 
   toString(): string {
@@ -74,11 +105,8 @@ export class HtmlSafeString {
     })
   }
 
-  [inspect]() {
-    return `HtmlSafeString '${this.toString()}'`
-  }
 }
 
-export default function escapeHtml(statics: TemplateStringsArray, ...dynamics: unknown[]) {
+export default function html(statics: TemplateStringsArray, ...dynamics: unknown[]) {
   return new HtmlSafeString(statics, dynamics)
 }

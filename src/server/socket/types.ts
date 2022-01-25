@@ -41,20 +41,21 @@ export type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
 export type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
 export type PhxLivePatchIncoming = PhxIncomingMessage<{ url: string }>;
 
-export type Dynamics = { [key: number]: string | Dynamics }
 
-export type RenderedNode = { [key: number]: string | RenderedNode } & { [key in "s"]: readonly string[] }
+export type Diff = { [key: string]: string | Diff }
+
+export type RenderedNode = { [key: string]: string | RenderedNode } & { [key in "s"]: readonly string[] }
 
 export interface PhxReplyPayload {
   response: {
     rendered?: RenderedNode
-    diff?: Dynamics
+    diff?: Diff
   }
   status: "ok"
 }
 
 export type PhxReply = PhxOutgoingMessage<PhxReplyPayload>;
-export type PhxDiffReply = PhxOutgoingMessage<Dynamics>;
+export type PhxDiffReply = PhxOutgoingMessage<Diff>;
 
 export interface PhxEventPayload<Type extends string, Value> {
   type: Type,

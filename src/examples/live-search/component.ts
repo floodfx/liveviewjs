@@ -1,4 +1,4 @@
-import escapeHtml from "../../server/templates";
+import html from "../../server/templates";
 import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../../server/types";
 import { PhxSocket } from "../../server/socket/types";
 import { sendInternalMessage } from "../../server/socket/message_router";
@@ -18,30 +18,30 @@ const idToWs = new Map<string, WebSocket>();
 export class SearchLiveViewComponent implements
   LiveViewComponent<SearchContext>,
   LiveViewExternalEventListener<SearchContext, "zip-search", Pick<SearchContext, "zip">>,
-  LiveViewInternalEventListener<SearchContext, {type: "run_zip_search", zip: string}>
-  {
+  LiveViewInternalEventListener<SearchContext, { type: "run_zip_search", zip: string }>
+{
 
   mount(params: any, session: any, socket: PhxSocket) {
-    if(socket.connected) {
+    if (socket.connected) {
       // TODO handle disconnect
       idToWs.set(socket.id, socket.ws!);
     }
     const zip = "";
     const stores: Store[] = [];
     const loading = false
-    return { data: { zip, stores, loading} };
+    return { data: { zip, stores, loading } };
   };
 
   renderStoreStatus(store: Store) {
     if (store.open) {
-      return escapeHtml`<span class="open">🔓 Open</span>`;
+      return html`<span class="open">🔓 Open</span>`;
     } else {
-      return escapeHtml`<span class="closed">🔐 Closed</span>`;
+      return html`<span class="closed">🔐 Closed</span>`;
     }
   };
 
-  renderStore(store:Store) {
-    return escapeHtml`
+  renderStore(store: Store) {
+    return html`
     <li>
       <div class="first-line">
         <div class="name">
@@ -63,7 +63,7 @@ export class SearchLiveViewComponent implements
   }
 
   renderLoading() {
-    return escapeHtml`
+    return html`
       <div class="loader">
         Loading...
       </div>
@@ -71,7 +71,7 @@ export class SearchLiveViewComponent implements
   }
 
   render(context: LiveViewContext<SearchContext>) {
-    return escapeHtml`
+    return html`
     <h1>Find a Store</h1>
     <div id="search">
 
@@ -79,36 +79,36 @@ export class SearchLiveViewComponent implements
         <input type="text" name="zip" value="${context.data.zip}"
               placeholder="Zip Code"
               autofocus autocomplete="off"
-              ${ context.data.loading ? "readonly" : ""} />
+              ${context.data.loading ? "readonly" : ""} />
 
         <button type="submit">
           🔎
         </button>
       </form>
 
-      ${ context.data.loading ? this.renderLoading() : "" }
+      ${context.data.loading ? this.renderLoading() : ""}
 
       <div class="stores">
         <ul>
-          ${ context.data.stores.map(store => this.renderStore(store))}
+          ${context.data.stores.map(store => this.renderStore(store))}
         </ul>
       </div>
     </div>
     `
   };
 
-  handleEvent(event: "zip-search", params: {zip: string}, socket: PhxSocket) {
+  handleEvent(event: "zip-search", params: { zip: string }, socket: PhxSocket) {
     console.log("event:", event, params, socket);
     const { zip } = params;
     // wait a second to send the message
     setTimeout(() => {
-      sendInternalMessage(socket, this, {type: "run_zip_search", zip });
+      sendInternalMessage(socket, this, { type: "run_zip_search", zip });
     }, 1000);
 
-    return { data: { zip, stores:[], loading: true } };
+    return { data: { zip, stores: [], loading: true } };
   }
 
-  handleInfo(event: {type: "run_zip_search", zip: string}, socket: PhxSocket){
+  handleInfo(event: { type: "run_zip_search", zip: string }, socket: PhxSocket) {
     // lookup websocekt by id
     socket.ws = idToWs.get(socket.id);
     // console.log("run_zip_search:", event, socket);
@@ -126,7 +126,7 @@ export class SearchLiveViewComponent implements
 }
 
 function calculateLicenseAmount(seats: number): number {
-  if(seats <= 5) {
+  if (seats <= 5) {
     return seats * 20;
   } else {
     return 100 + (seats - 5) * 15;

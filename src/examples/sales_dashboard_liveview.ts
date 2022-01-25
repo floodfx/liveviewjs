@@ -1,4 +1,4 @@
-import escapeHtml from "../server/templates";
+import html from "../server/templates";
 import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../server/types";
 import { PhxSocket } from "../server/socket/types";
 import { numberToCurrency } from "./utils";
@@ -24,10 +24,10 @@ export class SalesDashboardLiveViewComponent implements
   LiveViewComponent<SalesDashboardContext>,
   LiveViewExternalEventListener<SalesDashboardContext, "refresh", any>,
   LiveViewInternalEventListener<SalesDashboardContext, "tick">
-  {
+{
 
   mount(params: any, session: any, socket: PhxSocket) {
-    if(socket.connected) {
+    if (socket.connected) {
       // TODO clean up interval on unmount
       const intervalId = setInterval(() => {
         sendInternalMessage(socket, this, "tick");
@@ -41,7 +41,7 @@ export class SalesDashboardLiveViewComponent implements
   };
 
   render(context: LiveViewContext<SalesDashboardContext>) {
-    return escapeHtml`
+    return html`
     <h1>Sales Dashboard</h1>
     <div id="dashboard">
       <div class="stats">
@@ -55,7 +55,7 @@ export class SalesDashboardLiveViewComponent implements
         </div>
         <div class="stat">
           <span class="value">
-            ${ numberToCurrency(context.data.salesAmount)}
+            ${numberToCurrency(context.data.salesAmount)}
           </span>
           <span class="name">
             Sales Amount
