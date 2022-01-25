@@ -19,9 +19,7 @@ This is still in very early PoC territory.  You probably shouldn't put this into
 ### Show me some code! ⌨️
 **Step 1** Implement a `LiveViewComponent`
 ```ts
-import escapeHtml from "../server/templates";
-import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../server/types";
-import { PhxSocket } from "../server/socket/types";
+import {html, LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener,PhxSocket } from "liveviewjs";
 
 // define your component's data shape
 export interface LightContext {
@@ -51,11 +49,11 @@ export class LightLiveViewComponent implements
 
   // define and render the HTML for your LiveViewComponent
   render(context: LiveViewContext<LightContext>) {
-    // the `escapeHtml` function is a tagged template literal that
+    // the `html` function is a tagged template literal that
     // allows LiveView to send back only the data that has changed
     // based on user events - note the `phx-click` bindings on the
     // buttons in the template
-    return escapeHtml`
+    return html`
     <div id="light">
       <h1>Front Porch Light</h1>
       <div class="meter">
