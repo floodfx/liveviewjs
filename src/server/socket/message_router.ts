@@ -11,7 +11,6 @@ export class MessageRouter {
   heartbeatRouter: { [key: string]: LiveViewComponentManager } = {};
 
   onMessage(ws: WebSocket, message: WebSocket.RawData, router: LiveViewRouter, connectionId: string, signingSecret: string) {
-    console.log('connectionId', connectionId);
     // parse string to JSON
     const rawPhxMessage: PhxIncomingMessage<unknown> = JSON.parse(message.toString());
 
@@ -60,7 +59,6 @@ export class MessageRouter {
       const cm = this.topicComponentManager[key];
       if (!cm.isHealthy()) {
         cm.shutdown()
-        console.log("deleting", key, " from topicComponentManager");
         delete this.topicComponentManager[key];
       }
     })
@@ -70,7 +68,6 @@ export class MessageRouter {
       const cm = this.heartbeatRouter[key];
       if (!cm.isHealthy()) {
         cm.shutdown()
-        console.log("deleting", key, " from heartbeatRouter");
         delete this.heartbeatRouter[key];
       }
     })
@@ -89,16 +86,10 @@ export class MessageRouter {
       return;
     }
 
-    // TODO - iterate through other component managers and detect dead ones via heartbeat
-    // remove from heartbeat and topic routers
-
     const componentManager = new LiveViewComponentManager(component, signingSecret);
     this.topicComponentManager[topic] = componentManager;
     this.heartbeatRouter[connectionId] = componentManager;
     componentManager.handleJoin(ws, message);
-
-    console.log("heartbeatRouter", Object.keys(this.heartbeatRouter));
-    console.log("topicComponentManager", Object.keys(this.topicComponentManager));
 
   }
 

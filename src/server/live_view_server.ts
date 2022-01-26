@@ -4,7 +4,7 @@ import http, { Server, createServer } from 'http';
 import express from "express";
 import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";
-import session, { MemoryStore } from "express-session";
+import session, { MemoryStore, SessionData } from "express-session";
 import path from "path";
 import { LiveViewComponentManager } from "./socket/component_manager";
 import { MessageRouter } from "./socket/message_router";
@@ -127,6 +127,10 @@ export class LiveViewServer {
         req.session.csrfToken = nanoid();
       }
 
+      const jwtPayload: Partial<SessionData> = {
+        csrfToken: req.session.csrfToken,
+      }
+
       // mount and render component if found
       const ctx = component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, {}, liveViewSocket);
       const view = component.render(ctx);
@@ -136,7 +140,7 @@ export class LiveViewServer {
         page_title: "Live View",
         csrf_meta_tag: req.session.csrfToken,
         liveViewId,
-        session: jwt.sign(JSON.stringify(req.session), this.signingSecret),
+        session: jwt.sign(jwtPayload, this.signingSecret),
         statics: jwt.sign(JSON.stringify(view.statics), this.signingSecret),
         inner_content: view.toString()
       })
