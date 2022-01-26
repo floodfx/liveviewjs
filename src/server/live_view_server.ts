@@ -33,8 +33,6 @@ export class LiveViewServer {
 
   private _router: LiveViewRouter = {};
 
-  private _topicToPath: { [key: string]: string } = {};
-
   constructor(options: Partial<LiveViewServerOptions>) {
     this.port = options.port ?? this.port;
     this.rootView = options.rootView ?? this.rootView;
@@ -69,7 +67,7 @@ export class LiveViewServer {
       const connectionId = nanoid();
       // handle ws messages
       socket.on('message', message => {
-        onMessage(socket, message, this._topicToPath, this._router, connectionId, this.signingSecret);
+        onMessage(socket, message, this._router, connectionId, this.signingSecret);
       });
     });
 

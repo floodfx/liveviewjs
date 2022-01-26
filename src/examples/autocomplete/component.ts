@@ -3,8 +3,7 @@ import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalE
 import { sendInternalMessage } from "../../server/socket/message_router";
 import { WebSocket } from "ws";
 import { searchByCity, searchByZip, Store } from "../live-search/data";
-import { listCities, suggest } from "./data";
-
+import { suggest } from "./data";
 
 export interface AutocompleteContext {
   zip: string;
@@ -149,17 +148,6 @@ export class AutocompleteLiveViewComponent extends BaseLiveViewComponent<Autocom
       return { zip: "", city: "", stores: [], matches: [], loading: false };
     }
   }
-
-  // handleEvent(event: "suggest-city", params: {zip: string}, socket: PhxSocket) {
-  //   console.log("event:", event, params, socket);
-  //   const { zip } = params;
-  //   // wait a second to send the message
-  //   setTimeout(() => {
-  //     sendInternalMessage(socket, this, {type: "run_zip_search", zip });
-  //   }, 1000);
-
-  //   return { data: { zip, city: "", stores:[], matches:[], loading: true } };
-  // }
 
   handleInfo(event: { type: "run_zip_search", zip: string } | { type: "run_city_search", city: string }, socket: LiveViewSocket<AutocompleteContext>) {
 

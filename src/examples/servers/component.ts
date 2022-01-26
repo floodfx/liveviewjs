@@ -11,8 +11,6 @@ export interface ServersContext {
   selectedServer: Server
 }
 
-const idToWs = new Map<string, WebSocket>();
-
 export class ServersLiveViewComponent extends BaseLiveViewComponent<ServersContext, { id: string }> {
 
 
@@ -23,7 +21,6 @@ export class ServersLiveViewComponent extends BaseLiveViewComponent<ServersConte
   }
 
   handleParams(params: { id: string; }, url: string, socket: LiveViewSocket<ServersContext>): ServersContext {
-    console.log("params", params);
     const servers = listServers();
     const selectedServer = servers.find(server => server.id === params.id) || servers[0];
     return { servers, selectedServer };
@@ -31,7 +28,6 @@ export class ServersLiveViewComponent extends BaseLiveViewComponent<ServersConte
 
   render(context: ServersContext): LiveViewTemplate {
     const { servers, selectedServer } = context;
-    console.log("rendering servers", servers, selectedServer);
     return html`
     <h1>Servers</h1>
     <div id="servers">
