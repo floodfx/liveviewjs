@@ -1,32 +1,24 @@
 import html from "../server/templates";
-import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../server/types";
-import { PhxSocket } from "../server/socket/types";
+import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewSocket } from "../server/types";
 import { numberToCurrency } from "./utils";
-import { LightContext } from "./light_liveview";
 
 export interface LicenseContext {
   seats: number;
   amount: number;
 }
 
-const _db: { [key: string]: LicenseContext } = {};
-
-export class LicenseLiveViewComponent implements
-  LiveViewComponent<LicenseContext>,
+export class LicenseLiveViewComponent extends BaseLiveViewComponent<LicenseContext, unknown> implements
   LiveViewExternalEventListener<LicenseContext, "update", Pick<LicenseContext, "seats">>
 {
 
-
-  mount(params: any, session: any, socket: PhxSocket) {
+  mount(params: any, session: any, socket: LiveViewSocket<LicenseContext>) {
     // store this somewhere durable
     const seats = 2;
     const amount = calculateLicenseAmount(seats);
-    const ctx: LicenseContext = { seats, amount };
-    _db[socket.id] = ctx;
-    return { data: ctx };
+    return { seats, amount };
   };
 
-  render(context: LiveViewContext<LicenseContext>) {
+  render(context: LicenseContext) {
     return html`
     <h1>Team License</h1>
     <div id="license">
@@ -36,17 +28,17 @@ export class LicenseLiveViewComponent implements
             🪑
             <span>
               Your license is currently for
-              <strong>${context.data.seats}</strong> seats.
+              <strong>${context.seats}</strong> seats.
             </span>
           </div>
 
           <form phx-change="update">
             <input type="range" min="1" max="10"
-                  name="seats" value="${context.data.seats}" />
+                  name="seats" value="${context.seats}" />
           </form>
 
           <div class="amount">
-            ${numberToCurrency(context.data.amount)}
+            ${numberToCurrency(context.amount)}
           </div>
         </div>
       </div>
@@ -54,11 +46,11 @@ export class LicenseLiveViewComponent implements
     `
   };
 
-  handleEvent(event: "update", params: { seats: number }, socket: PhxSocket) {
+  handleEvent(event: "update", params: { seats: number }, socket: LiveViewSocket<LicenseContext>) {
     // console.log("event:", event, params, socket);
     const { seats } = params;
     const amount = calculateLicenseAmount(seats);
-    return { data: { seats, amount } };
+    return { seats, amount };
   }
 
 }

@@ -1,6 +1,5 @@
 import html from "../server/templates";
-import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../server/types";
-import { PhxSocket } from "../server/socket/types";
+import { BaseLiveViewComponent, LiveViewComponent, LiveViewExternalEventListener, LiveViewSocket } from "../server/types";
 
 export interface LightContext {
   brightness: number;
@@ -8,28 +7,23 @@ export interface LightContext {
 
 export type LightEvent = "on" | "off" | "up" | "down";
 
-const _db: { [key: string]: LightContext } = {};
-
-export class LightLiveViewComponent implements
-  LiveViewComponent<LightContext>,
+export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, never> implements
+  LiveViewComponent<LightContext, never>,
   LiveViewExternalEventListener<LightContext, "on", any>,
   LiveViewExternalEventListener<LightContext, "off", any> {
 
 
-  mount(params: any, session: any, socket: PhxSocket) {
-    // store this somewhere durable
-    const ctx: LightContext = { brightness: 10 };
-    _db[socket.id] = ctx;
-    return { data: ctx };
+  mount(params: any, session: any, socket: LiveViewSocket<LightContext>) {
+    return { brightness: 10 };
   };
 
-  render(context: LiveViewContext<LightContext>) {
+  render(context: LightContext) {
     return html`
     <div id="light">
       <h1>Front Porch Light</h1>
       <div class="meter">
-        <span style="width: ${context.data.brightness} %>%">
-          ${context.data.brightness}%
+        <span style="width: ${context.brightness} %>%">
+          ${context.brightness}%
         </span>
       </div>
 
@@ -52,9 +46,8 @@ export class LightLiveViewComponent implements
     `
   };
 
-  handleEvent(event: LightEvent, params: any, socket: PhxSocket) {
-    const ctx = _db[socket.id];
-    console.log("event:", event, socket, ctx);
+  handleEvent(event: LightEvent, params: any, socket: LiveViewSocket<LightContext>) {
+    const ctx: LightContext = { brightness: socket.context.brightness };
     switch (event) {
       case 'off':
         ctx.brightness = 0;
@@ -69,8 +62,7 @@ export class LightLiveViewComponent implements
         ctx.brightness = Math.max(ctx.brightness - 10, 0);
         break;
     }
-    _db[socket.id] = ctx;
-    return { data: ctx };
+    return ctx;
   }
 
 }

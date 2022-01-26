@@ -1,13 +1,14 @@
-import { LiveViewComponent, LiveViewRouter } from "./types";
+import { LiveViewComponent, LiveViewRouter, LiveViewSocket } from "./types";
 import WebSocket from 'ws';
 import http, { Server, createServer } from 'http';
 import express from "express";
-import { PhxSocket } from "./socket/types";
 import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";
-import { onMessage } from "./socket/message_router";
 import session, { MemoryStore } from "express-session";
 import path from "path";
+import { LiveViewComponentManager } from "./socket/component_manager";
+import { MessageRouter } from "./socket/message_router";
+
 
 // extend / define session interface
 declare module 'express-session' {
@@ -32,8 +33,7 @@ export class LiveViewServer {
   private sessionStore: session.Store = new MemoryStore();
 
   private _router: LiveViewRouter = {};
-
-  private _topicToPath: { [key: string]: string } = {};
+  private messageRouter = new MessageRouter()
 
   constructor(options: Partial<LiveViewServerOptions>) {
     this.port = options.port ?? this.port;
@@ -47,7 +47,7 @@ export class LiveViewServer {
     this._router = { ...this._router, ...router };
   }
 
-  registerLiveViewRoute(path: string, component: LiveViewComponent<any>) {
+  registerLiveViewRoute(path: string, component: LiveViewComponent<unknown, unknown>) {
     this._router[path] = component;
   }
 
@@ -66,9 +66,10 @@ export class LiveViewServer {
     // register websocket server ws requests
     wsServer.on('connection', socket => {
 
+      const connectionId = nanoid();
       // handle ws messages
       socket.on('message', message => {
-        onMessage(socket, message, this._topicToPath, this._router);
+        this.messageRouter.onMessage(socket, message, this._router, connectionId, this.signingSecret);
       });
     });
 
@@ -106,9 +107,12 @@ export class LiveViewServer {
 
       // new LiveViewId per HTTP requess?
       const liveViewId = nanoid(); // TODO allow option for id generator?
-      const phxSocket: PhxSocket = {
+      const liveViewSocket: LiveViewSocket<unknown> = {
         id: liveViewId,
         connected: false, // ws socket not connected on http request
+        context: {},
+        sendInternal: () => { },
+        repeat: () => { },
       }
 
       // look up component for route
@@ -118,14 +122,14 @@ export class LiveViewServer {
         return;
       }
 
-      // mount and render component if found
-      const ctx = component.mount({}, {}, phxSocket);
-      const view = component.render(ctx);
-
       // lookup / gen csrf token for this session
       if (!req.session.csrfToken) {
         req.session.csrfToken = nanoid();
       }
+
+      // mount and render component if found
+      const ctx = component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, {}, liveViewSocket);
+      const view = component.render(ctx);
 
       // render the view with all the data
       res.render("index.html.ejs", {
