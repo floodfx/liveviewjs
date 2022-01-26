@@ -7,6 +7,7 @@ export interface LiveViewSocket<T> {
   context: T;
   ws?: WebSocket;
   sendInternal: (event: unknown) => void;
+  repeat: (fn: () => void, intervalMillis: number) => void;
 }
 
 export interface LiveViewTemplate extends HtmlSafeString {

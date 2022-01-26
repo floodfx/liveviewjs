@@ -4,10 +4,11 @@ import http, { Server, createServer } from 'http';
 import express from "express";
 import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";
-import { onMessage } from "./socket/message_router";
 import session, { MemoryStore } from "express-session";
 import path from "path";
 import { LiveViewComponentManager } from "./socket/component_manager";
+import { MessageRouter } from "./socket/message_router";
+
 
 // extend / define session interface
 declare module 'express-session' {
@@ -32,6 +33,7 @@ export class LiveViewServer {
   private sessionStore: session.Store = new MemoryStore();
 
   private _router: LiveViewRouter = {};
+  private messageRouter = new MessageRouter()
 
   constructor(options: Partial<LiveViewServerOptions>) {
     this.port = options.port ?? this.port;
@@ -67,7 +69,7 @@ export class LiveViewServer {
       const connectionId = nanoid();
       // handle ws messages
       socket.on('message', message => {
-        onMessage(socket, message, this._router, connectionId, this.signingSecret);
+        this.messageRouter.onMessage(socket, message, this._router, connectionId, this.signingSecret);
       });
     });
 
@@ -110,6 +112,7 @@ export class LiveViewServer {
         connected: false, // ws socket not connected on http request
         context: {},
         sendInternal: () => { },
+        repeat: () => { },
       }
 
       // look up component for route

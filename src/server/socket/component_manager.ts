@@ -8,6 +8,9 @@ export class LiveViewComponentManager {
   private context: unknown;
   private component: LiveViewComponent<unknown, unknown>;
   private signingSecret: string;
+  private intervals: NodeJS.Timeout[] = [];
+  private lastHeartbeat: number = Date.now();
+  private socketIsClosed: boolean = false;
 
   constructor(component: LiveViewComponent<unknown, unknown>, signingSecret: string) {
     this.component = component;
@@ -52,7 +55,7 @@ export class LiveViewComponentManager {
   }
 
   onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming) {
-    // TODO keep track of last heartbeat and disconnect if no heartbeat for a while?
+    this.lastHeartbeat = Date.now();
     this.sendPhxReply(ws, newHeartbeatReply(message));
   }
 
@@ -120,6 +123,24 @@ export class LiveViewComponentManager {
     this.sendPhxReply(ws, newPhxReply(message, replyPayload));
   }
 
+  repeat(fn: () => void, intervalMillis: number) {
+    this.intervals.push(setInterval(fn, intervalMillis));
+  }
+
+  shutdown() {
+    this.intervals.forEach(clearInterval);
+  }
+
+  isHealthy() {
+    if (this.socketIsClosed) {
+      return false;
+    } else {
+      const now = Date.now();
+      const diff = now - this.lastHeartbeat;
+      return diff < 60000;
+    }
+  }
+
   private sendInternal(ws: WebSocket, event: any, topic: string): void {
     // console.log("sendInternal", event);
 
@@ -151,13 +172,20 @@ export class LiveViewComponentManager {
       ws, // the websocket
       context: this.context,
       sendInternal: (event) => this.sendInternal(ws, event, topic),
+      repeat: (fn, intervalMillis) => this.repeat(fn, intervalMillis),
     }
   }
 
   private sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {
     ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
       if (err) {
-        console.error("error", err);
+        if (ws.CLOSED) {
+          this.socketIsClosed = true;
+          this.shutdown();
+          console.error("socket is closed", err, "...shutting down topic", reply[2], "for component", this.component);
+        } else {
+
+        }
       }
     });
   }

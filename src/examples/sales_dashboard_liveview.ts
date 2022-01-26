@@ -25,8 +25,7 @@ export class SalesDashboardLiveViewComponent extends BaseLiveViewComponent<Sales
 
   mount(params: any, session: any, socket: LiveViewSocket<SalesDashboardContext>): SalesDashboardContext {
     if (socket.connected) {
-      // TODO clean up interval on unmount
-      const intervalId = setInterval(() => {
+      socket.repeat(() => {
         socket.sendInternal("tick");
       }, 1000);
     }
@@ -66,7 +65,7 @@ export class SalesDashboardLiveViewComponent extends BaseLiveViewComponent<Sales
         </div>
       </div>
       <button phx-click="refresh">
-        <img src="images/refresh.svg" />
+        ↻
         Refresh
       </button>
     </div>
