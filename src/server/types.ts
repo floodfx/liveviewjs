@@ -6,11 +6,8 @@ export interface LiveViewSocket<T> {
   connected: boolean; // true for websocket, false for http request
   context: T;
   ws?: WebSocket;
+  sendInternal: (event: unknown) => void;
 }
-
-// export interface LiveViewContext<T> {
-//   data: T;
-// }
 
 export interface LiveViewTemplate extends HtmlSafeString {
 }
@@ -28,18 +25,18 @@ export interface LiveViewComponent<T, P> {
 
   mount(params: LiveViewMountParams, session: LiveViewSessionParams, socket: LiveViewSocket<T>): T;
   render(context: T): LiveViewTemplate;
-  handleParams(params: P, url: string, socket: LiveViewSocket<T>): Partial<T>;
+  handleParams(params: P, url: string, socket: LiveViewSocket<T>): T;
 
 }
 
 // TODO: support event returing Partial<T>?
 export interface LiveViewExternalEventListener<T, E extends string, P> {
-  handleEvent(event: Lowercase<E>, params: P, socket: LiveViewSocket<T>): Partial<T>;
+  handleEvent(event: Lowercase<E>, params: P, socket: LiveViewSocket<T>): T;
 }
 
 // TODO: support event returing Partial<T>?
 export interface LiveViewInternalEventListener<T, E> {
-  handleInfo(event: E, socket: LiveViewSocket<T>): Partial<T>;
+  handleInfo(event: E, socket: LiveViewSocket<T>): T;
 }
 
 export interface LiveViewRouter {
@@ -51,8 +48,8 @@ export abstract class BaseLiveViewComponent<T, P> implements LiveViewComponent<T
   abstract mount(params: any, session: any, socket: LiveViewSocket<T>): T;
   abstract render(context: T): LiveViewTemplate;
 
-  handleParams(params: P, url: string, socket: LiveViewSocket<T>): Partial<T> {
-    return {};
+  handleParams(params: P, url: string, socket: LiveViewSocket<T>): T {
+    return socket.context;
   }
 
 }

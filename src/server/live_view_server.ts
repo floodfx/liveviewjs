@@ -108,7 +108,8 @@ export class LiveViewServer {
       const liveViewSocket: LiveViewSocket<unknown> = {
         id: liveViewId,
         connected: false, // ws socket not connected on http request
-        context: {}
+        context: {},
+        sendInternal: () => { },
       }
 
       // look up component for route

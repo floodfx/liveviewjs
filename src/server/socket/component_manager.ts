@@ -1,13 +1,12 @@
 import { WebSocket } from "ws";
 import { LiveViewComponent, LiveViewSocket } from "..";
-import { newHeartbeatReply, newPhxReply, PhxClickPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxJoinPayload, PhxLivePatchIncoming, PhxOutgoingMessage } from "./types";
+import { newHeartbeatReply, newPhxReply, PhxClickPayload, PhxDiffReply, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxJoinPayload, PhxLivePatchIncoming, PhxOutgoingMessage } from "./types";
 import jwt from 'jsonwebtoken';
 
 export class LiveViewComponentManager {
 
   private context: unknown;
   private component: LiveViewComponent<unknown, unknown>;
-  private topic: string;
   private signingSecret: string;
 
   constructor(component: LiveViewComponent<unknown, unknown>, signingSecret: string) {
@@ -31,19 +30,13 @@ export class LiveViewComponentManager {
     // console.log("session is", session);
     const session = {}
 
-    const liveViewSocket: LiveViewSocket<unknown> = {
-      id: topic,
-      connected: true, // websocket is connected
-      ws, // the websocket
-      context: this.context
-    }
+    const liveViewSocket = this.buildLiveViewSocket(ws, topic);
     // pass in phx_join payload params, session, and socket
     this.context = this.component.mount(payloadParams, session, liveViewSocket);
-    const ctx = this.component.handleParams(urlParams, urlString, liveViewSocket);
-    // merge contexts
-    if (typeof this.context === 'object' && typeof ctx === 'object' && Object.keys(ctx).length > 0) {
-      this.context = { ...this.context, ...ctx };
-    }
+
+    // update socket with new context
+    liveViewSocket.context = this.context;
+    this.context = this.component.handleParams(urlParams, urlString, liveViewSocket);
 
     const view = this.component.render(this.context);
 
@@ -78,18 +71,8 @@ export class LiveViewComponentManager {
     }
 
     if (isEventHandler(this.component)) {
-      const phxSocket: LiveViewSocket<unknown> = {
-        id: topic,
-        connected: true, // websocket is connected
-        ws, // the websocket
-        context: this.context
-      }
       // @ts-ignore - already checked if handleEvent is defined
-      const ctx = this.component.handleEvent(event, value, phxSocket);
-      // merge contexts
-      if (typeof this.context === 'object' && typeof ctx === 'object' && Object.keys(ctx).length > 0) {
-        this.context = { ...this.context, ...ctx };
-      }
+      this.context = this.component.handleEvent(event, value, this.buildLiveViewSocket(ws, topic));
 
       const view = this.component.render(this.context);
 
@@ -121,17 +104,7 @@ export class LiveViewComponentManager {
     // @ts-ignore - URLSearchParams has an entries method but not typed
     const params = Object.fromEntries(url.searchParams);
 
-    const phxSocket: LiveViewSocket<unknown> = {
-      id: topic,
-      connected: true, // websocket is connected
-      ws, // the websocket
-      context: this.context
-    }
-
-    const ctx = this.component.handleParams(params, urlString, phxSocket);
-    if (typeof this.context === 'object' && typeof ctx === 'object' && Object.keys(ctx).length > 0) {
-      this.context = { ...this.context, ...ctx };
-    }
+    this.context = this.component.handleParams(params, urlString, this.buildLiveViewSocket(ws, topic));
 
     const view = this.component.render(this.context);
 
@@ -147,8 +120,41 @@ export class LiveViewComponentManager {
     this.sendPhxReply(ws, newPhxReply(message, replyPayload));
   }
 
+  private sendInternal(ws: WebSocket, event: any, topic: string): void {
+    // console.log("sendInternal", event);
 
-  sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {
+    if (isInfoHandler(this.component)) {
+      // @ts-ignore - already checked if handleInfo is defined
+      this.context = this.component.handleInfo(event, this.buildLiveViewSocket(ws, topic));
+
+      const view = this.component.render(this.context);
+
+      const reply: PhxDiffReply = [
+        null, // no join reference
+        null, // no message reference
+        topic,
+        "diff",
+        view.partsTree(false) as any
+      ]
+
+      this.sendPhxReply(ws, reply);
+    }
+    else {
+      console.error("received internal event but no handleInfo in component", this.component);
+    }
+  }
+
+  private buildLiveViewSocket(ws: WebSocket, topic: string): LiveViewSocket<unknown> {
+    return {
+      id: topic,
+      connected: true, // websocket is connected
+      ws, // the websocket
+      context: this.context,
+      sendInternal: (event) => this.sendInternal(ws, event, topic),
+    }
+  }
+
+  private sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {
     ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
       if (err) {
         console.error("error", err);
@@ -156,6 +162,10 @@ export class LiveViewComponentManager {
     });
   }
 
+}
+
+function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
+  return "handleInfo" in component;
 }
 
 function isEventHandler(component: LiveViewComponent<unknown, unknown>) {

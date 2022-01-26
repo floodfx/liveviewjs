@@ -1,7 +1,5 @@
 import html from "../../server/templates";
 import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from "../../server/types";
-import { sendInternalMessage } from "../../server/socket/message_router";
-import { WebSocket } from "ws";
 
 import { searchByZip, Store } from "./data";
 
@@ -90,18 +88,18 @@ export class SearchLiveViewComponent extends BaseLiveViewComponent<SearchContext
   };
 
   handleEvent(event: "zip-search", params: { zip: string }, socket: LiveViewSocket<SearchContext>) {
-    console.log("event:", event, params, socket);
+    // console.log("event:", event, params, socket);
     const { zip } = params;
     // wait a second to send the message
     setTimeout(() => {
-      sendInternalMessage(socket, this, { type: "run_zip_search", zip });
+      socket.sendInternal({ type: "run_zip_search", zip });
     }, 1000);
 
     return { zip, stores: [], loading: true };
   }
 
   handleInfo(event: { type: "run_zip_search", zip: string }, socket: LiveViewSocket<SearchContext>) {
-    // console.log("run_zip_search:", event, socket);
+    console.log("run_zip_search:", event);
     const { zip } = event;
     const stores = searchByZip(zip);
     return {

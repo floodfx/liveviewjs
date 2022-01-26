@@ -1,6 +1,5 @@
 import html from "../../server/templates";
 import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from "../../server/types";
-import { sendInternalMessage } from "../../server/socket/message_router";
 import { WebSocket } from "ws";
 import { searchByCity, searchByZip, Store } from "../live-search/data";
 import { suggest } from "./data";
@@ -116,14 +115,14 @@ export class AutocompleteLiveViewComponent extends BaseLiveViewComponent<Autocom
   };
 
   handleEvent(event: "zip-search" | "suggest-city", params: { zip: string } | { city: string }, socket: LiveViewSocket<AutocompleteContext>) {
-    console.log("event:", event, params, socket);
+    // console.log("event:", event, params, socket);
     if (event === "zip-search") {
 
       // @ts-ignore TODO better params types for different events
       const { zip } = params;
       // wait a second to send the message
       setTimeout(() => {
-        sendInternalMessage(socket, this, { type: "run_zip_search", zip });
+        socket.sendInternal({ type: "run_zip_search", zip });
       }, 1000);
       return { zip, city: "", stores: [], matches: [], loading: true };
     }
@@ -140,7 +139,7 @@ export class AutocompleteLiveViewComponent extends BaseLiveViewComponent<Autocom
       const { city } = params;
       // wait a second to send the message
       setTimeout(() => {
-        sendInternalMessage(socket, this, { type: "run_city_search", city });
+        socket.sendInternal({ type: "run_city_search", city });
       }, 1000);
       return { zip: "", city, stores: [], matches: [], loading: true };
     }

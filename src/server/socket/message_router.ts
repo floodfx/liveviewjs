@@ -18,6 +18,7 @@ export function onMessage(ws: WebSocket, message: WebSocket.RawData, router: Liv
   if (typeof rawPhxMessage === 'object' && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
     const [joinRef, messageRef, topic, event, payload] = rawPhxMessage;
 
+    let componentManager: LiveViewComponentManager | undefined;
     switch (event) {
       case "phx_join":
         // assume componentManager is not defined since join creates a new component manager
@@ -25,7 +26,7 @@ export function onMessage(ws: WebSocket, message: WebSocket.RawData, router: Liv
         break;
       case "heartbeat":
         // heartbeat comes in as a "phoenix" topic so lookup via connectionId
-        let componentManager = heartbeatRouter[connectionId];
+        componentManager = heartbeatRouter[connectionId];
         if (componentManager) {
           componentManager.onHeartbeat(ws, rawPhxMessage as PhxHeartbeatIncoming);
         } else {
@@ -79,45 +80,45 @@ export function onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, router: LiveV
 
 }
 
-export function sendInternalMessage(socket: LiveViewSocket<unknown>, component: LiveViewComponent<any, any>, event: any, payload?: any) {
+// export function sendInternalMessage(socket: LiveViewSocket<unknown>, component: LiveViewComponent<any, any>, event: any, payload?: any) {
 
-  // check if component has event handler
-  if (!(component as any).handleInfo) {
-    console.warn("no info handler for component", component);
-    return;
-  }
+//   // check if component has event handler
+//   if (!(component as any).handleInfo) {
+//     console.warn("no info handler for component", component);
+//     return;
+//   }
 
-  // @ts-ignore
-  const ctx = component.handleInfo(event, socket);
+//   // @ts-ignore
+//   const ctx = component.handleInfo(event, socket);
 
-  const view = component.render(ctx);
+//   const view = component.render(ctx);
 
-  const reply: PhxDiffReply = [
-    null, // no join reference
-    null, // no message reference
-    socket.id,
-    "diff",
-    view.partsTree(false) as any
-  ]
+//   const reply: PhxDiffReply = [
+//     null, // no join reference
+//     null, // no message reference
+//     socket.id,
+//     "diff",
+//     view.partsTree(false) as any
+//   ]
 
-  sendPhxReply(socket.ws!, reply);
-}
-
-
-function sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {
-  ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
-    if (err) {
-      console.error("error", err);
-    }
-  });
-}
+//   sendPhxReply(socket.ws!, reply);
+// }
 
 
-function printHtml(rendered: RenderedNode) {
-  const statics = rendered.s;
-  let html = statics[0];
-  for (let i = 1; i < statics.length; i++) {
-    html += rendered[i - 1] + statics[i];
-  }
-  console.log("html:\n", html);
-}
+// function sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {
+//   ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
+//     if (err) {
+//       console.error("error", err);
+//     }
+//   });
+// }
+
+
+// function printHtml(rendered: RenderedNode) {
+//   const statics = rendered.s;
+//   let html = statics[0];
+//   for (let i = 1; i < statics.length; i++) {
+//     html += rendered[i - 1] + statics[i];
+//   }
+//   console.log("html:\n", html);
+// }

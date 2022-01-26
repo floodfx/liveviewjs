@@ -1,7 +1,6 @@
 import html from "../server/templates";
 import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from "../server/types";
 import { numberToCurrency } from "./utils";
-import { sendInternalMessage } from "../server/socket/message_router";
 
 // generate a random number between min and max
 const random = (min: number, max: number): () => number => {
@@ -28,7 +27,7 @@ export class SalesDashboardLiveViewComponent extends BaseLiveViewComponent<Sales
     if (socket.connected) {
       // TODO clean up interval on unmount
       const intervalId = setInterval(() => {
-        sendInternalMessage(socket, this, "tick");
+        socket.sendInternal("tick");
       }, 1000);
     }
     return {
