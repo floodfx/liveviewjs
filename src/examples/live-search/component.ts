@@ -1,6 +1,5 @@
 import html from "../../server/templates";
-import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener } from "../../server/types";
-import { PhxSocket } from "../../server/socket/types";
+import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from "../../server/types";
 import { sendInternalMessage } from "../../server/socket/message_router";
 import { WebSocket } from "ws";
 
@@ -13,23 +12,16 @@ export interface SearchContext {
   loading: boolean;
 }
 
-const idToWs = new Map<string, WebSocket>();
-
-export class SearchLiveViewComponent implements
-  LiveViewComponent<SearchContext>,
+export class SearchLiveViewComponent extends BaseLiveViewComponent<SearchContext, unknown> implements
   LiveViewExternalEventListener<SearchContext, "zip-search", Pick<SearchContext, "zip">>,
   LiveViewInternalEventListener<SearchContext, { type: "run_zip_search", zip: string }>
 {
 
-  mount(params: any, session: any, socket: PhxSocket) {
-    if (socket.connected) {
-      // TODO handle disconnect
-      idToWs.set(socket.id, socket.ws!);
-    }
+  mount(params: any, session: any, socket: LiveViewSocket<SearchContext>) {
     const zip = "";
     const stores: Store[] = [];
     const loading = false
-    return { data: { zip, stores, loading } };
+    return { zip, stores, loading };
   };
 
   renderStoreStatus(store: Store) {
@@ -70,34 +62,34 @@ export class SearchLiveViewComponent implements
     `
   }
 
-  render(context: LiveViewContext<SearchContext>) {
+  render(context: SearchContext) {
     return html`
     <h1>Find a Store</h1>
     <div id="search">
 
       <form phx-submit="zip-search">
-        <input type="text" name="zip" value="${context.data.zip}"
+        <input type="text" name="zip" value="${context.zip}"
               placeholder="Zip Code"
               autofocus autocomplete="off"
-              ${context.data.loading ? "readonly" : ""} />
+              ${context.loading ? "readonly" : ""} />
 
         <button type="submit">
           🔎
         </button>
       </form>
 
-      ${context.data.loading ? this.renderLoading() : ""}
+      ${context.loading ? this.renderLoading() : ""}
 
       <div class="stores">
         <ul>
-          ${context.data.stores.map(store => this.renderStore(store))}
+          ${context.stores.map(store => this.renderStore(store))}
         </ul>
       </div>
     </div>
     `
   };
 
-  handleEvent(event: "zip-search", params: { zip: string }, socket: PhxSocket) {
+  handleEvent(event: "zip-search", params: { zip: string }, socket: LiveViewSocket<SearchContext>) {
     console.log("event:", event, params, socket);
     const { zip } = params;
     // wait a second to send the message
@@ -105,21 +97,17 @@ export class SearchLiveViewComponent implements
       sendInternalMessage(socket, this, { type: "run_zip_search", zip });
     }, 1000);
 
-    return { data: { zip, stores: [], loading: true } };
+    return { zip, stores: [], loading: true };
   }
 
-  handleInfo(event: { type: "run_zip_search", zip: string }, socket: PhxSocket) {
-    // lookup websocekt by id
-    socket.ws = idToWs.get(socket.id);
+  handleInfo(event: { type: "run_zip_search", zip: string }, socket: LiveViewSocket<SearchContext>) {
     // console.log("run_zip_search:", event, socket);
     const { zip } = event;
     const stores = searchByZip(zip);
     return {
-      data: {
-        zip,
-        stores,
-        loading: false
-      }
+      zip,
+      stores,
+      loading: false
     }
   }
 

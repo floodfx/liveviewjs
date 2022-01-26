@@ -1,10 +1,5 @@
 import WebSocket from 'ws';
-
-export interface PhxSocket {
-  id: string;
-  connected: boolean; // true for websocket, false for http request
-  ws?: WebSocket;
-}
+import { LiveViewMountParams } from '..';
 
 export enum PhxSocketProtocolNames {
   joinRef = 0,
@@ -31,7 +26,7 @@ export type PhxOutgoingMessage<Payload> = [
 ]
 
 export interface PhxJoinPayload {
-  params: { _csrf: string } & { [key: string]: string }
+  params: LiveViewMountParams
   session: string
   static: string
   url: string
@@ -77,6 +72,16 @@ export type PhxFormPayload = PhxEventPayload<"form", { value: string }> & PhxEve
 export type PhxClickEvent = PhxIncomingMessage<PhxClickPayload>
 export type PhxFormEvent = PhxIncomingMessage<PhxFormPayload>
 
+
+export const newPhxReply = (from: PhxIncomingMessage<unknown>, payload: any): PhxReply => {
+  return [
+    from[0],
+    from[1],
+    from[2],
+    "phx_reply",
+    payload
+  ]
+}
 
 export const newHeartbeatReply = (incoming: PhxIncomingMessage<{}>): PhxReply => {
   return [

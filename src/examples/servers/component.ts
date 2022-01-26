@@ -1,6 +1,5 @@
 import html from "../../server/templates";
-import { LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewParamsHandler, LiveViewTemplate } from "../../server/types";
-import { PhxSocket } from "../../server/socket/types";
+import { BaseLiveViewComponent, LiveViewSocket, LiveViewTemplate } from "../../server/types";
 import { WebSocket } from "ws";
 import { listServers, Server } from "./data";
 import { live_patch } from "../../server/templates/helpers/live_patch";
@@ -14,26 +13,24 @@ export interface ServersContext {
 
 const idToWs = new Map<string, WebSocket>();
 
-export class ServersLiveViewComponent implements
-  LiveViewComponent<ServersContext>,
-  LiveViewParamsHandler<ServersContext, { id: string }> {
+export class ServersLiveViewComponent extends BaseLiveViewComponent<ServersContext, { id: string }> {
 
 
-  mount(params: any, session: any, socket: PhxSocket): LiveViewContext<ServersContext> {
+  mount(params: any, session: any, socket: LiveViewSocket<ServersContext>): ServersContext {
     const servers = listServers();
     const selectedServer = servers[0];
-    return { data: { servers, selectedServer } };
+    return { servers, selectedServer };
   }
 
-  handleParams(params: { id: string; }, url: string, socket: PhxSocket): LiveViewContext<ServersContext> {
+  handleParams(params: { id: string; }, url: string, socket: LiveViewSocket<ServersContext>): ServersContext {
     console.log("params", params);
     const servers = listServers();
     const selectedServer = servers.find(server => server.id === params.id) || servers[0];
-    return { data: { servers, selectedServer } };
+    return { servers, selectedServer };
   }
 
-  render(context: LiveViewContext<ServersContext>): LiveViewTemplate {
-    const { servers, selectedServer } = context.data;
+  render(context: ServersContext): LiveViewTemplate {
+    const { servers, selectedServer } = context;
     console.log("rendering servers", servers, selectedServer);
     return html`
     <h1>Servers</h1>
