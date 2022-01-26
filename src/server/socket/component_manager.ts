@@ -36,6 +36,8 @@ export class LiveViewComponentManager {
     } catch (e) {
       console.log("failed to decode session", e);
     }
+    // TODO - check csfr token?
+    // TODO - compare csfr token with session _csrf?
 
     const liveViewSocket = this.buildLiveViewSocket(ws, topic);
     // pass in phx_join payload params, session, and socket
