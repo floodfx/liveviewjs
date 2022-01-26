@@ -2,6 +2,7 @@ import { WebSocket } from "ws";
 import { LiveViewComponent, LiveViewSocket } from "..";
 import { newHeartbeatReply, newPhxReply, PhxClickPayload, PhxDiffReply, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxJoinPayload, PhxLivePatchIncoming, PhxOutgoingMessage } from "./types";
 import jwt from 'jsonwebtoken';
+import { SessionData } from "express-session";
 
 export class LiveViewComponentManager {
 
@@ -29,9 +30,12 @@ export class LiveViewComponentManager {
     const { params: payloadParams, session: payloadSession, static: payloadStatic } = payload;
 
     // TODO - use session from cookie
-    // const session = jwt.verify(payloadSession, this.signingSecret) as any;
-    // console.log("session is", session);
-    const session = {}
+    let session = {}
+    try {
+      session = jwt.verify(payloadSession, this.signingSecret) as Partial<SessionData>;
+    } catch (e) {
+      console.log("failed to decode session", e);
+    }
 
     const liveViewSocket = this.buildLiveViewSocket(ws, topic);
     // pass in phx_join payload params, session, and socket

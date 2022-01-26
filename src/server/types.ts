@@ -1,3 +1,4 @@
+import { SessionData } from "express-session";
 import { WebSocket } from "ws";
 import { HtmlSafeString } from "./templates";
 
@@ -24,7 +25,7 @@ export interface LiveViewSessionParams {
 
 export interface LiveViewComponent<T, P> {
 
-  mount(params: LiveViewMountParams, session: LiveViewSessionParams, socket: LiveViewSocket<T>): T;
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<T>): T;
   render(context: T): LiveViewTemplate;
   handleParams(params: P, url: string, socket: LiveViewSocket<T>): T;
 
