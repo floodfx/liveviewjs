@@ -48,7 +48,6 @@ export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, 
 
   handleEvent(event: LightEvent, params: any, socket: LiveViewSocket<LightContext>) {
     const ctx: LightContext = { brightness: socket.context.brightness };
-    console.log("socket ctx", socket.context);
     switch (event) {
       case 'off':
         ctx.brightness = 0;
