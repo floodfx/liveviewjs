@@ -46,9 +46,9 @@ export class LicenseLiveViewComponent extends BaseLiveViewComponent<LicenseConte
     `
   };
 
-  handleEvent(event: "update", params: { seats: number }, socket: LiveViewSocket<LicenseContext>) {
+  handleEvent(event: "update", params: { seats: string }, socket: LiveViewSocket<LicenseContext>) {
     // console.log("event:", event, params, socket);
-    const { seats } = params;
+    const seats = Number(params.seats || 2);
     const amount = calculateLicenseAmount(seats);
     return { seats, amount };
   }

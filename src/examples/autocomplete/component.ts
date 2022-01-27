@@ -12,8 +12,6 @@ export interface AutocompleteContext {
   loading: boolean;
 }
 
-const idToWs = new Map<string, WebSocket>();
-
 export class AutocompleteLiveViewComponent extends BaseLiveViewComponent<AutocompleteContext, unknown> implements
   LiveViewExternalEventListener<AutocompleteContext, "zip-search", Pick<AutocompleteContext, "zip">>,
   LiveViewExternalEventListener<AutocompleteContext, "suggest-city", Pick<AutocompleteContext, "city">>,
