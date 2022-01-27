@@ -103,7 +103,7 @@ export class PaginateLiveViewComponent extends BaseLiveViewComponent<PaginateCon
   paginationLink(text: string, pageNum: number, perPageNum: number, className: string) {
     const page = String(pageNum);
     const perPage = String(perPageNum);
-    return live_patch(text, {
+    return live_patch(html`<button>${text}</button>`, {
       to: {
         path: "/paginate",
         params: { page, perPage }
@@ -123,19 +123,19 @@ export class PaginateLiveViewComponent extends BaseLiveViewComponent<PaginateCon
         ${donation.quantity} lbs
         </td>
         <td>
-          <span class="${this.expiresClass(donation)}">
-          ${donation.days_until_expires}
+          <span>
+          ${this.expiresDecoration(donation)}
           </span>
         </td>
       </tr>
     `)
   }
 
-  expiresClass(donation: Donation) {
+  expiresDecoration(donation: Donation) {
     if (almostExpired(donation)) {
-      return "eat-now"
+      return html`<mark>${donation.days_until_expires}</mark>`
     } else {
-      return "fresh"
+      return donation.days_until_expires
     }
   }
 
