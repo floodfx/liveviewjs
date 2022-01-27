@@ -96,7 +96,6 @@ export class SortLiveViewComponent extends BaseLiveViewComponent<SortContext, Pa
   };
 
   handleEvent(event: "select-per-page" | "change-sort", params: StringPropertyValues<Pick<PaginateOptions & SortOptions, "perPage" | "sort_by" | "sortOrder">>, socket: LiveViewSocket<SortContext>): SortContext {
-    console.log("handleEvent", event, params);
     const page = socket.context.options.page;
     let perPage = socket.context.options.perPage;
     let sort_by = socket.context.options.sort_by;
