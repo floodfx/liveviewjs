@@ -100,10 +100,6 @@ export class PaginateLiveViewComponent extends BaseLiveViewComponent<PaginateCon
     return join(links, "")
   }
 
-  // range(size: number, startAt: number = 0): ReadonlyArray<number> {
-  //   return [...Array(size).keys()].map(i => i + startAt);
-  // }
-
   paginationLink(text: string, pageNum: number, perPageNum: number, className: string) {
     const page = String(pageNum);
     const perPage = String(perPageNum);
