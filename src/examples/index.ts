@@ -7,6 +7,7 @@ import { SearchLiveViewComponent } from './live-search/component';
 import { PaginateLiveViewComponent } from './pagination/component';
 import { SalesDashboardLiveViewComponent } from './sales_dashboard_liveview';
 import { ServersLiveViewComponent } from './servers/component';
+import { SortLiveViewComponent } from './sorting/component';
 
 const lvServer = new LiveViewServer({
   // port: 3002,
@@ -22,6 +23,7 @@ export const router: LiveViewRouter = {
   "/autocomplete": new AutocompleteLiveViewComponent(),
   "/light": new LightLiveViewComponent(),
   "/paginate": new PaginateLiveViewComponent(),
+  "/sort": new SortLiveViewComponent(),
 }
 
 // register all routes

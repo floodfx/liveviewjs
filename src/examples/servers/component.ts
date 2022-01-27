@@ -83,7 +83,7 @@ export class ServersLiveViewComponent extends BaseLiveViewComponent<ServersConte
 
   private link_body(server: Server) {
     return html`
-      🤖 ${server.name}
+      <button>🤖 ${server.name}</button>
     `
   }
 
