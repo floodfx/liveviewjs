@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
-import { LiveViewComponent, LiveViewSocket } from "..";
-import { newHeartbeatReply, newPhxReply, PhxClickPayload, PhxDiffReply, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxJoinPayload, PhxLivePatchIncoming, PhxOutgoingMessage } from "./types";
+import { BaseLiveViewComponent, LiveViewComponent, LiveViewSocket, StringPropertyValues } from "..";
+import { newHeartbeatReply, newPhxReply, PhxClickPayload, PhxDiffReply, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxJoinPayload, PhxLivePatchIncoming, PhxLivePatchPushPayload, PhxOutgoingLivePatchPush, PhxOutgoingMessage, PhxSocketProtocolNames } from "./types";
 import jwt from 'jsonwebtoken';
 import { SessionData } from "express-session";
 
@@ -17,6 +17,9 @@ export class LiveViewComponentManager {
     this.component = component;
     this.signingSecret = signingSecret;
     this.context = {};
+    if (component instanceof BaseLiveViewComponent) {
+      component.registerComponentManager(this);
+    }
   }
 
   handleJoin(ws: WebSocket, message: PhxJoinIncoming) {
@@ -129,6 +132,25 @@ export class LiveViewComponentManager {
     this.sendPhxReply(ws, newPhxReply(message, replyPayload));
   }
 
+  onPushPatch(liveViewSocket: LiveViewSocket<unknown>, patch: { to: { path: string, params: StringPropertyValues<any> } }) {
+    const urlParams = new URLSearchParams(patch.to.params);
+    const to = `${patch.to.path}?${urlParams}`
+    const message: PhxOutgoingLivePatchPush = [
+      null, // no join reference
+      null, // no message reference
+      liveViewSocket.id,
+      "live_patch",
+      { kind: "push", to }
+    ]
+
+    // @ts-ignore - URLSearchParams has an entries method but not typed
+    const params = Object.fromEntries(urlParams);
+
+    this.context = this.component.handleParams(params, to, liveViewSocket);
+
+    this.sendPhxReply(liveViewSocket.ws!, message)
+  }
+
   repeat(fn: () => void, intervalMillis: number) {
     this.intervals.push(setInterval(fn, intervalMillis));
   }
@@ -171,6 +193,7 @@ export class LiveViewComponentManager {
     }
   }
 
+
   private buildLiveViewSocket(ws: WebSocket, topic: string): LiveViewSocket<unknown> {
     return {
       id: topic,
@@ -190,7 +213,7 @@ export class LiveViewComponentManager {
           this.shutdown();
           console.error("socket is closed", err, "...shutting down topic", reply[2], "for component", this.component);
         } else {
-
+          console.error("socket error", err);
         }
       }
     });

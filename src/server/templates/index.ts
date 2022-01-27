@@ -20,10 +20,7 @@ const inspect = Symbol.for('nodejs.util.inspect.custom');
 
 const ENT_REGEX = new RegExp(Object.keys(ENTITIES).join('|'), 'g')
 
-export function join(array: (string | HtmlSafeString)[], separator: string | HtmlSafeString) {
-  if (separator === undefined || separator === null) {
-    separator = ','
-  }
+export function join(array: (string | HtmlSafeString)[], separator: string | HtmlSafeString = "") {
   if (array.length <= 0) {
     return new HtmlSafeString([''], [])
   }

@@ -4,6 +4,7 @@ import { AutocompleteLiveViewComponent } from './autocomplete/component';
 import { LicenseLiveViewComponent } from './license_liveview';
 import { LightLiveViewComponent } from './light_liveview';
 import { SearchLiveViewComponent } from './live-search/component';
+import { PaginateLiveViewComponent } from './pagination/component';
 import { SalesDashboardLiveViewComponent } from './sales_dashboard_liveview';
 import { ServersLiveViewComponent } from './servers/component';
 
@@ -20,6 +21,7 @@ export const router: LiveViewRouter = {
   '/search': new SearchLiveViewComponent(),
   "/autocomplete": new AutocompleteLiveViewComponent(),
   "/light": new LightLiveViewComponent(),
+  "/paginate": new PaginateLiveViewComponent(),
 }
 
 // register all routes

@@ -1,5 +1,7 @@
 import { SessionData } from "express-session";
 import { WebSocket } from "ws";
+import { LiveViewComponentManager } from "./socket/component_manager";
+import { PhxOutgoingLivePatchPush } from "./socket/types";
 import { HtmlSafeString } from "./templates";
 
 export interface LiveViewSocket<T> {
@@ -23,17 +25,20 @@ export interface LiveViewSessionParams {
   [key: string]: string;
 }
 
+// params on url are strings
+export type StringPropertyValues<Type> = { [Property in keyof Type]: string; };
+
 export interface LiveViewComponent<T, P> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<T>): T;
   render(context: T): LiveViewTemplate;
-  handleParams(params: P, url: string, socket: LiveViewSocket<T>): T;
+  handleParams(params: StringPropertyValues<P>, url: string, socket: LiveViewSocket<T>): T;
 
 }
 
 // TODO: support event returing Partial<T>?
 export interface LiveViewExternalEventListener<T, E extends string, P> {
-  handleEvent(event: Lowercase<E>, params: P, socket: LiveViewSocket<T>): T;
+  handleEvent(event: E, params: StringPropertyValues<P>, socket: LiveViewSocket<T>): T;
 }
 
 // TODO: support event returing Partial<T>?
@@ -47,11 +52,25 @@ export interface LiveViewRouter {
 
 export abstract class BaseLiveViewComponent<T, P> implements LiveViewComponent<T, P> {
 
+  private componentManager: LiveViewComponentManager;
+
   abstract mount(params: any, session: any, socket: LiveViewSocket<T>): T;
   abstract render(context: T): LiveViewTemplate;
 
-  handleParams(params: P, url: string, socket: LiveViewSocket<T>): T {
+  handleParams(params: StringPropertyValues<P>, url: string, socket: LiveViewSocket<T>): T {
     return socket.context;
+  }
+
+  pushPatch(socket: LiveViewSocket<unknown>, patch: { to: { path: string, params: StringPropertyValues<any> } }) {
+    if (this.componentManager) {
+      this.componentManager.onPushPatch(socket, patch);
+    } else {
+      console.error("component manager not registered for component", this);
+    }
+  }
+
+  registerComponentManager(manager: LiveViewComponentManager) {
+    this.componentManager = manager;
   }
 
 }
