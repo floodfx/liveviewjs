@@ -13,18 +13,20 @@
   "types": "dist/server/index.d.ts",
   "files": [
     "dist/server/**/*.js",
-    "dist/server/**/*.d.ts"
+    "dist/server/**/*.d.ts",
+    "dist/server/**/*.ejs"
   ],
   "scripts": {
     "examples": "npm run prepublish; npm run client-build;nodemon -e js -w dist dist/examples/index.js",
     "build": "tsc",
     "watch": "tsc --watch",
+    "copy-root-view": "mkdir -p dist/server/web/views;cp src/server/web/views/index.html.ejs dist/server/web/views/index.html.ejs",
     "client-build": "npm run check; parcel build",
     "client-watch": "parcel watch",
     "check": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "jest --expand",
-    "prepublish": "npm run clean; npm run build"
+    "prepublish": "npm run clean; npm run test; npm run build; npm run copy-root-view"
   },
   "keywords": [
     "liveviewjs",
