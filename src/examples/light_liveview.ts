@@ -1,5 +1,6 @@
+import { SessionData } from "express-session";
 import html from "../server/templates";
-import { BaseLiveViewComponent, LiveViewComponent, LiveViewExternalEventListener, LiveViewSocket } from "../server/types";
+import { BaseLiveViewComponent, LiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/types";
 
 export interface LightContext {
   brightness: number;
@@ -9,22 +10,19 @@ export type LightEvent = "on" | "off" | "up" | "down";
 
 export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, never> implements
   LiveViewComponent<LightContext, never>,
-  LiveViewExternalEventListener<LightContext, "on", any>,
-  LiveViewExternalEventListener<LightContext, "off", any> {
+  LiveViewExternalEventListener<LightContext, LightEvent, never> {
 
 
-  mount(params: any, session: any, socket: LiveViewSocket<LightContext>) {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LightContext>) {
     return { brightness: 10 };
   };
 
   render(context: LightContext) {
     return html`
     <div id="light">
-      <h1>Front Porch Light</h1>
+      <h1>Front Porch Light </h1>
       <div class="meter">
-        <span style="width: ${context.brightness} %>%">
-          ${context.brightness}%
-        </span>
+        <div>${context.brightness}%</div><progress id="light_level" value="${context.brightness}" max="100"></progress>
       </div>
 
       <button phx-click="off">
@@ -46,7 +44,7 @@ export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, 
     `
   };
 
-  handleEvent(event: LightEvent, params: any, socket: LiveViewSocket<LightContext>) {
+  handleEvent(event: LightEvent, params: never, socket: LiveViewSocket<LightContext>) {
     const ctx: LightContext = { brightness: socket.context.brightness };
     switch (event) {
       case 'off':

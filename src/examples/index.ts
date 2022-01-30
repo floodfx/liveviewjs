@@ -16,6 +16,7 @@ const lvServer = new LiveViewServer({
   // support different templates?
 });
 
+
 export const router: LiveViewRouter = {
   "/license": new LicenseLiveViewComponent(),
   '/sales-dashboard': new SalesDashboardLiveViewComponent(),
@@ -32,5 +33,11 @@ lvServer.registerLiveViewRoutes(router)
 // register single route
 lvServer.registerLiveViewRoute("/servers", new ServersLiveViewComponent())
 
+// add your own routes to the express app
+// lvServer.expressApp.get("/", (req, res) => {
+//   res.send("Hello World!");
+// }
+
 // start server
 lvServer.start();
+

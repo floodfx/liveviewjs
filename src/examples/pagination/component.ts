@@ -1,8 +1,9 @@
 import { options_for_select } from "../../server/templates/helpers/options_for_select";
 import { live_patch } from "../../server/templates/helpers/live_patch";
 import html, { HtmlSafeString, join } from "../../server/templates";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewSocket, StringPropertyValues } from "../../server/types";
+import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/types";
 import { almostExpired, Donation, listItems } from "./data";
+import { SessionData } from "express-session";
 
 interface Options {
   page: number;
@@ -16,7 +17,7 @@ export interface PaginateContext {
 
 export class PaginateLiveViewComponent extends BaseLiveViewComponent<PaginateContext, Options> implements LiveViewExternalEventListener<PaginateContext, "select-per-page", Pick<Options, "perPage">> {
 
-  mount(params: any, session: any, socket: LiveViewSocket<PaginateContext>) {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PaginateContext>) {
     const options = { page: 1, perPage: 10 }
     return {
       options: options,

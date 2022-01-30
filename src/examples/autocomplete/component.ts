@@ -1,8 +1,9 @@
 import html from "../../server/templates";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from "../../server/types";
+import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server/types";
 import { WebSocket } from "ws";
 import { searchByCity, searchByZip, Store } from "../live-search/data";
 import { suggest } from "./data";
+import { SessionData } from "express-session";
 
 export interface AutocompleteContext {
   zip: string;
@@ -19,7 +20,7 @@ export class AutocompleteLiveViewComponent extends BaseLiveViewComponent<Autocom
   LiveViewInternalEventListener<AutocompleteContext, { type: "run_city_search", city: string }>
 {
 
-  mount(params: any, session: any, socket: LiveViewSocket<AutocompleteContext>) {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<AutocompleteContext>) {
     const zip = "";
     const city = "";
     const stores: Store[] = [];
