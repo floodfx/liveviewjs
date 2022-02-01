@@ -10,8 +10,7 @@ export type LightEvent = "on" | "off" | "up" | "down" | "key_update";
 
 export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, never> implements
   LiveViewComponent<LightContext, never>,
-  LiveViewExternalEventListener<LightContext, "on", { key: string }>,
-  LiveViewExternalEventListener<LightContext, "off", { key: string }> {
+  LiveViewExternalEventListener<LightContext, LightEvent, { key: string }> {
 
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LightContext>) {
