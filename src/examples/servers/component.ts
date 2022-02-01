@@ -1,8 +1,9 @@
 import html from "../../server/templates";
-import { BaseLiveViewComponent, LiveViewSocket, LiveViewTemplate } from "../../server/types";
+import { BaseLiveViewComponent, LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from "../../server/types";
 import { WebSocket } from "ws";
 import { listServers, Server } from "./data";
 import { live_patch } from "../../server/templates/helpers/live_patch";
+import { SessionData } from "express-session";
 
 // Example of Phoenix "Live Navigation"
 
@@ -14,7 +15,7 @@ export interface ServersContext {
 export class ServersLiveViewComponent extends BaseLiveViewComponent<ServersContext, { id: string }> {
 
 
-  mount(params: any, session: any, socket: LiveViewSocket<ServersContext>): ServersContext {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<ServersContext>): ServersContext {
     const servers = listServers();
     const selectedServer = servers[0];
     return { servers, selectedServer };

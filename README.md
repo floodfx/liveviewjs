@@ -29,10 +29,6 @@ export interface LightContext {
 // optionally define the events your component will respond to
 export type LightEvent = "on" | "off";
 
-// simple in memory database for the context
-// production apps would use more durable system
-const _db: { [key: string]: LightContext } = {};
-
 // implement your LiveViewComponents
 export class LightLiveViewComponent implements
   LiveViewComponent<LightContext>,
@@ -42,9 +38,7 @@ export class LightLiveViewComponent implements
 
   // handle mount events - called on initial http request AND subsequent socket connections
   mount(params: any, session: any, socket: PhxSocket) {
-    const ctx: LightContext = { brightness: 10 };
-    _db[socket.id] = ctx; // store the ctx by socket id to look up later
-    return { data: ctx };
+    return { brightness: 10 };
   };
 
   // define and render the HTML for your LiveViewComponent

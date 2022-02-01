@@ -1,5 +1,6 @@
+import { SessionData } from "express-session";
 import html from "../../server/templates";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from "../../server/types";
+import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server/types";
 
 import { searchByZip, Store } from "./data";
 
@@ -15,7 +16,7 @@ export class SearchLiveViewComponent extends BaseLiveViewComponent<SearchContext
   LiveViewInternalEventListener<SearchContext, { type: "run_zip_search", zip: string }>
 {
 
-  mount(params: any, session: any, socket: LiveViewSocket<SearchContext>) {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SearchContext>) {
     const zip = "";
     const stores: Store[] = [];
     const loading = false
@@ -90,10 +91,10 @@ export class SearchLiveViewComponent extends BaseLiveViewComponent<SearchContext
   handleEvent(event: "zip-search", params: { zip: string }, socket: LiveViewSocket<SearchContext>) {
     // console.log("event:", event, params, socket);
     const { zip } = params;
-    // wait a second to send the message
+    // wait 100ms to send the message
     setTimeout(() => {
       socket.sendInternal({ type: "run_zip_search", zip });
-    }, 1000);
+    }, 100);
 
     return { zip, stores: [], loading: true };
   }

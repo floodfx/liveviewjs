@@ -6,7 +6,6 @@ import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";
 import session, { MemoryStore, SessionData } from "express-session";
 import path from "path";
-import { LiveViewComponentManager } from "./socket/component_manager";
 import { MessageRouter } from "./socket/message_router";
 
 
@@ -25,22 +24,27 @@ export interface LiveViewServerOptions {
   sessionStore: session.Store;
 }
 
+const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
+console.log('MODULE_VIEWS_PATH', MODULE_VIEWS_PATH);
+
 export class LiveViewServer {
   private port: number = 4444;
   private rootView: string = "index.html.ejs";
-  private viewsPath: string = path.join(__dirname, "..", "..", "src", "server", "web", "views");
+  private viewsPath: string[];
   private signingSecret: string = nanoid();
   private sessionStore: session.Store = new MemoryStore();
 
   private _router: LiveViewRouter = {};
   private messageRouter = new MessageRouter()
+  expressApp: express.Application;
 
   constructor(options: Partial<LiveViewServerOptions>) {
     this.port = options.port ?? this.port;
     this.rootView = options.rootView ?? this.rootView;
-    this.viewsPath = options.viewsPath ?? this.viewsPath;
+    this.viewsPath = options.viewsPath ? [options.viewsPath, MODULE_VIEWS_PATH] : [MODULE_VIEWS_PATH];
     this.signingSecret = options.signingSecret ?? this.signingSecret;
     this.sessionStore = options.sessionStore ?? this.sessionStore;
+    this.expressApp = this.buildExpressApp();
   }
 
   registerLiveViewRoutes(router: LiveViewRouter) {
@@ -53,7 +57,6 @@ export class LiveViewServer {
 
   start() {
     console.log("starting")
-    const app = this.buildExpressApp();
 
     const httpServer = new Server();
     const wsServer = new WebSocket.Server({
@@ -61,7 +64,7 @@ export class LiveViewServer {
     });
 
     // register express app for http requests
-    httpServer.on('request', app);
+    httpServer.on('request', this.expressApp);
 
     // register websocket server ws requests
     wsServer.on('connection', socket => {
@@ -136,7 +139,7 @@ export class LiveViewServer {
       const view = component.render(ctx);
 
       // render the view with all the data
-      res.render("index.html.ejs", {
+      res.render("root.html.ejs", {
         page_title: "Live View",
         csrf_meta_tag: req.session.csrfToken,
         liveViewId,
