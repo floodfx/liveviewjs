@@ -25,7 +25,6 @@ export interface LiveViewServerOptions {
 }
 
 const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
-console.log('MODULE_VIEWS_PATH', MODULE_VIEWS_PATH);
 
 export class LiveViewServer {
   private port: number = 4444;
