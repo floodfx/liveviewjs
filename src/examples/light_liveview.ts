@@ -50,7 +50,6 @@ export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, 
     const ctx: LightContext = { brightness: socket.context.brightness };
     // map key_update to arrow keys
     const lightEvent = event === "key_update" ? params.key : event;
-    console.log("lightEvent:", lightEvent);
     switch (lightEvent) {
       case 'off':
       case 'ArrowLeft':
