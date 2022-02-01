@@ -34,8 +34,8 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 | Focus Events    | `phx-focus`          | [ ]         |
 | Focus Events    | `phx-window-blur`    | [ ]         |
 | Focus Events    | `phx-window-focus`   | [ ]         |
-| Key Events      | `phx-keydown`        | [ ]         |
-| Key Events      | `phx-keyup`          | [ ]         |
+| Key Events      | `phx-keydown`        | [x]         |
+| Key Events      | `phx-keyup`          | [x]         |
 | Key Events      | `phx-window-keydown` | [x]         |
 | Key Events      | `phx-window-keyup`   | [x]         |
 | Key Events      | `phx-key`            | [x]         |
