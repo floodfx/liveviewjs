@@ -13,18 +13,24 @@
   "types": "dist/server/index.d.ts",
   "files": [
     "dist/server/**/*.js",
-    "dist/server/**/*.d.ts"
+    "dist/server/**/*.d.ts",
+    "dist/server/**/*.ejs",
+    "dist/client/**/*.js",
+    "dist/client/**/*.js.map"
   ],
   "scripts": {
-    "examples": "npm run prepublish; npm run client-build;nodemon -e js -w dist dist/examples/index.js",
+    "examples": "npm run prepublish; npm run copy-examples-views; nodemon -e js -w dist dist/examples/index.js",
+    "copy-examples-views": "mkdir -p dist/examples/views; cp src/examples/views/* dist/examples/views",
     "build": "tsc",
     "watch": "tsc --watch",
-    "client-build": "npm run check; parcel build",
+    "copy-root-view": "mkdir -p dist/server/web/views;cp src/server/web/views/root.html.ejs dist/server/web/views/root.html.ejs",
+    "client-build": "npm run check; parcel build; npm run copy-client-ts",
     "client-watch": "parcel watch",
+    "copy-client-ts": "cp src/client/liveview.ts dist/client/liveview.ts",
     "check": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "jest --expand",
-    "prepublish": "npm run clean; npm run build"
+    "prepublish": "npm run clean; npm run test; npm run build; npm run copy-root-view; npm run client-build"
   },
   "keywords": [
     "liveviewjs",

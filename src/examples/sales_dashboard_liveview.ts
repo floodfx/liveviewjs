@@ -1,5 +1,6 @@
+import { SessionData } from "express-session";
 import html from "../server/templates";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from "../server/types";
+import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/types";
 import { numberToCurrency } from "./utils";
 
 // generate a random number between min and max
@@ -23,7 +24,7 @@ export class SalesDashboardLiveViewComponent extends BaseLiveViewComponent<Sales
   LiveViewInternalEventListener<SalesDashboardContext, "tick">
 {
 
-  mount(params: any, session: any, socket: LiveViewSocket<SalesDashboardContext>): SalesDashboardContext {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SalesDashboardContext>): SalesDashboardContext {
     if (socket.connected) {
       socket.repeat(() => {
         socket.sendInternal("tick");

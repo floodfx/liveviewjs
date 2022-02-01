@@ -1,8 +1,9 @@
 import { options_for_select } from "../../server/templates/helpers/options_for_select";
 import { live_patch } from "../../server/templates/helpers/live_patch";
 import html, { HtmlSafeString, join } from "../../server/templates";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewSocket, StringPropertyValues } from "../../server/types";
+import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/types";
 import { almostExpired, Donation, listItems, donations } from "./data";
+import { SessionData } from "express-session";
 
 export interface PaginateOptions {
   page: number;
@@ -23,7 +24,7 @@ export class SortLiveViewComponent extends BaseLiveViewComponent<SortContext, Pa
   LiveViewExternalEventListener<SortContext, "select-per-page", Pick<PaginateOptions & SortOptions, "perPage">>,
   LiveViewExternalEventListener<SortContext, "change-sort", Pick<PaginateOptions & SortOptions, "sort_by" | "sortOrder">> {
 
-  mount(params: any, session: any, socket: LiveViewSocket<SortContext>) {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SortContext>) {
     const paginateOptions: PaginateOptions = {
       page: 1,
       perPage: 10,
