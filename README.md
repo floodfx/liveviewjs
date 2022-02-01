@@ -19,45 +19,53 @@ This is still in very early PoC territory.  You probably shouldn't put this into
 ### Show me some code! ⌨️
 **Step 1** Implement a `LiveViewComponent`
 ```ts
-import {html, LiveViewComponent, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener,PhxSocket } from "liveviewjs";
+import { SessionData } from "express-session";
+import {html, BaseLiveViewComponent, LiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "liveviewjs";
 
 // define your component's data shape
 export interface LightContext {
   brightness: number;
 }
 
-// optionally define the events your component will respond to
-export type LightEvent = "on" | "off";
+// define the component events
+export type LightEvent = "on" | "off" | "up" | "down";
 
-// implement your LiveViewComponents
-export class LightLiveViewComponent implements
-  LiveViewComponent<LightContext>,
-  LiveViewExternalEventListener<LightContext, "on", any>,
-  LiveViewExternalEventListener<LightContext, "off", any> {
+// implement your component
+export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, never> implements
+  LiveViewComponent<LightContext, never>,
+  LiveViewExternalEventListener<LightContext, LightEvent, never> {
 
-
-  // handle mount events - called on initial http request AND subsequent socket connections
-  mount(params: any, session: any, socket: PhxSocket) {
+  // mount is called before html render on HTTP requests and
+  // when the socket is connected on the phx-join event
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LightContext>) {
+    // set the default value(s) for the component data
     return { brightness: 10 };
   };
 
-  // define and render the HTML for your LiveViewComponent
-  render(context: LiveViewContext<LightContext>) {
-    // the `html` function is a tagged template literal that
-    // allows LiveView to send back only the data that has changed
-    // based on user events - note the `phx-click` bindings on the
-    // buttons in the template
+  // Define and render the HTML for your LiveViewComponent
+  // This function is called after any context change and
+  // only diffs are sent back to the page to re-render
+  render(context: LightContext) {
+    const { brightness } = context;
     return html`
     <div id="light">
-      <h1>Front Porch Light</h1>
+      <h1>Front Porch Light </h1>
       <div class="meter">
-        <span style="width: ${context.data.brightness} %>%">
-          ${context.data.brightness}%
-        </span>
+        <div>${brightness}%</div>
+        <progress id="light_level" value="${brightness}" max="100">
+        </progress>
       </div>
 
       <button phx-click="off">
         Off
+      </button>
+
+      <button phx-click="down">
+        Down
+      </button>
+
+      <button phx-click="up">
+        Up
       </button>
 
       <button phx-click="on">
@@ -67,9 +75,11 @@ export class LightLiveViewComponent implements
     `
   };
 
-  // handle external events sent form client
-  handleEvent(event: LightEvent, params: any, socket: PhxSocket) {
-    const ctx = _db[socket.id]; // lookup current context by socket id
+  // Handle events sent back from the client...  Events
+  // may update the state (context) of the component and
+  // cause a re-render
+  handleEvent(event: LightEvent, params: never, socket: LiveViewSocket<LightContext>) {
+    const ctx: LightContext = { brightness: socket.context.brightness };
     switch (event) {
       case 'off':
         ctx.brightness = 0;
@@ -77,10 +87,14 @@ export class LightLiveViewComponent implements
       case 'on':
         ctx.brightness = 100;
         break;
+      case 'up':
+        ctx.brightness = Math.min(ctx.brightness + 10, 100);
+        break;
+      case 'down':
+        ctx.brightness = Math.max(ctx.brightness - 10, 0);
+        break;
     }
-    // udpate context by socket id
-    _db[socket.id] = ctx;
-    return { data: ctx };
+    return ctx;
   }
 
 }
