@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { BaseLiveViewComponent, LiveViewComponent, LiveViewSocket, StringPropertyValues } from "..";
-import { newHeartbeatReply, newPhxReply, PhxClickPayload, PhxDiffReply, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxJoinPayload, PhxLivePatchIncoming, PhxLivePatchPushPayload, PhxOutgoingLivePatchPush, PhxOutgoingMessage, PhxSocketProtocolNames } from "./types";
+import { newHeartbeatReply, newPhxReply, PhxClickPayload, PhxDiffReply, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxLivePatchIncoming, PhxOutgoingLivePatchPush, PhxOutgoingMessage, PhxKeyDownPayload, PhxKeyUpPayload } from "./types";
 import jwt from 'jsonwebtoken';
 import { SessionData } from "express-session";
 
@@ -68,7 +68,7 @@ export class LiveViewComponentManager {
     this.sendPhxReply(ws, newHeartbeatReply(message));
   }
 
-  onEvent(ws: WebSocket, message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload>) {
+  onEvent(ws: WebSocket, message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload>) {
     const [joinRef, messageRef, topic, _, payload] = message;
     const { type, event } = payload;
 
@@ -80,6 +80,8 @@ export class LiveViewComponentManager {
     } else if (type === "form") {
       // @ts-ignore - URLSearchParams has an entries method but not typed
       value = Object.fromEntries(new URLSearchParams(payload.value))
+    } else if (type === "keyup" || type === "keydown") {
+      value = payload.value;
     }
 
     if (isEventHandler(this.component)) {
