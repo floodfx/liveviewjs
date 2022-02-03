@@ -27,7 +27,7 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 | Form Events     | `phx-change`         | [x]         |
 | Form Events     | `phx-submit`         | [x]         |
 | Form Events     | `phx-feedback-for`   | [ ]         |
-| Form Events     | `phx-disable-with`   | [ ]         |
+| Form Events     | `phx-disable-with`   | [x]         |
 | Form Events     | `phx-trigger-action` | [ ]         |
 | Form Events     | `phx-auto-recover`   | [ ]         |
 | Focus Events    | `phx-blur`           | [x]         |
