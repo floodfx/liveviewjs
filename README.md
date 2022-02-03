@@ -26,10 +26,10 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 | Click Events    | `phx-click-away`     | [x]         |
 | Form Events     | `phx-change`         | [x]         |
 | Form Events     | `phx-submit`         | [x]         |
-| Form Events     | `phx-feedback-for`   | [ ]         |
+| Form Events     | `phx-feedback-for`   | [?]         |
 | Form Events     | `phx-disable-with`   | [x]         |
-| Form Events     | `phx-trigger-action` | [ ]         |
-| Form Events     | `phx-auto-recover`   | [ ]         |
+| Form Events     | `phx-trigger-action` | [?]         |
+| Form Events     | `phx-auto-recover`   | [?]         |
 | Focus Events    | `phx-blur`           | [x]         |
 | Focus Events    | `phx-focus`          | [x]         |
 | Focus Events    | `phx-window-blur`    | [x]         |
@@ -39,9 +39,9 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 | Key Events      | `phx-window-keydown` | [x]         |
 | Key Events      | `phx-window-keyup`   | [x]         |
 | Key Events      | `phx-key`            | [x]         |
-| DOM Patching    | `phx-update`         | [ ]         |
-| DOM Patching    | `phx-remove`         | [ ]         |
-| JS Interop      | `phx-hook`           | [ ]         |
+| DOM Patching    | `phx-update`         | [?]         |
+| DOM Patching    | `phx-remove`         | [?]         |
+| JS Interop      | `phx-hook`           | [x]         |
 | Rate Limiting   | `phx-debounce`       | [x]         |
 | Rate Limiting   | `phx-throttle`       | [x]         |
 | Static Tracking | `phx-track-static`   | [ ]         |
