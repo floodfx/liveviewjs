@@ -76,13 +76,18 @@ export type PhxFormPayload = PhxEventPayload<"form", { value: string }> & PhxEve
 
 // See https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values
 // for all the string values for the key that kicked off the event
-//{type: "keyup", event: "key_update", value: {key: "ArrowUp"}}
+// {type: "keyup", event: "key_update", value: {key: "ArrowUp"}}
 // {type: "keyup", event: "key_update", value: {key: "ArrowUp", value: ""}}
 // {type: "keyup", event: "key_update", value: {key: "ArrowUp", value: "foo"}}
 // NOTE: these payloads are the same for phx-window-key* events and phx-key* events
 export type PhxKeyUpPayload = PhxEventPayload<"keyup", { value: { key: string, value?: string } }>;
 export type PhxKeyDownPayload = PhxEventPayload<"keydown", { value: { key: string, value?: string } }>;
 
+// Focus and Blur events
+// {type: "focus", event: "focus", value: {value: ""}}
+// {type: "blur", event: "blur", value: {value: ""}}
+export type PhxFocusPayload = PhxEventPayload<"focus", { value: { value: string } }>;
+export type PhxBlurPayload = PhxEventPayload<"blur", { value: { value: string } }>;
 
 export const newPhxReply = (from: PhxIncomingMessage<unknown>, payload: any): PhxReply => {
   return [
