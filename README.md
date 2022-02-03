@@ -30,10 +30,10 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 | Form Events     | `phx-disable-with`   | [ ]         |
 | Form Events     | `phx-trigger-action` | [ ]         |
 | Form Events     | `phx-auto-recover`   | [ ]         |
-| Focus Events    | `phx-blur`           | [ ]         |
-| Focus Events    | `phx-focus`          | [ ]         |
-| Focus Events    | `phx-window-blur`    | [ ]         |
-| Focus Events    | `phx-window-focus`   | [ ]         |
+| Focus Events    | `phx-blur`           | [x]         |
+| Focus Events    | `phx-focus`          | [x]         |
+| Focus Events    | `phx-window-blur`    | [x]         |
+| Focus Events    | `phx-window-focus`   | [x]         |
 | Key Events      | `phx-keydown`        | [x]         |
 | Key Events      | `phx-keyup`          | [x]         |
 | Key Events      | `phx-window-keydown` | [x]         |
