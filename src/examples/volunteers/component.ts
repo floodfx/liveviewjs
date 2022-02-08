@@ -72,8 +72,9 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
   handleEvent(event: VolunteerEvents, params: StringPropertyValues<Pick<Volunteer, "name" | "phone">>, socket: LiveViewSocket<VolunteerContext>): VolunteerContext {
     if (event === "validate") {
       const validateChangeset = changeset({}, params);
+      // set an action or else the changeset will be ignored
+      // and form errors will not be shown
       validateChangeset.action = "validate";
-      console.log("validate", params, validateChangeset);
       return {
         volunteers: [],
         changeset: validateChangeset
