@@ -10,12 +10,13 @@ import { SalesDashboardLiveViewComponent } from './sales_dashboard_liveview';
 import { ServersLiveViewComponent } from './servers/component';
 import { SortLiveViewComponent } from './sorting/component';
 import { routeDetails } from './routeDetails';
+import { VolunteerComponent } from './volunteers/component';
 
 const lvServer = new LiveViewServer({
+  signingSecret: "MY_VERY_SECRET_KEY",
   // port: 3002,
   // rootView: "./examples/rootView.ejs",
   viewsPath: path.join(__dirname, "views"),
-  // support different templates?
 });
 
 
@@ -27,17 +28,19 @@ const router: LiveViewRouter = {
   "/autocomplete": new AutocompleteLiveViewComponent(),
   "/paginate": new PaginateLiveViewComponent(),
   "/sort": new SortLiveViewComponent(),
+  '/servers': new ServersLiveViewComponent(),
 }
 
 // register all routes
 lvServer.registerLiveViewRoutes(router)
 
 // register single route
-lvServer.registerLiveViewRoute("/servers", new ServersLiveViewComponent())
+lvServer.registerLiveViewRoute("/volunteers", new VolunteerComponent())
 
 // add your own routes to the express app
 lvServer.expressApp.get("/", (req, res) => {
 
+  // this one renders the index of the examples
   res.render("index.html.ejs", {
     routes: Object.keys(router).map(path => {
       return routeDetails.find(route => route.path === path)
