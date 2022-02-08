@@ -12,6 +12,7 @@ export class LiveViewComponentManager {
   private intervals: NodeJS.Timeout[] = [];
   private lastHeartbeat: number = Date.now();
   private socketIsClosed: boolean = false;
+  csrfToken?: string;
 
   constructor(component: LiveViewComponent<unknown, unknown>, signingSecret: string) {
     this.component = component;
@@ -31,16 +32,22 @@ export class LiveViewComponentManager {
 
     // extract params, session and socket from payload
     const { params: payloadParams, session: payloadSession, static: payloadStatic } = payload;
+    // set component manager csfr token
+    this.csrfToken = payloadParams._csrf_token;
 
-    // TODO - use session from cookie
-    let session = {}
+    let session: Omit<SessionData, "cookie">;
     try {
-      session = jwt.verify(payloadSession, this.signingSecret) as Partial<SessionData>;
+      session = jwt.verify(payloadSession, this.signingSecret) as Omit<SessionData, "cookie">;
+      // compare sesison csrfToken with csrfToken from payload
+      if (session.csrfToken !== this.csrfToken) {
+        // if session csrfToken does not match payload csrfToken, reject join
+        console.log("Rejecting join due to mismatched csrfTokens", session.csrfToken, this.csrfToken);
+        return;
+      }
     } catch (e) {
-      console.log("failed to decode session", e);
+      console.log("Error decoding session", e);
+      return;
     }
-    // TODO - check csfr token?
-    // TODO - compare csfr token with session _csrf?
 
     const liveViewSocket = this.buildLiveViewSocket(ws, topic);
     // pass in phx_join payload params, session, and socket
@@ -80,6 +87,8 @@ export class LiveViewComponentManager {
     } else if (type === "form") {
       // @ts-ignore - URLSearchParams has an entries method but not typed
       value = Object.fromEntries(new URLSearchParams(payload.value))
+      // TODO - check value for _csrf_token here from phx_submit and validate against session csrf?
+      // TODO - check for _target variable from phx_change here and remove it from value?
     } else if (type === "keyup" || type === "keydown") {
       value = payload.value;
     } else if (type === "blur" || type === "focus") {
@@ -107,7 +116,7 @@ export class LiveViewComponentManager {
       this.sendPhxReply(ws, newPhxReply(message, replyPayload));
     }
     else {
-      console.error("no handleEvent in component", this.component);
+      console.error("no handleEvent method in component. add handleEvent method in your component to fix this error");
       return;
     }
 

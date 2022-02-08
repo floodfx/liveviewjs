@@ -30,19 +30,19 @@ export class LiveViewServer {
   private port: number = 4444;
   private rootView: string = "index.html.ejs";
   private viewsPath: string[];
-  private signingSecret: string = nanoid();
+  private signingSecret: string;
   private sessionStore: session.Store = new MemoryStore();
 
   private _router: LiveViewRouter = {};
   private messageRouter = new MessageRouter()
   expressApp: express.Application;
 
-  constructor(options: Partial<LiveViewServerOptions>) {
+  constructor(options: Partial<Omit<LiveViewServerOptions, "signingSecret">> & { signingSecret: string }) {
     this.port = options.port ?? this.port;
     this.rootView = options.rootView ?? this.rootView;
     this.viewsPath = options.viewsPath ? [options.viewsPath, MODULE_VIEWS_PATH] : [MODULE_VIEWS_PATH];
-    this.signingSecret = options.signingSecret ?? this.signingSecret;
     this.sessionStore = options.sessionStore ?? this.sessionStore;
+    this.signingSecret = options.signingSecret;
     this.expressApp = this.buildExpressApp();
   }
 
@@ -105,7 +105,6 @@ export class LiveViewServer {
 
     app.get('/:liveview', (req, res) => {
       const liveview = req.params.liveview;
-      console.log("liveview", liveview);
 
       // new LiveViewId per HTTP requess?
       const liveViewId = nanoid(); // TODO allow option for id generator?
@@ -120,6 +119,9 @@ export class LiveViewServer {
       // look up component for route
       const component = this._router[`/${liveview}`];
       if (!component) {
+        // TODO which is better 404 or just call next()?
+        // next();
+        // return;
         res.status(404).send("Not found");
         return;
       }
@@ -129,7 +131,7 @@ export class LiveViewServer {
         req.session.csrfToken = nanoid();
       }
 
-      const jwtPayload: Partial<SessionData> = {
+      const jwtPayload: Omit<SessionData, "cookie"> = {
         csrfToken: req.session.csrfToken,
       }
 

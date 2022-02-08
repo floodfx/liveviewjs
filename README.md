@@ -19,34 +19,39 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 ### Implemented Phoenix Bindings
 (See [Phoenix Bindings Docs](https://hexdocs.pm/phoenix_live_view/bindings.html) for more details)
 
-| Binding         | Attribute            | Implemented |
+| Binding         | Attribute            | Supported   |
 |-----------------|----------------------|-------------|
-| Params          | `phx-value-*`        | [x]         |
-| Click Events    | `phx-click`          | [x]         |
-| Click Events    | `phx-click-away`     | [x]         |
-| Form Events     | `phx-change`         | [x]         |
-| Form Events     | `phx-submit`         | [x]         |
-| Form Events     | `phx-feedback-for`   | [ ]         |
-| Form Events     | `phx-disable-with`   | [x]         |
-| Form Events     | `phx-trigger-action` | [ ]         |
-| Form Events     | `phx-auto-recover`   | [ ]         |
-| Focus Events    | `phx-blur`           | [x]         |
-| Focus Events    | `phx-focus`          | [x]         |
-| Focus Events    | `phx-window-blur`    | [x]         |
-| Focus Events    | `phx-window-focus`   | [x]         |
-| Key Events      | `phx-keydown`        | [x]         |
-| Key Events      | `phx-keyup`          | [x]         |
-| Key Events      | `phx-window-keydown` | [x]         |
-| Key Events      | `phx-window-keyup`   | [x]         |
-| Key Events      | `phx-key`            | [x]         |
-| DOM Patching    | `phx-update`         | [ ]         |
-| DOM Patching    | `phx-remove`         | [ ]         |
-| JS Interop      | `phx-hook`           | [ ]         |
-| Rate Limiting   | `phx-debounce`       | [x]         |
-| Rate Limiting   | `phx-throttle`       | [x]         |
-| Static Tracking | `phx-track-static`   | [ ]         |
+| Params          | `phx-value-*`        | ✅          |
+| Click Events    | `phx-click`          | ✅          |
+| Click Events    | `phx-click-away`     | ✅          |
+| Form Events     | `phx-change`         | ✅          |
+| Form Events     | `phx-submit`         | ✅          |
+| Form Events     | `phx-feedback-for`   | ✅          |
+| Form Events     | `phx-disable-with`   | ✅          |
+| Form Events     | `phx-trigger-action` | ﹖          |
+| Form Events     | `phx-auto-recover`   | ﹖          |
+| Focus Events    | `phx-blur`           | ✅          |
+| Focus Events    | `phx-focus`          | ✅          |
+| Focus Events    | `phx-window-blur`    | ✅          |
+| Focus Events    | `phx-window-focus`   | ✅          |
+| Key Events      | `phx-keydown`        | ✅          |
+| Key Events      | `phx-keyup`          | ✅          |
+| Key Events      | `phx-window-keydown` | ✅          |
+| Key Events      | `phx-window-keyup`   | ✅          |
+| Key Events      | `phx-key`            | ✅          |
+| DOM Patching    | `phx-update`         | ✅          |
+| DOM Patching    | `phx-remove`         | ﹖          |
+| JS Interop      | `phx-hook`           | ✅          |
+| Rate Limiting   | `phx-debounce`       | ✅          |
+| Rate Limiting   | `phx-throttle`       | ✅          |
+| Static Tracking | `phx-track-static`   | ⊖           |
 
-
+Other features:
+* [Updating HTML Document Title](https://hexdocs.pm/phoenix_live_view/live-layouts.html#updating-the-html-document-title) - Not yet
+* [View Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Some...
+* [LiveView Helpers](https://hexdocs.pm/phoenix_live_view/0.10.0/Phoenix.LiveView.Helpers.html) - Not yet
+* [Temporary Assigns](https://hexdocs.pm/phoenix_live_view/dom-patching.html#temporary-assigns) - Not yet
+* [Build in Flash Message Support](https://hexdocs.pm/phoenix_live_view/0.17.6/Phoenix.LiveView.html#put_flash/3) - Not yet
 
 ### Show me some code! ⌨️
 

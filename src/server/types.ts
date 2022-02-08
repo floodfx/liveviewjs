@@ -1,8 +1,23 @@
 import { SessionData } from "express-session";
 import { WebSocket } from "ws";
 import { LiveViewComponentManager } from "./socket/component_manager";
-import { PhxOutgoingLivePatchPush } from "./socket/types";
 import { HtmlSafeString } from "./templates";
+
+// Validation errors for a type T should
+// be keyed by the field name
+export type LiveViewChangesetErrors<T> = {
+  [Property in keyof T]?: string
+}
+
+// Changeset represents the state of a form
+// as it is validated and submitted by the user
+export interface LiveViewChangeset<T> {
+  action?: string //
+  changes: Partial<T> // diff between initial and updated
+  errors?: LiveViewChangesetErrors<T> // validation errors by field name of T
+  data: T | Partial<T> // merged data
+  valid: boolean // true if no validation errors
+}
 
 export interface LiveViewSocket<T> {
   id: string;
@@ -21,9 +36,7 @@ export interface LiveViewMountParams {
   ["_mounts"]: number
 }
 
-export interface LiveViewSessionParams {
-  [key: string]: string;
-}
+export interface LiveViewSessionParams extends Record<string, string> { }
 
 // params on url are strings
 export type StringPropertyValues<Type> = { [Property in keyof Type]: string; };
@@ -66,6 +79,12 @@ export abstract class BaseLiveViewComponent<T, P> implements LiveViewComponent<T
       this.componentManager.onPushPatch(socket, patch);
     } else {
       console.error("component manager not registered for component", this);
+    }
+  }
+
+  csrfToken(): string | undefined {
+    if (this.componentManager) {
+      return this.componentManager.csrfToken;
     }
   }
 
