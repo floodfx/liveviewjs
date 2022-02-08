@@ -73,7 +73,9 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
 
   handleEvent(event: VolunteerEvents, params: StringPropertyValues<Pick<Volunteer, "name" | "phone" | "id">>, socket: LiveViewSocket<VolunteerContext>): VolunteerContext {
     if (event === "toggle-status") {
+      // lookup volunteer by id
       const volunteer = getVolunteer(params.id);
+      // toggle checked_out status (ignoring changeset for now)
       updateVolunteer(volunteer!, { checked_out: !volunteer!.checked_out });
       return {
         volunteers: listVolunteers(),
