@@ -58,6 +58,6 @@ export const routeDetails: RouteDetails[] = [
     label: "Volunteers",
     path: "/volunteers",
     summary: "Simulate signing up for a volunteer event.",
-    tags: ["phx-submit", "phx-update", "phx-feedback-for"]
+    tags: ["phx-submit", "phx-change", "phx-update", "phx-feedback-for", "phx-debounce"]
   }
 ]
