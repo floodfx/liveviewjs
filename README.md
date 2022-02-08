@@ -14,9 +14,45 @@ This is a port of [Phoenix LiveView](https://hexdocs.pm/phoenix_live_view/Phoeni
  * **Follow component API design (i.e. `mount`, `render` etc), reimplemented with Typescript (so even more type-safe)** - Components in LiveViewJS follow the `mount`, `render`, `handleEvent`, and `handleInfo` API defined in Phoenix. Again, no need to invent a new API.
 
 ### Status - **⍺**
-This is still in very early PoC territory.  You probably shouldn't put this into production just yet.
+This is still in ⍺lpha territory.  You probably shouldn't put this into production just yet.  But side-projects / internal apps could work. 🧱
+
+### Implemented Phoenix Bindings
+(See [Phoenix Bindings Docs](https://hexdocs.pm/phoenix_live_view/bindings.html) for more details)
+
+| Binding         | Attribute            | Implemented |
+|-----------------|----------------------|-------------|
+| Params          | `phx-value-*`        | [x]         |
+| Click Events    | `phx-click`          | [x]         |
+| Click Events    | `phx-click-away`     | [x]         |
+| Form Events     | `phx-change`         | [x]         |
+| Form Events     | `phx-submit`         | [x]         |
+| Form Events     | `phx-feedback-for`   | [ ]         |
+| Form Events     | `phx-disable-with`   | [ ]         |
+| Form Events     | `phx-trigger-action` | [ ]         |
+| Form Events     | `phx-auto-recover`   | [ ]         |
+| Focus Events    | `phx-blur`           | [ ]         |
+| Focus Events    | `phx-focus`          | [ ]         |
+| Focus Events    | `phx-window-blur`    | [ ]         |
+| Focus Events    | `phx-window-focus`   | [ ]         |
+| Key Events      | `phx-keydown`        | [x]         |
+| Key Events      | `phx-keyup`          | [x]         |
+| Key Events      | `phx-window-keydown` | [x]         |
+| Key Events      | `phx-window-keyup`   | [x]         |
+| Key Events      | `phx-key`            | [x]         |
+| DOM Patching    | `phx-update`         | [ ]         |
+| DOM Patching    | `phx-remove`         | [ ]         |
+| JS Interop      | `phx-hook`           | [ ]         |
+| Rate Limiting   | `phx-debounce`       | [x]         |
+| Rate Limiting   | `phx-throttle`       | [x]         |
+| Static Tracking | `phx-track-static`   | [ ]         |
+
+
 
 ### Show me some code! ⌨️
+
+**Step 0** Install LiveViewJS
+`npm i liveviewjs`
+
 **Step 1** Implement a `LiveViewComponent`
 ```ts
 import { SessionData } from "express-session";

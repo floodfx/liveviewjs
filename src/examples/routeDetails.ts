@@ -10,7 +10,7 @@ export const routeDetails: RouteDetails[] = [
     label: "Light",
     path: "/light",
     summary: "Control the brightness of a porch light using buttons.",
-    tags: ["phx-click"]
+    tags: ["phx-click", "phx-window-keydown", "phx-key"]
   },
   {
     label: "License",
