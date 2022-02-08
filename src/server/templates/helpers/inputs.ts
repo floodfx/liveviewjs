@@ -4,17 +4,19 @@ import html from ".."
 interface InputOptions {
   placeholder?: string
   autocomplete?: "off" | "on"
+  phx_debounce?: number | "blur" | "focus"
   type?: "text" | "tel"
 }
 
 export const text_input = <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: InputOptions) => {
   const placeholder = options?.placeholder ? "placeholder=\"" + options.placeholder + "\"" : "";
   const autocomplete = options?.autocomplete ? "autocomplete=\"" + options.autocomplete + "\"" : "";
+  const phx_debounce = options?.phx_debounce ? "phx-debounce=\"" + options.phx_debounce + "\"" : "";
   const type = options?.type ?? "text";
   const id = `input_${key}`;
   const value = changeset.data[key] ?? "";
   return html`
-    <input type="${type}" id="${id}" name="${key}" value="${value}" ${autocomplete} ${placeholder} />
+    <input type="${type}" id="${id}" name="${key}" value="${value}" ${autocomplete} ${placeholder} ${phx_debounce} />
   `
 }
 

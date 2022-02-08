@@ -11,8 +11,10 @@ export interface VolunteerContext {
   changeset: LiveViewChangeset<Volunteer>
 }
 
+type VolunteerEvents = "save" | "validate";
+
 export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, unknown>
-  implements LiveViewExternalEventListener<VolunteerContext, "save", Volunteer> {
+  implements LiveViewExternalEventListener<VolunteerContext, VolunteerEvents, Volunteer> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<VolunteerContext>) {
     return {
@@ -27,15 +29,18 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
     <h1>Volunteer Check-In</h1>
     <div id="checkin">
 
-      ${form_for<Volunteer>("#", { phx_submit: "save" })}
+      ${form_for<Volunteer>("#", {
+      phx_submit: "save",
+      phx_change: "validate"
+    })}
 
         <div class="field">
-          ${text_input<Volunteer>(changeset, "name", { placeholder: "Name", autocomplete: "off" })}
+          ${text_input<Volunteer>(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
           ${error_tag(changeset, "name")}
         </div>
 
         <div class="field">
-          ${telephone_input<Volunteer>(changeset, "phone", { placeholder: "Phone", autocomplete: "off" })}
+          ${telephone_input<Volunteer>(changeset, "phone", { placeholder: "Phone", autocomplete: "off", phx_debounce: "blur" })}
           ${error_tag(changeset, "phone")}
         </div>
         ${submit("Check In", { phx_disable_with: "Saving..." })}
@@ -64,31 +69,42 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
     `
   }
 
-  handleEvent(event: "save", params: StringPropertyValues<Pick<Volunteer, "name" | "phone">>, socket: LiveViewSocket<VolunteerContext>): VolunteerContext {
-    const volunteer: Partial<Volunteer> = {
-      name: params.name,
-      phone: params.phone,
-    }
-    // attempt to create the volunteer from the form data
-    const createChangeset = create_volunteer(volunteer);
-
-    // valid form data
-    if (createChangeset.valid) {
-      const newVolunteer = createChangeset.data as Volunteer;
-      // only add new volunteer since we're using phx-update="prepend"
-      // which means the new volunteer will be added to the top of the list
-      const newVolunteers = [newVolunteer];
-      const emptyChangeset = changeset({}, {}); // reset form
+  handleEvent(event: VolunteerEvents, params: StringPropertyValues<Pick<Volunteer, "name" | "phone">>, socket: LiveViewSocket<VolunteerContext>): VolunteerContext {
+    if (event === "validate") {
+      const validateChangeset = changeset({}, params);
+      // set an action or else the changeset will be ignored
+      // and form errors will not be shown
+      validateChangeset.action = "validate";
       return {
-        volunteers: newVolunteers,
-        changeset: emptyChangeset
+        volunteers: [],
+        changeset: validateChangeset
       }
-    }
-    // form data was invalid
-    else {
-      return {
-        volunteers: [], // no volunteers to prepend
-        changeset: createChangeset // errors for form
+    } else {
+      const volunteer: Partial<Volunteer> = {
+        name: params.name,
+        phone: params.phone,
+      }
+      // attempt to create the volunteer from the form data
+      const createChangeset = create_volunteer(volunteer);
+
+      // valid form data
+      if (createChangeset.valid) {
+        const newVolunteer = createChangeset.data as Volunteer;
+        // only add new volunteer since we're using phx-update="prepend"
+        // which means the new volunteer will be added to the top of the list
+        const newVolunteers = [newVolunteer];
+        const emptyChangeset = changeset({}, {}); // reset form
+        return {
+          volunteers: newVolunteers,
+          changeset: emptyChangeset
+        }
+      }
+      // form data was invalid
+      else {
+        return {
+          volunteers: [], // no volunteers to prepend
+          changeset: createChangeset // errors for form
+        }
       }
     }
   }

@@ -9,7 +9,7 @@ export const routeDetails: RouteDetails[] = [
   {
     label: "Light",
     path: "/light",
-    summary: "Control the brightness of a porch light using buttons.",
+    summary: "Control the brightness of a porch light using buttons or keys.",
     tags: ["phx-click", "phx-window-keydown", "phx-key"]
   },
   {
@@ -58,6 +58,6 @@ export const routeDetails: RouteDetails[] = [
     label: "Volunteers",
     path: "/volunteers",
     summary: "Simulate signing up for a volunteer event.",
-    tags: ["phx-submit", "phx-update", "phx-feedback-for"]
+    tags: ["phx-submit", "phx-change", "phx-update", "phx-feedback-for", "phx-debounce"]
   }
 ]
