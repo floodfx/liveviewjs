@@ -53,5 +53,11 @@ export const routeDetails: RouteDetails[] = [
     path: "/servers",
     summary: "Navigate between servers using live navigation updating the url params along with the content.",
     tags: ["live-patch"]
+  },
+  {
+    label: "Volunteers",
+    path: "/volunteers",
+    summary: "Simulate signing up for a volunteer event.",
+    tags: ["phx-submit", "phx-update", "phx-feedback-for"]
   }
 ]

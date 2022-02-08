@@ -29,13 +29,14 @@ const router: LiveViewRouter = {
   "/paginate": new PaginateLiveViewComponent(),
   "/sort": new SortLiveViewComponent(),
   '/servers': new ServersLiveViewComponent(),
+  "/volunteers": new VolunteerComponent()
 }
 
 // register all routes
 lvServer.registerLiveViewRoutes(router)
 
 // register single route
-lvServer.registerLiveViewRoute("/volunteers", new VolunteerComponent())
+// lvServer.registerLiveViewRoute("/volunteers", new VolunteerComponent())
 
 // add your own routes to the express app
 lvServer.expressApp.get("/", (req, res) => {
