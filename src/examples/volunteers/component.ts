@@ -36,7 +36,7 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
 
         <div class="field">
           ${text_input<Volunteer>(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
-          ${error_tag(changeset, "name",)}
+          ${error_tag(changeset, "name")}
         </div>
 
         <div class="field">
