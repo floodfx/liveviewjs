@@ -25,8 +25,10 @@ export class LiveViewComponentManager {
 
   handleJoin(ws: WebSocket, message: PhxJoinIncoming) {
     const [joinRef, messageRef, topic, event, payload] = message;
-    const { url: urlString } = payload;
-    const url = new URL(urlString);
+    const { url: urlString, redirect: redirectString } = payload;
+    const joinUrl = urlString || redirectString;
+    // checked one of these was defined in MessageRouter
+    const url = new URL(joinUrl!);
     // @ts-ignore
     const urlParams = Object.fromEntries(url.searchParams);
 
@@ -55,7 +57,7 @@ export class LiveViewComponentManager {
 
     // update socket with new context
     liveViewSocket.context = this.context;
-    this.context = this.component.handleParams(urlParams, urlString, liveViewSocket);
+    this.context = this.component.handleParams(urlParams, joinUrl!, liveViewSocket);
 
     const view = this.component.render(this.context);
 

@@ -46,8 +46,15 @@ export class MessageRouter {
             console.log("expected component manager for topic", topic);
           }
           break;
+        case "phx_leave":
+          componentManager = this.topicComponentManager[topic];
+          if (componentManager) {
+            componentManager.shutdown();
+            delete this.topicComponentManager[topic];
+          }
+          break;
         default:
-          console.error("unhandeded protocol event", event);
+          console.error("unhandeded protocol event", rawPhxMessage);
       }
     }
     else {
@@ -79,8 +86,13 @@ export class MessageRouter {
 
     // use url to route join request to component
     const [joinRef, messageRef, topic, event, payload] = message;
-    const { url: urlString } = payload;
-    const url = new URL(urlString);
+    const { url: urlString, redirect: redirectString } = payload;
+    const joinUrl = urlString || redirectString;
+    if (!joinUrl) {
+      console.error("no url or redirect in join message", message);
+      return;
+    }
+    const url = new URL(joinUrl);
     const component = router[url.pathname];
     if (!component) {
       console.error("no component found for", url);

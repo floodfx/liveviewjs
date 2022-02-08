@@ -13,7 +13,7 @@ export type PhxIncomingMessage<Payload> = [
   joinRef: string | null, // number
   messageRef: string, // number
   topic: "phoenix" | string,
-  event: "phx_join" | "event" | "heartbeat" | "live_patch",
+  event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
   payload: Payload
 ]
 
@@ -25,11 +25,19 @@ export type PhxOutgoingMessage<Payload> = [
   payload: Payload
 ]
 
+// guess at Flash shape
+export type PhxFlash = {
+  info?: string
+  error?: string
+}
+
 export interface PhxJoinPayload {
   params: LiveViewMountParams
   session: string
   static: string
-  url: string
+  url?: string
+  redirect?: string
+  flash?: PhxFlash | null
 }
 
 export type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
