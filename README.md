@@ -19,7 +19,7 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 ### Implemented Phoenix Bindings
 (See [Phoenix Bindings Docs](https://hexdocs.pm/phoenix_live_view/bindings.html) for more details)
 
-| Binding         | Attribute            | Implemented |
+| Binding         | Attribute            | Supported   |
 |-----------------|----------------------|-------------|
 | Params          | `phx-value-*`        | [x]         |
 | Click Events    | `phx-click`          | [x]         |
@@ -39,7 +39,7 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 | Key Events      | `phx-window-keydown` | [x]         |
 | Key Events      | `phx-window-keyup`   | [x]         |
 | Key Events      | `phx-key`            | [x]         |
-| DOM Patching    | `phx-update`         | [?]         |
+| DOM Patching    | `phx-update`         | [x]         |
 | DOM Patching    | `phx-remove`         | [?]         |
 | JS Interop      | `phx-hook`           | [x]         |
 | Rate Limiting   | `phx-debounce`       | [x]         |
@@ -48,9 +48,9 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 
 Other features:
 * [Updating HTML Document Title](https://hexdocs.pm/phoenix_live_view/live-layouts.html#updating-the-html-document-title) - Not yet
-* [View Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Not yet
+* [View Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Some...
 * [LiveView Helpers](https://hexdocs.pm/phoenix_live_view/0.10.0/Phoenix.LiveView.Helpers.html) - Not yet
-* []
+* [Temporary Assigns](https://hexdocs.pm/phoenix_live_view/dom-patching.html#temporary-assigns) - Not yet
 
 ### Show me some code! ⌨️
 

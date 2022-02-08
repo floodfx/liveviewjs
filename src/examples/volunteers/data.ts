@@ -8,7 +8,7 @@ const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/
 // Use Zod to define the schema for the Volunteer model
 // More on Zod - https://github.com/colinhacks/zod
 export const VolunteerSchema = z.object({
-  id: z.string().default(nanoid()),
+  id: z.string().default(nanoid),
   name: z.string().min(2).max(100),
   phone: z.string().regex(phoneRegex, 'Should be a valid phone number'),
   checked_out: z.boolean().default(false),
@@ -19,6 +19,10 @@ export type Volunteer = z.infer<typeof VolunteerSchema>;
 
 // in memory data store
 export const volunteers: Record<string, Volunteer> = {}
+
+export const listVolunteers = (): Volunteer[] => {
+  return Object.values(volunteers)
+}
 
 export const changeset = (volunteer: Partial<Volunteer>, attrs: Partial<Volunteer>, action?: string): LiveViewChangeset<Volunteer> => {
   const merged = { ...volunteer, ...attrs };

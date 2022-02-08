@@ -1,7 +1,7 @@
 import html from "../../server/templates";
 import { BaseLiveViewComponent, LiveViewChangeset, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/types";
 import { SessionData } from "express-session";
-import { Volunteer, changeset, create_volunteer } from "./data";
+import { Volunteer, changeset, create_volunteer, listVolunteers } from "./data";
 import { submit } from "../../server/templates/helpers/submit";
 import { form_for } from "../../server/templates/helpers/form_for";
 import { error_tag, telephone_input, text_input } from "../../server/templates/helpers/inputs";
@@ -16,7 +16,7 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<VolunteerContext>) {
     return {
-      volunteers: [],
+      volunteers: listVolunteers(),
       changeset: changeset({}, {})
     }
   };
@@ -65,25 +65,30 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
   }
 
   handleEvent(event: "save", params: StringPropertyValues<Pick<Volunteer, "name" | "phone">>, socket: LiveViewSocket<VolunteerContext>): VolunteerContext {
-    const { volunteers } = socket.context;
-    console.log("save", params);
     const volunteer: Partial<Volunteer> = {
       name: params.name,
       phone: params.phone,
     }
+    // attempt to create the volunteer from the form data
     const createChangeset = create_volunteer(volunteer);
+
+    // valid form data
     if (createChangeset.valid) {
       const newVolunteer = createChangeset.data as Volunteer;
-      const newVolunteers = [newVolunteer, ...volunteers];
-      const newChangeset = changeset({}, {});
+      // only add new volunteer since we're using phx-update="prepend"
+      // which means the new volunteer will be added to the top of the list
+      const newVolunteers = [newVolunteer];
+      const emptyChangeset = changeset({}, {}); // reset form
       return {
         volunteers: newVolunteers,
-        changeset: newChangeset
+        changeset: emptyChangeset
       }
-    } else {
+    }
+    // form data was invalid
+    else {
       return {
-        volunteers,
-        changeset: createChangeset
+        volunteers: [], // no volunteers to prepend
+        changeset: createChangeset // errors for form
       }
     }
   }
