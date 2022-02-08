@@ -26,7 +26,7 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 | Click Events    | `phx-click-away`     | [x]         |
 | Form Events     | `phx-change`         | [x]         |
 | Form Events     | `phx-submit`         | [x]         |
-| Form Events     | `phx-feedback-for`   | [?]         |
+| Form Events     | `phx-feedback-for`   | [x]         |
 | Form Events     | `phx-disable-with`   | [x]         |
 | Form Events     | `phx-trigger-action` | [?]         |
 | Form Events     | `phx-auto-recover`   | [?]         |
@@ -44,9 +44,13 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 | JS Interop      | `phx-hook`           | [x]         |
 | Rate Limiting   | `phx-debounce`       | [x]         |
 | Rate Limiting   | `phx-throttle`       | [x]         |
-| Static Tracking | `phx-track-static`   | [ ]         |
+| Static Tracking | `phx-track-static`   | [-]         |
 
-
+Other features:
+* [Updating HTML Document Title](https://hexdocs.pm/phoenix_live_view/live-layouts.html#updating-the-html-document-title) - Not yet
+* [View Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Not yet
+* [LiveView Helpers](https://hexdocs.pm/phoenix_live_view/0.10.0/Phoenix.LiveView.Helpers.html) - Not yet
+* []
 
 ### Show me some code! ⌨️
 
