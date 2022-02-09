@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1644427009013" clover="3.2.0">
-  <project timestamp="1644427009014" name="All files">
-    <metrics statements="81" coveredstatements="73" conditionals="19" coveredconditionals="16" methods="25" coveredmethods="22" elements="125" coveredelements="111" complexity="0" loc="81" ncloc="81" packages="5" files="6" classes="6"/>
+<coverage generated="1644427137011" clover="3.2.0">
+  <project timestamp="1644427137011" name="All files">
+    <metrics statements="77" coveredstatements="71" conditionals="19" coveredconditionals="16" methods="24" coveredmethods="22" elements="120" coveredelements="109" complexity="0" loc="77" ncloc="77" packages="4" files="4" classes="4"/>
     <package name="examples.autocomplete">
       <metrics statements="5" coveredstatements="5" conditionals="1" coveredconditionals="1" methods="2" coveredmethods="2"/>
       <file name="data.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/examples/autocomplete/data.ts">
@@ -60,19 +60,6 @@
         <line num="63" count="0" type="stmt"/>
         <line num="64" count="0" type="stmt"/>
         <line num="66" count="0" type="stmt"/>
-      </file>
-    </package>
-    <package name="misc.erlang">
-      <metrics statements="4" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
-      <file name="Erlang.js" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/misc/erlang/Erlang.js">
-        <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-      </file>
-      <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/misc/erlang/index.ts">
-        <metrics statements="4" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
-        <line num="2" count="1" type="stmt"/>
-        <line num="4" count="1" type="stmt"/>
-        <line num="5" count="0" type="stmt"/>
-        <line num="7" count="0" type="stmt"/>
       </file>
     </package>
     <package name="server.templates">
