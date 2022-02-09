@@ -168,7 +168,9 @@ export class LiveViewComponentManager {
 
     this.context = this.component.handleParams(params, to, liveViewSocket);
 
-    this.sendPhxReply(liveViewSocket.ws!, message)
+    if (liveViewSocket.connected && liveViewSocket.ws) {
+      this.sendPhxReply(liveViewSocket.ws!, message)
+    }
   }
 
   repeat(fn: () => void, intervalMillis: number) {

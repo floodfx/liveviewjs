@@ -3,15 +3,15 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for server/component</title>
+    <title>Code coverage report for socket</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="../../prettify.css" />
-    <link rel="stylesheet" href="../../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style type='text/css'>
         .coverage-summary .sorter {
-            background-image: url(../../sort-arrow-sprite.png);
+            background-image: url(../sort-arrow-sprite.png);
         }
     </style>
 </head>
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> server/component</h1>
+        <h1><a href="../index.html">All files</a> socket</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">14.01% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/10</span>
+                <span class='fraction'>15/107</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">6.66% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>2/30</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">5% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>4/4</span>
+                <span class='fraction'>1/20</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">12.38% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>10/10</span>
+                <span class='fraction'>13/105</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <div class="pad1">
 <table class="coverage-summary">
 <thead>
@@ -79,33 +79,48 @@
 </tr>
 </thead>
 <tbody><tr>
-	<td class="file high" data-value="base_component.ts"><a href="base_component.ts.html">base_component.ts</a></td>
-	<td data-value="100" class="pic high">
-	<div class="chart"><div class="cover-fill cover-full" style="width: 100%"></div><div class="cover-empty" style="width: 0%"></div></div>
+	<td class="file low" data-value="component_manager.ts"><a href="component_manager.ts.html">component_manager.ts</a></td>
+	<td data-value="4.25" class="pic low">
+	<div class="chart"><div class="cover-fill" style="width: 4%"></div><div class="cover-empty" style="width: 96%"></div></div>
 	</td>
-	<td data-value="100" class="pct high">100%</td>
-	<td data-value="8" class="abs high">8/8</td>
-	<td data-value="100" class="pct high">100%</td>
-	<td data-value="3" class="abs high">3/3</td>
-	<td data-value="100" class="pct high">100%</td>
-	<td data-value="4" class="abs high">4/4</td>
-	<td data-value="100" class="pct high">100%</td>
-	<td data-value="8" class="abs high">8/8</td>
+	<td data-value="4.25" class="pct low">4.25%</td>
+	<td data-value="94" class="abs low">4/94</td>
+	<td data-value="0" class="pct low">0%</td>
+	<td data-value="28" class="abs low">0/28</td>
+	<td data-value="0" class="pct low">0%</td>
+	<td data-value="17" class="abs low">0/17</td>
+	<td data-value="4.25" class="pct low">4.25%</td>
+	<td data-value="94" class="abs low">4/94</td>
 	</tr>
 
 <tr>
-	<td class="file high" data-value="index.ts"><a href="index.ts.html">index.ts</a></td>
+	<td class="file high" data-value="types.ts"><a href="types.ts.html">types.ts</a></td>
 	<td data-value="100" class="pic high">
 	<div class="chart"><div class="cover-fill cover-full" style="width: 100%"></div><div class="cover-empty" style="width: 0%"></div></div>
 	</td>
 	<td data-value="100" class="pct high">100%</td>
-	<td data-value="2" class="abs high">2/2</td>
-	<td data-value="100" class="pct high">100%</td>
-	<td data-value="0" class="abs high">0/0</td>
-	<td data-value="100" class="pct high">100%</td>
-	<td data-value="0" class="abs high">0/0</td>
+	<td data-value="6" class="abs high">6/6</td>
 	<td data-value="100" class="pct high">100%</td>
 	<td data-value="2" class="abs high">2/2</td>
+	<td data-value="100" class="pct high">100%</td>
+	<td data-value="1" class="abs high">1/1</td>
+	<td data-value="100" class="pct high">100%</td>
+	<td data-value="6" class="abs high">6/6</td>
+	</tr>
+
+<tr>
+	<td class="file medium" data-value="util.ts"><a href="util.ts.html">util.ts</a></td>
+	<td data-value="71.42" class="pic medium">
+	<div class="chart"><div class="cover-fill" style="width: 71%"></div><div class="cover-empty" style="width: 29%"></div></div>
+	</td>
+	<td data-value="71.42" class="pct medium">71.42%</td>
+	<td data-value="7" class="abs medium">5/7</td>
+	<td data-value="100" class="pct high">100%</td>
+	<td data-value="0" class="abs high">0/0</td>
+	<td data-value="0" class="pct low">0%</td>
+	<td data-value="2" class="abs low">0/2</td>
+	<td data-value="60" class="pct medium">60%</td>
+	<td data-value="5" class="abs medium">3/5</td>
 	</tr>
 
 </tbody>
@@ -116,16 +131,16 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Wed Feb 09 2022 15:25:35 GMT-0700 (Mountain Standard Time)
+                at Wed Feb 09 2022 15:25:23 GMT-0700 (Mountain Standard Time)
             </div>
-        <script src="../../prettify.js"></script>
+        <script src="../prettify.js"></script>
         <script>
             window.onload = function () {
                 prettyPrint();
             };
         </script>
-        <script src="../../sorter.js"></script>
-        <script src="../../block-navigation.js"></script>
+        <script src="../sorter.js"></script>
+        <script src="../block-navigation.js"></script>
     </body>
 </html>
     
