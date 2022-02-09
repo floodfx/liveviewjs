@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">15.78% </span>
+                <span class="strong">42.1% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>6/38</span>
+                <span class='fraction'>16/38</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">54.54% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>6/11</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">17.14% </span>
+                <span class="strong">42.85% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/35</span>
+                <span class='fraction'>15/35</span>
             </div>
         
             
@@ -202,13 +202,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -217,8 +217,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -269,16 +269,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// Initially copied from https://github.com/Janpot/escape-html-template-tag/blob/master/src/index.ts
 // This is a modified version of escape-html-template-tag that builds a tree
 // of statics and dynamics that can be used to render the template.
@@ -309,14 +309,14 @@ export function <span class="fstat-no" title="function not covered" >join(</span
 <span class="cstat-no" title="statement not covered" >  return new HtmlSafeString(['', ...Array(array.length - 1).fill(separator), ''], array)</span>
 }
 &nbsp;
-function <span class="fstat-no" title="function not covered" >escapehtml(</span>unsafe: unknown): string {
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (unsafe instanceof HtmlSafeString) {</span>
+function escapehtml(unsafe: unknown): string {
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (unsafe instanceof HtmlSafeString) {
 <span class="cstat-no" title="statement not covered" >    return unsafe.toString()</span>
   }
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (Array.isArray(unsafe)) {</span>
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (Array.isArray(unsafe)) {
 <span class="cstat-no" title="statement not covered" >    return join(unsafe, '').toString()</span>
   }
-<span class="cstat-no" title="statement not covered" >  return String(unsafe).replace(ENT_REGEX, <span class="fstat-no" title="function not covered" >(c</span>har) =&gt; <span class="cstat-no" title="statement not covered" >ENTITIES[char])</span></span>
+  return String(unsafe).replace(ENT_REGEX, (char) =&gt; ENTITIES[char])
 }
 &nbsp;
 export class HtmlSafeString {
@@ -324,9 +324,9 @@ export class HtmlSafeString {
   readonly _dynamics: readonly unknown[]
   readonly children: readonly HtmlSafeString[]
 &nbsp;
-<span class="fstat-no" title="function not covered" >  constructor(s</span>tatics: readonly string[], dynamics: readonly unknown[]) {
-<span class="cstat-no" title="statement not covered" >    this.statics = statics</span>
-<span class="cstat-no" title="statement not covered" >    this._dynamics = dynamics</span>
+  constructor(statics: readonly string[], dynamics: readonly unknown[]) {
+    this.statics = statics
+    this._dynamics = dynamics
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  partsTree(</span>includeStatics: boolean = <span class="branch-0 cbranch-no" title="branch not covered" >true)</span>: { [key: string]: unknown } {
@@ -376,17 +376,17 @@ export class HtmlSafeString {
 <span class="cstat-no" title="statement not covered" >    return parts</span>
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  toString(</span>): string {
-<span class="cstat-no" title="statement not covered" >    return this.statics.reduce(<span class="fstat-no" title="function not covered" >(r</span>esult, s, i) =&gt; {</span>
-      const d = <span class="cstat-no" title="statement not covered" >this._dynamics[i - 1]</span>
-<span class="cstat-no" title="statement not covered" >      return result + escapehtml(d) + s</span>
+  toString(): string {
+    return this.statics.reduce((result, s, i) =&gt; {
+      const d = this._dynamics[i - 1]
+      return result + escapehtml(d) + s
     })
   }
 &nbsp;
 }
 &nbsp;
-export default function <span class="fstat-no" title="function not covered" >html(</span>statics: TemplateStringsArray, ...dynamics: unknown[]) {
-<span class="cstat-no" title="statement not covered" >  return new HtmlSafeString(statics, dynamics)</span>
+export default function html(statics: TemplateStringsArray, ...dynamics: unknown[]) {
+  return new HtmlSafeString(statics, dynamics)
 }</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -394,7 +394,7 @@ export default function <span class="fstat-no" title="function not covered" >htm
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Wed Feb 09 2022 15:25:23 GMT-0700 (Mountain Standard Time)
+                at Wed Feb 09 2022 15:32:13 GMT-0700 (Mountain Standard Time)
             </div>
         <script src="../prettify.js"></script>
         <script>
