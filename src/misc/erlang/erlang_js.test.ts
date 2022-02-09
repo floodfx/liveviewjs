@@ -1,6 +1,6 @@
-import {decodePayloadToTerm} from './index'
+import { decodePayloadToTerm } from './index'
 
-describe("test decode", () => {
+describe.skip("test decode", () => {
   it("hardcoded token payload for session", () => {
     const payload = `g2gDaAJhBXQAAAAIZAACaWRtAAAAFHBoeC1Gc3d2Y0NRQUs3RDBUd0toZAAMbGl2ZV9zZXNzaW9uaAJkAAdkZWZhdWx0bggA8NT5024vzBZkAApwYXJlbnRfcGlkZAADbmlsZAAIcm9vdF9waWRkAANuaWxkAAlyb290X3ZpZXdkACJFbGl4aXIuTGl2ZVZpZXdTdHVkaW9XZWIuTGlnaHRMaXZlZAAGcm91dGVyZAAfRWxpeGlyLkxpdmVWaWV3U3R1ZGlvV2ViLlJvdXRlcmQAB3Nlc3Npb250AAAAAGQABHZpZXdkACJFbGl4aXIuTGl2ZVZpZXdTdHVkaW9XZWIuTGlnaHRMaXZlbgYAkgTxen4BYgABUYA`
     const _ = decodePayloadToTerm(payload, (err, term) => {

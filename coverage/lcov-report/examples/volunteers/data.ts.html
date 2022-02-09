@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">43.75% </span>
+                <span class="strong">45.71% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>14/32</span>
+                <span class='fraction'>16/35</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">35.71% </span>
+                <span class="strong">36.66% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>10/28</span>
+                <span class='fraction'>11/30</span>
             </div>
         
             
@@ -127,7 +127,11 @@
 <a name='L62'></a><a href='#L62'>62</a>
 <a name='L63'></a><a href='#L63'>63</a>
 <a name='L64'></a><a href='#L64'>64</a>
-<a name='L65'></a><a href='#L65'>65</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -148,6 +152,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -211,10 +219,14 @@ export const VolunteerSchema = z.object({
 export type Volunteer = z.infer&lt;typeof VolunteerSchema&gt;;
 &nbsp;
 // in memory data store
-export const volunteers: Record&lt;string, Volunteer&gt; = {}
+const volunteers: Record&lt;string, Volunteer&gt; = {}
 &nbsp;
 export const listVolunteers = <span class="fstat-no" title="function not covered" >(): Volunteer[] =</span>&gt; {
 <span class="cstat-no" title="statement not covered" >  return Object.values(volunteers)</span>
+}
+&nbsp;
+export const getVolunteer = <span class="fstat-no" title="function not covered" >(i</span>d: string): Volunteer | undefined =&gt; {
+<span class="cstat-no" title="statement not covered" >  return volunteers[id]</span>
 }
 &nbsp;
 export const changeset = <span class="fstat-no" title="function not covered" >(v</span>olunteer: Partial&lt;Volunteer&gt;, attrs: Partial&lt;Volunteer&gt;, action?: string): LiveViewChangeset&lt;Volunteer&gt; =&gt; {
@@ -237,7 +249,7 @@ export const changeset = <span class="fstat-no" title="function not covered" >(v
   } as LiveViewChangeset&lt;Volunteer&gt;
 }
 &nbsp;
-export const create_volunteer = <span class="fstat-no" title="function not covered" >(n</span>ewVolunteer: Partial&lt;Volunteer&gt;): LiveViewChangeset&lt;Volunteer&gt; =&gt; {
+export const createVolunteer = <span class="fstat-no" title="function not covered" >(n</span>ewVolunteer: Partial&lt;Volunteer&gt;): LiveViewChangeset&lt;Volunteer&gt; =&gt; {
   const result = <span class="cstat-no" title="statement not covered" >changeset({}, newVolunteer, 'create');</span>
 <span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (result.valid) {</span>
     const v = <span class="cstat-no" title="statement not covered" >result.data as Volunteer;</span>
@@ -246,7 +258,7 @@ export const create_volunteer = <span class="fstat-no" title="function not cover
 <span class="cstat-no" title="statement not covered" >  return result;</span>
 }
 &nbsp;
-export const update_volunteer = <span class="fstat-no" title="function not covered" >(v</span>olunteer: Volunteer, updated: Partial&lt;Volunteer&gt;): LiveViewChangeset&lt;Volunteer&gt; =&gt; {
+export const updateVolunteer = <span class="fstat-no" title="function not covered" >(v</span>olunteer: Volunteer, updated: Partial&lt;Volunteer&gt;): LiveViewChangeset&lt;Volunteer&gt; =&gt; {
   const result = <span class="cstat-no" title="statement not covered" >changeset(volunteer, updated, 'update');</span>
 <span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (result.valid) {</span>
     const v = <span class="cstat-no" title="statement not covered" >result.data as Volunteer;</span>
@@ -262,7 +274,7 @@ export const update_volunteer = <span class="fstat-no" title="function not cover
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Mon Feb 07 2022 21:51:57 GMT-0700 (Mountain Standard Time)
+                at Wed Feb 09 2022 09:50:32 GMT-0700 (Mountain Standard Time)
             </div>
         <script src="../../prettify.js"></script>
         <script>
