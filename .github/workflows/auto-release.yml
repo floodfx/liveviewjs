@@ -13,8 +13,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Release
-        uses: justincy/github-action-npm-release@v2.0.2
+      - name: Automatic GitHub Release
+        uses: justincy/github-action-npm-release@2.0.2
         id: release
       - name: Print release output
         if: ${{ steps.release.outputs.released == 'true' }}
