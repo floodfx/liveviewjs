@@ -71,9 +71,10 @@ describe("test volunteers", () => {
   });
 
   it("createVolunteer with valid volunteer updates in memory list", () => {
+    const numVolunteers = listVolunteers().length;
     const createChangeset = createVolunteer({ name: "Jane Doe", phone: "123-456-7890" });
     expect(createChangeset.valid).toBe(true);
-    expect(listVolunteers().length).toBe(1);
+    expect(listVolunteers().length).toBe(numVolunteers + 1);
     expect(listVolunteers()[0].name).toBe("Jane Doe");
     expect(listVolunteers()[0].phone).toBe("123-456-7890");
     const v = getVolunteer(createChangeset.data.id!);
@@ -82,15 +83,17 @@ describe("test volunteers", () => {
   })
 
   it("createVolunteer with invalid volunteer does not update in memeory list", () => {
+    const numVolunteers = listVolunteers().length;
     const createChangeset = createVolunteer({ name: "J", phone: "123-456-7890" });
     expect(createChangeset.valid).toBe(false);
-    expect(listVolunteers().length).toBe(0);
+    expect(listVolunteers().length).toBe(numVolunteers);
   })
 
   it("update with valid volunteer updates in memory list", () => {
+    const numVolunteers = listVolunteers().length;
     const createChangeset = createVolunteer({ name: "Jane Doe", phone: "123-456-7890" });
     expect(createChangeset.valid).toBe(true);
-    expect(listVolunteers().length).toBe(1);
+    expect(listVolunteers().length).toBe(numVolunteers + 1);
 
     const v = getVolunteer(createChangeset.data.id!);
     expect(v!.checked_out).toBe(false);
@@ -103,9 +106,10 @@ describe("test volunteers", () => {
   })
 
   it("updateVolunteer with invalid volunteer does not update in memeory list", () => {
+    const numVolunteers = listVolunteers().length;
     const createChangeset = createVolunteer({ name: "Jane Doe", phone: "123-456-7890" });
     expect(createChangeset.valid).toBe(true);
-    expect(listVolunteers().length).toBe(1);
+    expect(listVolunteers().length).toBe(numVolunteers + 1);
 
     const v = getVolunteer(createChangeset.data.id!);
     expect(v!.name).toBe("Jane Doe");

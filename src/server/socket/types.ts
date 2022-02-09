@@ -96,26 +96,3 @@ export type PhxKeyDownPayload = PhxEventPayload<"keydown", { value: { key: strin
 // {type: "blur", event: "blur", value: {value: ""}}
 export type PhxFocusPayload = PhxEventPayload<"focus", { value: { value: string } }>;
 export type PhxBlurPayload = PhxEventPayload<"blur", { value: { value: string } }>;
-
-export const newPhxReply = (from: PhxIncomingMessage<unknown>, payload: any): PhxReply => {
-  return [
-    from[0],
-    from[1],
-    from[2],
-    "phx_reply",
-    payload
-  ]
-}
-
-export const newHeartbeatReply = (incoming: PhxIncomingMessage<{}>): PhxReply => {
-  return [
-    null,
-    incoming[PhxSocketProtocolNames.messageRef],
-    "phoenix",
-    "phx_reply",
-    {
-      response: {},
-      status: "ok"
-    }
-  ]
-}

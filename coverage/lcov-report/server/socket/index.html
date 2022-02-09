@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for examples/volunteers</title>
+    <title>Code coverage report for server/socket</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> examples/volunteers</h1>
+        <h1><a href="../../index.html">All files</a> server/socket</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">11.51% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>35/35</span>
+                <span class='fraction'>19/165</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">3.92% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>2/51</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">11.53% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>3/26</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">10.42% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>30/30</span>
+                <span class='fraction'>17/163</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <div class="pad1">
 <table class="coverage-summary">
 <thead>
@@ -79,18 +79,63 @@
 </tr>
 </thead>
 <tbody><tr>
-	<td class="file high" data-value="data.ts"><a href="data.ts.html">data.ts</a></td>
+	<td class="file low" data-value="component_manager.ts"><a href="component_manager.ts.html">component_manager.ts</a></td>
+	<td data-value="4.3" class="pic low">
+	<div class="chart"><div class="cover-fill" style="width: 4%"></div><div class="cover-empty" style="width: 96%"></div></div>
+	</td>
+	<td data-value="4.3" class="pct low">4.3%</td>
+	<td data-value="93" class="abs low">4/93</td>
+	<td data-value="0" class="pct low">0%</td>
+	<td data-value="25" class="abs low">0/25</td>
+	<td data-value="0" class="pct low">0%</td>
+	<td data-value="17" class="abs low">0/17</td>
+	<td data-value="4.3" class="pct low">4.3%</td>
+	<td data-value="93" class="abs low">4/93</td>
+	</tr>
+
+<tr>
+	<td class="file low" data-value="message_router.ts"><a href="message_router.ts.html">message_router.ts</a></td>
+	<td data-value="3.38" class="pic low">
+	<div class="chart"><div class="cover-fill" style="width: 3%"></div><div class="cover-empty" style="width: 97%"></div></div>
+	</td>
+	<td data-value="3.38" class="pct low">3.38%</td>
+	<td data-value="59" class="abs low">2/59</td>
+	<td data-value="0" class="pct low">0%</td>
+	<td data-value="24" class="abs low">0/24</td>
+	<td data-value="0" class="pct low">0%</td>
+	<td data-value="6" class="abs low">0/6</td>
+	<td data-value="3.38" class="pct low">3.38%</td>
+	<td data-value="59" class="abs low">2/59</td>
+	</tr>
+
+<tr>
+	<td class="file high" data-value="types.ts"><a href="types.ts.html">types.ts</a></td>
 	<td data-value="100" class="pic high">
 	<div class="chart"><div class="cover-fill cover-full" style="width: 100%"></div><div class="cover-empty" style="width: 0%"></div></div>
 	</td>
 	<td data-value="100" class="pct high">100%</td>
-	<td data-value="35" class="abs high">35/35</td>
-	<td data-value="100" class="pct high">100%</td>
-	<td data-value="5" class="abs high">5/5</td>
-	<td data-value="100" class="pct high">100%</td>
 	<td data-value="6" class="abs high">6/6</td>
 	<td data-value="100" class="pct high">100%</td>
-	<td data-value="30" class="abs high">30/30</td>
+	<td data-value="2" class="abs high">2/2</td>
+	<td data-value="100" class="pct high">100%</td>
+	<td data-value="1" class="abs high">1/1</td>
+	<td data-value="100" class="pct high">100%</td>
+	<td data-value="6" class="abs high">6/6</td>
+	</tr>
+
+<tr>
+	<td class="file high" data-value="util.ts"><a href="util.ts.html">util.ts</a></td>
+	<td data-value="100" class="pic high">
+	<div class="chart"><div class="cover-fill cover-full" style="width: 100%"></div><div class="cover-empty" style="width: 0%"></div></div>
+	</td>
+	<td data-value="100" class="pct high">100%</td>
+	<td data-value="7" class="abs high">7/7</td>
+	<td data-value="100" class="pct high">100%</td>
+	<td data-value="0" class="abs high">0/0</td>
+	<td data-value="100" class="pct high">100%</td>
+	<td data-value="2" class="abs high">2/2</td>
+	<td data-value="100" class="pct high">100%</td>
+	<td data-value="5" class="abs high">5/5</td>
 	</tr>
 
 </tbody>

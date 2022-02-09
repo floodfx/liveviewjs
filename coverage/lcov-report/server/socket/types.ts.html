@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for examples/live-search/data.ts</title>
+    <title>Code coverage report for server/socket/types.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">examples/live-search</a> data.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">server/socket</a> types.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>9/9</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -150,9 +150,25 @@
 <a name='L85'></a><a href='#L85'>85</a>
 <a name='L86'></a><a href='#L86'>86</a>
 <a name='L87'></a><a href='#L87'>87</a>
-<a name='L88'></a><a href='#L88'>88</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -161,19 +177,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -237,94 +246,115 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&nbsp;
-export interface Store {
-  name: string;
-  street: string;
-  phone_number: string;
-  city: string;
-  zip: string;
-  open: boolean;
-  hours: string;
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import WebSocket from 'ws';
+import { LiveViewMountParams } from '..';
+&nbsp;
+export enum PhxSocketProtocolNames {
+  joinRef = 0,
+  messageRef,
+  topic,
+  event,
+  payload
 }
 &nbsp;
-export function searchByZip(zip: string):  Store[] {
-  return stores.filter(store =&gt; store.zip === zip);
+export type PhxIncomingMessage&lt;Payload&gt; = [
+  joinRef: string | null, // number
+  messageRef: string, // number
+  topic: "phoenix" | string,
+  event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
+  payload: Payload
+]
+&nbsp;
+export type PhxOutgoingMessage&lt;Payload&gt; = [
+  joinRef: string | null, // number
+  messageRef: string | null, // number
+  topic: "phoenix" | string,
+  event: "phx_reply" | "diff" | "live_patch",
+  payload: Payload
+]
+&nbsp;
+// guess at Flash shape
+export type PhxFlash = {
+  info?: string
+  error?: string
 }
 &nbsp;
-export function searchByCity(city: string): Store[] {
-  return stores.filter(store =&gt; store.city === city);
+export interface PhxJoinPayload {
+  params: LiveViewMountParams
+  session: string
+  static: string
+  url?: string
+  redirect?: string
+  flash?: PhxFlash | null
 }
 &nbsp;
-export function listStores(): Store[] {
-  return stores;
-}
+export type PhxJoinIncoming = PhxIncomingMessage&lt;PhxJoinPayload&gt;;
+export type PhxHeartbeatIncoming = PhxIncomingMessage&lt;{}&gt;;
+export type PhxLivePatchIncoming = PhxIncomingMessage&lt;{ url: string }&gt;;
 &nbsp;
-const stores: Store[] = [
-  {
-    name: "Downtown Helena",
-    street: "312 Montana Avenue",
-    phone_number: "406-555-0100",
-    city: "Helena, MT",
-    zip: "59602",
-    open: true,
-    hours: "8am - 10pm M-F"
-  },
-  {
-    name: "East Helena",
-    street: "227 Miner's Lane",
-    phone_number: "406-555-0120",
-    city: "Helena, MT",
-    zip: "59602",
-    open: false,
-    hours: "8am - 10pm M-F"
-  },
-  {
-    name: "Westside Helena",
-    street: "734 Lake Loop",
-    phone_number: "406-555-0130",
-    city: "Helena, MT",
-    zip: "59602",
-    open: true,
-    hours: "8am - 10pm M-F"
-  },
-  {
-    name: "Downtown Denver",
-    street: "426 Aspen Loop",
-    phone_number: "303-555-0140",
-    city: "Denver, CO",
-    zip: "80204",
-    open: true,
-    hours: "8am - 10pm M-F"
-  },
-  {
-    name: "Midtown Denver",
-    street: "7 Broncos Parkway",
-    phone_number: "720-555-0150",
-    city: "Denver, CO",
-    zip: "80204",
-    open: false,
-    hours: "8am - 10pm M-F"
-  },
-  {
-    name: "Denver Stapleton",
-    street: "965 Summit Peak",
-    phone_number: "303-555-0160",
-    city: "Denver, CO",
-    zip: "80204",
-    open: true,
-    hours: "8am - 10pm M-F"
-  },
-  {
-    name: "Denver West",
-    street: "501 Mountain Lane",
-    phone_number: "720-555-0170",
-    city: "Denver, CO",
-    zip: "80204",
-    open: true,
-    hours: "8am - 10pm M-F"
+&nbsp;
+export type Diff = { [key: string]: string | Diff }
+&nbsp;
+export type RenderedNode = { [key: string]: string | RenderedNode } &amp; { [key in "s"]: readonly string[] }
+&nbsp;
+export interface PhxReplyPayload {
+  response: {
+    rendered?: RenderedNode
+    diff?: Diff
   }
-]</pre></td></tr></table></pre>
+  status: "ok"
+}
+&nbsp;
+export type PhxReply = PhxOutgoingMessage&lt;PhxReplyPayload&gt;;
+export type PhxDiffReply = PhxOutgoingMessage&lt;Diff&gt;;
+&nbsp;
+export interface PhxLivePatchPushPayload {
+  kind: "push",
+  to: string,
+}
+export type PhxOutgoingLivePatchPush = PhxOutgoingMessage&lt;PhxLivePatchPushPayload&gt;;
+&nbsp;
+export interface PhxEventPayload&lt;Type extends string, Value&gt; {
+  type: Type,
+  event: string,
+  value: Value
+}
+&nbsp;
+export interface PhxEventUploads {
+  uploads: { [key: string]: unknown }
+}
+&nbsp;
+//{type: "click", event: "down", value: {value: ""}}
+export type PhxClickPayload = PhxEventPayload&lt;"click", { value: { value: string } }&gt;;
+&nbsp;
+//{"type":"form","event":"update","value":"seats=3&amp;_target=seats","uploads":{}}
+export type PhxFormPayload = PhxEventPayload&lt;"form", { value: string }&gt; &amp; PhxEventUploads;
+&nbsp;
+// See https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values
+// for all the string values for the key that kicked off the event
+// {type: "keyup", event: "key_update", value: {key: "ArrowUp"}}
+// {type: "keyup", event: "key_update", value: {key: "ArrowUp", value: ""}}
+// {type: "keyup", event: "key_update", value: {key: "ArrowUp", value: "foo"}}
+// NOTE: these payloads are the same for phx-window-key* events and phx-key* events
+export type PhxKeyUpPayload = PhxEventPayload&lt;"keyup", { value: { key: string, value?: string } }&gt;;
+export type PhxKeyDownPayload = PhxEventPayload&lt;"keydown", { value: { key: string, value?: string } }&gt;;
+&nbsp;
+// Focus and Blur events
+// {type: "focus", event: "focus", value: {value: ""}}
+// {type: "blur", event: "blur", value: {value: ""}}
+export type PhxFocusPayload = PhxEventPayload&lt;"focus", { value: { value: string } }&gt;;
+export type PhxBlurPayload = PhxEventPayload&lt;"blur", { value: { value: string } }&gt;;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->

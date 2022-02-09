@@ -1,4 +1,5 @@
 
+import { join } from '..';
 import html, { HtmlSafeString } from './index';
 
 describe("test escapeHtml", () => {
@@ -46,6 +47,12 @@ describe("test escapeHtml", () => {
     const stuff = ["a", "b", "c"];
     const result = html`${stuff}`;
     expect(result.toString()).toBe('abc');
+  });
+
+  it("can join zero length array", () => {
+    const empty: string[] = [];
+    const result = join(empty);
+    expect(result.toString()).toBe('');
   });
 
   it("more join array without commas on multiple levels", () => {
