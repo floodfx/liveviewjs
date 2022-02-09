@@ -1,9 +1,10 @@
 import { options_for_select } from "../../server/templates/helpers/options_for_select";
 import { live_patch } from "../../server/templates/helpers/live_patch";
 import html, { HtmlSafeString, join } from "../../server/templates";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/types";
+import { LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
 import { almostExpired, Donation, listItems } from "./data";
 import { SessionData } from "express-session";
+import { BaseLiveViewComponent } from "../../server/component/base_component";
 
 interface Options {
   page: number;

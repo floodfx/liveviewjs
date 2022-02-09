@@ -1,6 +1,6 @@
 import path from 'path';
 import { LiveViewServer } from '../server';
-import { LiveViewRouter } from '../server/types';
+import { LiveViewRouter } from '../server/component/types';
 import { AutocompleteLiveViewComponent } from './autocomplete/component';
 import { LicenseLiveViewComponent } from './license_liveview';
 import { LightLiveViewComponent } from './light_liveview';

@@ -1,7 +1,7 @@
 import { SessionData } from "express-session";
 import { WebSocket } from "ws";
-import { LiveViewComponentManager } from "./socket/component_manager";
-import { HtmlSafeString } from "./templates";
+import { LiveViewComponentManager } from "../socket/component_manager";
+import { HtmlSafeString } from "../templates";
 
 // Validation errors for a type T should
 // be keyed by the field name
@@ -63,33 +63,4 @@ export interface LiveViewRouter {
   [key: string]: LiveViewComponent<unknown, unknown>;
 }
 
-export abstract class BaseLiveViewComponent<T, P> implements LiveViewComponent<T, P> {
 
-  private componentManager: LiveViewComponentManager;
-
-  abstract mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<T>): T;
-  abstract render(context: T): LiveViewTemplate;
-
-  handleParams(params: StringPropertyValues<P>, url: string, socket: LiveViewSocket<T>): T {
-    return socket.context;
-  }
-
-  pushPatch(socket: LiveViewSocket<unknown>, patch: { to: { path: string, params: StringPropertyValues<any> } }) {
-    if (this.componentManager) {
-      this.componentManager.onPushPatch(socket, patch);
-    } else {
-      console.error("component manager not registered for component", this);
-    }
-  }
-
-  csrfToken(): string | undefined {
-    if (this.componentManager) {
-      return this.componentManager.csrfToken;
-    }
-  }
-
-  registerComponentManager(manager: LiveViewComponentManager) {
-    this.componentManager = manager;
-  }
-
-}

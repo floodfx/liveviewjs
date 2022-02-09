@@ -1,10 +1,11 @@
 import html from "../../server/templates";
-import { BaseLiveViewComponent, LiveViewChangeset, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/types";
+import { LiveViewChangeset, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
 import { SessionData } from "express-session";
 import { Volunteer, changeset, createVolunteer, listVolunteers, getVolunteer, updateVolunteer } from "./data";
 import { submit } from "../../server/templates/helpers/submit";
 import { form_for } from "../../server/templates/helpers/form_for";
 import { error_tag, telephone_input, text_input } from "../../server/templates/helpers/inputs";
+import { BaseLiveViewComponent } from "../../server/component/base_component";
 
 export interface VolunteerContext {
   volunteers: Volunteer[]

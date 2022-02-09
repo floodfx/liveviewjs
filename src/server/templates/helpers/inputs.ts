@@ -1,4 +1,4 @@
-import { LiveViewChangeset } from "../../types";
+import { LiveViewChangeset } from "../../component/types";
 import html from ".."
 
 interface InputOptions {

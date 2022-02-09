@@ -1,9 +1,10 @@
 import { WebSocket } from "ws";
-import { BaseLiveViewComponent, LiveViewComponent, LiveViewSocket, StringPropertyValues } from "..";
+import { LiveViewComponent, LiveViewSocket, StringPropertyValues } from "../component/types";
 import { PhxClickPayload, PhxDiffReply, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxLivePatchIncoming, PhxOutgoingLivePatchPush, PhxOutgoingMessage, PhxKeyDownPayload, PhxKeyUpPayload, PhxBlurPayload, PhxFocusPayload } from "./types";
 import jwt from 'jsonwebtoken';
 import { SessionData } from "express-session";
 import { newHeartbeatReply, newPhxReply } from "./util";
+import { BaseLiveViewComponent } from "../component/base_component";
 
 export class LiveViewComponentManager {
 

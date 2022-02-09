@@ -1,11 +1,11 @@
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent, LiveViewRouter, LiveViewServer } from ".";
+import { LiveViewServer } from "./live_view_server";
 import html from "./templates";
-import { LiveViewMountParams, LiveViewSocket } from "./types";
+import { LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "./component/types";
 import request from "superwstest"
-// import wsrequest from "superwstest"
 import { Server } from "http";
-import { PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming } from "./socket/types";
+import { PhxJoinIncoming } from "./socket/types";
+import { BaseLiveViewComponent } from "./component/base_component";
 
 
 describe("test live view server", () => {

@@ -1,7 +1,8 @@
 import { SessionData } from "express-session";
 import html from "../server/templates";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/types";
+import { LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component/types";
 import { numberToCurrency } from "./utils";
+import { BaseLiveViewComponent } from "../server/component/base_component";
 
 // generate a random number between min and max
 const random = (min: number, max: number): () => number => {

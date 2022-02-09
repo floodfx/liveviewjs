@@ -1,6 +1,6 @@
-import { LiveViewComponent, LiveViewRouter, LiveViewSocket } from "./types";
+import { LiveViewComponent, LiveViewRouter, LiveViewSocket } from "./component/types";
 import WebSocket from 'ws';
-import http, { Server, createServer } from 'http';
+import { Server } from 'http';
 import express from "express";
 import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";

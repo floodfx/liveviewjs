@@ -1,9 +1,9 @@
 import html from "../../server/templates";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server/types";
-import { WebSocket } from "ws";
+import { LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server/component/types";
 import { searchByCity, searchByZip, Store } from "../live-search/data";
 import { suggest } from "./data";
 import { SessionData } from "express-session";
+import { BaseLiveViewComponent } from "../../server/component/base_component";
 
 export interface AutocompleteContext {
   zip: string;

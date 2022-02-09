@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
 import { updatedDiff } from 'deep-object-diff'
-import { LiveViewChangeset, LiveViewChangesetErrors } from '../../server/types';
+import { LiveViewChangeset, LiveViewChangesetErrors } from '../../server/component/types';
 
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/
 

@@ -1,7 +1,7 @@
 import { PhxJoinIncoming, PhxHeartbeatIncoming, PhxIncomingMessage, PhxClickPayload, PhxFormPayload, PhxLivePatchIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxBlurPayload, PhxFocusPayload } from './types';
 import WebSocket from 'ws';
-import { LiveViewComponent } from '../types';
-import { LiveViewRouter } from '../types';
+import { LiveViewComponent } from '../component/types';
+import { LiveViewRouter } from '../component/types';
 import jwt from 'jsonwebtoken';
 import { LiveViewComponentManager } from './component_manager';
 

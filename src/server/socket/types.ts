@@ -1,5 +1,4 @@
-import WebSocket from 'ws';
-import { LiveViewMountParams } from '..';
+import { LiveViewMountParams } from '../component/types';
 
 export enum PhxSocketProtocolNames {
   joinRef = 0,

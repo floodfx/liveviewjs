@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for server/socket/util.ts</title>
+    <title>Code coverage report for server/component/base_component.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">server/socket</a> util.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">server/component</a> base_component.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">37.5% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>3/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>0/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">50% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/2</span>
+                <span class='fraction'>2/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">37.5% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>3/8</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -86,9 +86,20 @@
 <a name='L21'></a><a href='#L21'>21</a>
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
-<a name='L24'></a><a href='#L24'>24</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -97,41 +108,60 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { PhxIncomingMessage, PhxReply, PhxSocketProtocolNames } from "./types"
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { SessionData } from "express-session";
+import { LiveViewComponent, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, StringPropertyValues } from "./types";
+import { LiveViewComponentManager } from "../socket/component_manager";
 &nbsp;
-export const newPhxReply = (from: PhxIncomingMessage&lt;unknown&gt;, payload: any): PhxReply =&gt; {
-  return [
-    from[PhxSocketProtocolNames.joinRef],
-    from[PhxSocketProtocolNames.messageRef],
-    from[PhxSocketProtocolNames.topic],
-    "phx_reply",
-    payload
-  ]
-}
+export abstract class BaseLiveViewComponent&lt;T, P&gt; implements LiveViewComponent&lt;T, P&gt; {
 &nbsp;
-export const newHeartbeatReply = (incoming: PhxIncomingMessage&lt;{}&gt;): PhxReply =&gt; {
-  return [
-    null,
-    incoming[PhxSocketProtocolNames.messageRef],
-    "phoenix",
-    "phx_reply",
-    {
-      response: {},
-      status: "ok"
+  private componentManager: LiveViewComponentManager;
+&nbsp;
+  abstract mount(params: LiveViewMountParams, session: Partial&lt;SessionData&gt;, socket: LiveViewSocket&lt;T&gt;): T;
+  abstract render(context: T): LiveViewTemplate;
+&nbsp;
+  handleParams(params: StringPropertyValues&lt;P&gt;, url: string, socket: LiveViewSocket&lt;T&gt;): T {
+    return socket.context;
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  pushPatch(</span>socket: LiveViewSocket&lt;unknown&gt;, patch: { to: { path: string, params: StringPropertyValues&lt;any&gt; } }) {
+<span class="cstat-no" title="statement not covered" >    if (this.componentManager) {</span>
+<span class="cstat-no" title="statement not covered" >      this.componentManager.onPushPatch(socket, patch);</span>
+    } else {
+<span class="cstat-no" title="statement not covered" >      console.error("component manager not registered for component", this);</span>
     }
-  ]
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  csrfToken(</span>): string | undefined {
+<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (this.componentManager) {</span>
+<span class="cstat-no" title="statement not covered" >      return this.componentManager.csrfToken;</span>
+    }
+  }
+&nbsp;
+  registerComponentManager(manager: LiveViewComponentManager) {
+    this.componentManager = manager;
+  }
+&nbsp;
 }</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
