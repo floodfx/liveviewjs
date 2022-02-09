@@ -35,6 +35,9 @@ export class LiveViewServer {
 
   private _router: LiveViewRouter = {};
   private messageRouter = new MessageRouter()
+  private _isStarted = false;
+  readonly httpServer: Server;
+  readonly socketServer: WebSocket.Server;
   expressApp: express.Application;
 
   constructor(options: Partial<Omit<LiveViewServerOptions, "signingSecret">> & { signingSecret: string }) {
@@ -44,6 +47,18 @@ export class LiveViewServer {
     this.sessionStore = options.sessionStore ?? this.sessionStore;
     this.signingSecret = options.signingSecret;
     this.expressApp = this.buildExpressApp();
+    this.httpServer = new Server();
+    this.socketServer = new WebSocket.Server({
+      server: this.httpServer
+    });
+  }
+
+  get router(): LiveViewRouter {
+    return this._router;
+  }
+
+  get isStarted(): boolean {
+    return this._isStarted;
   }
 
   registerLiveViewRoutes(router: LiveViewRouter) {
@@ -55,18 +70,18 @@ export class LiveViewServer {
   }
 
   start() {
-    console.log("starting")
-
-    const httpServer = new Server();
-    const wsServer = new WebSocket.Server({
-      server: httpServer
-    });
+    if (this._isStarted) {
+      console.warn("LiveViewServer already started");
+      return;
+    } else {
+      this._isStarted = true;
+    }
 
     // register express app for http requests
-    httpServer.on('request', this.expressApp);
+    this.httpServer.on('request', this.expressApp);
 
     // register websocket server ws requests
-    wsServer.on('connection', socket => {
+    this.socketServer.on('connection', socket => {
 
       const connectionId = nanoid();
       // handle ws messages
@@ -75,17 +90,27 @@ export class LiveViewServer {
       });
     });
 
-    httpServer.listen(this.port, () => {
+    this.httpServer.listen(this.port, () => {
       console.log(`LiveView App is listening on port ${this.port} !`)
     })
 
+  }
+
+  shutdown() {
+    if (!this._isStarted) {
+      console.warn("LiveViewServer already stopped");
+      return;
+    } else {
+      this._isStarted = false;
+    }
+    this.socketServer.close();
+    this.httpServer.close();
   }
 
   private buildExpressApp() {
     const app = express();
 
     const publicPath = path.join(__dirname, "..", "client");
-    // console.log("publicPath", publicPath);
 
     app.use(express.static(publicPath))
 
