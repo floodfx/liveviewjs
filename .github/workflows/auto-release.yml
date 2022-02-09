@@ -18,7 +18,7 @@ jobs:
           node-version: 17
       - run: npm install
       - run: npm test
-        uses: JS-DevTools/npm-publish@v1
+      - uses: JS-DevTools/npm-publish@v1
         with:
           token: ${{ secrets.NPM_PUBLISH_TOKEN }}
       - name: Automatic GitHub Release
