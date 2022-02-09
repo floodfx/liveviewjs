@@ -14,7 +14,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Release
-        uses: justincy/github-action-npm-release@v1.2.0
+        uses: justincy/github-action-npm-release@v2.0.2
         id: release
       - name: Print release output
         if: ${{ steps.release.outputs.released == 'true' }}
