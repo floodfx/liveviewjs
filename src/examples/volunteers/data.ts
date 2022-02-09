@@ -18,10 +18,14 @@ export const VolunteerSchema = z.object({
 export type Volunteer = z.infer<typeof VolunteerSchema>;
 
 // in memory data store
-export const volunteers: Record<string, Volunteer> = {}
+const volunteers: Record<string, Volunteer> = {}
 
 export const listVolunteers = (): Volunteer[] => {
   return Object.values(volunteers)
+}
+
+export const getVolunteer = (id: string): Volunteer | undefined => {
+  return volunteers[id]
 }
 
 export const changeset = (volunteer: Partial<Volunteer>, attrs: Partial<Volunteer>, action?: string): LiveViewChangeset<Volunteer> => {
@@ -44,7 +48,7 @@ export const changeset = (volunteer: Partial<Volunteer>, attrs: Partial<Voluntee
   } as LiveViewChangeset<Volunteer>
 }
 
-export const create_volunteer = (newVolunteer: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
+export const createVolunteer = (newVolunteer: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
   const result = changeset({}, newVolunteer, 'create');
   if (result.valid) {
     const v = result.data as Volunteer;
@@ -53,7 +57,7 @@ export const create_volunteer = (newVolunteer: Partial<Volunteer>): LiveViewChan
   return result;
 }
 
-export const update_volunteer = (volunteer: Volunteer, updated: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
+export const updateVolunteer = (volunteer: Volunteer, updated: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
   const result = changeset(volunteer, updated, 'update');
   if (result.valid) {
     const v = result.data as Volunteer;

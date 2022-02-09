@@ -1,7 +1,7 @@
 import html from "../../server/templates";
 import { BaseLiveViewComponent, LiveViewChangeset, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/types";
 import { SessionData } from "express-session";
-import { Volunteer, changeset, create_volunteer, listVolunteers } from "./data";
+import { Volunteer, changeset, createVolunteer, listVolunteers, getVolunteer, updateVolunteer } from "./data";
 import { submit } from "../../server/templates/helpers/submit";
 import { form_for } from "../../server/templates/helpers/form_for";
 import { error_tag, telephone_input, text_input } from "../../server/templates/helpers/inputs";
@@ -11,7 +11,7 @@ export interface VolunteerContext {
   changeset: LiveViewChangeset<Volunteer>
 }
 
-type VolunteerEvents = "save" | "validate";
+type VolunteerEvents = "save" | "validate" | "toggle-status";
 
 export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, unknown>
   implements LiveViewExternalEventListener<VolunteerContext, VolunteerEvents, Volunteer> {
@@ -63,14 +63,25 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
         📞 ${volunteer.phone}
       </div>
       <div class="status">
-        ${volunteer.checked_out ? "☑️ Volunteer" : html`<button>Check Out</button>`}
+      <button phx-click="toggle-status" phx-value-id="${volunteer.id}" phx-disable-with="Saving...">
+        ${volunteer.checked_out ? "Check In" : "Check Out"}
+      </button>
       </div>
     </div>
     `
   }
 
-  handleEvent(event: VolunteerEvents, params: StringPropertyValues<Pick<Volunteer, "name" | "phone">>, socket: LiveViewSocket<VolunteerContext>): VolunteerContext {
-    if (event === "validate") {
+  handleEvent(event: VolunteerEvents, params: StringPropertyValues<Pick<Volunteer, "name" | "phone" | "id">>, socket: LiveViewSocket<VolunteerContext>): VolunteerContext {
+    if (event === "toggle-status") {
+      // lookup volunteer by id
+      const volunteer = getVolunteer(params.id);
+      // toggle checked_out status (ignoring changeset for now)
+      updateVolunteer(volunteer!, { checked_out: !volunteer!.checked_out });
+      return {
+        volunteers: listVolunteers(),
+        changeset: changeset({}, {})
+      }
+    } else if (event === "validate") {
       const validateChangeset = changeset({}, params);
       // set an action or else the changeset will be ignored
       // and form errors will not be shown
@@ -85,7 +96,7 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
         phone: params.phone,
       }
       // attempt to create the volunteer from the form data
-      const createChangeset = create_volunteer(volunteer);
+      const createChangeset = createVolunteer(volunteer);
 
       // valid form data
       if (createChangeset.valid) {
