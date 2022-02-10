@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import html from "../server/templates";
+import { html } from "../server/templates";
 import { LiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component/types";
 import { BaseLiveViewComponent } from "../server/component/base_component";
 

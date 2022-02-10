@@ -1,4 +1,4 @@
-import html from "../../server/templates";
+import { html } from "../../server/templates";
 import { LiveViewChangeset, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
 import { SessionData } from "express-session";
 import { Volunteer, changeset, createVolunteer, listVolunteers, getVolunteer, updateVolunteer } from "./data";

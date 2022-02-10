@@ -1,7 +1,7 @@
 import { SessionData } from "express-session";
 import { WebSocket, RawData } from "ws";
 import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "..";
-import html from "../templates";
+import { html } from "../templates";
 import { MessageRouter } from "./message_router";
 import { mock } from "jest-mock-extended";
 import { PhxClickPayload, PhxFlash, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxLivePatchIncoming } from "./types";

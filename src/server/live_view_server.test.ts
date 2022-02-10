@@ -1,6 +1,6 @@
 import { SessionData } from "express-session";
 import { LiveViewServer } from "./live_view_server";
-import html from "./templates";
+import { html } from "./templates";
 import { LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "./component/types";
 import request from "superwstest"
 import { Server } from "http";

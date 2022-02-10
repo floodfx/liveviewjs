@@ -28,7 +28,7 @@ const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
 
 export class LiveViewServer {
   private port: number = 4444;
-  private rootView: string = "index.html.ejs";
+  private rootView: string = "root.html.ejs";
   private viewsPath: string[];
   private signingSecret: string;
   private sessionStore: session.Store = new MemoryStore();
@@ -165,7 +165,7 @@ export class LiveViewServer {
       const view = component.render(ctx);
 
       // render the view with all the data
-      res.render("root.html.ejs", {
+      res.render(this.rootView, {
         page_title: "Live View",
         csrf_meta_tag: req.session.csrfToken,
         liveViewId,

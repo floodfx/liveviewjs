@@ -1,4 +1,4 @@
-import html, { HtmlSafeString, join } from "..";
+import { html, HtmlSafeString, join } from "..";
 
 type Options =
   string[] | Record<string, string>

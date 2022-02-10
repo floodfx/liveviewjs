@@ -1,6 +1,6 @@
 
 import { join } from '..';
-import html, { HtmlSafeString } from './index';
+import { html, HtmlSafeString } from './index';
 
 describe("test escapeHtml", () => {
   it("combines statics and dynamics properly", () => {

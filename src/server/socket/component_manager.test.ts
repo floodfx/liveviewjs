@@ -1,7 +1,7 @@
 import { SessionData } from "express-session";
 import { WebSocket } from "ws";
 import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewComponent } from "..";
-import html, { HtmlSafeString } from "../templates";
+import { html, HtmlSafeString } from "../templates";
 import { mock } from "jest-mock-extended";
 import { PhxBlurPayload, PhxClickPayload, PhxFlash, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from "./types";
 import jwt from "jsonwebtoken";

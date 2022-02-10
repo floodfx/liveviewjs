@@ -1,4 +1,4 @@
-import html from "../../server/templates";
+import { html } from "../../server/templates";
 import { LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server/component/types";
 import { searchByCity, searchByZip, Store } from "../live-search/data";
 import { suggest } from "./data";

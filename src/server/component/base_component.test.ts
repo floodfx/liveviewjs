@@ -1,6 +1,6 @@
 import { SessionData } from "express-session";
 import { LiveViewComponentManager } from "../socket/component_manager";
-import html from "../templates";
+import { html } from "../templates";
 import { BaseLiveViewComponent } from "./base_component";
 import { LiveViewMountParams, LiveViewSocket } from "./types";
 

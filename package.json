@@ -1,6 +1,6 @@
 {
   "name": "liveviewjs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "LiveViewJS brings the power of Phoenix LiveView to Typescript and Javascript developers and applications.",
   "targets": {
     "client": {
@@ -41,7 +41,7 @@
     "framework"
   ],
   "author": "Donnie Flood <donnie@floodfx.com>",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "body-parser": "^1.19.1",
     "deep-object-diff": "^1.1.7",
@@ -66,6 +66,9 @@
     "@types/jest": "^27.4.0",
     "@types/jsonwebtoken": "^8.5.8",
     "@types/node": "^17.0.10",
+    "@types/nprogress": "^0.2.0",
+    "@types/phoenix": "^1.5.4",
+    "@types/phoenix_live_view": "^0.15.1",
     "@types/supertest": "^2.0.11",
     "@types/ws": "^8.2.2",
     "eslint": "^8.5.0",

@@ -1,4 +1,4 @@
-import html from "../../server/templates";
+import { html } from "../../server/templates";
 import { LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from "../../server/component/types";
 import { listServers, Server } from "./data";
 import { live_patch } from "../../server/templates/helpers/live_patch";

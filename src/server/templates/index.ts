@@ -108,6 +108,6 @@ export class HtmlSafeString {
 
 }
 
-export default function html(statics: TemplateStringsArray, ...dynamics: unknown[]) {
+export function html(statics: TemplateStringsArray, ...dynamics: unknown[]) {
   return new HtmlSafeString(statics, dynamics)
 }

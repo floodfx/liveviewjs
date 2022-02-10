@@ -1,4 +1,4 @@
-import html from ".."
+import { html } from ".."
 
 interface FormForOptions {
   phx_submit?: string

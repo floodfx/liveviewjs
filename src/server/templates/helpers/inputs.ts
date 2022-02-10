@@ -1,5 +1,5 @@
 import { LiveViewChangeset } from "../../component/types";
-import html, { safe } from "../index"
+import { html, safe } from "../index"
 
 interface InputOptions {
   placeholder?: string
@@ -15,7 +15,7 @@ export const text_input = <T>(changeset: LiveViewChangeset<T>, key: keyof T, opt
   const type = options?.type ?? "text";
   const id = `input_${key}`;
   const value = changeset.data[key] ?? "";
-  return html`<input type="${type}" id="${id}" name="${key}" value="${value}"${autocomplete}${placeholder}${phx_debounce}/>`
+  return html`<input type="${type}" id="${id}" name="${String(key)}" value="${value}"${autocomplete}${placeholder}${phx_debounce}/>`
 }
 
 interface TelephoneInputOptions extends Omit<InputOptions, "type"> { }
