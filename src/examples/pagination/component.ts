@@ -110,7 +110,7 @@ export class PaginateLiveViewComponent extends BaseLiveViewComponent<PaginateCon
         path: "/paginate",
         params: { page, perPage }
       },
-      class: className
+      className
     })
   }
 

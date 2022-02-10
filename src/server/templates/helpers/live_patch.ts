@@ -1,11 +1,11 @@
-import html, { HtmlSafeString } from "..";
+import html, { HtmlSafeString, safe } from "..";
 
 interface LiveViewPatchHelperOptions {
   to: {
     path: string,
-    params: { [key: string]: string }
+    params: Record<string, string>
   },
-  class?: string,
+  className?: string,
 }
 
 function buildHref(options: LiveViewPatchHelperOptions) {
@@ -20,14 +20,5 @@ function buildHref(options: LiveViewPatchHelperOptions) {
 }
 
 export const live_patch = (anchorBody: HtmlSafeString | string, options: LiveViewPatchHelperOptions): HtmlSafeString => {
-  return html`
-    <a
-      data-phx-link="patch"
-      data-phx-link-state="push"
-      href="${buildHref(options)}"
-      ${options.class ? html`class="${options.class}"` : ""}
-    >
-    ${anchorBody}
-    </a>
-  `
+  return html`<a data-phx-link="patch" data-phx-link-state="push" href="${safe(buildHref(options))}"${options.className ? safe(` class="${options.className}"`) : ""}>${anchorBody}</a>`
 }

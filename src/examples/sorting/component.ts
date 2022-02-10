@@ -148,7 +148,7 @@ export class SortLiveViewComponent extends BaseLiveViewComponent<SortContext, Pa
         path: "/sort",
         params: { page, perPage, sort_by, sortOrder }
       },
-      class: className
+      className
     })
   }
 

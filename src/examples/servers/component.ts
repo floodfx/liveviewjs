@@ -35,7 +35,7 @@ export class ServersLiveViewComponent extends BaseLiveViewComponent<ServersConte
       <div class="sidebar">
         <nav>
           ${servers.map(server => {
-      return live_patch(this.link_body(server), { to: { path: "/servers", params: { id: server.id } }, class: server.id === selectedServer.id ? "selected" : "" })
+      return live_patch(this.link_body(server), { to: { path: "/servers", params: { id: server.id } }, className: server.id === selectedServer.id ? "selected" : "" })
     })}
         </nav>
       </div>
