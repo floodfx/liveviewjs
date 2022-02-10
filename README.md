@@ -184,8 +184,10 @@ lvServer.start();
 
 `npm run test` - runs the (few) tests
 
-### See Examples
-**Credit** These examples are adapted from an amazing [Phoenix Video / Code Course](https://online.pragmaticstudio.com/courses/liveview-starter/steps/15) authored by the folks at [Pragmatic Studio](https://pragmaticstudio.com/).
+### Run and Browse Examples
+**Credit**: These examples are adapted from an amazing [Phoenix Video / Code Course](https://online.pragmaticstudio.com/courses/liveview-starter/steps/15) authored by the folks at [Pragmatic Studio](https://pragmaticstudio.com/).
+
+Navigate to `src/examples` to see the example code.
 
 Run `npm run examples` then point your browser to:
  * `http://localhost:4444/` - Shows the index of all the examples
@@ -198,5 +200,7 @@ Run `npm run examples` then point your browser to:
 
  * **Follow component API design (i.e. `mount`, `render` etc), reimplemented with Typescript (so even more type-safe)** - Components in LiveViewJS follow the `mount`, `render`, `handleEvent`, and `handleInfo` API defined in Phoenix. Again, no need to invent a new API.
 
-### Thanks!
+### Gratitude 🙏
 Thanks to [@ogrodnek](https://github.com/ogrodnek) for the early support, feedback, and the idea to reuse the Phoenix client code instead of reinventing!
+
+Thanks to [@blimmer](https://github.com/blimmer/) for the awesome feedback, documentation suggests, and support!
