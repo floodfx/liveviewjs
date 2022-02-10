@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">35% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>20/20</span>
+                <span class='fraction'>7/20</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">90.69% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>39/43</span>
+                <span class='fraction'>0/43</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>0/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">23.52% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>17/17</span>
+                <span class='fraction'>4/17</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -111,19 +111,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -131,12 +131,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { LiveViewChangeset } from "../../component/types";
 import html, { safe } from "../index"
 &nbsp;
@@ -147,33 +147,33 @@ interface InputOptions {
   type?: "text" | "tel"
 }
 &nbsp;
-export const text_input = &lt;T&gt;(changeset: LiveViewChangeset&lt;T&gt;, key: keyof T, options?: InputOptions) =&gt; {
-  const placeholder = options?.placeholder ? safe(` placeholder="${options.placeholder}"`) : "";
-  const autocomplete = options?.autocomplete ? safe(` autocomplete="${options.autocomplete}"`) : "";
-  const phx_debounce = options?.phx_debounce ? safe(` phx-debounce="${options.phx_debounce}"`) : "";
-  const type = options?.type ?? "text";
-  const id = `input_${key}`;
-  const value = changeset.data[key]<span class="branch-0 cbranch-no" title="branch not covered" > ?? "</span>";
-  return html`&lt;input type="${type}" id="${id}" name="${key}" value="${value}"${autocomplete}${placeholder}${phx_debounce}/&gt;`
+export const text_input = <span class="fstat-no" title="function not covered" >&lt;T&gt;(c</span>hangeset: LiveViewChangeset&lt;T&gt;, key: keyof T, options?: InputOptions) =&gt; {
+  const placeholder = <span class="cstat-no" title="statement not covered" >options?.placeholder ? safe(` placeholder="${options.placeholder}"`) : "";</span>
+  const autocomplete = <span class="cstat-no" title="statement not covered" >options?.autocomplete ? safe(` autocomplete="${options.autocomplete}"`) : "";</span>
+  const phx_debounce = <span class="cstat-no" title="statement not covered" >options?.phx_debounce ? safe(` phx-debounce="${options.phx_debounce}"`) : "";</span>
+  const type = <span class="cstat-no" title="statement not covered" >options?.type ?? "text";</span>
+  const id = <span class="cstat-no" title="statement not covered" >`input_${key}`;</span>
+  const value = <span class="cstat-no" title="statement not covered" >changeset.data[key] ?? "";</span>
+<span class="cstat-no" title="statement not covered" >  return html`&lt;input type="${type}" id="${id}" name="${key}" value="${value}"${autocomplete}${placeholder}${phx_debounce}/&gt;`</span>
 }
 &nbsp;
 interface TelephoneInputOptions extends Omit&lt;InputOptions, "type"&gt; { }
 &nbsp;
-export const telephone_input = &lt;T&gt;(changeset: LiveViewChangeset&lt;T&gt;, key: keyof T, options?: TelephoneInputOptions) =&gt; {
-  return text_input(changeset, key, { ...options, type: "tel" });
+export const telephone_input = <span class="fstat-no" title="function not covered" >&lt;T&gt;(c</span>hangeset: LiveViewChangeset&lt;T&gt;, key: keyof T, options?: TelephoneInputOptions) =&gt; {
+<span class="cstat-no" title="statement not covered" >  return text_input(changeset, key, { ...options, type: "tel" });</span>
 }
 &nbsp;
 interface ErrorTagOptions {
   className?: string
 }
 &nbsp;
-export const error_tag = &lt;T&gt;(changeset: LiveViewChangeset&lt;T&gt;, key: keyof T, options?: ErrorTagOptions) =&gt; {
-  const error = changeset.errors ? changeset.errors[key] : <span class="branch-1 cbranch-no" title="branch not covered" >undefined;</span>
-  if (changeset.action &amp;&amp; error) {
-    const className = <span class="branch-1 cbranch-no" title="branch not covered" >options?.className<span class="branch-0 cbranch-no" title="branch not covered" > </span>?? "</span>invalid-feedback";
-    return html`&lt;span class="${className}" phx-feedback-for="${key}"&gt;${error}&lt;/span&gt;`
+export const error_tag = <span class="fstat-no" title="function not covered" >&lt;T&gt;(c</span>hangeset: LiveViewChangeset&lt;T&gt;, key: keyof T, options?: ErrorTagOptions) =&gt; {
+  const error = <span class="cstat-no" title="statement not covered" >changeset.errors ? changeset.errors[key] : undefined;</span>
+<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (changeset.action &amp;&amp; error) {</span>
+    const className = <span class="cstat-no" title="statement not covered" >options?.className ?? "invalid-feedback";</span>
+<span class="cstat-no" title="statement not covered" >    return html`&lt;span class="${className}" phx-feedback-for="${key}"&gt;${error}&lt;/span&gt;`</span>
   }
-  return html``
+<span class="cstat-no" title="statement not covered" >  return html``</span>
 }</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -181,7 +181,7 @@ export const error_tag = &lt;T&gt;(changeset: LiveViewChangeset&lt;T&gt;, key: k
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Wed Feb 09 2022 20:38:12 GMT-0700 (Mountain Standard Time)
+                at Wed Feb 09 2022 21:00:13 GMT-0700 (Mountain Standard Time)
             </div>
         <script src="../../prettify.js"></script>
         <script>

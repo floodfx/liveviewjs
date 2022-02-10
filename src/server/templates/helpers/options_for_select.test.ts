@@ -24,4 +24,10 @@ describe("options for select", () => {
     const result = options_for_select(options, "A").toString();
     expect(result).toBe(`<option value="A" selected>a</option><option value="B">b</option><option value="C">c</option>`);
   });
+
+  it("returns record options with selected array", () => {
+    const options = { a: "A", b: "B", c: "C" };
+    const result = options_for_select(options, ["A", "B"]).toString();
+    expect(result).toBe(`<option value="A" selected>a</option><option value="B" selected>b</option><option value="C">c</option>`);
+  });
 });

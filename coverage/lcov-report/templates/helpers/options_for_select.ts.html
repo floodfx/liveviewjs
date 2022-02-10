@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">17.64% </span>
+                <span class="strong">70.58% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>3/17</span>
+                <span class='fraction'>12/17</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">63.63% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>7/11</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>6/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">12.5% </span>
+                <span class="strong">68.75% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/16</span>
+                <span class='fraction'>11/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -134,24 +134,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -167,19 +157,29 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -194,16 +194,16 @@ type Options =
 &nbsp;
 type Selected = string | string[]
 &nbsp;
-export const options_for_select = <span class="fstat-no" title="function not covered" >(o</span>ptions: Options, selected?: Selected): HtmlSafeString =&gt; {
+export const options_for_select = (options: Options, selected?: Selected): HtmlSafeString =&gt; {
   // string[] options
-<span class="cstat-no" title="statement not covered" >  if (typeof options === "object" &amp;&amp; Array.isArray(options)) {</span>
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof options === "object" &amp;&amp; Array.isArray(options)) {
     const htmlOptions = <span class="cstat-no" title="statement not covered" >mapArrayOptions(options, selected);</span>
 <span class="cstat-no" title="statement not covered" >    return renderOptions(htmlOptions);</span>
   }
   // Record&lt;string, string&gt; options
   else {
-    const htmlOptions = <span class="cstat-no" title="statement not covered" >mapRecordOptions(options, selected);</span>
-<span class="cstat-no" title="statement not covered" >    return renderOptions(htmlOptions);</span>
+    const htmlOptions = mapRecordOptions(options, selected);
+    return renderOptions(htmlOptions);
   }
 &nbsp;
 }
@@ -218,30 +218,30 @@ function <span class="fstat-no" title="function not covered" >mapArrayOptions(</
   })
 }
 &nbsp;
-function <span class="fstat-no" title="function not covered" >mapRecordOptions(</span>options: { [key: string]: string }, selected?: Selected) {
-<span class="cstat-no" title="statement not covered" >  return Object.entries(options).map(<span class="fstat-no" title="function not covered" >([</span>label, value]) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return {</span>
+function mapRecordOptions(options: { [key: string]: string }, selected?: Selected) {
+  return Object.entries(options).map(([label, value]) =&gt; {
+    return {
       label,
       value,
-      selected: selected ? isSelected(value, selected) : false
+      selected: selected ? isSelected(value, selected) : <span class="branch-1 cbranch-no" title="branch not covered" >false</span>
     }
   })
 }
 &nbsp;
-function <span class="fstat-no" title="function not covered" >isSelected(</span>value: string, selected: string | string[]): boolean {
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (Array.isArray(selected)) {</span>
-<span class="cstat-no" title="statement not covered" >    return selected.includes(value);</span>
+function isSelected(value: string, selected: string | string[]): boolean {
+  if (Array.isArray(selected)) {
+    return selected.includes(value);
   }
 <span class="cstat-no" title="statement not covered" >  return value === selected;</span>
 }
 &nbsp;
 &nbsp;
-function <span class="fstat-no" title="function not covered" >renderOptions(</span>options: HtmlOption[]): HtmlSafeString {
-<span class="cstat-no" title="statement not covered" >  return join(options.map(renderOption));</span>
+function renderOptions(options: HtmlOption[]): HtmlSafeString {
+  return join(options.map(renderOption));
 }
 &nbsp;
-function <span class="fstat-no" title="function not covered" >renderOption(</span>option: HtmlOption): HtmlSafeString {
-<span class="cstat-no" title="statement not covered" >  return html`&lt;option value="${option.value}"${option.selected ? " selected" : ""}&gt;${option.label}&lt;/option&gt;`;</span>
+function renderOption(option: HtmlOption): HtmlSafeString {
+  return html`&lt;option value="${option.value}"${option.selected ? " selected" : ""}&gt;${option.label}&lt;/option&gt;`;
 }
 &nbsp;
 interface HtmlOption {
@@ -256,7 +256,7 @@ interface HtmlOption {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Wed Feb 09 2022 20:38:12 GMT-0700 (Mountain Standard Time)
+                at Wed Feb 09 2022 21:00:13 GMT-0700 (Mountain Standard Time)
             </div>
         <script src="../../prettify.js"></script>
         <script>

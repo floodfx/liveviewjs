@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">88.88% </span>
+                <span class="strong">33.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>8/9</span>
+                <span class='fraction'>3/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/4</span>
+                <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/2</span>
+                <span class='fraction'>0/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">87.5% </span>
+                <span class="strong">25% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/8</span>
+                <span class='fraction'>2/8</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -97,18 +97,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import html, { HtmlSafeString, safe } from "..";
 &nbsp;
 interface LiveViewPatchHelperOptions {
@@ -119,19 +119,19 @@ interface LiveViewPatchHelperOptions {
   className?: string,
 }
 &nbsp;
-function buildHref(options: LiveViewPatchHelperOptions) {
-  const { path, params } = options.to;
-  const urlParams = new URLSearchParams(params);
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (urlParams.toString().length &gt; 0) {
+function <span class="fstat-no" title="function not covered" >buildHref(</span>options: LiveViewPatchHelperOptions) {
+  const { path, params } = <span class="cstat-no" title="statement not covered" >options.to;</span>
+  const urlParams = <span class="cstat-no" title="statement not covered" >new URLSearchParams(params);</span>
+<span class="cstat-no" title="statement not covered" >  if (urlParams.toString().length &gt; 0) {</span>
 <span class="cstat-no" title="statement not covered" >    return `${path}?${urlParams.toString()}`;</span>
 &nbsp;
   } else {
-    return path;
+<span class="cstat-no" title="statement not covered" >    return path;</span>
   }
 }
 &nbsp;
-export const live_patch = (anchorBody: HtmlSafeString | string, options: LiveViewPatchHelperOptions): HtmlSafeString =&gt; {
-  return html`&lt;a data-phx-link="patch" data-phx-link-state="push" href="${safe(buildHref(options))}"${options.className ? <span class="branch-0 cbranch-no" title="branch not covered" >safe(` class="${options.className}"`) </span>: ""}&gt;${anchorBody}&lt;/a&gt;`
+export const live_patch = <span class="fstat-no" title="function not covered" >(a</span>nchorBody: HtmlSafeString | string, options: LiveViewPatchHelperOptions): HtmlSafeString =&gt; {
+<span class="cstat-no" title="statement not covered" >  return html`&lt;a data-phx-link="patch" data-phx-link-state="push" href="${safe(buildHref(options))}"${options.className ? safe(` class="${options.className}"`) : ""}&gt;${anchorBody}&lt;/a&gt;`</span>
 }</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -139,7 +139,7 @@ export const live_patch = (anchorBody: HtmlSafeString | string, options: LiveVie
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Wed Feb 09 2022 20:59:00 GMT-0700 (Mountain Standard Time)
+                at Wed Feb 09 2022 21:00:13 GMT-0700 (Mountain Standard Time)
             </div>
         <script src="../../prettify.js"></script>
         <script>
