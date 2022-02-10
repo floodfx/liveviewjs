@@ -46,7 +46,7 @@ export class LiveViewComponentManager {
       // compare sesison csrfToken with csrfToken from payload
       if (session.csrfToken !== this.csrfToken) {
         // if session csrfToken does not match payload csrfToken, reject join
-        console.log("Rejecting join due to mismatched csrfTokens", session.csrfToken, this.csrfToken);
+        console.error("Rejecting join due to mismatched csrfTokens", session.csrfToken, this.csrfToken);
         return;
       }
     } catch (e) {
@@ -232,23 +232,19 @@ export class LiveViewComponentManager {
   private sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {
     ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
       if (err) {
-        if (ws.CLOSED) {
-          this.socketIsClosed = true;
-          this.shutdown();
-          console.error("socket is closed", err, "...shutting down topic", reply[2], "for component", this.component);
-        } else {
-          console.error("socket error", err);
-        }
+        this.socketIsClosed = true;
+        this.shutdown();
+        console.error(`socket readystate:${ws.readyState}. Shutting down topic:${reply[2]}. For component:${this.component}. Error: ${err}`);
       }
     });
   }
 
 }
 
-function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
+export function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
   return "handleInfo" in component;
 }
 
-function isEventHandler(component: LiveViewComponent<unknown, unknown>) {
+export function isEventHandler(component: LiveViewComponent<unknown, unknown>) {
   return "handleEvent" in component;
 }
