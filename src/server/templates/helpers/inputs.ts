@@ -1,5 +1,5 @@
 import { LiveViewChangeset } from "../../component/types";
-import html from ".."
+import html, { safe } from "../index"
 
 interface InputOptions {
   placeholder?: string
@@ -9,15 +9,13 @@ interface InputOptions {
 }
 
 export const text_input = <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: InputOptions) => {
-  const placeholder = options?.placeholder ? "placeholder=\"" + options.placeholder + "\"" : "";
-  const autocomplete = options?.autocomplete ? "autocomplete=\"" + options.autocomplete + "\"" : "";
-  const phx_debounce = options?.phx_debounce ? "phx-debounce=\"" + options.phx_debounce + "\"" : "";
+  const placeholder = options?.placeholder ? safe(` placeholder="${options.placeholder}"`) : "";
+  const autocomplete = options?.autocomplete ? safe(` autocomplete="${options.autocomplete}"`) : "";
+  const phx_debounce = options?.phx_debounce ? safe(` phx-debounce="${options.phx_debounce}"`) : "";
   const type = options?.type ?? "text";
   const id = `input_${key}`;
   const value = changeset.data[key] ?? "";
-  return html`
-    <input type="${type}" id="${id}" name="${key}" value="${value}" ${autocomplete} ${placeholder} ${phx_debounce} />
-  `
+  return html`<input type="${type}" id="${id}" name="${key}" value="${value}"${autocomplete}${placeholder}${phx_debounce}/>`
 }
 
 interface TelephoneInputOptions extends Omit<InputOptions, "type"> { }
@@ -34,9 +32,7 @@ export const error_tag = <T>(changeset: LiveViewChangeset<T>, key: keyof T, opti
   const error = changeset.errors ? changeset.errors[key] : undefined;
   if (changeset.action && error) {
     const className = options?.className ?? "invalid-feedback";
-    return html`
-      <span class="${className}" phx-feedback-for="${key}">${error}</span>
-    `
+    return html`<span class="${className}" phx-feedback-for="${key}">${error}</span>`
   }
   return html``
 }

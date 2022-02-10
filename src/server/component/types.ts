@@ -1,6 +1,5 @@
 import { SessionData } from "express-session";
 import { WebSocket } from "ws";
-import { LiveViewComponentManager } from "../socket/component_manager";
 import { HtmlSafeString } from "../templates";
 
 // Validation errors for a type T should

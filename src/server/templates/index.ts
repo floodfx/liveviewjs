@@ -28,6 +28,10 @@ export function join(array: (string | HtmlSafeString)[], separator: string | Htm
   return new HtmlSafeString(['', ...Array(array.length - 1).fill(separator), ''], array)
 }
 
+export function safe(value: unknown) {
+  return new HtmlSafeString([String(value)], [])
+}
+
 function escapehtml(unsafe: unknown): string {
   if (unsafe instanceof HtmlSafeString) {
     return unsafe.toString()

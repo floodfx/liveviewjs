@@ -25,28 +25,28 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>35/35</span>
+                <span class='fraction'>27/27</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>30/30</span>
+                <span class='fraction'>23/23</span>
             </div>
         
             
@@ -131,10 +131,12 @@
 <a name='L66'></a><a href='#L66'>66</a>
 <a name='L67'></a><a href='#L67'>67</a>
 <a name='L68'></a><a href='#L68'>68</a>
-<a name='L69'></a><a href='#L69'>69</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -162,17 +164,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -201,8 +205,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import { updatedDiff } from 'deep-object-diff'
-import { LiveViewChangeset, LiveViewChangesetErrors } from '../../server/component/types';
+import { LiveViewChangeset } from '../../server/component/types';
+import { newChangesetFactory } from '../../server/component/changeset';
 &nbsp;
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/
 &nbsp;
@@ -229,25 +233,27 @@ export const getVolunteer = (id: string): Volunteer | undefined =&gt; {
   return volunteers[id]
 }
 &nbsp;
-export const changeset = (volunteer: Partial&lt;Volunteer&gt;, attrs: Partial&lt;Volunteer&gt;, action?: string): LiveViewChangeset&lt;Volunteer&gt; =&gt; {
-  const merged = { ...volunteer, ...attrs };
-  const result = VolunteerSchema.safeParse(merged);
-  let errors;
-  if (result.success === false) {
-    errors = result.error.issues.reduce((acc, issue) =&gt; {
-      // @ts-ignore
-      acc[issue.path[0]] = issue.message;
-      return acc;
-    }, {} as LiveViewChangesetErrors&lt;Volunteer&gt;)
-  }
-  return {
-    action,
-    changes: updatedDiff(volunteer, merged),
-    data: result.success ? result.data : merged,
-    valid: result.success,
-    errors
-  } as LiveViewChangeset&lt;Volunteer&gt;
-}
+export const changeset = newChangesetFactory&lt;Volunteer&gt;(VolunteerSchema)
+&nbsp;
+// export const changeset = (volunteer: Partial&lt;Volunteer&gt;, attrs: Partial&lt;Volunteer&gt;, action?: string): LiveViewChangeset&lt;Volunteer&gt; =&gt; {
+//   const merged = { ...volunteer, ...attrs };
+//   const result = VolunteerSchema.safeParse(merged);
+//   let errors;
+//   if (result.success === false) {
+//     errors = result.error.issues.reduce((acc, issue) =&gt; {
+//       // @ts-ignore
+//       acc[issue.path[0]] = issue.message;
+//       return acc;
+//     }, {} as LiveViewChangesetErrors&lt;Volunteer&gt;)
+//   }
+//   return {
+//     action,
+//     changes: updatedDiff(volunteer, merged),
+//     data: result.success ? result.data : merged,
+//     valid: result.success,
+//     errors
+//   } as LiveViewChangeset&lt;Volunteer&gt;
+// }
 &nbsp;
 export const createVolunteer = (newVolunteer: Partial&lt;Volunteer&gt;): LiveViewChangeset&lt;Volunteer&gt; =&gt; {
   const result = changeset({}, newVolunteer, 'create');
@@ -274,7 +280,7 @@ export const updateVolunteer = (volunteer: Volunteer, updated: Partial&lt;Volunt
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Wed Feb 09 2022 19:45:55 GMT-0700 (Mountain Standard Time)
+                at Wed Feb 09 2022 20:44:43 GMT-0700 (Mountain Standard Time)
             </div>
         <script src="../../prettify.js"></script>
         <script>

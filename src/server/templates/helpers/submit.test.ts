@@ -8,6 +8,6 @@ describe("submit helper", () => {
 
   it("returns expected submit button with phx-disable-with", () => {
     const result = submit("submit", { phx_disable_with: "Saving..." }).toString()
-    expect(result).toBe(`<button phx-disable-with="Saving..." type="submit">submit</button>`)
+    expect(result).toBe(`<button type="submit" phx-disable-with="Saving...">submit</button>`)
   });
 });
