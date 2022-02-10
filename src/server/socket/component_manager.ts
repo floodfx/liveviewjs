@@ -14,6 +14,7 @@ export class LiveViewComponentManager {
   private intervals: NodeJS.Timeout[] = [];
   private lastHeartbeat: number = Date.now();
   private socketIsClosed: boolean = false;
+  private healthy: boolean = true;
   csrfToken?: string;
 
   constructor(component: LiveViewComponent<unknown, unknown>, signingSecret: string) {
@@ -179,10 +180,11 @@ export class LiveViewComponentManager {
 
   shutdown() {
     this.intervals.forEach(clearInterval);
+    this.healthy = false;
   }
 
-  isHealthy() {
-    if (this.socketIsClosed) {
+  get isHealthy() {
+    if (this.socketIsClosed || !this.healthy) {
       return false;
     } else {
       const now = Date.now();

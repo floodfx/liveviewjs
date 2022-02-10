@@ -1,14 +1,12 @@
 import { PhxJoinIncoming, PhxHeartbeatIncoming, PhxIncomingMessage, PhxClickPayload, PhxFormPayload, PhxLivePatchIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxBlurPayload, PhxFocusPayload } from './types';
 import WebSocket from 'ws';
-import { LiveViewComponent } from '../component/types';
 import { LiveViewRouter } from '../component/types';
-import jwt from 'jsonwebtoken';
 import { LiveViewComponentManager } from './component_manager';
 
 export class MessageRouter {
 
-  topicComponentManager: { [key: string]: LiveViewComponentManager } = {};
-  heartbeatRouter: { [key: string]: LiveViewComponentManager } = {};
+  topicComponentManager: Record<string, LiveViewComponentManager> = {};
+  heartbeatRouter: Record<string, LiveViewComponentManager> = {};
 
   onMessage(ws: WebSocket, message: WebSocket.RawData, router: LiveViewRouter, connectionId: string, signingSecret: string) {
     // parse string to JSON
@@ -35,7 +33,7 @@ export class MessageRouter {
             const message = rawPhxMessage as PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload>;
             componentManager.onEvent(ws, message);
           } else {
-            console.log("expected component manager for topic", topic);
+            console.error(`expected component manager for topic:${topic} and event:${event}`);
           }
           break;
         case "live_patch":
@@ -43,7 +41,7 @@ export class MessageRouter {
           if (componentManager) {
             componentManager.onLivePatch(ws, rawPhxMessage as PhxLivePatchIncoming);
           } else {
-            console.log("expected component manager for topic", topic);
+            console.error(`expected component manager for topic:${topic} and event:${event}`);
           }
           break;
         case "phx_leave":
@@ -51,21 +49,23 @@ export class MessageRouter {
           if (componentManager) {
             componentManager.shutdown();
             delete this.topicComponentManager[topic];
+          } else {
+            console.warn(`expected component manager for topic:${topic} and event:${event}`);
           }
           break;
         default:
-          console.error("unhandeded protocol event", rawPhxMessage);
+          throw new Error(`unexpected protocol event ${rawPhxMessage}`);
       }
     }
     else {
       // unknown message type
-      console.error("unknown message type", rawPhxMessage);
+      throw new Error(`unknown message type ${rawPhxMessage}`);
     }
 
     // cleanup unhealthy component managers
     Object.keys(this.topicComponentManager).forEach(key => {
       const cm = this.topicComponentManager[key];
-      if (!cm.isHealthy()) {
+      if (!cm.isHealthy) {
         cm.shutdown()
         delete this.topicComponentManager[key];
       }
@@ -74,7 +74,7 @@ export class MessageRouter {
     // cleanup unhealthy heartbeat routers
     Object.keys(this.heartbeatRouter).forEach(key => {
       const cm = this.heartbeatRouter[key];
-      if (!cm.isHealthy()) {
+      if (!cm.isHealthy) {
         cm.shutdown()
         delete this.heartbeatRouter[key];
       }
@@ -89,30 +89,24 @@ export class MessageRouter {
     const { url: urlString, redirect: redirectString } = payload;
     const joinUrl = urlString || redirectString;
     if (!joinUrl) {
-      console.error("no url or redirect in join message", message);
-      return;
+      throw Error(`no url or redirect in join message ${message}`);
     }
     const url = new URL(joinUrl);
     const component = router[url.pathname];
     if (!component) {
-      console.error("no component found for", url);
-      return;
+      throw Error(`no component found for ${url}`);
     }
 
     const componentManager = new LiveViewComponentManager(component, signingSecret);
     this.topicComponentManager[topic] = componentManager;
     this.heartbeatRouter[connectionId] = componentManager;
     componentManager.handleJoin(ws, message);
-
   }
 
   onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming, topic: string, connectionId: string) {
     const componentManager = this.heartbeatRouter[connectionId];
-
     if (componentManager) {
       componentManager.onHeartbeat(ws, message);
-    } else {
-      console.log("expected component manager for topic", topic);
     }
   }
 }

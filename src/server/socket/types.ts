@@ -76,7 +76,7 @@ export interface PhxEventUploads {
 }
 
 //{type: "click", event: "down", value: {value: ""}}
-export type PhxClickPayload = PhxEventPayload<"click", { value: { value: string } }>;
+export type PhxClickPayload = PhxEventPayload<"click", { value: string }>;
 
 //{"type":"form","event":"update","value":"seats=3&_target=seats","uploads":{}}
 export type PhxFormPayload = PhxEventPayload<"form", { value: string }> & PhxEventUploads;

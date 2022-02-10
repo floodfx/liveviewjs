@@ -70,6 +70,7 @@
     "@types/ws": "^8.2.2",
     "eslint": "^8.5.0",
     "jest": "^27.4.7",
+    "jest-mock-extended": "^2.0.4",
     "nodemon": "^2.0.15",
     "parcel": "^2.2.1",
     "supertest": "^6.2.2",

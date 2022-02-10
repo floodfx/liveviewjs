@@ -13,7 +13,7 @@ describe("test utils", () => {
   });
 
   it("valid phxReply", () => {
-    const incoming: PhxIncomingMessage<PhxClickPayload> = ["1", "2", "topic", "event", { type: "click", event: "down", value: { value: { value: "string" } } }]
+    const incoming: PhxIncomingMessage<PhxClickPayload> = ["1", "2", "topic", "event", { type: "click", event: "down", value: { value: "string" } }]
 
     const replyPayload = {
       response: {},

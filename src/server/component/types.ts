@@ -49,8 +49,8 @@ export interface LiveViewComponent<T, P> {
 }
 
 // TODO: support event returing Partial<T>?
-export interface LiveViewExternalEventListener<T, E extends string, P> {
-  handleEvent(event: E, params: StringPropertyValues<P>, socket: LiveViewSocket<T>): T;
+export interface LiveViewExternalEventListener<Context, Event extends string, Params> {
+  handleEvent(event: Event, params: StringPropertyValues<Params>, socket: LiveViewSocket<Context>): Context;
 }
 
 // TODO: support event returing Partial<T>?
