@@ -1,22 +1,27 @@
 ## LiveViewJS
 
-⌘ *Front-end framework for back-end developers* ⌘
+### *Front-end framework for back-end developers*
 
 ### Credit 🙌
-This is a port of [Phoenix LiveView](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html) to Typescript / Javascript.  What the Phoenix folks have built is phenominal and I wanted to use that paradigm in Typescript and make it available to others.
+This is a backend implementation of [Phoenix LiveView](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html) in Typescript.  What the Phoenix folks have built is phenominal and I wanted to use that paradigm in Typescript and make it available to others.
 
-### Approach 📐
+### Quick Overview of LiveView Approach
+How Phoenix desribes LiveView:
+> LiveView is an exciting new library which enables rich, real-time user experiences with server-rendered HTML. LiveView powered applications are stateful on the server with bidrectional communication via WebSockets, offering a vastly simplified programming model compared to JavaScript alternatives.
 
- * **Reuse Phoenix Client Libraries and app.js code** - The Phoenix team has done a ton of heavy lifting on the client that we can just use.  We also benefit from fixes and improvements in the future.  [See `src/client/liveview.ts` for client code.]
+In other words, LiveView takes a very different approach than the popular SPA frameworks like React, Vuejs, and Svelt to building rich, highly interactive web applications.  Instead of sending down a bundle of javascript, LiveView apps render an HTML page on the first request and then connect via a persistent socket over which client events are sent and updated received.  These events may trigger a state update on the server and a re-calculation of what the page should look like.  Instead of reloading the page, the client receives a "diff" of the page via the socket and the page's DOM is updated.  (This [video](https://online.pragmaticstudio.com/courses/liveview-pro/modules/4) by Pragmatic Studio does an amazing job of explaining how LiveView works.)
 
- * **Reuse Phoenix socket message protocol** - The Phoenix team already figured out a great protocol to send events to/from the server.  We just implemented a different backend.
+The programming paradigm is extremely powerful and productive!
 
- * **Follow component API design (i.e. `mount`, `render` etc), reimplemented with Typescript (so even more type-safe)** - Components in LiveViewJS follow the `mount`, `render`, `handleEvent`, and `handleInfo` API defined in Phoenix. Again, no need to invent a new API.
+### Feedback is a 🎁
+I am not an expert on Phoenix Liveview, Elixir, Erlang VMs, etc or really most things.  Please feel free to open an issue with questios, bugs, etc.
 
-### Status - **⍺**
-This is still in ⍺lpha territory.  You probably shouldn't put this into production just yet.  But side-projects / internal apps could work. 🧱
+### Status - **β**
+LiveViewJS is in βeta. The project is still young but the code is stable, tested, and well-documented.
 
 ### Implemented Phoenix Bindings
+The bindings below marked with ✅ are working and tested and most of them have example usage in the `examples` codebase.  Those with `?`, I have not gotten around to testing so not sure if they work. Those marked with ❌ are not yet implemented and known not to work.
+
 (See [Phoenix Bindings Docs](https://hexdocs.pm/phoenix_live_view/bindings.html) for more details)
 
 | Binding         | Attribute            | Supported   |
@@ -44,16 +49,14 @@ This is still in ⍺lpha territory.  You probably shouldn't put this into produc
 | JS Interop      | `phx-hook`           | ✅          |
 | Rate Limiting   | `phx-debounce`       | ✅          |
 | Rate Limiting   | `phx-throttle`       | ✅          |
-| Static Tracking | `phx-track-static`   | ⊖           |
+| Static Tracking | `phx-track-static`   | ❌          |
 
-Other features to be implemented:
-* [Updating HTML Document Title](https://hexdocs.pm/phoenix_live_view/live-layouts.html#updating-the-html-document-title) - Vote for [Issue 16](https://github.com/floodfx/liveviewjs/issues/16)
-* [LiveView Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Vote for [Issue 17](https://github.com/floodfx/liveviewjs/issues/17)
-* [Temporary Assigns](https://hexdocs.pm/phoenix_live_view/dom-patching.html#temporary-assigns) - Vote for [Issue 18](https://github.com/floodfx/liveviewjs/issues/18)
-* [Build in Flash Message Support](https://hexdocs.pm/phoenix_live_view/0.17.6/Phoenix.LiveView.html#put_flash/3) - Vote for [Issue 19](https://github.com/floodfx/liveviewjs/issues/19)
-* [File Uploads](https://hexdocs.pm/phoenix_live_view/uploads.html) - Vote for [Issue 20](https://github.com/floodfx/liveviewjs/issues/20)
+#### LiveViewJS Changesets
+Phoenix's Ecto ORM library and Phoenix LiveView rely on [Ecto Changesets](https://hexdocs.pm/ecto/Ecto.Changeset.html) to allow filtering, validation, and other logic to be applied to the data.  Changesets are a powerful way to apply logic to data and are used in Phoenix's ORM and LiveView.  LiveViewJS uses Changesets to provide a similar API to Phoenix's though it is NOT a full-blown ORM.
 
-### Show me some code! ⌨️
+Detailed documentation on [LiveViewJS Changesets](docs/changesets.md).
+
+### Usage - Show me some code! ⌨️
 
 **Step 0** Install LiveViewJS
 `npm i liveviewjs`
@@ -162,11 +165,15 @@ lvServer.registerLiveViewRoute("/light", new LightLiveViewComponent());
 // then start the server
 lvServer.start();
 ```
+#### Other features to be implemented:
+* [Updating HTML Document Title](https://hexdocs.pm/phoenix_live_view/live-layouts.html#updating-the-html-document-title) - Vote for [Issue 16](https://github.com/floodfx/liveviewjs/issues/16)
+* [LiveView Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Vote for [Issue 17](https://github.com/floodfx/liveviewjs/issues/17)
+* [Temporary Assigns](https://hexdocs.pm/phoenix_live_view/dom-patching.html#temporary-assigns) - Vote for [Issue 18](https://github.com/floodfx/liveviewjs/issues/18)
+* [Build in Flash Message Support](https://hexdocs.pm/phoenix_live_view/0.17.6/Phoenix.LiveView.html#put_flash/3) - Vote for [Issue 19](https://github.com/floodfx/liveviewjs/issues/19)
+* [File Uploads](https://hexdocs.pm/phoenix_live_view/uploads.html) - Vote for [Issue 20](https://github.com/floodfx/liveviewjs/issues/20)
 
-### Welcome your feedback, issues, and PRs
-I am not an expert on Phoenix Liveview, Elixir, Erlang VMs, etc or most things.  Please feel free to open an issue with questios, bugs, etc.
 
-### Commands
+### NPM Commands
 `npm i` - install the deps
 
 `npm run build` - builds the framework, client, and examples (server)
@@ -177,15 +184,23 @@ I am not an expert on Phoenix Liveview, Elixir, Erlang VMs, etc or most things. 
 
 `npm run test` - runs the (few) tests
 
-### See Examples
-**Credit** These examples are adapted from an amazing [Phoenix Video / Code Course](https://online.pragmaticstudio.com/courses/liveview-starter/steps/15) authored by the folks at [Pragmatic Studio](https://pragmaticstudio.com/).
+### Run and Browse Examples
+**Credit**: These examples are adapted from an amazing [Phoenix Video / Code Course](https://online.pragmaticstudio.com/courses/liveview-starter/steps/15) authored by the folks at [Pragmatic Studio](https://pragmaticstudio.com/).
+
+Navigate to `src/examples` to see the example code.
 
 Run `npm run examples` then point your browser to:
- * `http://localhost:4444/light` - control a fictional porch light with some buttons [See `src/examples/light_liveview.ts`]
- * `http://localhost:4444/license` - calculate the per seat costs to license a SaaS product [See `src/examples/license_liveview.ts`]
- * `http://localhost:4444/sales-dashboard` - show the aggregated sales stats updated every second [See `src/examples/sales_dashboard_liveview.ts`]
- * `http://localhost:4444/search` - search for business by zip code (e.g. 80204) [See `src/examples/live-search/*`]
- * `http://localhost:4444/autocomplete` - search for businesses by city with automatically suggested names [See `src/examples/autocomplete/*`]
+ * `http://localhost:4444/` - Shows the index of all the examples
 
-### Thanks!
+### More Details on the Approach to Building LiveViewJS 📐
+
+ * **Reuse Phoenix Client Libraries and app.js code** - The Phoenix team has done a ton of heavy lifting on the client that we can just use.  We also benefit from fixes and improvements in the future.  [See `src/client/liveview.ts` for client code.]
+
+ * **Reuse Phoenix socket message protocol** - The Phoenix team already figured out a great protocol to send events to/from the server.  We just implemented a different backend.
+
+ * **Follow component API design (i.e. `mount`, `render` etc), reimplemented with Typescript (so even more type-safe)** - Components in LiveViewJS follow the `mount`, `render`, `handleEvent`, and `handleInfo` API defined in Phoenix. Again, no need to invent a new API.
+
+### Gratitude 🙏
 Thanks to [@ogrodnek](https://github.com/ogrodnek) for the early support, feedback, and the idea to reuse the Phoenix client code instead of reinventing!
+
+Thanks to [@blimmer](https://github.com/blimmer/) for the awesome feedback, documentation suggests, and support!
