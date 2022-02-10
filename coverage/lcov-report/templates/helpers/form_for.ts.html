@@ -3,15 +3,15 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for server/templates/helpers/form_for.ts</title>
+    <title>Code coverage report for templates/helpers/form_for.ts</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="../../../prettify.css" />
-    <link rel="stylesheet" href="../../../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style type='text/css'>
         .coverage-summary .sorter {
-            background-image: url(../../../sort-arrow-sprite.png);
+            background-image: url(../../sort-arrow-sprite.png);
         }
     </style>
 </head>
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../../index.html">All files</a> / <a href="index.html">server/templates/helpers</a> form_for.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">templates/helpers</a> form_for.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">33.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>2/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">95% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>19/20</span>
+                <span class='fraction'>0/20</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/1</span>
+                <span class='fraction'>0/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">20% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>1/5</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -86,11 +86,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import html from ".."
 &nbsp;
 interface FormForOptions {
@@ -100,11 +100,11 @@ interface FormForOptions {
 }
 &nbsp;
 // TODO insert hidden input for CSRF token?
-export const form_for = &lt;T&gt;(action: string, options?: FormForOptions) =&gt; {
-  const method = options?.method<span class="branch-0 cbranch-no" title="branch not covered" > ?? "</span>post";
-  const phx_submit = options?.phx_submit ? ` phx-submit="${options.phx_submit}"` : "";
-  const phx_change = options?.phx_change ? ` phx-change="${options.phx_change}"` : "";
-  return `&lt;form action="${action}" method="${method}"${phx_submit}${phx_change}&gt;`
+export const form_for = <span class="fstat-no" title="function not covered" >&lt;T&gt;(a</span>ction: string, options?: FormForOptions) =&gt; {
+  const method = <span class="cstat-no" title="statement not covered" >options?.method ?? "post";</span>
+  const phx_submit = <span class="cstat-no" title="statement not covered" >options?.phx_submit ? ` phx-submit="${options.phx_submit}"` : "";</span>
+  const phx_change = <span class="cstat-no" title="statement not covered" >options?.phx_change ? ` phx-change="${options.phx_change}"` : "";</span>
+<span class="cstat-no" title="statement not covered" >  return `&lt;form action="${action}" method="${method}"${phx_submit}${phx_change}&gt;`</span>
 }</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -112,16 +112,16 @@ export const form_for = &lt;T&gt;(action: string, options?: FormForOptions) =&gt
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Wed Feb 09 2022 19:45:55 GMT-0700 (Mountain Standard Time)
+                at Wed Feb 09 2022 19:45:42 GMT-0700 (Mountain Standard Time)
             </div>
-        <script src="../../../prettify.js"></script>
+        <script src="../../prettify.js"></script>
         <script>
             window.onload = function () {
                 prettyPrint();
             };
         </script>
-        <script src="../../../sorter.js"></script>
-        <script src="../../../block-navigation.js"></script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
     </body>
 </html>
     
