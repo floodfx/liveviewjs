@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>66/66</span>
+                <span class='fraction'>67/67</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">80% </span>
+                <span class="strong">79.16% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>16/20</span>
+                <span class='fraction'>19/24</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>66/66</span>
+                <span class='fraction'>67/67</span>
             </div>
         
             
@@ -242,7 +242,9 @@
 <a name='L177'></a><a href='#L177'>177</a>
 <a name='L178'></a><a href='#L178'>178</a>
 <a name='L179'></a><a href='#L179'>179</a>
-<a name='L180'></a><a href='#L180'>180</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
@@ -251,6 +253,7 @@
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -274,6 +277,8 @@
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -285,6 +290,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-yes">8x</span>
@@ -351,8 +357,6 @@
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -440,11 +444,12 @@ declare module 'express-session' {
 }
 &nbsp;
 export interface LiveViewServerOptions {
-  port: number;
-  rootView: string;
-  viewsPath: string;
+  port?: number;
+  rootView?: string;
+  viewsPath?: string;
+  publicPath?: string;
   signingSecret: string;
-  sessionStore: session.Store;
+  sessionStore?: session.Store;
 }
 &nbsp;
 const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
@@ -452,6 +457,8 @@ const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
 export class LiveViewServer {
   private port: number = 4444;
   private rootView: string = "root.html.ejs";
+  // defaults to path relative to this module in /node_modules/
+  private publicPath: string = path.join(__dirname, "..", "client")
   private viewsPath: string[];
   private signingSecret: string;
   private sessionStore: session.Store = new MemoryStore();
@@ -463,9 +470,10 @@ export class LiveViewServer {
   readonly socketServer: WebSocket.Server;
   expressApp: express.Application;
 &nbsp;
-  constructor(options: Partial&lt;Omit&lt;LiveViewServerOptions, "signingSecret"&gt;&gt; &amp; { signingSecret: string }) {
+  constructor(options: LiveViewServerOptions) {
     this.port = options.port ?? <span class="branch-1 cbranch-no" title="branch not covered" >this.port;</span>
     this.rootView = options.rootView<span class="branch-0 cbranch-no" title="branch not covered" > ?? t</span>his.rootView;
+    this.publicPath = options.publicPath<span class="branch-0 cbranch-no" title="branch not covered" > ?? t</span>his.publicPath;
     this.viewsPath = options.viewsPath ? <span class="branch-0 cbranch-no" title="branch not covered" >[options.viewsPath, MODULE_VIEWS_PATH] </span>: [MODULE_VIEWS_PATH];
     this.sessionStore = options.sessionStore<span class="branch-0 cbranch-no" title="branch not covered" > ?? t</span>his.sessionStore;
     this.signingSecret = options.signingSecret;
@@ -533,9 +541,7 @@ export class LiveViewServer {
   private buildExpressApp() {
     const app = express();
 &nbsp;
-    const publicPath = path.join(__dirname, "..", "client");
-&nbsp;
-    app.use(express.static(publicPath))
+    app.use(express.static(this.publicPath))
 &nbsp;
     app.set('view engine', 'ejs');
     app.set("views", this.viewsPath)
@@ -607,7 +613,7 @@ export class LiveViewServer {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Thu Feb 10 2022 11:32:16 GMT-0700 (Mountain Standard Time)
+                at Thu Feb 10 2022 19:26:13 GMT-0700 (Mountain Standard Time)
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -17,11 +17,12 @@ declare module 'express-session' {
 }
 
 export interface LiveViewServerOptions {
-  port: number;
-  rootView: string;
-  viewsPath: string;
+  port?: number;
+  rootView?: string;
+  viewsPath?: string;
+  publicPath?: string;
   signingSecret: string;
-  sessionStore: session.Store;
+  sessionStore?: session.Store;
 }
 
 const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
@@ -29,6 +30,8 @@ const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
 export class LiveViewServer {
   private port: number = 4444;
   private rootView: string = "root.html.ejs";
+  // defaults to path relative to this module in /node_modules/
+  private publicPath: string = path.join(__dirname, "..", "client")
   private viewsPath: string[];
   private signingSecret: string;
   private sessionStore: session.Store = new MemoryStore();
@@ -40,9 +43,10 @@ export class LiveViewServer {
   readonly socketServer: WebSocket.Server;
   expressApp: express.Application;
 
-  constructor(options: Partial<Omit<LiveViewServerOptions, "signingSecret">> & { signingSecret: string }) {
+  constructor(options: LiveViewServerOptions) {
     this.port = options.port ?? this.port;
     this.rootView = options.rootView ?? this.rootView;
+    this.publicPath = options.publicPath ?? this.publicPath;
     this.viewsPath = options.viewsPath ? [options.viewsPath, MODULE_VIEWS_PATH] : [MODULE_VIEWS_PATH];
     this.sessionStore = options.sessionStore ?? this.sessionStore;
     this.signingSecret = options.signingSecret;
@@ -110,9 +114,7 @@ export class LiveViewServer {
   private buildExpressApp() {
     const app = express();
 
-    const publicPath = path.join(__dirname, "..", "client");
-
-    app.use(express.static(publicPath))
+    app.use(express.static(this.publicPath))
 
     app.set('view engine', 'ejs');
     app.set("views", this.viewsPath)

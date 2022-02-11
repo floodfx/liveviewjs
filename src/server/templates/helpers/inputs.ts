@@ -6,16 +6,18 @@ interface InputOptions {
   autocomplete?: "off" | "on"
   phx_debounce?: number | "blur" | "focus"
   type?: "text" | "tel"
+  className?: string
 }
 
 export const text_input = <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: InputOptions) => {
   const placeholder = options?.placeholder ? safe(` placeholder="${options.placeholder}"`) : "";
   const autocomplete = options?.autocomplete ? safe(` autocomplete="${options.autocomplete}"`) : "";
   const phx_debounce = options?.phx_debounce ? safe(` phx-debounce="${options.phx_debounce}"`) : "";
+  const className = options?.className ? safe(` class="${options.className}"`) : "";
   const type = options?.type ?? "text";
   const id = `input_${key}`;
   const value = changeset.data[key] ?? "";
-  return html`<input type="${type}" id="${id}" name="${String(key)}" value="${value}"${autocomplete}${placeholder}${phx_debounce}/>`
+  return html`<input type="${type}" id="${id}" name="${String(key)}" value="${value}"${className}${autocomplete}${placeholder}${phx_debounce}/>`
 }
 
 interface TelephoneInputOptions extends Omit<InputOptions, "type"> { }
