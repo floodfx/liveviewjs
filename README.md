@@ -192,6 +192,8 @@ Navigate to `src/examples` to see the example code.
 Run `npm run examples` then point your browser to:
  * `http://localhost:4444/` - Shows the index of all the examples
 
+ There is also a standalone [TodoMVC](https://github.com/floodfx/todomvc-liveviewjs) example application written in LiveViewJS.
+
 ### More Details on the Approach to Building LiveViewJS 📐
 
  * **Reuse Phoenix Client Libraries and app.js code** - The Phoenix team has done a ton of heavy lifting on the client that we can just use.  We also benefit from fixes and improvements in the future.  [See `src/client/liveview.ts` for client code.]
