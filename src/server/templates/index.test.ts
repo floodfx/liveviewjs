@@ -1,5 +1,5 @@
 
-import { join } from '..';
+import { escapehtml, join } from '..';
 import { html, HtmlSafeString } from './index';
 
 describe("test escapeHtml", () => {
@@ -129,6 +129,36 @@ describe("test escapeHtml", () => {
     });
   });
 
+  it("escapes a script tag in store name", () => {
+    const xssStore: Store = {
+      name: "<script>alert('xss')</script>",
+      open: true,
+      street: "123 Main\"><span>hello</span> St",
+      phone_number: "555-555-5555",
+      zip: "80204",
+      city: "Denver",
+      hours: "9am-9pm",
+    }
+    const loaded = renderStores("80204", [xssStore], false);
+    console.log('partsTree', JSON.stringify(loaded.partsTree(), null, 2));
+    expect(loaded.partsTree()).toEqual({
+      '0': '80204',
+      '1': '',
+      '2': '',
+      '3': {
+        d: [
+          [
+            escapehtml(xssStore.name),
+            { s: renderStoreStatus(xssStore).statics },
+            escapehtml(xssStore.street),
+            xssStore.phone_number
+          ],
+        ],
+        s: renderStore(xssStore).statics,
+      },
+      s: [...loaded.statics]
+    });
+  });
 
 });
 

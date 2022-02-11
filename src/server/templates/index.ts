@@ -32,7 +32,7 @@ export function safe(value: unknown) {
   return new HtmlSafeString([String(value)], [])
 }
 
-function escapehtml(unsafe: unknown): string {
+export function escapehtml(unsafe: unknown): string {
   if (unsafe instanceof HtmlSafeString) {
     return unsafe.toString()
   }
@@ -86,9 +86,10 @@ export class HtmlSafeString {
           }
         }
       } else {
+        // cur is a literal string or number
         return {
           ...acc,
-          [`${index}`]: String(cur)
+          [`${index}`]: escapehtml(String(cur))
         }
       }
     }, {} as { [key: string]: unknown })
