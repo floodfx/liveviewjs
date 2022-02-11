@@ -1,4 +1,4 @@
-import { PhxJoinIncoming, PhxHeartbeatIncoming, PhxIncomingMessage, PhxClickPayload, PhxFormPayload, PhxLivePatchIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxBlurPayload, PhxFocusPayload } from './types';
+import { PhxJoinIncoming, PhxHeartbeatIncoming, PhxIncomingMessage, PhxClickPayload, PhxFormPayload, PhxLivePatchIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxBlurPayload, PhxFocusPayload, PhxHookPayload } from './types';
 import WebSocket from 'ws';
 import { LiveViewRouter } from '../component/types';
 import { LiveViewComponentManager } from './component_manager';
@@ -30,7 +30,7 @@ export class MessageRouter {
           // lookup component manager for this topic
           componentManager = this.topicComponentManager[topic];
           if (componentManager) {
-            const message = rawPhxMessage as PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload>;
+            const message = rawPhxMessage as PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload | PhxHookPayload>;
             componentManager.onEvent(ws, message);
           } else {
             console.error(`expected component manager for topic:${topic} and event:${event}`);

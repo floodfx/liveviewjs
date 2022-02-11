@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { LiveViewComponent, LiveViewSocket, StringPropertyValues } from "../component/types";
-import { PhxClickPayload, PhxDiffReply, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxLivePatchIncoming, PhxOutgoingLivePatchPush, PhxOutgoingMessage, PhxKeyDownPayload, PhxKeyUpPayload, PhxBlurPayload, PhxFocusPayload } from "./types";
+import { PhxClickPayload, PhxDiffReply, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxLivePatchIncoming, PhxOutgoingLivePatchPush, PhxOutgoingMessage, PhxKeyDownPayload, PhxKeyUpPayload, PhxBlurPayload, PhxFocusPayload, PhxHookPayload } from "./types";
 import jwt from 'jsonwebtoken';
 import { SessionData } from "express-session";
 import { newHeartbeatReply, newPhxReply } from "./util";
@@ -80,7 +80,7 @@ export class LiveViewComponentManager {
     this.sendPhxReply(ws, newHeartbeatReply(message));
   }
 
-  onEvent(ws: WebSocket, message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload>) {
+  onEvent(ws: WebSocket, message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>) {
     const [joinRef, messageRef, topic, _, payload] = message;
     const { type, event } = payload;
 
@@ -97,6 +97,8 @@ export class LiveViewComponentManager {
     } else if (type === "keyup" || type === "keydown") {
       value = payload.value;
     } else if (type === "blur" || type === "focus") {
+      value = payload.value;
+    } else if (type === "hook") {
       value = payload.value;
     } else {
       console.error("Unknown event type", type);

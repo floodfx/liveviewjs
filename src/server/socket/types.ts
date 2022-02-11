@@ -95,3 +95,8 @@ export type PhxKeyDownPayload = PhxEventPayload<"keydown", { key: string, value?
 // {type: "blur", event: "blur", value: {value: ""}}
 export type PhxFocusPayload = PhxEventPayload<"focus", { value: string }>;
 export type PhxBlurPayload = PhxEventPayload<"blur", { value: string }>;
+
+// Hook event
+// initiated by calling this.pushEvent("edit"...) in client hook in liveview.js
+// {type: "hook", event: "edit", value: {id: "abc"}}
+export type PhxHookPayload = PhxEventPayload<"hook", Record<string, string>>;

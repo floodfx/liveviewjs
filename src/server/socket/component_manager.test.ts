@@ -3,7 +3,7 @@ import { WebSocket } from "ws";
 import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewComponent } from "..";
 import { html, HtmlSafeString } from "../templates";
 import { mock } from "jest-mock-extended";
-import { PhxBlurPayload, PhxClickPayload, PhxFlash, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from "./types";
+import { PhxBlurPayload, PhxClickPayload, PhxFlash, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from "./types";
 import jwt from "jsonwebtoken";
 import { StringPropertyValues } from "../component";
 import { isEventHandler, isInfoHandler, LiveViewComponentManager } from "./component_manager";
@@ -168,7 +168,7 @@ describe("test component manager", () => {
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onEvent valid blur event", () => {
+  it("onEvent valid focus event", () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_blur: PhxIncomingMessage<PhxFocusPayload> = [
@@ -180,6 +180,24 @@ describe("test component manager", () => {
         type: "focus",
         event: "eventName",
         value: { value: "eventValue" },
+      }
+    ]
+    cm.onEvent(ws, phx_blur)
+    expect(ws.send).toHaveBeenCalledTimes(1)
+  })
+
+  it("onEvent valid hook event", () => {
+    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
+    const ws = mock<WebSocket>()
+    const phx_blur: PhxIncomingMessage<PhxHookPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        type: "hook",
+        event: "eventName",
+        value: { blah: "something" },
       }
     ]
     cm.onEvent(ws, phx_blur)
