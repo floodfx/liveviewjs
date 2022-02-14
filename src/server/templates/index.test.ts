@@ -35,6 +35,11 @@ describe("test escapeHtml", () => {
     expect(new HtmlSafeString(result.statics, ["diffmid"]).toString()).toBe('beforediffmidafter');
   });
 
+  it("Throws error if dynamics is zero and statics not one", () => {
+    const result = new HtmlSafeString(["a", "b"], []);
+    expect(() => result.partsTree()).toThrow();
+  });
+
   it("works for if/then controls", () => {
     const template = (show: boolean) => html`before${show ? "show" : ""}after`;
     let result = template(true);
@@ -58,6 +63,15 @@ describe("test escapeHtml", () => {
   it("more join array without commas on multiple levels", () => {
     const result = html`${html`<a>${1}${2}${3}</a>`}`;
     expect(result.toString()).toBe('<a>123</a>');
+    expect(result.partsTree()).toEqual({
+      0: {
+        0: "1",
+        1: "2",
+        2: "3",
+        s: ["<a>", "", "", "</a>"]
+      },
+      s: ["", ""]
+    });
   });
 
   it("non-interpolated literal should just be a single static", () => {
@@ -66,6 +80,36 @@ describe("test escapeHtml", () => {
       s: ["abc"]
     });
   });
+
+  it("array of dynamics maps to object with s and d attrs", () => {
+    const strings = ["a", "b", "c"];
+    const result = html`1${strings.map(x => html`${x}`)}2`;
+    expect(result.partsTree()).toEqual({
+      0: {
+        s: ["", ""],
+        d: [["a"], ["b"], ["c"]],
+      },
+      s: ["1", "2"]
+    });
+  })
+
+  it("tree of templates", () => {
+    const result = html`3${html`2${html`1${1}1`}${2}2`}${3}3`;
+    expect(result.partsTree()).toEqual({
+      0: {
+        0: {
+          0: "1",
+          s: ["1", "1"],
+        },
+        1: "2",
+        s: ["2", "", "2"],
+      },
+      1: "3",
+      s: ["3", "", "3"]
+    });
+  })
+
+
 
   it("render empty stores has the right parts", () => {
     const empty = renderStores("", [], false);
@@ -100,25 +144,25 @@ describe("test escapeHtml", () => {
         d: [
           [
             stores[3].name,
-            { s: renderStoreStatus(stores[3]).statics },
+            { s: renderStoreStatusWithoutEmojis(stores[3]).statics },
             stores[3].street,
             stores[3].phone_number
           ],
           [
             stores[4].name,
-            { s: renderStoreStatus(stores[4]).statics },
+            { s: renderStoreStatusWithoutEmojis(stores[4]).statics },
             stores[4].street,
             stores[4].phone_number
           ],
           [
             stores[5].name,
-            { s: renderStoreStatus(stores[5]).statics },
+            { s: renderStoreStatusWithoutEmojis(stores[5]).statics },
             stores[5].street,
             stores[5].phone_number
           ],
           [
             stores[6].name,
-            { s: renderStoreStatus(stores[6]).statics },
+            { s: renderStoreStatusWithoutEmojis(stores[6]).statics },
             stores[6].street,
             stores[6].phone_number
           ],
@@ -149,7 +193,7 @@ describe("test escapeHtml", () => {
         d: [
           [
             escapehtml(xssStore.name),
-            { s: renderStoreStatus(xssStore).statics },
+            { s: renderStoreStatusWithoutEmojis(xssStore).statics },
             escapehtml(xssStore.street),
             xssStore.phone_number
           ],
@@ -172,11 +216,27 @@ interface Store {
   open: boolean;
 }
 
-const renderStoreStatus = (store: Store) => {
+const renderStoreStatusWithoutEmojis = (store: Store) => {
   if (store.open) {
-    return html`<span class="open">🔓 Open</span>`;
+    return html`<span class="open">Open</span>`;
   } else {
-    return html`<span class="closed">🔐 Closed</span>`;
+    return html`<span class="closed">Closed</span>`;
+  }
+};
+
+const renderStoreStatusWithEmojis = (store: Store) => {
+  if (store.open) {
+    return html`<span class="open">${statusEmojis(store)} Open</span>`;
+  } else {
+    return html`<span class="closed">${statusEmojis(store)} Closed</span>`;
+  }
+};
+
+const statusEmojis = (store: Store) => {
+  if (store.open) {
+    return html`🔓`;
+  } else {
+    return html`🔐`;
   }
 };
 
@@ -192,7 +252,7 @@ const renderStore = (store: Store) => {
         ${store.name}
       </div>
       <div class="status">
-        ${renderStoreStatus(store)}
+        ${renderStoreStatusWithoutEmojis(store)}
       </div>
       <div class="second-line">
         <div class="street">

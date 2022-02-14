@@ -104,7 +104,8 @@ describe("test live view server", () => {
       .ws('/liveview')
       .sendText(JSON.stringify(joinMsg))
       .expectMessage((msg) => {
-        console.log(msg)
+        // console.log(msg)
+        expect(msg.data).not.toBeUndefined()
       })
       .close()
       .expectClosed()

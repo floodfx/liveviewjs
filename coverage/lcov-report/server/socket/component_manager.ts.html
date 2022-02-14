@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>98/98</span>
+                <span class='fraction'>108/108</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>98/98</span>
+                <span class='fraction'>108/108</span>
             </div>
         
             
@@ -314,11 +314,24 @@
 <a name='L249'></a><a href='#L249'>249</a>
 <a name='L250'></a><a href='#L250'>250</a>
 <a name='L251'></a><a href='#L251'>251</a>
-<a name='L252'></a><a href='#L252'>252</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -422,14 +435,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">12x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -456,12 +472,15 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -515,7 +534,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -572,6 +596,7 @@ import jwt from 'jsonwebtoken';
 import { SessionData } from "express-session";
 import { newHeartbeatReply, newPhxReply } from "./util";
 import { BaseLiveViewComponent } from "../component/base_component";
+import { deepDiff } from "../templates/diff";
 &nbsp;
 export class LiveViewComponentManager {
 &nbsp;
@@ -617,7 +642,7 @@ export class LiveViewComponentManager {
         return;
       }
     } catch (e) {
-      console.log("Error decoding session", e);
+      console.error("Error decoding session", e);
       return;
     }
 &nbsp;
@@ -673,16 +698,19 @@ export class LiveViewComponentManager {
     }
 &nbsp;
     if (isEventHandler(this.component)) {
+      const previousContext = this.context;
       // @ts-ignore - already checked if handleEvent is defined
       this.context = this.component.handleEvent(event, value, this.buildLiveViewSocket(ws, topic));
 &nbsp;
+      // get old render tree and new render tree for diffing
+      const oldView = this.component.render(previousContext);
       const view = this.component.render(this.context);
+&nbsp;
+      const diff = deepDiff(oldView.partsTree(), view.partsTree());
 &nbsp;
       const replyPayload = {
         response: {
-          diff: {
-            ...view.partsTree(false)
-          }
+          diff
         },
         status: "ok"
       }
@@ -706,15 +734,18 @@ export class LiveViewComponentManager {
     // @ts-ignore - URLSearchParams has an entries method but not typed
     const params = Object.fromEntries(url.searchParams);
 &nbsp;
+    const previousContext = this.context;
     this.context = this.component.handleParams(params, urlString, this.buildLiveViewSocket(ws, topic));
 &nbsp;
+    // get old render tree and new render tree for diffing
+    const oldView = this.component.render(previousContext);
     const view = this.component.render(this.context);
+&nbsp;
+    const diff = deepDiff(oldView.partsTree(), view.partsTree());
 &nbsp;
     const replyPayload = {
       response: {
-        diff: {
-          ...view.partsTree(false)
-        }
+        diff
       },
       status: "ok"
     }
@@ -766,17 +797,22 @@ export class LiveViewComponentManager {
     // console.log("sendInternal", event);
 &nbsp;
     if (isInfoHandler(this.component)) {
+      const previousContext = this.context;
       // @ts-ignore - already checked if handleInfo is defined
       this.context = this.component.handleInfo(event, this.buildLiveViewSocket(ws, topic));
 &nbsp;
+      // get old render tree and new render tree for diffing
+      const oldView = this.component.render(previousContext);
       const view = this.component.render(this.context);
+&nbsp;
+      const diff = deepDiff(oldView.partsTree(), view.partsTree());
 &nbsp;
       const reply: PhxDiffReply = [
         null, // no join reference
         null, // no message reference
         topic,
         "diff",
-        view.partsTree(false) as any
+        diff
       ]
 &nbsp;
       this.sendPhxReply(ws, reply);
@@ -823,7 +859,7 @@ export function isEventHandler(component: LiveViewComponent&lt;unknown, unknown&
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at Fri Feb 11 2022 08:45:27 GMT-0700 (Mountain Standard Time)
+                at Mon Feb 14 2022 09:30:39 GMT-0700 (Mountain Standard Time)
             </div>
         <script src="../../prettify.js"></script>
         <script>

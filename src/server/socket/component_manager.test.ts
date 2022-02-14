@@ -503,7 +503,7 @@ class RepeatTestLiveViewComponent extends BaseLiveViewComponent<{}, {}> implemen
   }
 
   handleEvent(event: "", params: StringPropertyValues<unknown>, socket: LiveViewSocket<{}>): {} {
-    socket.repeat(() => { socket.ws!.send(""); console.log("here") }, 50)
+    socket.repeat(() => { socket.ws!.send(""); }, 50)
     return {}
   }
 

@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { SessionData } from "express-session";
 import { newHeartbeatReply, newPhxReply } from "./util";
 import { BaseLiveViewComponent } from "../component/base_component";
+import { deepDiff } from "../templates/diff";
 
 export class LiveViewComponentManager {
 
@@ -50,7 +51,7 @@ export class LiveViewComponentManager {
         return;
       }
     } catch (e) {
-      console.log("Error decoding session", e);
+      console.error("Error decoding session", e);
       return;
     }
 
@@ -106,16 +107,19 @@ export class LiveViewComponentManager {
     }
 
     if (isEventHandler(this.component)) {
+      const previousContext = this.context;
       // @ts-ignore - already checked if handleEvent is defined
       this.context = this.component.handleEvent(event, value, this.buildLiveViewSocket(ws, topic));
 
+      // get old render tree and new render tree for diffing
+      const oldView = this.component.render(previousContext);
       const view = this.component.render(this.context);
+
+      const diff = deepDiff(oldView.partsTree(), view.partsTree());
 
       const replyPayload = {
         response: {
-          diff: {
-            ...view.partsTree(false)
-          }
+          diff
         },
         status: "ok"
       }
@@ -139,15 +143,18 @@ export class LiveViewComponentManager {
     // @ts-ignore - URLSearchParams has an entries method but not typed
     const params = Object.fromEntries(url.searchParams);
 
+    const previousContext = this.context;
     this.context = this.component.handleParams(params, urlString, this.buildLiveViewSocket(ws, topic));
 
+    // get old render tree and new render tree for diffing
+    const oldView = this.component.render(previousContext);
     const view = this.component.render(this.context);
+
+    const diff = deepDiff(oldView.partsTree(), view.partsTree());
 
     const replyPayload = {
       response: {
-        diff: {
-          ...view.partsTree(false)
-        }
+        diff
       },
       status: "ok"
     }
@@ -199,17 +206,22 @@ export class LiveViewComponentManager {
     // console.log("sendInternal", event);
 
     if (isInfoHandler(this.component)) {
+      const previousContext = this.context;
       // @ts-ignore - already checked if handleInfo is defined
       this.context = this.component.handleInfo(event, this.buildLiveViewSocket(ws, topic));
 
+      // get old render tree and new render tree for diffing
+      const oldView = this.component.render(previousContext);
       const view = this.component.render(this.context);
+
+      const diff = deepDiff(oldView.partsTree(), view.partsTree());
 
       const reply: PhxDiffReply = [
         null, // no join reference
         null, // no message reference
         topic,
         "diff",
-        view.partsTree(false) as any
+        diff
       ]
 
       this.sendPhxReply(ws, reply);
