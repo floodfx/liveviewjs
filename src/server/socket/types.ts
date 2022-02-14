@@ -44,7 +44,7 @@ export type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
 export type PhxLivePatchIncoming = PhxIncomingMessage<{ url: string }>;
 
 
-export type Diff = { [key: string]: string | Diff }
+export type Diff = { [key: string]: unknown | Diff }
 
 export type RenderedNode = { [key: string]: string | RenderedNode } & { [key in "s"]: readonly string[] }
 

@@ -42,25 +42,49 @@ export function escapehtml(unsafe: unknown): string {
   return String(unsafe).replace(ENT_REGEX, (char) => ENTITIES[char])
 }
 
+// cases
+//   1. only statics e.g. html`abc`
+//     { s: ['abc'] }
+//   2. statics and dynamics e.g. html`ab${1}c` or html`${1}`
+//     {'0': '1', s: ['ab', 'c'] } or { 0: '1', s: ['', ''] }
+//   3. array of html substring e.g. html`${[1, 2, 3].map(x => html`<a>${x}</a>`)}`
+//     { d: [['1'], ['2'], ['3']], s:['<a>''</a>']}
+//   4. tree of statics and dymaics e.g. html`${html`${html`${1}${2}${3}`}`}`
+// type IndexPart = { [index: string]: string | Parts }
+// type StaticsPart = { s?: readonly string[] }
+// type DynamicsPart = { d?: (string | StaticsPart)[] }
+// type Parts = IndexPart & StaticsPart & DynamicsPart
+export type Parts = { [key: string]: unknown }
+
 export class HtmlSafeString {
   readonly statics: readonly string[]
   readonly _dynamics: readonly unknown[]
-  readonly children: readonly HtmlSafeString[]
+  // readonly children: readonly HtmlSafeString[]
 
   constructor(statics: readonly string[], dynamics: readonly unknown[]) {
     this.statics = statics
     this._dynamics = dynamics
   }
 
-  partsTree(includeStatics: boolean = true): { [key: string]: unknown } {
-    // if only statics, return just the statics
+  partsTree(includeStatics: boolean = true): Parts {
+    // statics.length should always equal dynamics.length + 1
     if (this._dynamics.length === 0) {
+      if (this.statics.length !== 1) {
+        throw new Error('Expected exactly one static string for HtmlSafeString' + this)
+      }
+      // TODO Optimization to just return the single static string?
+      // if only statics, return just the statics
+      // in fact, only statics / no dymaincs means we
+      // can simplify this node and just return the only
+      // static string since there can only be one static
+      // return this.statics[0];
       return {
         s: this.statics
       }
     }
-    // else walk the dynamics and build the parts tree
-    const parts = this._dynamics.reduce((acc: { [key: string]: unknown }, cur: unknown, index: number) => {
+
+    // otherwise walk the dynamics and build the parts tree
+    const parts = this._dynamics.reduce((acc: Parts, cur: unknown, index: number) => {
       if (cur instanceof HtmlSafeString) {
         return {
           ...acc,
@@ -74,12 +98,14 @@ export class HtmlSafeString {
             [`${index}`]: ""
           }
         }
+        // not an empty array but array of HtmlSafeString
         else {
+          const currentPart = cur as HtmlSafeString[]
           // collect all the dynamic partsTrees
-          const d = cur.map(c => Object.values(c.partsTree(false)))
+          const d = currentPart.map(c => Object.values(c.partsTree(false)))
           // we know the statics are the same for all the children
           // so we can just take the first one
-          const s = cur.map(c => c.statics)[0]
+          const s = currentPart.map(c => c.statics)[0]
           return {
             ...acc,
             [`${index}`]: { d, s }
@@ -92,7 +118,7 @@ export class HtmlSafeString {
           [`${index}`]: escapehtml(String(cur))
         }
       }
-    }, {} as { [key: string]: unknown })
+    }, {} as Parts)
     // appends the statics to the parts tree
     if (includeStatics) {
       parts["s"] = this.statics;
@@ -112,3 +138,4 @@ export class HtmlSafeString {
 export function html(statics: TemplateStringsArray, ...dynamics: unknown[]) {
   return new HtmlSafeString(statics, dynamics)
 }
+
