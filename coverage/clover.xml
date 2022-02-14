@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1644856239150" clover="3.2.0">
-  <project timestamp="1644856239150" name="All files">
+<coverage generated="1644856466258" clover="3.2.0">
+  <project timestamp="1644856466258" name="All files">
     <metrics statements="449" coveredstatements="449" conditionals="242" coveredconditionals="232" methods="88" coveredmethods="86" elements="779" coveredelements="767" complexity="0" loc="449" ncloc="449" packages="8" files="21" classes="21"/>
     <package name="examples.autocomplete">
       <metrics statements="5" coveredstatements="5" conditionals="1" coveredconditionals="1" methods="2" coveredmethods="2"/>
