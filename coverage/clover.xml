@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1644856466258" clover="3.2.0">
-  <project timestamp="1644856466258" name="All files">
-    <metrics statements="449" coveredstatements="449" conditionals="242" coveredconditionals="232" methods="88" coveredmethods="86" elements="779" coveredelements="767" complexity="0" loc="449" ncloc="449" packages="8" files="21" classes="21"/>
+<coverage generated="1644899939665" clover="3.2.0">
+  <project timestamp="1644899939665" name="All files">
+    <metrics statements="450" coveredstatements="450" conditionals="242" coveredconditionals="232" methods="88" coveredmethods="86" elements="780" coveredelements="768" complexity="0" loc="450" ncloc="450" packages="8" files="21" classes="21"/>
     <package name="examples.autocomplete">
       <metrics statements="5" coveredstatements="5" conditionals="1" coveredconditionals="1" methods="2" coveredmethods="2"/>
       <file name="data.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/examples/autocomplete/data.ts">
@@ -170,7 +170,7 @@
       </file>
     </package>
     <package name="server.socket">
-      <metrics statements="176" coveredstatements="176" conditionals="56" coveredconditionals="55" methods="26" coveredmethods="26"/>
+      <metrics statements="178" coveredstatements="178" conditionals="56" coveredconditionals="55" methods="26" coveredmethods="26"/>
       <file name="component_manager.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/socket/component_manager.ts">
         <metrics statements="108" coveredstatements="108" conditionals="30" coveredconditionals="29" methods="17" coveredmethods="17"/>
         <line num="4" count="5" type="stmt"/>
@@ -235,13 +235,13 @@
         <line num="130" count="1" type="stmt"/>
         <line num="131" count="1" type="stmt"/>
         <line num="138" count="2" type="stmt"/>
+        <line num="140" count="2" type="stmt"/>
         <line num="141" count="2" type="stmt"/>
-        <line num="142" count="2" type="stmt"/>
-        <line num="144" count="2" type="stmt"/>
+        <line num="143" count="2" type="stmt"/>
+        <line num="145" count="2" type="stmt"/>
         <line num="146" count="2" type="stmt"/>
-        <line num="147" count="2" type="stmt"/>
+        <line num="149" count="2" type="stmt"/>
         <line num="150" count="2" type="stmt"/>
-        <line num="151" count="2" type="stmt"/>
         <line num="153" count="2" type="stmt"/>
         <line num="155" count="2" type="stmt"/>
         <line num="162" count="2" type="stmt"/>
@@ -283,7 +283,7 @@
         <line num="263" count="15" type="stmt"/>
       </file>
       <file name="message_router.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/socket/message_router.ts">
-        <metrics statements="57" coveredstatements="57" conditionals="24" coveredconditionals="24" methods="6" coveredmethods="6"/>
+        <metrics statements="59" coveredstatements="59" conditionals="24" coveredconditionals="24" methods="6" coveredmethods="6"/>
         <line num="4" count="4" type="stmt"/>
         <line num="6" count="4" type="stmt"/>
         <line num="8" count="22" type="stmt"/>
@@ -291,56 +291,58 @@
         <line num="13" count="20" type="stmt"/>
         <line num="16" count="20" type="cond" truecount="5" falsecount="0"/>
         <line num="17" count="19" type="stmt"/>
-        <line num="20" count="19" type="cond" truecount="6" falsecount="0"/>
-        <line num="23" count="10" type="stmt"/>
-        <line num="24" count="8" type="stmt"/>
-        <line num="27" count="2" type="stmt"/>
+        <line num="20" count="19" type="stmt"/>
+        <line num="21" count="19" type="cond" truecount="6" falsecount="0"/>
+        <line num="24" count="10" type="stmt"/>
+        <line num="25" count="8" type="stmt"/>
         <line num="28" count="2" type="stmt"/>
-        <line num="31" count="2" type="stmt"/>
-        <line num="32" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="33" count="1" type="stmt"/>
+        <line num="29" count="2" type="stmt"/>
+        <line num="32" count="2" type="stmt"/>
+        <line num="33" count="2" type="cond" truecount="2" falsecount="0"/>
         <line num="34" count="1" type="stmt"/>
-        <line num="36" count="1" type="stmt"/>
-        <line num="38" count="2" type="stmt"/>
-        <line num="40" count="2" type="stmt"/>
-        <line num="41" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="42" count="1" type="stmt"/>
-        <line num="44" count="1" type="stmt"/>
-        <line num="46" count="2" type="stmt"/>
-        <line num="48" count="2" type="stmt"/>
-        <line num="49" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="50" count="1" type="stmt"/>
+        <line num="35" count="1" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="39" count="2" type="stmt"/>
+        <line num="41" count="2" type="stmt"/>
+        <line num="42" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="43" count="1" type="stmt"/>
+        <line num="45" count="1" type="stmt"/>
+        <line num="47" count="2" type="stmt"/>
+        <line num="49" count="2" type="stmt"/>
+        <line num="50" count="2" type="cond" truecount="2" falsecount="0"/>
         <line num="51" count="1" type="stmt"/>
-        <line num="53" count="1" type="stmt"/>
-        <line num="55" count="2" type="stmt"/>
-        <line num="57" count="1" type="stmt"/>
-        <line num="62" count="1" type="stmt"/>
-        <line num="66" count="16" type="stmt"/>
-        <line num="67" count="12" type="stmt"/>
-        <line num="68" count="12" type="cond" truecount="1" falsecount="0"/>
-        <line num="69" count="1" type="stmt"/>
-        <line num="70" count="1" type="stmt"/>
-        <line num="75" count="16" type="stmt"/>
-        <line num="76" count="13" type="stmt"/>
-        <line num="77" count="13" type="cond" truecount="1" falsecount="0"/>
-        <line num="78" count="2" type="stmt"/>
-        <line num="79" count="2" type="stmt"/>
-        <line num="88" count="10" type="stmt"/>
-        <line num="89" count="10" type="stmt"/>
-        <line num="90" count="10" type="cond" truecount="2" falsecount="0"/>
-        <line num="91" count="10" type="cond" truecount="1" falsecount="0"/>
-        <line num="92" count="1" type="stmt"/>
-        <line num="94" count="9" type="stmt"/>
-        <line num="95" count="9" type="stmt"/>
-        <line num="96" count="9" type="cond" truecount="1" falsecount="0"/>
-        <line num="97" count="1" type="stmt"/>
-        <line num="100" count="8" type="stmt"/>
-        <line num="101" count="8" type="stmt"/>
-        <line num="102" count="8" type="stmt"/>
-        <line num="103" count="8" type="stmt"/>
-        <line num="107" count="2" type="stmt"/>
-        <line num="108" count="2" type="cond" truecount="1" falsecount="0"/>
-        <line num="109" count="2" type="stmt"/>
+        <line num="52" count="1" type="stmt"/>
+        <line num="54" count="1" type="stmt"/>
+        <line num="56" count="2" type="stmt"/>
+        <line num="58" count="1" type="stmt"/>
+        <line num="61" count="3" type="stmt"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="70" count="16" type="stmt"/>
+        <line num="71" count="12" type="stmt"/>
+        <line num="72" count="12" type="cond" truecount="1" falsecount="0"/>
+        <line num="73" count="1" type="stmt"/>
+        <line num="74" count="1" type="stmt"/>
+        <line num="79" count="16" type="stmt"/>
+        <line num="80" count="13" type="stmt"/>
+        <line num="81" count="13" type="cond" truecount="1" falsecount="0"/>
+        <line num="82" count="2" type="stmt"/>
+        <line num="83" count="2" type="stmt"/>
+        <line num="92" count="10" type="stmt"/>
+        <line num="93" count="10" type="stmt"/>
+        <line num="94" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="95" count="10" type="cond" truecount="1" falsecount="0"/>
+        <line num="96" count="1" type="stmt"/>
+        <line num="98" count="9" type="stmt"/>
+        <line num="99" count="9" type="stmt"/>
+        <line num="100" count="9" type="cond" truecount="1" falsecount="0"/>
+        <line num="101" count="1" type="stmt"/>
+        <line num="104" count="8" type="stmt"/>
+        <line num="105" count="8" type="stmt"/>
+        <line num="106" count="8" type="stmt"/>
+        <line num="107" count="8" type="stmt"/>
+        <line num="111" count="2" type="stmt"/>
+        <line num="112" count="2" type="cond" truecount="1" falsecount="0"/>
+        <line num="113" count="2" type="stmt"/>
       </file>
       <file name="types.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/socket/types.ts">
         <metrics statements="6" coveredstatements="6" conditionals="2" coveredconditionals="2" methods="1" coveredmethods="1"/>
@@ -361,51 +363,50 @@
       </file>
     </package>
     <package name="server.templates">
-      <metrics statements="83" coveredstatements="83" conditionals="53" coveredconditionals="53" methods="14" coveredmethods="14"/>
+      <metrics statements="82" coveredstatements="82" conditionals="53" coveredconditionals="53" methods="14" coveredmethods="14"/>
       <file name="diff.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/templates/diff.ts">
-        <metrics statements="42" coveredstatements="42" conditionals="39" coveredconditionals="39" methods="2" coveredmethods="2"/>
-        <line num="7" count="6" type="stmt"/>
-        <line num="8" count="23" type="stmt"/>
-        <line num="11" count="23" type="cond" truecount="1" falsecount="0"/>
-        <line num="13" count="14" type="stmt"/>
-        <line num="17" count="9" type="stmt"/>
-        <line num="18" count="26" type="stmt"/>
-        <line num="22" count="26" type="cond" truecount="4" falsecount="0"/>
-        <line num="23" count="10" type="cond" truecount="1" falsecount="0"/>
-        <line num="24" count="2" type="stmt"/>
-        <line num="28" count="16" type="cond" truecount="2" falsecount="0"/>
-        <line num="30" count="15" type="cond" truecount="4" falsecount="0"/>
-        <line num="31" count="12" type="cond" truecount="1" falsecount="0"/>
-        <line num="32" count="5" type="stmt"/>
-        <line num="36" count="3" type="cond" truecount="4" falsecount="0"/>
-        <line num="38" count="1" type="stmt"/>
-        <line num="39" count="1" type="stmt"/>
-        <line num="41" count="1" type="cond" truecount="3" falsecount="0"/>
-        <line num="42" count="1" type="stmt"/>
+        <metrics statements="41" coveredstatements="41" conditionals="39" coveredconditionals="39" methods="2" coveredmethods="2"/>
+        <line num="5" count="6" type="stmt"/>
+        <line num="6" count="23" type="stmt"/>
+        <line num="9" count="23" type="cond" truecount="1" falsecount="0"/>
+        <line num="11" count="14" type="stmt"/>
+        <line num="15" count="9" type="stmt"/>
+        <line num="16" count="26" type="stmt"/>
+        <line num="20" count="26" type="cond" truecount="4" falsecount="0"/>
+        <line num="21" count="10" type="cond" truecount="1" falsecount="0"/>
+        <line num="22" count="2" type="stmt"/>
+        <line num="26" count="16" type="cond" truecount="2" falsecount="0"/>
+        <line num="28" count="15" type="cond" truecount="4" falsecount="0"/>
+        <line num="29" count="12" type="cond" truecount="1" falsecount="0"/>
+        <line num="30" count="5" type="stmt"/>
+        <line num="34" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="39" count="1" type="cond" truecount="3" falsecount="0"/>
+        <line num="40" count="1" type="stmt"/>
+        <line num="42" count="1" type="cond" truecount="1" falsecount="0"/>
         <line num="43" count="1" type="stmt"/>
-        <line num="45" count="1" type="cond" truecount="1" falsecount="0"/>
-        <line num="46" count="1" type="stmt"/>
-        <line num="53" count="2" type="stmt"/>
-        <line num="58" count="1" type="stmt"/>
-        <line num="61" count="9" type="stmt"/>
-        <line num="64" count="6" type="stmt"/>
-        <line num="65" count="14" type="cond" truecount="1" falsecount="0"/>
-        <line num="66" count="1" type="stmt"/>
-        <line num="68" count="13" type="stmt"/>
-        <line num="69" count="28" type="stmt"/>
-        <line num="70" count="28" type="stmt"/>
-        <line num="72" count="28" type="cond" truecount="4" falsecount="0"/>
-        <line num="73" count="24" type="cond" truecount="1" falsecount="0"/>
-        <line num="74" count="1" type="stmt"/>
-        <line num="78" count="4" type="cond" truecount="3" falsecount="0"/>
-        <line num="80" count="4" type="cond" truecount="4" falsecount="0"/>
-        <line num="81" count="2" type="cond" truecount="1" falsecount="0"/>
-        <line num="82" count="1" type="stmt"/>
-        <line num="86" count="2" type="cond" truecount="3" falsecount="0"/>
-        <line num="87" count="2" type="stmt"/>
-        <line num="89" count="2" type="cond" truecount="1" falsecount="0"/>
-        <line num="90" count="1" type="stmt"/>
-        <line num="95" count="10" type="stmt"/>
+        <line num="50" count="2" type="stmt"/>
+        <line num="55" count="1" type="stmt"/>
+        <line num="58" count="9" type="stmt"/>
+        <line num="61" count="6" type="stmt"/>
+        <line num="62" count="14" type="cond" truecount="1" falsecount="0"/>
+        <line num="63" count="1" type="stmt"/>
+        <line num="65" count="13" type="stmt"/>
+        <line num="66" count="28" type="stmt"/>
+        <line num="67" count="28" type="stmt"/>
+        <line num="69" count="28" type="cond" truecount="4" falsecount="0"/>
+        <line num="70" count="24" type="cond" truecount="1" falsecount="0"/>
+        <line num="71" count="1" type="stmt"/>
+        <line num="75" count="4" type="cond" truecount="3" falsecount="0"/>
+        <line num="77" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="78" count="2" type="cond" truecount="1" falsecount="0"/>
+        <line num="79" count="1" type="stmt"/>
+        <line num="83" count="2" type="cond" truecount="3" falsecount="0"/>
+        <line num="84" count="2" type="stmt"/>
+        <line num="86" count="2" type="cond" truecount="1" falsecount="0"/>
+        <line num="87" count="1" type="stmt"/>
+        <line num="92" count="10" type="stmt"/>
       </file>
       <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/templates/index.ts">
         <metrics statements="41" coveredstatements="41" conditionals="14" coveredconditionals="14" methods="12" coveredmethods="12"/>
@@ -427,10 +428,10 @@
         <line num="59" count="11" type="stmt"/>
         <line num="65" count="169" type="stmt"/>
         <line num="66" count="169" type="stmt"/>
-        <line num="71" count="103" type="cond" truecount="1" falsecount="0"/>
-        <line num="72" count="49" type="cond" truecount="1" falsecount="0"/>
+        <line num="71" count="105" type="cond" truecount="1" falsecount="0"/>
+        <line num="72" count="51" type="cond" truecount="1" falsecount="0"/>
         <line num="73" count="1" type="stmt"/>
-        <line num="81" count="48" type="stmt"/>
+        <line num="81" count="50" type="stmt"/>
         <line num="87" count="54" type="stmt"/>
         <line num="88" count="124" type="cond" truecount="2" falsecount="0"/>
         <line num="89" count="20" type="stmt"/>

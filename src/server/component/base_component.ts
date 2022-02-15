@@ -6,10 +6,10 @@ export abstract class BaseLiveViewComponent<T, P> implements LiveViewComponent<T
 
   private componentManager: LiveViewComponentManager;
 
-  abstract mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<T>): T;
+  abstract mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<T>): T | Promise<T>;
   abstract render(context: T): LiveViewTemplate;
 
-  handleParams(params: StringPropertyValues<P>, url: string, socket: LiveViewSocket<T>): T {
+  handleParams(params: StringPropertyValues<P>, url: string, socket: LiveViewSocket<T>): T | Promise<T> {
     return socket.context;
   }
 

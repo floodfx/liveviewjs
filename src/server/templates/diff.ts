@@ -1,8 +1,6 @@
-
-// returns a Parts tree that only contains the differences between
-
 import { Parts } from ".";
 
+// returns a Parts tree that only contains the differences between
 // the oldParts tree and the newParts tree
 export function deepDiff(oldParts: Parts, newParts: Parts): Parts {
   let diff: Parts = {}
@@ -39,7 +37,6 @@ export function deepDiff(oldParts: Parts, newParts: Parts): Parts {
         const newPart = newParts[key] as Parts;
         // diff based on object type
         if (typeof newPart === 'object' && typeof oldPart === 'object') {
-          console.log("recursing on", key)
           const maybeDiff = deepDiff(oldPart, newPart);
           // keep if any keys are different
           if (Object.keys(maybeDiff).length > 0) {

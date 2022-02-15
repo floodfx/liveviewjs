@@ -3,7 +3,7 @@ import { html, HtmlSafeString, safe } from "..";
 interface LiveViewPatchHelperOptions {
   to: {
     path: string,
-    params: Record<string, string>
+    params?: Record<string, string>
   },
   className?: string,
 }

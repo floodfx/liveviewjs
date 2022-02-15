@@ -42,20 +42,20 @@ export type StringPropertyValues<Type> = { [Property in keyof Type]: string; };
 
 export interface LiveViewComponent<T, P> {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<T>): T;
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<T>): T | Promise<T>;
   render(context: T): LiveViewTemplate;
-  handleParams(params: StringPropertyValues<P>, url: string, socket: LiveViewSocket<T>): T;
+  handleParams(params: StringPropertyValues<P>, url: string, socket: LiveViewSocket<T>): T | Promise<T>;
 
 }
 
 // TODO: support event returing Partial<T>?
 export interface LiveViewExternalEventListener<Context, Event extends string, Params> {
-  handleEvent(event: Event, params: StringPropertyValues<Params>, socket: LiveViewSocket<Context>): Context;
+  handleEvent(event: Event, params: StringPropertyValues<Params>, socket: LiveViewSocket<Context>): Context | Promise<Context>;
 }
 
 // TODO: support event returing Partial<T>?
 export interface LiveViewInternalEventListener<T, E> {
-  handleInfo(event: E, socket: LiveViewSocket<T>): T;
+  handleInfo(event: E, socket: LiveViewSocket<T>): T | Promise<T>;
 }
 
 export interface LiveViewRouter {

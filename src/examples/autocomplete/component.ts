@@ -130,7 +130,6 @@ export class AutocompleteLiveViewComponent extends BaseLiveViewComponent<Autocom
       // @ts-ignore TODO better params types for different events
       const { city } = params;
       const matches = suggest(city);
-      console.log("matches:", matches);
       return { zip: "", city, stores: [], matches, loading: false };
     }
     else if (event === "city-search") {

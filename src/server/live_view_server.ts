@@ -89,8 +89,8 @@ export class LiveViewServer {
 
       const connectionId = nanoid();
       // handle ws messages
-      socket.on('message', message => {
-        this.messageRouter.onMessage(socket, message, this._router, connectionId, this.signingSecret);
+      socket.on('message', async message => {
+        await this.messageRouter.onMessage(socket, message, this._router, connectionId, this.signingSecret);
       });
     });
 
@@ -130,7 +130,7 @@ export class LiveViewServer {
 
 
 
-    app.get('/:liveview', (req, res) => {
+    app.get('/:liveview', async (req, res) => {
       const liveview = req.params.liveview;
 
       // new LiveViewId per HTTP requess?
@@ -163,7 +163,7 @@ export class LiveViewServer {
       }
 
       // mount and render component if found
-      const ctx = component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, {}, liveViewSocket);
+      const ctx = await component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, {}, liveViewSocket);
       const view = component.render(ctx);
 
       // render the view with all the data
