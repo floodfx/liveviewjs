@@ -8,7 +8,7 @@ export class MessageRouter {
   topicComponentManager: Record<string, LiveViewComponentManager> = {};
   heartbeatRouter: Record<string, LiveViewComponentManager> = {};
 
-  onMessage(ws: WebSocket, message: WebSocket.RawData, router: LiveViewRouter, connectionId: string, signingSecret: string) {
+  async onMessage(ws: WebSocket, message: WebSocket.RawData, router: LiveViewRouter, connectionId: string, signingSecret: string) {
     // parse string to JSON
     const rawPhxMessage: PhxIncomingMessage<unknown> = JSON.parse(message.toString());
 
@@ -17,44 +17,48 @@ export class MessageRouter {
       const [joinRef, messageRef, topic, event, payload] = rawPhxMessage;
 
       let componentManager: LiveViewComponentManager | undefined;
-      switch (event) {
-        case "phx_join":
-          // assume componentManager is not defined since join creates a new component manager
-          this.onPhxJoin(ws, rawPhxMessage as PhxJoinIncoming, router, signingSecret, connectionId);
-          break;
-        case "heartbeat":
-          // heartbeat comes in as a "phoenix" topic so lookup via connectionId
-          this.onHeartbeat(ws, rawPhxMessage as PhxHeartbeatIncoming, topic, connectionId);
-          break;
-        case "event":
-          // lookup component manager for this topic
-          componentManager = this.topicComponentManager[topic];
-          if (componentManager) {
-            const message = rawPhxMessage as PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload | PhxHookPayload>;
-            componentManager.onEvent(ws, message);
-          } else {
-            console.error(`expected component manager for topic:${topic} and event:${event}`);
-          }
-          break;
-        case "live_patch":
-          componentManager = this.topicComponentManager[topic];
-          if (componentManager) {
-            componentManager.onLivePatch(ws, rawPhxMessage as PhxLivePatchIncoming);
-          } else {
-            console.error(`expected component manager for topic:${topic} and event:${event}`);
-          }
-          break;
-        case "phx_leave":
-          componentManager = this.topicComponentManager[topic];
-          if (componentManager) {
-            componentManager.shutdown();
-            delete this.topicComponentManager[topic];
-          } else {
-            console.warn(`expected component manager for topic:${topic} and event:${event}`);
-          }
-          break;
-        default:
-          throw new Error(`unexpected protocol event ${rawPhxMessage}`);
+      try {
+        switch (event) {
+          case "phx_join":
+            // assume componentManager is not defined since join creates a new component manager
+            await this.onPhxJoin(ws, rawPhxMessage as PhxJoinIncoming, router, signingSecret, connectionId);
+            break;
+          case "heartbeat":
+            // heartbeat comes in as a "phoenix" topic so lookup via connectionId
+            await this.onHeartbeat(ws, rawPhxMessage as PhxHeartbeatIncoming, topic, connectionId);
+            break;
+          case "event":
+            // lookup component manager for this topic
+            componentManager = this.topicComponentManager[topic];
+            if (componentManager) {
+              const message = rawPhxMessage as PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload | PhxHookPayload>;
+              await componentManager.onEvent(ws, message);
+            } else {
+              console.error(`expected component manager for topic:${topic} and event:${event}`);
+            }
+            break;
+          case "live_patch":
+            componentManager = this.topicComponentManager[topic];
+            if (componentManager) {
+              await componentManager.onLivePatch(ws, rawPhxMessage as PhxLivePatchIncoming);
+            } else {
+              console.error(`expected component manager for topic:${topic} and event:${event}`);
+            }
+            break;
+          case "phx_leave":
+            componentManager = this.topicComponentManager[topic];
+            if (componentManager) {
+              await componentManager.shutdown();
+              delete this.topicComponentManager[topic];
+            } else {
+              console.warn(`expected component manager for topic:${topic} and event:${event}`);
+            }
+            break;
+          default:
+            throw new Error(`unexpected protocol event ${rawPhxMessage}`);
+        }
+      } catch (e) {
+        throw e;
       }
     }
     else {
@@ -82,7 +86,7 @@ export class MessageRouter {
   }
 
 
-  onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, router: LiveViewRouter, signingSecret: string, connectionId: string) {
+  async onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, router: LiveViewRouter, signingSecret: string, connectionId: string) {
 
     // use url to route join request to component
     const [joinRef, messageRef, topic, event, payload] = message;
@@ -100,10 +104,10 @@ export class MessageRouter {
     const componentManager = new LiveViewComponentManager(component, signingSecret);
     this.topicComponentManager[topic] = componentManager;
     this.heartbeatRouter[connectionId] = componentManager;
-    componentManager.handleJoin(ws, message);
+    await componentManager.handleJoin(ws, message);
   }
 
-  onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming, topic: string, connectionId: string) {
+  async onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming, topic: string, connectionId: string) {
     const componentManager = this.heartbeatRouter[connectionId];
     if (componentManager) {
       componentManager.onHeartbeat(ws, message);

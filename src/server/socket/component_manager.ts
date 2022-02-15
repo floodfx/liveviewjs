@@ -27,7 +27,7 @@ export class LiveViewComponentManager {
     }
   }
 
-  handleJoin(ws: WebSocket, message: PhxJoinIncoming) {
+  async handleJoin(ws: WebSocket, message: PhxJoinIncoming) {
     const [joinRef, messageRef, topic, event, payload] = message;
     const { url: urlString, redirect: redirectString } = payload;
     const joinUrl = urlString || redirectString;
@@ -57,11 +57,11 @@ export class LiveViewComponentManager {
 
     const liveViewSocket = this.buildLiveViewSocket(ws, topic);
     // pass in phx_join payload params, session, and socket
-    this.context = this.component.mount(payloadParams, session, liveViewSocket);
+    this.context = await this.component.mount(payloadParams, session, liveViewSocket);
 
     // update socket with new context
     liveViewSocket.context = this.context;
-    this.context = this.component.handleParams(urlParams, joinUrl!, liveViewSocket);
+    this.context = await this.component.handleParams(urlParams, joinUrl!, liveViewSocket);
 
     const view = this.component.render(this.context);
 
@@ -76,12 +76,12 @@ export class LiveViewComponentManager {
     this.sendPhxReply(ws, newPhxReply(message, replyPayload));
   }
 
-  onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming) {
+  async onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming) {
     this.lastHeartbeat = Date.now();
     this.sendPhxReply(ws, newHeartbeatReply(message));
   }
 
-  onEvent(ws: WebSocket, message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>) {
+  async onEvent(ws: WebSocket, message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>) {
     const [joinRef, messageRef, topic, _, payload] = message;
     const { type, event } = payload;
 
@@ -109,7 +109,7 @@ export class LiveViewComponentManager {
     if (isEventHandler(this.component)) {
       const previousContext = this.context;
       // @ts-ignore - already checked if handleEvent is defined
-      this.context = this.component.handleEvent(event, value, this.buildLiveViewSocket(ws, topic));
+      this.context = await this.component.handleEvent(event, value, this.buildLiveViewSocket(ws, topic));
 
       // get old render tree and new render tree for diffing
       const oldView = this.component.render(previousContext);
@@ -134,9 +134,8 @@ export class LiveViewComponentManager {
 
   }
 
-  onLivePatch(ws: WebSocket, message: PhxLivePatchIncoming) {
+  async onLivePatch(ws: WebSocket, message: PhxLivePatchIncoming) {
     const [joinRef, messageRef, topic, event, payload] = message;
-
 
     const { url: urlString } = payload;
     const url = new URL(urlString);
@@ -144,17 +143,18 @@ export class LiveViewComponentManager {
     const params = Object.fromEntries(url.searchParams);
 
     const previousContext = this.context;
-    this.context = this.component.handleParams(params, urlString, this.buildLiveViewSocket(ws, topic));
+    this.context = await this.component.handleParams(params, urlString, this.buildLiveViewSocket(ws, topic));
 
     // get old render tree and new render tree for diffing
     const oldView = this.component.render(previousContext);
     const view = this.component.render(this.context);
 
+    // TODO - why is the diff causing live_patch to fail??
     const diff = deepDiff(oldView.partsTree(), view.partsTree());
 
     const replyPayload = {
       response: {
-        diff
+        diff: view.partsTree(false)
       },
       status: "ok"
     }
@@ -162,7 +162,7 @@ export class LiveViewComponentManager {
     this.sendPhxReply(ws, newPhxReply(message, replyPayload));
   }
 
-  onPushPatch(liveViewSocket: LiveViewSocket<unknown>, patch: { to: { path: string, params: StringPropertyValues<any> } }) {
+  async onPushPatch(liveViewSocket: LiveViewSocket<unknown>, patch: { to: { path: string, params: StringPropertyValues<any> } }) {
     const urlParams = new URLSearchParams(patch.to.params);
     const to = `${patch.to.path}?${urlParams}`
     const message: PhxOutgoingLivePatchPush = [
@@ -176,7 +176,7 @@ export class LiveViewComponentManager {
     // @ts-ignore - URLSearchParams has an entries method but not typed
     const params = Object.fromEntries(urlParams);
 
-    this.context = this.component.handleParams(params, to, liveViewSocket);
+    this.context = await this.component.handleParams(params, to, liveViewSocket);
 
     if (liveViewSocket.connected && liveViewSocket.ws) {
       this.sendPhxReply(liveViewSocket.ws!, message)

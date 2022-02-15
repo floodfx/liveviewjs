@@ -11,10 +11,10 @@ import { isEventHandler, isInfoHandler, LiveViewComponentManager } from "./compo
 
 describe("test component manager", () => {
 
-  it("handle join works", () => {
+  it("handle join works", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
-    cm.handleJoin(ws, newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
+    await cm.handleJoin(ws, newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
@@ -59,7 +59,7 @@ describe("test component manager", () => {
     const cm = new LiveViewComponentManager(notBaseLiveViewComponent, "my signing secret")
   })
 
-  it("onEvent valid click event but not eventHandler", () => {
+  it("onEvent valid click event but not eventHandler", async () => {
     const cm = new LiveViewComponentManager(new NotEventHandlerNorInfoHandlerLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -73,11 +73,11 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    cm.onEvent(ws, phx_click)
+    await cm.onEvent(ws, phx_click)
     expect(ws.send).toHaveBeenCalledTimes(0)
   })
 
-  it("onEvent valid click event", () => {
+  it("onEvent valid click event", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -91,11 +91,11 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    cm.onEvent(ws, phx_click)
+    await cm.onEvent(ws, phx_click)
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onEvent valid form event", () => {
+  it("onEvent valid form event", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_form: PhxIncomingMessage<PhxFormPayload> = [
@@ -110,11 +110,11 @@ describe("test component manager", () => {
         uploads: {},
       }
     ]
-    cm.onEvent(ws, phx_form)
+    await cm.onEvent(ws, phx_form)
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onEvent valid keyup event", () => {
+  it("onEvent valid keyup event", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_keyup: PhxIncomingMessage<PhxKeyUpPayload> = [
@@ -128,11 +128,11 @@ describe("test component manager", () => {
         value: { key: "key", value: "eventValue" },
       }
     ]
-    cm.onEvent(ws, phx_keyup)
+    await cm.onEvent(ws, phx_keyup)
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onEvent valid keydown event", () => {
+  it("onEvent valid keydown event", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_keydown: PhxIncomingMessage<PhxKeyDownPayload> = [
@@ -146,11 +146,11 @@ describe("test component manager", () => {
         value: { key: "key", value: "eventValue" },
       }
     ]
-    cm.onEvent(ws, phx_keydown)
+    await cm.onEvent(ws, phx_keydown)
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onEvent valid blur event", () => {
+  it("onEvent valid blur event", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_blur: PhxIncomingMessage<PhxBlurPayload> = [
@@ -164,11 +164,11 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    cm.onEvent(ws, phx_blur)
+    await cm.onEvent(ws, phx_blur)
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onEvent valid focus event", () => {
+  it("onEvent valid focus event", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_blur: PhxIncomingMessage<PhxFocusPayload> = [
@@ -182,11 +182,11 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    cm.onEvent(ws, phx_blur)
+    await cm.onEvent(ws, phx_blur)
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onEvent valid hook event", () => {
+  it("onEvent valid hook event", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_blur: PhxIncomingMessage<PhxHookPayload> = [
@@ -200,11 +200,11 @@ describe("test component manager", () => {
         value: { blah: "something" },
       }
     ]
-    cm.onEvent(ws, phx_blur)
+    await cm.onEvent(ws, phx_blur)
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onEvent unknown event type", () => {
+  it("onEvent unknown event type", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phx_unknown: PhxIncomingMessage<unknown> = [
@@ -219,11 +219,11 @@ describe("test component manager", () => {
       }
     ]
     // @ts-ignore -- skip type check for unknown
-    cm.onEvent(ws, phx_unknown)
+    await cm.onEvent(ws, phx_unknown)
     expect(ws.send).toHaveBeenCalledTimes(0)
   })
 
-  it("onLivePatch calls send", () => {
+  it("onLivePatch calls send", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const phxLivePatch: PhxLivePatchIncoming = [
@@ -235,11 +235,11 @@ describe("test component manager", () => {
         url: "http://localhost:4444/test?id=1",
       }
     ]
-    cm.onLivePatch(ws, phxLivePatch)
+    await cm.onLivePatch(ws, phxLivePatch)
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onPushPatch calls send", () => {
+  it("onPushPatch calls send", async () => {
     const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     const ws = mock<WebSocket>()
     const liveSocket = buildLiveViewSocketMock(
@@ -259,7 +259,7 @@ describe("test component manager", () => {
         url: "http://localhost:4444/test?id=1",
       }
     ]
-    cm.onPushPatch(liveSocket, {
+    await cm.onPushPatch(liveSocket, {
       to: {
         params: {},
         path: "/test",

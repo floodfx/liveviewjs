@@ -10,74 +10,74 @@ import { StringPropertyValues } from "../component";
 
 
 describe("test message router", () => {
-  it("onMessage unknown message", () => {
+  it("onMessage unknown message throws unknown message type error", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     try {
-      mr.onMessage(ws, Buffer.from(JSON.stringify([])), router, "1234", "my signing string")
+      await mr.onMessage(ws, Buffer.from(JSON.stringify([])), router, "1234", "my signing string")
       fail("should have thrown")
     } catch (e: any) {
       expect(e.message).toContain("unknown message type")
     }
   })
 
-  it("onMessage valid phx_join with url", () => {
+  it("onMessage valid phx_join with url", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" })
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onMessage valid phx_join with redirect", () => {
+  it("onMessage valid phx_join with redirect", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_join = newPhxJoin("my csrf token", "my signing string", { redirect: "http://localhost:4444/test" })
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onMessage phx_join missing url or redirect", () => {
+  it("onMessage phx_join missing url or redirect", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_join = newPhxJoin("my csrf token", "my signing string", {})
     try {
-      mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+      await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
       fail()
     } catch (e: any) {
       expect(e.message).toContain("no url or redirect in join message")
     }
   })
 
-  it("onMessage phx_join unrouted url", () => {
+  it("onMessage phx_join unrouted url", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/noroute" })
     try {
-      mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+      await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
       fail()
     } catch (e: any) {
       expect(e.message).toContain("no component found for")
     }
   })
 
-  it("onMessage valid heartbeat", () => {
+  it("onMessage valid heartbeat", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" })
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(1)
     // heartbeat requires a join first
     const phx_hb: PhxHeartbeatIncoming = [null, "5", "phoenix", "heartbeat", {}]
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_hb)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_hb)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
-  it("onMessage valid click event", () => {
+  it("onMessage valid click event", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" })
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(1)
     // click event requires a join first
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -91,11 +91,11 @@ describe("test message router", () => {
         value: { value: "eventValue" },
       }
     ]
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_click)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_click)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
-  it("onMessage no join before click event so no socket send", () => {
+  it("onMessage no join before click event so no socket send", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -109,11 +109,11 @@ describe("test message router", () => {
         value: { value: "eventValue" },
       }
     ]
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_click)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_click)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(0)
   })
 
-  it("onMessage no join before live patch event so no socket send", () => {
+  it("onMessage no join before live patch event so no socket send", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phxLivePatch: PhxLivePatchIncoming = [
@@ -125,15 +125,15 @@ describe("test message router", () => {
         url: "http://localhost:4444/test?id=1",
       }
     ]
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phxLivePatch)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phxLivePatch)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(0)
   })
 
-  it("onMessage valid live patch event", () => {
+  it("onMessage valid live patch event", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" })
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(1)
     // live patch requires a join first
     const phxLivePatch: PhxLivePatchIncoming = [
@@ -145,15 +145,15 @@ describe("test message router", () => {
         url: "http://localhost:4444/test?id=1",
       }
     ]
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phxLivePatch)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phxLivePatch)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
-  it("onMessage valid leave event", () => {
+  it("onMessage valid leave event", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" })
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(1)
     // live patch requires a join first
     const phxLeave: PhxIncomingMessage<{}> = [
@@ -163,12 +163,12 @@ describe("test message router", () => {
       "phx_leave",
       {}
     ]
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phxLeave)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phxLeave)), router, "1234", "my signing string")
     // no socket send expected
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
-  it("onMessage unknown leave event", () => {
+  it("onMessage unknown leave event", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     // live patch requires a join first
@@ -179,12 +179,12 @@ describe("test message router", () => {
       "phx_leave",
       {}
     ]
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phxLeave)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phxLeave)), router, "1234", "my signing string")
     // no socket send expected
     expect(ws.send).toHaveBeenCalledTimes(0)
   })
 
-  it("onMessage unknown message throws error", () => {
+  it("onMessage unknown message throws error", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     // live patch requires a join first
@@ -196,18 +196,18 @@ describe("test message router", () => {
       {}
     ]
     try {
-      mr.onMessage(ws, Buffer.from(JSON.stringify(phxUnknown)), router, "1234", "my signing string")
+      await mr.onMessage(ws, Buffer.from(JSON.stringify(phxUnknown)), router, "1234", "my signing string")
       fail()
     } catch (e: any) {
       expect(e.message).toContain("unexpected protocol event")
     }
   })
 
-  it("shutdown unhealth component managers", () => {
+  it("shutdown unhealth component managers", async () => {
     const mr = new MessageRouter()
     const ws = mock<WebSocket>()
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" })
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(1)
     // mark component as unhealthy
     const c = mr.topicComponentManager["lv:phx-AAAAAAAA"];
@@ -216,7 +216,7 @@ describe("test message router", () => {
     }
     // now run another message
     const phx_hb: PhxHeartbeatIncoming = [null, "5", "phoenix", "heartbeat", {}]
-    mr.onMessage(ws, Buffer.from(JSON.stringify(phx_hb)), router, "1234", "my signing string")
+    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_hb)), router, "1234", "my signing string")
     expect(ws.send).toHaveBeenCalledTimes(2)
   })
 

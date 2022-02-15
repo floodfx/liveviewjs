@@ -90,16 +90,15 @@ export class SearchLiveViewComponent extends BaseLiveViewComponent<SearchContext
 
   handleEvent(event: "zip-search", params: { zip: string }, socket: LiveViewSocket<SearchContext>) {
     const { zip } = params;
-    // wait 100ms to send the message
-    setTimeout(() => {
+    // wait 300ms to send the message
+    setTimeout(async () => {
       socket.sendInternal({ type: "run_zip_search", zip });
-    }, 100);
+    }, 300);
 
     return { zip, stores: [], loading: true };
   }
 
   handleInfo(event: { type: "run_zip_search", zip: string }, socket: LiveViewSocket<SearchContext>) {
-    console.log("run_zip_search:", event);
     const { zip } = event;
     const stores = searchByZip(zip);
     return {

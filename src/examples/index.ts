@@ -11,6 +11,7 @@ import { ServersLiveViewComponent } from './servers/component';
 import { SortLiveViewComponent } from './sorting/component';
 import { routeDetails } from './routeDetails';
 import { VolunteerComponent } from './volunteers/component';
+import { AsyncFetchLiveViewComponent } from './asyncfetch/component';
 
 const lvServer = new LiveViewServer({
   signingSecret: "MY_VERY_SECRET_KEY",
@@ -29,7 +30,8 @@ const router: LiveViewRouter = {
   "/paginate": new PaginateLiveViewComponent(),
   "/sort": new SortLiveViewComponent(),
   '/servers': new ServersLiveViewComponent(),
-  "/volunteers": new VolunteerComponent()
+  "/volunteers": new VolunteerComponent(),
+  "/asyncfetch": new AsyncFetchLiveViewComponent(),
 }
 
 // register all routes
