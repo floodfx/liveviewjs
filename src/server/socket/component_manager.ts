@@ -76,7 +76,7 @@ export class LiveViewComponentManager {
     this.sendPhxReply(ws, newPhxReply(message, replyPayload));
   }
 
-  async onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming) {
+  onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming) {
     this.lastHeartbeat = Date.now();
     this.sendPhxReply(ws, newHeartbeatReply(message));
   }

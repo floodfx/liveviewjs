@@ -25,7 +25,7 @@ export class MessageRouter {
             break;
           case "heartbeat":
             // heartbeat comes in as a "phoenix" topic so lookup via connectionId
-            await this.onHeartbeat(ws, rawPhxMessage as PhxHeartbeatIncoming, topic, connectionId);
+            this.onHeartbeat(ws, rawPhxMessage as PhxHeartbeatIncoming, topic, connectionId);
             break;
           case "event":
             // lookup component manager for this topic
@@ -48,7 +48,7 @@ export class MessageRouter {
           case "phx_leave":
             componentManager = this.topicComponentManager[topic];
             if (componentManager) {
-              await componentManager.shutdown();
+              componentManager.shutdown();
               delete this.topicComponentManager[topic];
             } else {
               console.warn(`expected component manager for topic:${topic} and event:${event}`);
