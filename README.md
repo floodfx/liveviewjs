@@ -165,8 +165,11 @@ lvServer.registerLiveViewRoute("/light", new LightLiveViewComponent());
 // then start the server
 lvServer.start();
 ```
+
+### Additional Feature Documentation
+ * [Updating HTML Document `<title />`](docs/updating-html-title.md)
+
 #### Other features to be implemented:
-* [Updating HTML Document Title](https://hexdocs.pm/phoenix_live_view/live-layouts.html#updating-the-html-document-title) - Vote for [Issue 16](https://github.com/floodfx/liveviewjs/issues/16)
 * [LiveView Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Vote for [Issue 17](https://github.com/floodfx/liveviewjs/issues/17)
 * [Temporary Assigns](https://hexdocs.pm/phoenix_live_view/dom-patching.html#temporary-assigns) - Vote for [Issue 18](https://github.com/floodfx/liveviewjs/issues/18)
 * [Build in Flash Message Support](https://hexdocs.pm/phoenix_live_view/0.17.6/Phoenix.LiveView.html#put_flash/3) - Vote for [Issue 19](https://github.com/floodfx/liveviewjs/issues/19)

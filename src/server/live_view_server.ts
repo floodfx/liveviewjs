@@ -17,6 +17,12 @@ declare module 'express-session' {
   }
 }
 
+export interface PageTitleDefaults {
+  prefix?: string;
+  suffix?: string;
+  title: string;
+}
+
 export interface LiveViewServerOptions {
   port?: number;
   rootView?: string;
@@ -24,6 +30,7 @@ export interface LiveViewServerOptions {
   publicPath?: string;
   signingSecret: string;
   sessionStore?: session.Store;
+  pageTitleDefaults?: PageTitleDefaults;
 }
 
 const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
@@ -40,6 +47,7 @@ export class LiveViewServer {
   private _router: LiveViewRouter = {};
   private messageRouter = new MessageRouter()
   private _isStarted = false;
+  private pageTitleDefaults?: PageTitleDefaults;
   readonly httpServer: Server;
   readonly socketServer: WebSocket.Server;
   expressApp: express.Application;
@@ -56,6 +64,7 @@ export class LiveViewServer {
     this.socketServer = new WebSocket.Server({
       server: this.httpServer
     });
+    this.pageTitleDefaults = options.pageTitleDefaults;
   }
 
   get router(): LiveViewRouter {
@@ -173,7 +182,9 @@ export class LiveViewServer {
 
       // render the view with all the data
       res.render(this.rootView, {
-        page_title: "Live View",
+        page_title: this.pageTitleDefaults?.title ?? "",
+        page_title_prefix: this.pageTitleDefaults?.prefix,
+        page_title_suffix: this.pageTitleDefaults?.suffix,
         csrf_meta_tag: req.session.csrfToken,
         liveViewId,
         session: jwt.sign(jwtPayload, this.signingSecret),

@@ -18,6 +18,10 @@ const lvServer = new LiveViewServer({
   // port: 3002,
   // rootView: "./examples/rootView.ejs",
   viewsPath: path.join(__dirname, "views"),
+  pageTitleDefaults: {
+    title: "Examples",
+    suffix: " · LiveViewJS"
+  }
 });
 
 

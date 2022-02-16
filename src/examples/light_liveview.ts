@@ -15,6 +15,7 @@ export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, 
 
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LightContext>) {
+    socket.pageTitle("Front Porch Light");
     return { brightness: 10 };
   };
 

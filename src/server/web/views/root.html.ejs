@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="<%= csrf_meta_tag %>" />
-  <%- live_title_tag(page_title, {suffix: " · LiveViewJS"}) %>
+  <%- live_title_tag(page_title, {prefix: page_title_prefix, suffix: page_title_suffix}) %>
   <script defer type="text/javascript" src="liveview.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
