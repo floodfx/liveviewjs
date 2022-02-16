@@ -18,12 +18,14 @@ export class ServersLiveViewComponent extends BaseLiveViewComponent<ServersConte
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<ServersContext>): ServersContext {
     const servers = listServers();
     const selectedServer = servers[0];
+    socket.pageTitle(`Servers - ${selectedServer.name}`);
     return { servers, selectedServer };
   }
 
   handleParams(params: { id: string; }, url: string, socket: LiveViewSocket<ServersContext>): ServersContext {
     const servers = listServers();
     const selectedServer = servers.find(server => server.id === params.id) || servers[0];
+    socket.pageTitle(`Servers - ${selectedServer.name}`);
     return { servers, selectedServer };
   }
 

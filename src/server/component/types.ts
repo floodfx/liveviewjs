@@ -25,6 +25,7 @@ export interface LiveViewSocket<T> {
   ws?: WebSocket;
   sendInternal: (event: unknown) => void;
   repeat: (fn: () => void, intervalMillis: number) => void;
+  pageTitle: (newPageTitle: string) => void;
 }
 
 export interface LiveViewTemplate extends HtmlSafeString {

@@ -6,6 +6,7 @@ import { SessionData } from "express-session";
 import { newHeartbeatReply, newPhxReply } from "./util";
 import { BaseLiveViewComponent } from "../component/base_component";
 import { deepDiff } from "../templates/diff";
+import { Parts } from "..";
 
 export class LiveViewComponentManager {
 
@@ -17,6 +18,8 @@ export class LiveViewComponentManager {
   private socketIsClosed: boolean = false;
   private healthy: boolean = true;
   csrfToken?: string;
+  private _pageTitle: string | undefined;
+  pageTitleChanged: boolean = false;
 
   constructor(component: LiveViewComponent<unknown, unknown>, signingSecret: string) {
     this.component = component;
@@ -65,10 +68,12 @@ export class LiveViewComponentManager {
 
     const view = this.component.render(this.context);
 
+    const rendered = this.maybeAddPageTitleToParts(view.partsTree());
+
     // send full view parts (statics & dynaimcs back)
     const replyPayload = {
       response: {
-        rendered: view.partsTree()
+        rendered
       },
       status: "ok"
     }
@@ -115,7 +120,8 @@ export class LiveViewComponentManager {
       const oldView = this.component.render(previousContext);
       const view = this.component.render(this.context);
 
-      const diff = deepDiff(oldView.partsTree(), view.partsTree());
+      const combined = deepDiff(oldView.partsTree(), view.partsTree());
+      const diff = this.maybeAddPageTitleToParts(combined);
 
       const replyPayload = {
         response: {
@@ -130,7 +136,6 @@ export class LiveViewComponentManager {
       console.error("no handleEvent method in component. add handleEvent method in your component to fix this error");
       return;
     }
-
 
   }
 
@@ -150,11 +155,12 @@ export class LiveViewComponentManager {
     const view = this.component.render(this.context);
 
     // TODO - why is the diff causing live_patch to fail??
-    const diff = deepDiff(oldView.partsTree(), view.partsTree());
+    // const diff = deepDiff(oldView.partsTree(), view.partsTree());
+    const diff = this.maybeAddPageTitleToParts(view.partsTree(false));
 
     const replyPayload = {
       response: {
-        diff: view.partsTree(false)
+        diff
       },
       status: "ok"
     }
@@ -214,7 +220,8 @@ export class LiveViewComponentManager {
       const oldView = this.component.render(previousContext);
       const view = this.component.render(this.context);
 
-      const diff = deepDiff(oldView.partsTree(), view.partsTree());
+      const combined = deepDiff(oldView.partsTree(), view.partsTree());
+      const diff = this.maybeAddPageTitleToParts(combined);
 
       const reply: PhxDiffReply = [
         null, // no join reference
@@ -231,7 +238,6 @@ export class LiveViewComponentManager {
     }
   }
 
-
   private buildLiveViewSocket(ws: WebSocket, topic: string): LiveViewSocket<unknown> {
     return {
       id: topic,
@@ -240,7 +246,26 @@ export class LiveViewComponentManager {
       context: this.context,
       sendInternal: (event) => this.sendInternal(ws, event, topic),
       repeat: (fn, intervalMillis) => this.repeat(fn, intervalMillis),
+      pageTitle: (newTitle: string) => { this.pageTitle = newTitle },
     }
+  }
+
+  private set pageTitle(newTitle: string) {
+    if (this._pageTitle !== newTitle) {
+      this._pageTitle = newTitle;
+      this.pageTitleChanged = true;
+    }
+  }
+
+  private maybeAddPageTitleToParts(parts: Parts) {
+    if (this.pageTitleChanged) {
+      this.pageTitleChanged = false; // reset
+      return {
+        ...parts,
+        t: this._pageTitle
+      }
+    }
+    return parts;
   }
 
   private sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {

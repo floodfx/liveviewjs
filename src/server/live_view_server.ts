@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import session, { MemoryStore, SessionData } from "express-session";
 import path from "path";
 import { MessageRouter } from "./socket/message_router";
+import { live_title_tag } from ".";
 
 
 // extend / define session interface
@@ -128,19 +129,23 @@ export class LiveViewServer {
       store: this.sessionStore,
     }))
 
-
+    // register live_title_tag helper
+    app.locals.live_title_tag = live_title_tag;
 
     app.get('/:liveview', async (req, res) => {
       const liveview = req.params.liveview;
 
+      const emptyVoid = () => { };
+
       // new LiveViewId per HTTP requess?
-      const liveViewId = nanoid(); // TODO allow option for id generator?
+      const liveViewId = nanoid();
       const liveViewSocket: LiveViewSocket<unknown> = {
         id: liveViewId,
         connected: false, // ws socket not connected on http request
         context: {},
-        sendInternal: () => { },
-        repeat: () => { },
+        sendInternal: emptyVoid,
+        repeat: emptyVoid,
+        pageTitle: emptyVoid,
       }
 
       // look up component for route
