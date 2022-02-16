@@ -54,6 +54,24 @@ describe("test component manager", () => {
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
+  it("onEvent valid click event socket pageTitle", async () => {
+    const cm = new LiveViewComponentManager(new TestLiveViewComponent("Page Title"), "my signing secret")
+    const ws = mock<WebSocket>()
+    const phx_click: PhxIncomingMessage<PhxClickPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        type: "click",
+        event: "eventName",
+        value: { value: "eventValue" },
+      }
+    ]
+    await cm.onEvent(ws, phx_click)
+    expect(ws.send).toHaveBeenCalledTimes(1)
+  })
+
   it("does not register back the component manager if not a BaseLiveViewComponent", () => {
     const notBaseLiveViewComponent = new NotBaseLiveViewComponent()
     const cm = new LiveViewComponentManager(notBaseLiveViewComponent, "my signing secret")
@@ -249,6 +267,7 @@ describe("test component manager", () => {
       ws,
       () => { },
       () => { },
+      () => { },
     )
     const phxLivePatch: PhxLivePatchIncoming = [
       "4",
@@ -395,12 +414,20 @@ class TestLiveViewComponent extends BaseLiveViewComponent<{}, {}> implements
   LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown>,
   LiveViewInternalEventListener<TestLiveViewComponentContext, "eventName">
 {
+  private newPageTitle?: string;
+  constructor(newPageTitle?: string) {
+    super();
+    this.newPageTitle = newPageTitle;
+  }
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
     return {}
   }
 
   handleEvent(event: "eventName", params: StringPropertyValues<unknown>, socket: LiveViewSocket<TestLiveViewComponentContext>): TestLiveViewComponentContext {
+    if (this.newPageTitle) {
+      socket.pageTitle(this.newPageTitle);
+    }
     return {}
   }
 
@@ -561,7 +588,7 @@ const newPhxJoin = (csrfToken: string, signingSecret: string, options: NewPhxJoi
   ]
 }
 
-const buildLiveViewSocketMock = (topic: string, connected: boolean, context: unknown, ws: WebSocket, sendInternal: (event: any) => void, repeat: (fn: Function, intervalMills: number) => void) => {
+const buildLiveViewSocketMock = (topic: string, connected: boolean, context: unknown, ws: WebSocket, sendInternal: (event: any) => void, repeat: (fn: Function, intervalMills: number) => void, pageTitle: (title: string) => void) => {
   return {
     id: topic,
     connected, // websocket is connected
@@ -569,5 +596,6 @@ const buildLiveViewSocketMock = (topic: string, connected: boolean, context: unk
     context,
     sendInternal,
     repeat,
+    pageTitle
   }
 }

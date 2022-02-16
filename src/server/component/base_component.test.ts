@@ -36,6 +36,7 @@ function buildTestSocket(): LiveViewSocket<unknown> {
     context: {},
     sendInternal: (event) => { },
     repeat: (fn, intervalMillis) => { },
+    pageTitle: (newPageTitle) => { },
   }
 }
 

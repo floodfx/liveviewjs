@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import session, { MemoryStore, SessionData } from "express-session";
 import path from "path";
 import { MessageRouter } from "./socket/message_router";
+import { live_title_tag } from ".";
 
 
 // extend / define session interface
@@ -16,6 +17,12 @@ declare module 'express-session' {
   }
 }
 
+export interface PageTitleDefaults {
+  prefix?: string;
+  suffix?: string;
+  title: string;
+}
+
 export interface LiveViewServerOptions {
   port?: number;
   rootView?: string;
@@ -23,6 +30,7 @@ export interface LiveViewServerOptions {
   publicPath?: string;
   signingSecret: string;
   sessionStore?: session.Store;
+  pageTitleDefaults?: PageTitleDefaults;
 }
 
 const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
@@ -39,6 +47,7 @@ export class LiveViewServer {
   private _router: LiveViewRouter = {};
   private messageRouter = new MessageRouter()
   private _isStarted = false;
+  private pageTitleDefaults?: PageTitleDefaults;
   readonly httpServer: Server;
   readonly socketServer: WebSocket.Server;
   expressApp: express.Application;
@@ -55,6 +64,7 @@ export class LiveViewServer {
     this.socketServer = new WebSocket.Server({
       server: this.httpServer
     });
+    this.pageTitleDefaults = options.pageTitleDefaults;
   }
 
   get router(): LiveViewRouter {
@@ -128,19 +138,23 @@ export class LiveViewServer {
       store: this.sessionStore,
     }))
 
-
+    // register live_title_tag helper
+    app.locals.live_title_tag = live_title_tag;
 
     app.get('/:liveview', async (req, res) => {
       const liveview = req.params.liveview;
 
+      const emptyVoid = () => { };
+
       // new LiveViewId per HTTP requess?
-      const liveViewId = nanoid(); // TODO allow option for id generator?
+      const liveViewId = nanoid();
       const liveViewSocket: LiveViewSocket<unknown> = {
         id: liveViewId,
         connected: false, // ws socket not connected on http request
         context: {},
-        sendInternal: () => { },
-        repeat: () => { },
+        sendInternal: emptyVoid,
+        repeat: emptyVoid,
+        pageTitle: emptyVoid,
       }
 
       // look up component for route
@@ -168,7 +182,9 @@ export class LiveViewServer {
 
       // render the view with all the data
       res.render(this.rootView, {
-        page_title: "Live View",
+        page_title: this.pageTitleDefaults?.title ?? "",
+        page_title_prefix: this.pageTitleDefaults?.prefix,
+        page_title_suffix: this.pageTitleDefaults?.suffix,
         csrf_meta_tag: req.session.csrfToken,
         liveViewId,
         session: jwt.sign(jwtPayload, this.signingSecret),
