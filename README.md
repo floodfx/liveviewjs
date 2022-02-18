@@ -168,6 +168,8 @@ lvServer.start();
 
 ### Additional Feature Documentation
  * [Updating HTML Document `<title />`](docs/updating-html-title.md)
+ * [LiveViewJS Changesets](docs/changesets.md).
+ * [Routing Details](docs/routing.md).
 
 #### Other features to be implemented:
 * [LiveView Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Vote for [Issue 17](https://github.com/floodfx/liveviewjs/issues/17)
