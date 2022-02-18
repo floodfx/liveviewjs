@@ -55,6 +55,11 @@ lvServer.expressApp.get("/", (req, res) => {
   });
 })
 
+// simple example of non-LiveView route not at root
+lvServer.expressApp.get("/foo", (req, res) => {
+  res.send("Foo!")
+})
+
 // start server
 lvServer.start();
 

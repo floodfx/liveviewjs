@@ -1,6 +1,6 @@
 {
   "name": "liveviewjs",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "LiveViewJS brings the power of Phoenix LiveView to Typescript and Javascript developers and applications.",
   "targets": {
     "client": {
