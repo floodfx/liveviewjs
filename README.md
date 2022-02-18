@@ -9,12 +9,12 @@ This is a backend implementation of [Phoenix LiveView](https://hexdocs.pm/phoeni
 How Phoenix desribes LiveView:
 > LiveView is an exciting new library which enables rich, real-time user experiences with server-rendered HTML. LiveView powered applications are stateful on the server with bidrectional communication via WebSockets, offering a vastly simplified programming model compared to JavaScript alternatives.
 
-In other words, LiveView takes a very different approach than the popular SPA frameworks like React, Vuejs, and Svelt to building rich, highly interactive web applications.  Instead of sending down a bundle of javascript, LiveView apps render an HTML page on the first request and then connect via a persistent socket over which client events are sent and updated received.  These events may trigger a state update on the server and a re-calculation of what the page should look like.  Instead of reloading the page, the client receives a "diff" of the page via the socket and the page's DOM is updated.  (This [video](https://online.pragmaticstudio.com/courses/liveview-pro/modules/4) by Pragmatic Studio does an amazing job of explaining how LiveView works.)
+In other words, LiveView takes a very different approach than the popular SPA frameworks like React, Vuejs, and Svelt to building rich, highly interactive web applications.  Instead of sending down a bundle of javascript, LiveView apps render an HTML page on the first request and then connect via a persistent socket over which client events are sent and updated received.  These events may trigger a state update on the server and a re-calculation of what the page should look like.  Instead of reloading the page, the client receives a "diff" of the page via the socket and the page's DOM is updated.
 
 The programming paradigm is extremely powerful and productive!
 
 ### Feedback is a 🎁
-I am not an expert on Phoenix Liveview, Elixir, Erlang VMs, etc or really most things.  Please feel free to open an issue with questios, bugs, etc.
+Please feel free to open an issue with questions, bugs, etc.
 
 ### Status - **β**
 LiveViewJS is in βeta. The project is still young but the code is stable, tested, and well-documented.
@@ -188,7 +188,7 @@ lvServer.start();
 `npm run test` - runs the (few) tests
 
 ### Run and Browse Examples
-**Credit**: These examples are adapted from an amazing [Phoenix Video / Code Course](https://online.pragmaticstudio.com/courses/liveview-starter/steps/15) authored by the folks at [Pragmatic Studio](https://pragmaticstudio.com/).
+**Credit**: These examples are adapted from an amazing [Phoenix Video / Code Course](https://pragmaticstudio.com/courses/phoenix-liveview) authored by the folks at [Pragmatic Studio](https://pragmaticstudio.com/).
 
 Navigate to `src/examples` to see the example code.
 
