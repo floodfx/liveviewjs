@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1644989803167" clover="3.2.0">
-  <project timestamp="1644989803167" name="All files">
+<coverage generated="1645213637664" clover="3.2.0">
+  <project timestamp="1645213637664" name="All files">
     <metrics statements="469" coveredstatements="469" conditionals="272" coveredconditionals="258" methods="90" coveredmethods="89" elements="831" coveredelements="816" complexity="0" loc="469" ncloc="469" packages="8" files="21" classes="21"/>
     <package name="examples.autocomplete">
       <metrics statements="5" coveredstatements="5" conditionals="1" coveredconditionals="1" methods="2" coveredmethods="2"/>
@@ -129,15 +129,15 @@
         <line num="151" count="2" type="stmt"/>
         <line num="161" count="2" type="stmt"/>
         <line num="162" count="2" type="cond" truecount="1" falsecount="0"/>
+        <line num="165" count="1" type="stmt"/>
         <line num="166" count="1" type="stmt"/>
-        <line num="167" count="1" type="stmt"/>
-        <line num="171" count="1" type="cond" truecount="1" falsecount="0"/>
-        <line num="172" count="1" type="stmt"/>
-        <line num="175" count="1" type="stmt"/>
+        <line num="170" count="1" type="cond" truecount="1" falsecount="0"/>
+        <line num="171" count="1" type="stmt"/>
+        <line num="174" count="1" type="stmt"/>
+        <line num="179" count="1" type="stmt"/>
         <line num="180" count="1" type="stmt"/>
-        <line num="181" count="1" type="stmt"/>
-        <line num="184" count="1" type="stmt"/>
-        <line num="196" count="8" type="stmt"/>
+        <line num="183" count="1" type="stmt"/>
+        <line num="195" count="8" type="stmt"/>
       </file>
     </package>
     <package name="server.component">

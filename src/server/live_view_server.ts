@@ -141,7 +141,7 @@ export class LiveViewServer {
     // register live_title_tag helper
     app.locals.live_title_tag = live_title_tag;
 
-    app.get('/:liveview', async (req, res) => {
+    app.get('/:liveview', async (req, res, next) => {
       const liveview = req.params.liveview;
 
       const emptyVoid = () => { };
@@ -160,10 +160,9 @@ export class LiveViewServer {
       // look up component for route
       const component = this._router[`/${liveview}`];
       if (!component) {
-        // TODO which is better 404 or just call next()?
-        // next();
-        // return;
-        res.status(404).send("Not found");
+        // no component found for route so call next() to
+        // let a possible downstream route handle the request
+        next();
         return;
       }
 
