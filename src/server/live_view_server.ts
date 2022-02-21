@@ -28,9 +28,10 @@ export interface LiveViewServerOptions {
   rootView?: string;
   viewsPath?: string;
   publicPath?: string;
-  signingSecret: string;
   sessionStore?: session.Store;
   pageTitleDefaults?: PageTitleDefaults;
+  middleware?: express.Handler[];
+  signingSecret: string;
 }
 
 const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
@@ -43,11 +44,12 @@ export class LiveViewServer {
   private viewsPath: string[];
   private signingSecret: string;
   private sessionStore: session.Store = new MemoryStore();
-
   private _router: LiveViewRouter = {};
   private messageRouter = new MessageRouter()
   private _isStarted = false;
   private pageTitleDefaults?: PageTitleDefaults;
+  private middleware: express.Handler[] = [];
+
   readonly httpServer: Server;
   readonly socketServer: WebSocket.Server;
   expressApp: express.Application;
@@ -58,13 +60,14 @@ export class LiveViewServer {
     this.publicPath = options.publicPath ?? this.publicPath;
     this.viewsPath = options.viewsPath ? [options.viewsPath, MODULE_VIEWS_PATH] : [MODULE_VIEWS_PATH];
     this.sessionStore = options.sessionStore ?? this.sessionStore;
+    this.middleware = options.middleware ?? this.middleware
     this.signingSecret = options.signingSecret;
-    this.expressApp = this.buildExpressApp();
     this.httpServer = new Server();
     this.socketServer = new WebSocket.Server({
       server: this.httpServer
     });
     this.pageTitleDefaults = options.pageTitleDefaults;
+    this.expressApp = this.buildExpressApp();
   }
 
   get router(): LiveViewRouter {
@@ -129,6 +132,7 @@ export class LiveViewServer {
     app.set('view engine', 'ejs');
     app.set("views", this.viewsPath)
 
+    // setup session
     app.use(session({
       secret: this.signingSecret,
       resave: false,
@@ -137,6 +141,11 @@ export class LiveViewServer {
       cookie: { secure: process.env.NODE_ENV === "production" },
       store: this.sessionStore,
     }))
+
+    // register middleware
+    for (const middleware of this.middleware) {
+      app.use(middleware)
+    }
 
     // register live_title_tag helper
     app.locals.live_title_tag = live_title_tag;

@@ -15,8 +15,13 @@ describe("test live view server", () => {
   beforeEach(() => {
     lvServer = new LiveViewServer({
       signingSecret: "MY_VERY_SECRET_KEY",
-      port: 7654
-    })
+      port: 7654,
+      pageTitleDefaults: {
+        prefix: "TitlePrefix - ",
+        suffix: " - TitleSuffix",
+        title: "Title",
+      }
+    });
     httpServer = lvServer.httpServer;
     lvServer.start();
   })
@@ -66,6 +71,16 @@ describe("test live view server", () => {
     })
   })
 
+  it("http request contains live title components", (done) => {
+    const lvComponent = new LiveViewComponent()
+    lvServer.registerLiveViewRoute("/test", lvComponent)
+    request(lvServer.httpServer).get('/test').expect(200).then(res => {
+      console.log("test title", res.text)
+      expect(res.text).toContain("<title data-prefix=\"TitlePrefix - \" data-suffix=\" - TitleSuffix\">TitlePrefix - Title - TitleSuffix</title>")
+      done();
+    })
+  })
+
   it("http 404s on unknown route", (done) => {
     lvServer.start();
     request(lvServer.httpServer).get('/unknwon').then(res => {
@@ -109,6 +124,28 @@ describe("test live view server", () => {
       })
       .close()
       .expectClosed()
+  })
+
+  it("middleware is applied", (done) => {
+    let middlewareCalled = false;
+    const testLVServer = new LiveViewServer({
+      middleware: [(req, res, next) => {
+        middlewareCalled = true;
+        next();
+      }],
+      signingSecret: "test",
+      port: 7655
+    })
+
+    const lvComponent = new LiveViewComponent()
+    testLVServer.registerLiveViewRoute("/test", lvComponent)
+    testLVServer.start()
+    request(testLVServer.httpServer).get('/test').expect(200).then(res => {
+      // expect(res.text).toContain(lvComponent.render().toString())
+      expect(middlewareCalled).toBe(true);
+      testLVServer.shutdown();
+      done();
+    })
   })
 
 })
