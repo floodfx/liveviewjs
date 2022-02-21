@@ -6,7 +6,6 @@ module.exports = {
   coverageDirectory: 'coverage',
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   coveragePathIgnorePatterns: ['/node_modules/', '/dist/'],
-  coverageReporters: ['json', 'clover'],
   roots: ['<rootDir>/src'],
   verbose: true,
   coverageThreshold: {
