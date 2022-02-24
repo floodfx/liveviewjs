@@ -2,6 +2,11 @@ import { RedisClientType, RedisClientOptions } from '@node-redis/client';
 import { createClient } from 'redis';
 import { Publisher, Subscriber } from '.';
 
+/**
+ * A PubSub implementation that uses Redis as a backend.
+ *
+ * See: https://github.com/redis/node-redis#pubsub
+ */
 export class RedisPubSub<T> implements Subscriber<T>, Publisher<T> {
 
   private redis: RedisClientType;

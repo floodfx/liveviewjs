@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { nanoid } from 'nanoid';
 import { LiveViewChangeset, LiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from '../../server/component/types';
 import { newChangesetFactory } from '../../server/component/changeset';
-import { createPubSub } from '../../server/pubsub/SingleProcessPubSub';
+import { PubSub } from '../../server/pubsub/SingleProcessPubSub';
 import { VolunteerComponent } from './component';
 
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/
@@ -18,9 +18,6 @@ export const VolunteerSchema = z.object({
 
 // infer the Volunteer model from the Zod Schema
 export type Volunteer = z.infer<typeof VolunteerSchema>;
-
-// pubsub
-const volunteerPubSub = createPubSub<VolunteerData>();
 
 // in memory data store
 const volunteers: Record<string, Volunteer> = {}
@@ -56,7 +53,7 @@ export const updateVolunteer = (currentVolunteer: Volunteer, updated: Partial<Vo
 }
 
 function broadcast(event: VolunteerEvent, volunteer: Volunteer) {
-  volunteerPubSub.broadcast('volunteer', {
+  PubSub.broadcast('volunteer', {
     event,
     volunteer,
   });
@@ -67,11 +64,5 @@ type VolunteerEvent = 'created' | 'updated';
 export interface VolunteerData {
   event: VolunteerEvent,
   volunteer: Volunteer
-}
-
-export function subscribe(socket: LiveViewSocket<unknown>): void {
-  volunteerPubSub.subscribe('volunteer', (data: VolunteerData) => {
-    socket.sendInternal(data)
-  });
 }
 

@@ -24,4 +24,4 @@ class SingleProcessPubSub<T> implements Subscriber<T>, Publisher<T> {
 
 }
 
-export const createPubSub = <T>() => new SingleProcessPubSub<T>();
+export const PubSub = new SingleProcessPubSub<unknown>();

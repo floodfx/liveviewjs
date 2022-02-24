@@ -1,11 +1,12 @@
 import { html } from "../../server/templates";
 import { LiveViewChangeset, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
 import { SessionData } from "express-session";
-import { Volunteer, changeset, createVolunteer, listVolunteers, getVolunteer, updateVolunteer, VolunteerData, subscribe } from "./data";
+import { Volunteer, changeset, createVolunteer, listVolunteers, getVolunteer, updateVolunteer, VolunteerData } from "./data";
 import { submit } from "../../server/templates/helpers/submit";
 import { form_for } from "../../server/templates/helpers/form_for";
 import { error_tag, telephone_input, text_input } from "../../server/templates/helpers/inputs";
 import { BaseLiveViewComponent } from "../../server/component/base_component";
+import { PubSub } from "../../server/pubsub/SingleProcessPubSub";
 
 export interface VolunteerContext {
   volunteers: Volunteer[]
@@ -21,8 +22,7 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<VolunteerContext>) {
     if (socket.connected) {
-      console.log("subscribing", socket.id);
-      subscribe(socket);
+      PubSub.subscribe('volunteer', socket.sendInternal);
     }
     return {
       volunteers: listVolunteers(),
@@ -130,7 +130,6 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
   }
 
   handleInfo(event: VolunteerData, socket: LiveViewSocket<VolunteerContext>): VolunteerContext | Promise<VolunteerContext> {
-    console.log("received info", event);
     return {
       volunteers: listVolunteers(),
       changeset: changeset({}, {})
