@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    "declaration": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "target": "es2019",
+    "lib": [
+      "es2019",
+      "esnext.asynciterable",
+      "DOM"
+    ],
+    "types": [
+      "node",
+    ],
+    "outDir": "./dist",
+    "baseUrl": ".",
+  },
+  "include": [
+    "src/**/*",
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "**/*.test.ts",
+    "src/client/**/*",
+  ]
+}
