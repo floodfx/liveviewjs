@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import { LiveViewChangeset } from '../../server/component/types';
+import { LiveViewChangeset, LiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from '../../server/component/types';
 import { newChangesetFactory } from '../../server/component/changeset';
+import { createPubSub } from '../../server/pubsub/SingleProcessPubSub';
+import { VolunteerComponent } from './component';
 
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/
 
@@ -16,6 +18,9 @@ export const VolunteerSchema = z.object({
 
 // infer the Volunteer model from the Zod Schema
 export type Volunteer = z.infer<typeof VolunteerSchema>;
+
+// pubsub
+const volunteerPubSub = createPubSub<VolunteerData>();
 
 // in memory data store
 const volunteers: Record<string, Volunteer> = {}
@@ -33,18 +38,40 @@ export const changeset = newChangesetFactory<Volunteer>(VolunteerSchema)
 export const createVolunteer = (newVolunteer: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
   const result = changeset({}, newVolunteer, 'create');
   if (result.valid) {
-    const v = result.data as Volunteer;
-    volunteers[v.id] = v;
+    const volunteer = result.data as Volunteer;
+    volunteers[volunteer.id] = volunteer;
+    broadcast('created', volunteer);
   }
   return result;
 }
 
-export const updateVolunteer = (volunteer: Volunteer, updated: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
-  const result = changeset(volunteer, updated, 'update');
+export const updateVolunteer = (currentVolunteer: Volunteer, updated: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
+  const result = changeset(currentVolunteer, updated, 'update');
   if (result.valid) {
-    const v = result.data as Volunteer;
-    volunteers[v.id] = v;
+    const volunteer = result.data as Volunteer;
+    volunteers[volunteer.id] = volunteer;
+    broadcast('updated', volunteer);
   }
   return result;
+}
+
+function broadcast(event: VolunteerEvent, volunteer: Volunteer) {
+  volunteerPubSub.broadcast('volunteer', {
+    event,
+    volunteer,
+  });
+}
+
+type VolunteerEvent = 'created' | 'updated';
+
+export interface VolunteerData {
+  event: VolunteerEvent,
+  volunteer: Volunteer
+}
+
+export function subscribe(socket: LiveViewSocket<unknown>): void {
+  volunteerPubSub.subscribe('volunteer', (data: VolunteerData) => {
+    socket.sendInternal(data)
+  });
 }
 
