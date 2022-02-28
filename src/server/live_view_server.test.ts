@@ -66,7 +66,7 @@ describe("test live view server", () => {
     const lvComponent = new LiveViewComponent()
     lvServer.registerLiveViewRoute("/test", lvComponent)
     request(lvServer.httpServer).get('/test').expect(200).then(res => {
-      expect(res.text).toContain(lvComponent.render().toString())
+      expect(res.text).toContain(lvComponent.render({ message: "test" }).toString())
       done();
     })
   })
@@ -148,16 +148,44 @@ describe("test live view server", () => {
     })
   })
 
+  it("middleware sets message", (done) => {
+    const message = "blah"
+    const testLVServer = new LiveViewServer({
+      middleware: [(req, res, next) => {
+        req.session.message = message;
+        next();
+      }],
+      signingSecret: "test",
+      port: 7655
+    })
+
+    const lvComponent = new LiveViewComponent()
+    testLVServer.registerLiveViewRoute("/test", lvComponent)
+    testLVServer.start()
+    request(testLVServer.httpServer).get('/test').expect(200).then(res => {
+      expect(res.text).toContain(message)
+      testLVServer.shutdown();
+      done();
+    })
+  })
+
 })
 
-class LiveViewComponent extends BaseLiveViewComponent<{}, {}> {
+declare module 'express-session' {
+  interface SessionData {
+    message: string;
+  }
+}
+
+class LiveViewComponent extends BaseLiveViewComponent<{ message?: string }, {}> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return {}
+    return { message: session.message || "test" }
   }
 
-  render() {
-    return html`<div>test</div>`;
+  render(ctx: { message: string }) {
+    const { message } = ctx
+    return html`<div>${message}</div>`;
   }
 
 }

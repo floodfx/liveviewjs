@@ -181,11 +181,16 @@ export class LiveViewServer {
       }
 
       const jwtPayload: Omit<SessionData, "cookie"> = {
+        ...req.session,
         csrfToken: req.session.csrfToken,
       }
 
       // mount and render component if found
-      const ctx = await component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, {}, liveViewSocket);
+      const ctx = await component.mount(
+        { _csrf_token: req.session.csrfToken, _mounts: -1 },
+        { ...jwtPayload },
+        liveViewSocket
+      );
       const view = component.render(ctx);
 
       // render the view with all the data
