@@ -7,6 +7,7 @@ import { newHeartbeatReply, newPhxReply } from "./util";
 import { BaseLiveViewComponent } from "../component/base_component";
 import { deepDiff } from "../templates/diff";
 import { Parts } from "..";
+import { RedisPubSub } from "../pubsub/RedisPubSub";
 
 export class LiveViewComponentManager {
 
@@ -20,6 +21,9 @@ export class LiveViewComponentManager {
   csrfToken?: string;
   private _pageTitle: string | undefined;
   pageTitleChanged: boolean = false;
+  private pubSub: RedisPubSub<unknown> = new RedisPubSub<unknown>(
+    { url: process.env.REDIS_URL || "redis://localhost:6379" }
+  );
 
   constructor(component: LiveViewComponent<unknown, unknown>, signingSecret: string) {
     this.component = component;
@@ -247,6 +251,10 @@ export class LiveViewComponentManager {
       sendInternal: (event) => this.sendInternal(ws, event, topic),
       repeat: (fn, intervalMillis) => this.repeat(fn, intervalMillis),
       pageTitle: (newTitle: string) => { this.pageTitle = newTitle },
+      subscribe: (topic: string) => {
+        console.log('subscribted to', topic);
+        this.pubSub.subscribe(topic, (event) => this.sendInternal(ws, event, topic))
+      },
     }
   }
 

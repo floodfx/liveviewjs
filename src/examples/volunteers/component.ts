@@ -7,6 +7,7 @@ import { form_for } from "../../server/templates/helpers/form_for";
 import { error_tag, telephone_input, text_input } from "../../server/templates/helpers/inputs";
 import { BaseLiveViewComponent } from "../../server/component/base_component";
 import { PubSub } from "../../server/pubsub/SingleProcessPubSub";
+import { RedisPubSub } from "../../server/pubsub/RedisPubSub";
 
 export interface VolunteerContext {
   volunteers: Volunteer[]
@@ -19,10 +20,10 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
   LiveViewExternalEventListener<VolunteerContext, VolunteerEvents, Volunteer>,
   LiveViewInternalEventListener<VolunteerContext, VolunteerData> {
 
-
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<VolunteerContext>) {
     if (socket.connected) {
-      PubSub.subscribe('volunteer', socket.sendInternal);
+      console.log("subscribing", socket.id)
+      socket.subscribe('volunteer');
     }
     return {
       volunteers: listVolunteers(),
@@ -130,6 +131,7 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
   }
 
   handleInfo(event: VolunteerData, socket: LiveViewSocket<VolunteerContext>): VolunteerContext | Promise<VolunteerContext> {
+    console.log("received", event);
     return {
       volunteers: listVolunteers(),
       changeset: changeset({}, {})

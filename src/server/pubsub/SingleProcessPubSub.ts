@@ -1,7 +1,12 @@
 import { EventEmitter } from 'events';
 import { Publisher, Subscriber } from ".";
 
-
+/**
+ * A PubSub implementation that uses the Node.js EventEmitter as a backend.
+ *
+ * Should only be used in single process environments like local development
+ * or a single instance.  In a multi-process environment, use RedisPubSub.
+ */
 class SingleProcessPubSub<T> implements Subscriber<T>, Publisher<T> {
 
   private eventEmitter: EventEmitter;

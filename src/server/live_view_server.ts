@@ -164,6 +164,7 @@ export class LiveViewServer {
         sendInternal: emptyVoid,
         repeat: emptyVoid,
         pageTitle: emptyVoid,
+        subscribe: emptyVoid,
       }
 
       // look up component for route

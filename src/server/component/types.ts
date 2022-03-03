@@ -26,6 +26,7 @@ export interface LiveViewSocket<T> {
   sendInternal: (event: unknown) => void;
   repeat: (fn: () => void, intervalMillis: number) => void;
   pageTitle: (newPageTitle: string) => void;
+  subscribe: (topic: string) => void;
 }
 
 export interface LiveViewTemplate extends HtmlSafeString {

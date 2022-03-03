@@ -4,6 +4,7 @@ import { LiveViewChangeset, LiveViewComponent, LiveViewExternalEventListener, Li
 import { newChangesetFactory } from '../../server/component/changeset';
 import { PubSub } from '../../server/pubsub/SingleProcessPubSub';
 import { VolunteerComponent } from './component';
+import { RedisPubSub } from '../../server/pubsub/RedisPubSub';
 
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/
 
@@ -52,8 +53,11 @@ export const updateVolunteer = (currentVolunteer: Volunteer, updated: Partial<Vo
   return result;
 }
 
+const pubSub: RedisPubSub<VolunteerData> = new RedisPubSub<VolunteerData>({
+  url: 'redis://localhost:6379'
+});
 function broadcast(event: VolunteerEvent, volunteer: Volunteer) {
-  PubSub.broadcast('volunteer', {
+  pubSub.broadcast('volunteer', {
     event,
     volunteer,
   });
