@@ -1,12 +1,18 @@
-import { PhxJoinIncoming, PhxHeartbeatIncoming, PhxIncomingMessage, PhxClickPayload, PhxFormPayload, PhxLivePatchIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxBlurPayload, PhxFocusPayload, PhxHookPayload } from './types';
 import WebSocket from 'ws';
 import { LiveViewRouter } from '../component/types';
+import { PubSub } from '../pubsub/SingleProcessPubSub';
 import { LiveViewComponentManager } from './component_manager';
+import { PhxBlurPayload, PhxClickPayload, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from './types';
+
+export type PhxMessage =
+ // incoming from client
+ | {type: "phx_join", message: PhxJoinIncoming}
+ | {type: "heartbeat", message: PhxHeartbeatIncoming}
+ | {type: "event", message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload | PhxHookPayload>}
+ | {type: "live_patch", message: PhxLivePatchIncoming}
+ | {type: "phx_leave", message: PhxIncomingMessage<{}>}
 
 export class MessageRouter {
-
-  topicComponentManager: Record<string, LiveViewComponentManager> = {};
-  heartbeatRouter: Record<string, LiveViewComponentManager> = {};
 
   async onMessage(ws: WebSocket, message: WebSocket.RawData, router: LiveViewRouter, connectionId: string, signingSecret: string) {
     // parse string to JSON
@@ -20,39 +26,19 @@ export class MessageRouter {
       try {
         switch (event) {
           case "phx_join":
-            // assume componentManager is not defined since join creates a new component manager
+            // handle phx_join seperate from other events so we can create a new
+            // component manager and send the join message to it
             await this.onPhxJoin(ws, rawPhxMessage as PhxJoinIncoming, router, signingSecret, connectionId);
             break;
           case "heartbeat":
-            // heartbeat comes in as a "phoenix" topic so lookup via connectionId
-            this.onHeartbeat(ws, rawPhxMessage as PhxHeartbeatIncoming, topic, connectionId);
+            // send heartbeat to component manager via connectionId broadcast
+            PubSub.broadcast(connectionId, {type: event, message: rawPhxMessage})
             break;
           case "event":
-            // lookup component manager for this topic
-            componentManager = this.topicComponentManager[topic];
-            if (componentManager) {
-              const message = rawPhxMessage as PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload | PhxHookPayload>;
-              await componentManager.onEvent(ws, message);
-            } else {
-              console.error(`expected component manager for topic:${topic} and event:${event}`);
-            }
-            break;
           case "live_patch":
-            componentManager = this.topicComponentManager[topic];
-            if (componentManager) {
-              await componentManager.onLivePatch(ws, rawPhxMessage as PhxLivePatchIncoming);
-            } else {
-              console.error(`expected component manager for topic:${topic} and event:${event}`);
-            }
-            break;
           case "phx_leave":
-            componentManager = this.topicComponentManager[topic];
-            if (componentManager) {
-              componentManager.shutdown();
-              delete this.topicComponentManager[topic];
-            } else {
-              console.warn(`expected component manager for topic:${topic} and event:${event}`);
-            }
+            // other events we can send via topic broadcast
+            PubSub.broadcast(topic, {type: event, message: rawPhxMessage})
             break;
           default:
             throw new Error(`unexpected protocol event ${rawPhxMessage}`);
@@ -66,28 +52,10 @@ export class MessageRouter {
       throw new Error(`unknown message type ${rawPhxMessage}`);
     }
 
-    // cleanup unhealthy component managers
-    Object.keys(this.topicComponentManager).forEach(key => {
-      const cm = this.topicComponentManager[key];
-      if (!cm.isHealthy) {
-        cm.shutdown()
-        delete this.topicComponentManager[key];
-      }
-    })
-
-    // cleanup unhealthy heartbeat routers
-    Object.keys(this.heartbeatRouter).forEach(key => {
-      const cm = this.heartbeatRouter[key];
-      if (!cm.isHealthy) {
-        cm.shutdown()
-        delete this.heartbeatRouter[key];
-      }
-    })
   }
 
 
   async onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, router: LiveViewRouter, signingSecret: string, connectionId: string) {
-
     // use url to route join request to component
     const [joinRef, messageRef, topic, event, payload] = message;
     const { url: urlString, redirect: redirectString } = payload;
@@ -101,16 +69,8 @@ export class MessageRouter {
       throw Error(`no component found for ${url}`);
     }
 
-    const componentManager = new LiveViewComponentManager(component, signingSecret);
-    this.topicComponentManager[topic] = componentManager;
-    this.heartbeatRouter[connectionId] = componentManager;
-    await componentManager.handleJoin(ws, message);
+    const componentManager = new LiveViewComponentManager(component, signingSecret, connectionId, ws);
+    await componentManager.handleJoin(message);
   }
 
-  async onHeartbeat(ws: WebSocket, message: PhxHeartbeatIncoming, topic: string, connectionId: string) {
-    const componentManager = this.heartbeatRouter[connectionId];
-    if (componentManager) {
-      componentManager.onHeartbeat(ws, message);
-    }
-  }
 }

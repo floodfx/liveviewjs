@@ -1,13 +1,13 @@
-import { LiveViewComponent, LiveViewRouter, LiveViewSocket } from "./component/types";
-import WebSocket from 'ws';
-import { Server } from 'http';
 import express from "express";
-import { nanoid } from "nanoid";
-import jwt from "jsonwebtoken";
 import session, { MemoryStore, SessionData } from "express-session";
+import { Server } from 'http';
+import jwt from "jsonwebtoken";
+import { nanoid } from "nanoid";
 import path from "path";
-import { MessageRouter } from "./socket/message_router";
+import WebSocket from 'ws';
 import { live_title_tag } from ".";
+import { LiveViewComponent, LiveViewRouter, LiveViewSocket } from "./component/types";
+import { MessageRouter } from "./socket/message_router";
 
 
 // extend / define session interface
@@ -165,6 +165,7 @@ export class LiveViewServer {
         repeat: emptyVoid,
         pageTitle: emptyVoid,
         subscribe: emptyVoid,
+        pushPatch: emptyVoid,
       }
 
       // look up component for route

@@ -1,10 +1,8 @@
-import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import { LiveViewChangeset, LiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewSocket } from '../../server/component/types';
+import { z } from 'zod';
 import { newChangesetFactory } from '../../server/component/changeset';
+import { LiveViewChangeset } from '../../server/component/types';
 import { PubSub } from '../../server/pubsub/SingleProcessPubSub';
-import { VolunteerComponent } from './component';
-import { RedisPubSub } from '../../server/pubsub/RedisPubSub';
 
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/
 
@@ -38,7 +36,7 @@ export const createVolunteer = (newVolunteer: Partial<Volunteer>): LiveViewChang
   if (result.valid) {
     const volunteer = result.data as Volunteer;
     volunteers[volunteer.id] = volunteer;
-    broadcast('created', volunteer);
+    broadcast({type: "created", volunteer});
   }
   return result;
 }
@@ -48,25 +46,17 @@ export const updateVolunteer = (currentVolunteer: Volunteer, updated: Partial<Vo
   if (result.valid) {
     const volunteer = result.data as Volunteer;
     volunteers[volunteer.id] = volunteer;
-    broadcast('updated', volunteer);
+    broadcast({type: "updated", volunteer});
   }
   return result;
 }
 
-const pubSub: RedisPubSub<VolunteerData> = new RedisPubSub<VolunteerData>({
-  url: 'redis://localhost:6379'
-});
-function broadcast(event: VolunteerEvent, volunteer: Volunteer) {
-  pubSub.broadcast('volunteer', {
-    event,
-    volunteer,
-  });
+function broadcast(event: VolunteerMutationEvent) {
+  PubSub.broadcast('volunteer', event);
 }
 
-type VolunteerEvent = 'created' | 'updated';
+export type VolunteerMutationEvent =
+  | {type: "created", volunteer: Volunteer }
+  | {type: "updated", volunteer: Volunteer }
 
-export interface VolunteerData {
-  event: VolunteerEvent,
-  volunteer: Volunteer
-}
 

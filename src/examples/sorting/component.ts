@@ -1,10 +1,10 @@
-import { options_for_select } from "../../server/templates/helpers/options_for_select";
-import { live_patch } from "../../server/templates/helpers/live_patch";
-import { html, HtmlSafeString, join } from "../../server/templates";
-import { LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
-import { almostExpired, Donation, listItems, donations } from "./data";
 import { SessionData } from "express-session";
 import { BaseLiveViewComponent } from "../../server/component/base_component";
+import { LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
+import { html, HtmlSafeString, join } from "../../server/templates";
+import { live_patch } from "../../server/templates/helpers/live_patch";
+import { options_for_select } from "../../server/templates/helpers/options_for_select";
+import { almostExpired, Donation, donations, listItems } from "./data";
 
 export interface PaginateOptions {
   page: number;
@@ -118,7 +118,7 @@ export class SortLiveViewComponent extends BaseLiveViewComponent<SortContext, Pa
     }
 
 
-    this.pushPatch(socket, { to: { path: "/sort", params: { page: String(page), perPage: String(perPage), sortOrder, sort_by } } });
+    socket.pushPatch({ to: { path: "/sort", params: { page: String(page), perPage: String(perPage), sortOrder, sort_by } } });
 
     return {
       options: { page, perPage, sort_by, sortOrder },
