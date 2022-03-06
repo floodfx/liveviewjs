@@ -9,8 +9,6 @@ import { PhxMessage } from "./message_router";
 import { PhxBlurPayload, PhxClickPayload, PhxDiffReply, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming, PhxOutgoingLivePatchPush, PhxOutgoingMessage } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
 
-
-
 /**
  * The `LiveViewComponentManager` is responsible for managing the lifecycle of a `LiveViewComponent`
  * including routing of events, the state (i.e. context), and other aspects of the component.  The
@@ -30,9 +28,6 @@ export class LiveViewComponentManager {
   private intervals: NodeJS.Timeout[] = [];
   private lastHeartbeat: number = Date.now();
 
-  private socketIsClosed: boolean = false;
-  private healthy: boolean = true;
-
   private csrfToken?: string;
 
   private _pageTitle: string | undefined;
@@ -44,12 +39,11 @@ export class LiveViewComponentManager {
     this.context = {};
     this.connectionId = connectionId;
     this.ws = ws;
-    // subscribe to any events on connectionId
+    // subscribe to events on connectionId which should just be
+    // heartbeat messages
     const subId = PubSub.subscribe(connectionId, (data) => this.handleSubscriptions(data as PhxMessage));
+    // save subscription id for unsubscribing
     this.subscriptionIds[connectionId] = subId;
-    // if (component instanceof BaseLiveViewComponent) {
-    //   component.registerComponentManager(this);
-    // }
   }
 
   async handleJoin(message: PhxJoinIncoming) {
@@ -81,8 +75,10 @@ export class LiveViewComponentManager {
     }
 
     this.socketId = topic;
-    // since we are joining, let's subscribe to the topic
+    // subscribe to events on the socketId which includes
+    // events, live_patch, and phx_leave messages
     const subId = PubSub.subscribe(topic, (data) => this.handleSubscriptions(data as PhxMessage));
+    // again save subscription id for unsubscribing
     this.subscriptionIds[topic] = subId;
 
     // pass in phx_join payload params, session, and socket
@@ -105,12 +101,23 @@ export class LiveViewComponentManager {
     this.sendPhxReply(newPhxReply(message, replyPayload));
   }
 
-  onHeartbeat(message: PhxHeartbeatIncoming) {
-    this.lastHeartbeat = Date.now();
-    this.sendPhxReply(newHeartbeatReply(message));
+  private async handleSubscriptions(phxMessage: PhxMessage) {
+    // console.log("handleSubscriptions", this.connectionId, this.socketId, phxMessage);
+    const { type } = phxMessage;
+    if(type === "heartbeat") {
+      this.onHeartbeat(phxMessage.message);
+    } else if(type === "event") {
+      await this.onEvent(phxMessage.message);
+    } else if(type === "live_patch") {
+      await this.onLivePatch(phxMessage.message);
+    } else if(type === "phx_leave") {
+      this.onPhxLeave(phxMessage.message);
+    } else {
+      console.error("Unknown message type", type, phxMessage, " on connectionId:", this.connectionId, " socketId:", this.socketId);
+    }
   }
 
-  async onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>) {
+  private async onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>) {
     const [joinRef, messageRef, topic, _, payload] = message;
     const { type, event } = payload;
 
@@ -167,7 +174,7 @@ export class LiveViewComponentManager {
 
   }
 
-  async onLivePatch(message: PhxLivePatchIncoming) {
+  private async onLivePatch(message: PhxLivePatchIncoming) {
     const [joinRef, messageRef, topic, event, payload] = message;
 
     const { url: urlString } = payload;
@@ -200,7 +207,31 @@ export class LiveViewComponentManager {
     this.sendPhxReply(newPhxReply(message, replyPayload));
   }
 
-  async onPushPatch(patch: { to: { path: string, params: StringPropertyValues<any> } }) {
+  private onHeartbeat(message: PhxHeartbeatIncoming) {
+    this.lastHeartbeat = Date.now();
+    this.sendPhxReply(newHeartbeatReply(message));
+  }
+
+  private async onPhxLeave(message: PhxIncomingMessage<{}>) {
+    await this.shutdown();
+  }
+
+  private repeat(fn: () => void, intervalMillis: number) {
+    this.intervals.push(setInterval(fn, intervalMillis));
+  }
+
+  private async shutdown() {
+    // unsubscribe from PubSubs
+    Object.entries(this.subscriptionIds).forEach(async([topic, subscriptionId]) => {
+      const subId = await subscriptionId;
+      await PubSub.unsubscribe(topic, subId);
+    });
+
+    // clear intervals
+    this.intervals.forEach(clearInterval);
+  }
+
+  private async onPushPatch(patch: { to: { path: string, params: StringPropertyValues<any> } }) {
     const urlParams = new URLSearchParams(patch.to.params);
     const to = `${patch.to.path}?${urlParams}`
     const message: PhxOutgoingLivePatchPush = [
@@ -219,54 +250,8 @@ export class LiveViewComponentManager {
     this.sendPhxReply(message);
   }
 
-  async onPhxLeave(message: PhxIncomingMessage<{}>) {
-    await this.shutdown();
-  }
-
-  repeat(fn: () => void, intervalMillis: number) {
-    this.intervals.push(setInterval(fn, intervalMillis));
-  }
-
-  async shutdown() {
-    // unsubscribe from PubSubs
-    Object.entries(this.subscriptionIds).forEach(async([topic, subscriptionId]) => {
-      const subId = await subscriptionId;
-      await PubSub.unsubscribe(topic, subId);
-    });
-
-    // clear intervals
-    this.intervals.forEach(clearInterval);
-
-    // set unhealthy
-    this.healthy = false;
-  }
-
-  get isHealthy() {
-    if (!this.socketIsClosed || !this.healthy) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  private async handleSubscriptions(phxMessage: PhxMessage) {
-    console.log("handleSubscriptions", this.connectionId, this.socketId, phxMessage);
-    const { type } = phxMessage;
-    if(type === "heartbeat") {
-      this.onHeartbeat(phxMessage.message);
-    } else if(type === "event") {
-      await this.onEvent(phxMessage.message);
-    } else if(type === "live_patch") {
-      await this.onLivePatch(phxMessage.message);
-    } else if(type === "phx_leave") {
-      this.onPhxLeave(phxMessage.message);
-    } else {
-      console.error("Unknown message type", type, phxMessage, " on connectionId:", this.connectionId, " socketId:", this.socketId);
-    }
-  }
-
   private sendInternal(event: any): void {
-    console.log("sendInternal", event, this.socketId);
+    // console.log("sendInternal", event, this.socketId);
 
     if (isInfoHandler(this.component)) {
       const previousContext = this.context;
@@ -295,7 +280,6 @@ export class LiveViewComponentManager {
   }
 
   private buildLiveViewSocket(): LiveViewSocket<unknown> {
-    console.log("buildLiveViewSocket", this.connectionId, this.socketId, this.socketId);
     return {
       id: this.socketId,
       connected: true, // websocket is connected
@@ -334,7 +318,6 @@ export class LiveViewComponentManager {
 
   private handleError(reply: PhxOutgoingMessage<any>, err?: Error) {
     if (err) {
-      this.socketIsClosed = true;
       this.shutdown();
       console.error(`socket readystate:${this.ws.readyState}. Shutting down topic:${reply[2]}. For component:${this.component}. Error: ${err}`);
     }
@@ -346,10 +329,10 @@ export class LiveViewComponentManager {
 
 }
 
-export function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
+function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
   return "handleInfo" in component;
 }
 
-export function isEventHandler(component: LiveViewComponent<unknown, unknown>) {
+function isEventHandler(component: LiveViewComponent<unknown, unknown>) {
   return "handleEvent" in component;
 }
