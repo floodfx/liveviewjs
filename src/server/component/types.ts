@@ -18,6 +18,10 @@ export interface LiveViewChangeset<T> {
   valid: boolean // true if no validation errors
 }
 
+export interface PushPatchPathAndParams {
+  to: { path: string, params: StringPropertyValues<Record<string, string>> }
+}
+
 export interface LiveViewSocket<T> {
   id: string;
   connected: boolean; // true for websocket, false for http request
@@ -26,6 +30,8 @@ export interface LiveViewSocket<T> {
   sendInternal: (event: unknown) => void;
   repeat: (fn: () => void, intervalMillis: number) => void;
   pageTitle: (newPageTitle: string) => void;
+  subscribe: (topic: string) => void;
+  pushPatch: (params: PushPatchPathAndParams) => void;
 }
 
 export interface LiveViewTemplate extends HtmlSafeString {

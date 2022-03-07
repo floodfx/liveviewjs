@@ -1,11 +1,11 @@
-import { html } from "../../server/templates";
-import { LiveViewChangeset, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
 import { SessionData } from "express-session";
-import { Volunteer, changeset, createVolunteer, listVolunteers, getVolunteer, updateVolunteer } from "./data";
-import { submit } from "../../server/templates/helpers/submit";
+import { BaseLiveViewComponent } from "../../server/component/base_component";
+import { LiveViewChangeset, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
+import { html } from "../../server/templates";
 import { form_for } from "../../server/templates/helpers/form_for";
 import { error_tag, telephone_input, text_input } from "../../server/templates/helpers/inputs";
-import { BaseLiveViewComponent } from "../../server/component/base_component";
+import { submit } from "../../server/templates/helpers/submit";
+import { changeset, createVolunteer, getVolunteer, listVolunteers, updateVolunteer, Volunteer, VolunteerMutationEvent } from "./data";
 
 export interface VolunteerContext {
   volunteers: Volunteer[]
@@ -14,10 +14,15 @@ export interface VolunteerContext {
 
 type VolunteerEvents = "save" | "validate" | "toggle-status";
 
-export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, unknown>
-  implements LiveViewExternalEventListener<VolunteerContext, VolunteerEvents, Volunteer> {
+export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, unknown> implements
+  LiveViewExternalEventListener<VolunteerContext, VolunteerEvents, Volunteer>,
+  LiveViewInternalEventListener<VolunteerContext, VolunteerMutationEvent> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<VolunteerContext>) {
+    if (socket.connected) {
+      // listen for changes to volunteer data
+      socket.subscribe('volunteer');
+    }
     return {
       volunteers: listVolunteers(),
       changeset: changeset({}, {})
@@ -31,32 +36,34 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
     <div id="checkin">
 
       ${form_for<Volunteer>("#", {
-      phx_submit: "save",
-      phx_change: "validate"
-    })}
+        phx_submit: "save",
+        phx_change: "validate"
+        })}
 
         <div class="field">
           ${text_input<Volunteer>(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
-          ${error_tag(changeset, "name")}
+            ${error_tag(changeset, "name")}
         </div>
 
         <div class="field">
-          ${telephone_input<Volunteer>(changeset, "phone", { placeholder: "Phone", autocomplete: "off", phx_debounce: "blur" })}
-          ${error_tag(changeset, "phone")}
+          ${telephone_input<Volunteer>(changeset, "phone", {
+            placeholder: "Phone", autocomplete: "off", phx_debounce: "blur"
+            })}
+            ${error_tag(changeset, "phone")}
         </div>
         ${submit("Check In", { phx_disable_with: "Saving..." })}
-      </form>
+        </form>
 
-      <div id="volunteers" phx-update="prepend">
-        ${volunteers.map(this.renderVolunteer)}
-      </div>
+        <div id="volunteers" phx-update="prepend">
+          ${volunteers.map(this.renderVolunteer)}
+        </div>
     </div>
     `
   };
 
   renderVolunteer(volunteer: Volunteer) {
     return html`
-    <div id="${volunteer.id}" class="volunteer ${volunteer.checked_out ? "out" : ""}">
+    <div id="${volunteer.id}" class="volunteer ${volunteer.checked_out ? " out" : "" }">
       <div class="name">
         ${volunteer.name}
       </div>
@@ -64,9 +71,9 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
         📞 ${volunteer.phone}
       </div>
       <div class="status">
-      <button phx-click="toggle-status" phx-value-id="${volunteer.id}" phx-disable-with="Saving...">
-        ${volunteer.checked_out ? "Check In" : "Check Out"}
-      </button>
+        <button phx-click="toggle-status" phx-value-id="${volunteer.id}" phx-disable-with="Saving...">
+          ${volunteer.checked_out ? "Check In" : "Check Out"}
+        </button>
       </div>
     </div>
     `
@@ -98,26 +105,20 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
       }
       // attempt to create the volunteer from the form data
       const createChangeset = createVolunteer(volunteer);
+      return {
+        volunteers: [], // no volunteers to prepend
+        changeset: createChangeset.valid ? changeset({}, {}) : createChangeset // errors for form
+      }
 
-      // valid form data
-      if (createChangeset.valid) {
-        const newVolunteer = createChangeset.data as Volunteer;
-        // only add new volunteer since we're using phx-update="prepend"
-        // which means the new volunteer will be added to the top of the list
-        const newVolunteers = [newVolunteer];
-        const emptyChangeset = changeset({}, {}); // reset form
-        return {
-          volunteers: newVolunteers,
-          changeset: emptyChangeset
-        }
-      }
-      // form data was invalid
-      else {
-        return {
-          volunteers: [], // no volunteers to prepend
-          changeset: createChangeset // errors for form
-        }
-      }
+    }
+  }
+
+  handleInfo(event: VolunteerMutationEvent, socket: LiveViewSocket<VolunteerContext>): VolunteerContext | Promise<VolunteerContext> {
+    // console.log("received", event, socket.id);
+    const { volunteer } = event;
+    return {
+      volunteers: [volunteer],
+      changeset: changeset({}, {})
     }
   }
 

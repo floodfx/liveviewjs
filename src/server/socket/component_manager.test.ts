@@ -1,27 +1,38 @@
 import { SessionData } from "express-session";
-import { WebSocket } from "ws";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewComponent } from "..";
-import { html, HtmlSafeString } from "../templates";
 import { mock } from "jest-mock-extended";
-import { PhxBlurPayload, PhxClickPayload, PhxFlash, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from "./types";
 import jwt from "jsonwebtoken";
+import { nanoid } from "nanoid";
+import { WebSocket } from "ws";
+import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket, PushPatchPathAndParams } from "..";
 import { StringPropertyValues } from "../component";
+import { PubSub } from "../pubsub/SingleProcessPubSub";
+import { html, HtmlSafeString } from "../templates";
 import { isEventHandler, isInfoHandler, LiveViewComponentManager } from "./component_manager";
+import { PhxBlurPayload, PhxClickPayload, PhxFlash, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from "./types";
 
 
 describe("test component manager", () => {
 
+  let cm: LiveViewComponentManager;
+  let connectionId: string;
+  let ws: WebSocket;
+  beforeEach(() => {
+    connectionId = nanoid()
+    ws = mock<WebSocket>()
+    cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret", connectionId, ws);
+  })
+
+  afterEach(() => {
+    cm.shutdown()
+  });
+
   it("handle join works", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
-    await cm.handleJoin(ws, newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     expect(ws.send).toHaveBeenCalledTimes(1)
   })
 
   it("handle join with mismatching csrfTokens", () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
-    cm.handleJoin(ws, newPhxJoin("my csrf token", "my signing secret", {
+    cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", {
       url: "http://localhost:4444/test",
       paramCsrfOverride: "my other csrf token"
     }))
@@ -29,9 +40,7 @@ describe("test component manager", () => {
   })
 
   it("handle join with jwt signing error", () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
-    cm.handleJoin(ws, newPhxJoin("my csrf token", "my signing secret", {
+    cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", {
       url: "http://localhost:4444/test",
       signingSecretOverride: "my other signing secret"
     }))
@@ -46,17 +55,21 @@ describe("test component manager", () => {
     expect(isInfoHandler(new NotEventHandlerNorInfoHandlerLiveViewComponent())).toBe(false)
   })
 
-  it("handleHB sends reply", () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
+  it("handleSubscription unknown message fails", async() => {
+    const phx_unknown = [null, null, "unknown", "unknown", {}]
+    // @ts-ignore - ignore type error for test
+    await cm.handleSubscriptions({type: "unknown", message: phx_unknown});
+    expect(ws.send).toHaveBeenCalledTimes(0)
+  })
+
+  it("handleHB sends reply", async() => {
     const phx_hb: PhxHeartbeatIncoming = [null, "5", "phoenix", "heartbeat", {}]
-    cm.onHeartbeat(ws, phx_hb)
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    await cm.handleSubscriptions({type: "heartbeat", message: phx_hb});
+    await cm.onHeartbeat(phx_hb);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onEvent valid click event socket pageTitle", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent("Page Title"), "my signing secret")
-    const ws = mock<WebSocket>()
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
       "6",
@@ -68,18 +81,14 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    await cm.onEvent(ws, phx_click)
-    expect(ws.send).toHaveBeenCalledTimes(1)
-  })
-
-  it("does not register back the component manager if not a BaseLiveViewComponent", () => {
-    const notBaseLiveViewComponent = new NotBaseLiveViewComponent()
-    const cm = new LiveViewComponentManager(notBaseLiveViewComponent, "my signing secret")
+    await cm.handleSubscriptions({type: "event", message: phx_click});
+    await cm.onEvent(phx_click);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onEvent valid click event but not eventHandler", async () => {
-    const cm = new LiveViewComponentManager(new NotEventHandlerNorInfoHandlerLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
+    const c = new NotEventHandlerNorInfoHandlerLiveViewComponent();
+    const cm = new LiveViewComponentManager(c, "my signing secret", connectionId, ws)
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
       "6",
@@ -91,13 +100,12 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    await cm.onEvent(ws, phx_click)
+    await cm.handleSubscriptions({type: "event", message: phx_click});
+    await cm.onEvent(phx_click);
     expect(ws.send).toHaveBeenCalledTimes(0)
   })
 
   it("onEvent valid click event", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
       "6",
@@ -109,13 +117,12 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    await cm.onEvent(ws, phx_click)
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    await cm.handleSubscriptions({type: "event", message: phx_click});
+    await cm.onEvent(phx_click);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onEvent valid form event", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
     const phx_form: PhxIncomingMessage<PhxFormPayload> = [
       "4",
       "6",
@@ -128,13 +135,12 @@ describe("test component manager", () => {
         uploads: {},
       }
     ]
-    await cm.onEvent(ws, phx_form)
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    await cm.handleSubscriptions({type: "event", message: phx_form});
+    await cm.onEvent(phx_form);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onEvent valid keyup event", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
     const phx_keyup: PhxIncomingMessage<PhxKeyUpPayload> = [
       "4",
       "6",
@@ -146,13 +152,12 @@ describe("test component manager", () => {
         value: { key: "key", value: "eventValue" },
       }
     ]
-    await cm.onEvent(ws, phx_keyup)
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    await cm.handleSubscriptions({type: "event", message: phx_keyup});
+    await cm.onEvent(phx_keyup);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onEvent valid keydown event", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
     const phx_keydown: PhxIncomingMessage<PhxKeyDownPayload> = [
       "4",
       "6",
@@ -164,13 +169,12 @@ describe("test component manager", () => {
         value: { key: "key", value: "eventValue" },
       }
     ]
-    await cm.onEvent(ws, phx_keydown)
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    await cm.handleSubscriptions({type: "event", message: phx_keydown});
+    await cm.onEvent(phx_keydown);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onEvent valid blur event", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
     const phx_blur: PhxIncomingMessage<PhxBlurPayload> = [
       "4",
       "6",
@@ -182,14 +186,13 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    await cm.onEvent(ws, phx_blur)
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    await cm.handleSubscriptions({type: "event", message: phx_blur});
+    await cm.onEvent(phx_blur);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onEvent valid focus event", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
-    const phx_blur: PhxIncomingMessage<PhxFocusPayload> = [
+    const phx_focus: PhxIncomingMessage<PhxFocusPayload> = [
       "4",
       "6",
       "lv:phx-AAAAAAAA",
@@ -200,14 +203,13 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    await cm.onEvent(ws, phx_blur)
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    await cm.handleSubscriptions({type: "event", message: phx_focus});
+    await cm.onEvent(phx_focus);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onEvent valid hook event", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
-    const phx_blur: PhxIncomingMessage<PhxHookPayload> = [
+    const phx_hook: PhxIncomingMessage<PhxHookPayload> = [
       "4",
       "6",
       "lv:phx-AAAAAAAA",
@@ -218,13 +220,12 @@ describe("test component manager", () => {
         value: { blah: "something" },
       }
     ]
-    await cm.onEvent(ws, phx_blur)
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    await cm.handleSubscriptions({type: "event", message: phx_hook});
+    await cm.onEvent(phx_hook);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onEvent unknown event type", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
     const phx_unknown: PhxIncomingMessage<unknown> = [
       "4",
       "6",
@@ -237,13 +238,13 @@ describe("test component manager", () => {
       }
     ]
     // @ts-ignore -- skip type check for unknown
-    await cm.onEvent(ws, phx_unknown)
+    await cm.handleSubscriptions({type: "event", message: phx_unknown});
+    // @ts-ignore -- skip type check for unknown
+    await cm.onEvent(phx_unknown);
     expect(ws.send).toHaveBeenCalledTimes(0)
   })
 
   it("onLivePatch calls send", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
     const phxLivePatch: PhxLivePatchIncoming = [
       "4",
       "7",
@@ -253,14 +254,14 @@ describe("test component manager", () => {
         url: "http://localhost:4444/test?id=1",
       }
     ]
-    await cm.onLivePatch(ws, phxLivePatch)
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    await cm.handleSubscriptions({type: "live_patch", message: phxLivePatch});
+    await cm.onLivePatch(phxLivePatch);
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
   it("onPushPatch calls send", async () => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
-    const ws = mock<WebSocket>()
-    const liveSocket = buildLiveViewSocketMock(
+    const pushPatchFn = jest.fn()
+    const liveSocket: LiveViewSocket<unknown> = buildLiveViewSocketMock(
       "lv:phx-AAAAAAAA",
       true,
       {},
@@ -268,40 +269,25 @@ describe("test component manager", () => {
       () => { },
       () => { },
       () => { },
+      () => { },
+      pushPatchFn
     )
-    const phxLivePatch: PhxLivePatchIncoming = [
-      "4",
-      "7",
-      "lv:phx-AAAAAAAA",
-      "live_patch",
-      {
-        url: "http://localhost:4444/test?id=1",
-      }
-    ]
-    await cm.onPushPatch(liveSocket, {
-      to: {
-        params: {},
-        path: "/test",
-      }
-    })
-    expect(ws.send).toHaveBeenCalledTimes(1)
+    liveSocket.pushPatch({to: {params: {}, path: "/test"}})
+    expect(pushPatchFn).toHaveBeenCalledTimes(1)
   })
 
   it("test repeat / shutdown", (done) => {
-    const cm = new LiveViewComponentManager(new TestLiveViewComponent(), "my signing secret")
     let count = 0;
     cm.repeat(() => { count++ }, 100)
     setTimeout(() => {
-      cm.shutdown()
       expect(count).toBe(2)
       done()
     }, 250)
   })
 
-  it("sendInternal with handleInfo", (done) => {
+  it("sendInternal with handleInfo", async() => {
     const sic = new SendInternalTestLiveViewComponent();
-    const cm = new LiveViewComponentManager(sic, "my signing secret")
-    const ws = mock<WebSocket>()
+    const cm = new LiveViewComponentManager(sic, "my signing secret", connectionId, ws)
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
       "6",
@@ -313,19 +299,13 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    cm.onEvent(ws, phx_click)
-    setTimeout(() => {
-      // handleEvent calls handleInfo
-      // both call ws.send
-      expect(ws.send).toHaveBeenCalledTimes(2)
-      done()
-    }, 100)
+    await cm.handleSubscriptions({type: "event", message: phx_click});
+    expect(ws.send).toHaveBeenCalledTimes(2)
   })
 
-  it("sendInternal with no handleInfo", (done) => {
+  it("sendInternal with no handleInfo", async() => {
     const sic = new SendInternalNoHandleInfoLiveViewComponent();
-    const cm = new LiveViewComponentManager(sic, "my signing secret")
-    const ws = mock<WebSocket>()
+    const cm = new LiveViewComponentManager(sic, "my signing secret", connectionId, ws)
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
       "6",
@@ -337,44 +317,12 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    cm.onEvent(ws, phx_click)
-    setTimeout(() => {
-      // handleEvent calls handleInfo
-      // both call ws.send
-      expect(ws.send).toHaveBeenCalledTimes(1)
-      done()
-    }, 100)
+    await cm.handleSubscriptions({type: "event", message: phx_click});
+    expect(ws.send).toHaveBeenCalledTimes(1);
   })
 
-  it("repeat via liveview socket", (done) => {
-    const sic = new RepeatTestLiveViewComponent();
-    const cm = new LiveViewComponentManager(sic, "my signing secret")
-    const ws = mock<WebSocket>()
-    const phx_click: PhxIncomingMessage<PhxClickPayload> = [
-      "4",
-      "6",
-      "lv:phx-AAAAAAAA",
-      "event",
-      {
-        type: "click",
-        event: "eventName",
-        value: { value: "eventValue" },
-      }
-    ]
-    cm.onEvent(ws, phx_click)
-    setTimeout(() => {
-      // repeat calls ws.send once
-      // every 50ms plus one for the onEvent
-      // for a total of 3
-      cm.shutdown();
-      expect(ws.send).toHaveBeenCalledTimes(3)
-      done()
-    }, 110)
-  })
-
-  it("send phxReply on unknown socket error", () => {
+  it("send phxReply on unknown socket error", async() => {
     const tc = new TestLiveViewComponent()
-    const cm = new LiveViewComponentManager(tc, "my signing secret")
     const ws = mock<WebSocket>()
     ws.send.mockImplementation((data: any, options: {
       mask?: boolean;
@@ -386,7 +334,7 @@ describe("test component manager", () => {
         cb(new Error("unknown error"))
       }
     })
-
+    const cm = new LiveViewComponentManager(tc, "my signing secret", connectionId, ws)
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
@@ -399,10 +347,66 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-    // @ts-ignore -- skip type check for unknown
-    cm.onEvent(ws, phx_click)
+
+    await cm.handleSubscriptions({type: "event", message: phx_click});
   })
 
+  it("a component that sets page title", async() => {
+    const c = new SetsPageTitleComponent();
+    const cm = new LiveViewComponentManager(c, "my signing secret", connectionId, ws)
+    const spyMaybeAddPageTitleToParts = jest.spyOn(cm as any, 'maybeAddPageTitleToParts');
+
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
+    expect(ws.send).toHaveBeenCalledTimes(1);
+    expect(spyMaybeAddPageTitleToParts).toHaveBeenCalledTimes(1);
+    expect(spyMaybeAddPageTitleToParts).toReturnWith( {"s": ["<div>test</div>"], "t": "new page title"})
+  })
+
+  it("component that repeats", async() => {
+    const c = new Repeat50msTestLiveViewComponent();
+    const cm = new LiveViewComponentManager(c, "my signing secret", connectionId, ws)
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
+
+    setTimeout(async () => {
+      // get private context
+      expect(cm['context'] as RepeatCtx).toHaveProperty('count', 2)
+      cm.shutdown();
+    }, 125)
+  })
+
+  it("component that subscribes and received message", async() => {
+    const c = new SubscribeTestLiveViewComponent();
+    const cm = new LiveViewComponentManager(c, "my signing secret", connectionId, ws)
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
+
+    await PubSub.broadcast("testTopic", { test: "test" })
+    expect(cm['context'] as SubscribeCtx).toHaveProperty('testReceived', 1)
+    cm.shutdown();
+  })
+
+  it("component that pushPatches", async() => {
+    const c = new PushPatchingTestComponent();
+    const spyHandleParams = jest.spyOn(c as any, 'handleParams');
+    const cm = new LiveViewComponentManager(c, "my signing secret", connectionId, ws)
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
+
+    const phx_click: PhxIncomingMessage<PhxClickPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        type: "click",
+        event: "eventName",
+        value: { value: "eventValue" },
+      }
+    ]
+    await cm.onEvent(phx_click);
+    expect(spyHandleParams).toHaveBeenCalledTimes(2);
+    expect(spyHandleParams).toReturnWith({pushed: 1} as PushPatchCtx)
+    cm.shutdown();
+
+  })
 
 })
 
@@ -521,17 +525,24 @@ class NotEventHandlerNorInfoHandlerLiveViewComponent extends BaseLiveViewCompone
 
 }
 
-class RepeatTestLiveViewComponent extends BaseLiveViewComponent<{}, {}> implements
-  LiveViewExternalEventListener<{}, "", unknown>
+interface RepeatCtx {
+  count: number;
+}
+class Repeat50msTestLiveViewComponent extends BaseLiveViewComponent<RepeatCtx, {}> implements
+  LiveViewInternalEventListener<RepeatCtx, "add">
 {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return {}
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<RepeatCtx>): RepeatCtx {
+    socket.repeat(() => { socket.sendInternal("add") }, 50)
+    return {
+      count: 0,
+    }
   }
 
-  handleEvent(event: "", params: StringPropertyValues<unknown>, socket: LiveViewSocket<{}>): {} {
-    socket.repeat(() => { socket.ws!.send(""); }, 50)
-    return {}
+  handleInfo(event: "add", socket: LiveViewSocket<RepeatCtx>): RepeatCtx {
+    return {
+      count: socket.context.count + 1,
+    }
   }
 
   render() {
@@ -540,16 +551,72 @@ class RepeatTestLiveViewComponent extends BaseLiveViewComponent<{}, {}> implemen
 
 }
 
-class NotBaseLiveViewComponent implements LiveViewComponent<{}, {}> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return {}
+interface SubscribeCtx {
+  testReceived: number;
+}
+class SubscribeTestLiveViewComponent extends BaseLiveViewComponent<SubscribeCtx, {}> implements
+  LiveViewInternalEventListener<SubscribeCtx, "testTopicReceived">
+{
+
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SubscribeCtx>): SubscribeCtx {
+    socket.subscribe("testTopic")
+    return {
+      testReceived: 0,
+    }
   }
-  render(): HtmlSafeString {
-    return html`<div>not base</div>`;
+
+  handleInfo(event: "testTopicReceived", socket: LiveViewSocket<SubscribeCtx>): SubscribeCtx {
+    return {
+      testReceived: socket.context.testReceived + 1,
+    }
   }
-  handleParams(params: StringPropertyValues<{}>, url: string, socket: LiveViewSocket<{}>): {} {
-    return {}
+
+  render() {
+    return html`<div>test</div>`;
   }
+
+}
+
+interface PushPatchCtx {
+  pushed: number;
+}
+class PushPatchingTestComponent extends BaseLiveViewComponent<PushPatchCtx, {go?: string}> implements
+  LiveViewExternalEventListener<PushPatchCtx, "push", {}>
+{
+
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PushPatchCtx>): PushPatchCtx {
+    return {
+      pushed: 0,
+    }
+  }
+
+  handleParams(params: StringPropertyValues<{go?: string}>, url: string, socket: LiveViewSocket<PushPatchCtx>): PushPatchCtx | Promise<PushPatchCtx> {
+    let pushed = Number(socket.context.pushed);
+    if (params.go === "dog") {
+      // only increment if passed params.go is dog
+      pushed += 1;
+    }
+    return {
+      pushed,
+    }
+  }
+
+  handleEvent(event: "push", params: StringPropertyValues<{}>, socket: LiveViewSocket<PushPatchCtx>): PushPatchCtx | Promise<PushPatchCtx> {
+    socket.pushPatch({
+      to: {
+        path: "pushed",
+        params: {go: "dog"}
+      }
+    })
+    return {
+      pushed: socket.context.pushed,
+    }
+  }
+
+  render() {
+    return html`<div>test</div>`;
+  }
+
 }
 
 const router: LiveViewRouter = {
@@ -588,7 +655,16 @@ const newPhxJoin = (csrfToken: string, signingSecret: string, options: NewPhxJoi
   ]
 }
 
-const buildLiveViewSocketMock = (topic: string, connected: boolean, context: unknown, ws: WebSocket, sendInternal: (event: any) => void, repeat: (fn: Function, intervalMills: number) => void, pageTitle: (title: string) => void) => {
+const buildLiveViewSocketMock = <T>(
+  topic: string,
+  connected: boolean,
+  context: T,
+  ws: WebSocket,
+  sendInternal: (event: any) => void = () => {},
+  repeat: (fn: Function, intervalMills: number) => void = () => {},
+  pageTitle: (title: string) => void = () => {},
+  subscribe: (topic: string) => void = () => {},
+  pushPatch: (pushPatch: PushPatchPathAndParams) => void = () => {}): LiveViewSocket<T> => {
   return {
     id: topic,
     connected, // websocket is connected
@@ -596,6 +672,18 @@ const buildLiveViewSocketMock = (topic: string, connected: boolean, context: unk
     context,
     sendInternal,
     repeat,
-    pageTitle
+    pageTitle,
+    subscribe,
+    pushPatch,
+  }
+}
+
+class SetsPageTitleComponent extends BaseLiveViewComponent<{}, {}> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
+    socket.pageTitle("new page title")
+    return {}
+  }
+  render(): HtmlSafeString {
+    return html`<div>test</div>`;
   }
 }

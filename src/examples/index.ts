@@ -1,17 +1,18 @@
 import path from 'path';
 import { LiveViewServer } from '../server';
 import { LiveViewRouter } from '../server/component/types';
+import { configLiveViewHandler } from '../server/live_view_route';
+import { AsyncFetchLiveViewComponent } from './asyncfetch/component';
 import { AutocompleteLiveViewComponent } from './autocomplete/component';
 import { LicenseLiveViewComponent } from './license_liveview';
 import { LightLiveViewComponent } from './light_liveview';
 import { SearchLiveViewComponent } from './live-search/component';
 import { PaginateLiveViewComponent } from './pagination/component';
+import { routeDetails } from './routeDetails';
 import { SalesDashboardLiveViewComponent } from './sales_dashboard_liveview';
 import { ServersLiveViewComponent } from './servers/component';
 import { SortLiveViewComponent } from './sorting/component';
-import { routeDetails } from './routeDetails';
 import { VolunteerComponent } from './volunteers/component';
-import { AsyncFetchLiveViewComponent } from './asyncfetch/component';
 
 const lvServer = new LiveViewServer({
   signingSecret: "MY_VERY_SECRET_KEY",
@@ -50,6 +51,20 @@ lvServer.registerLiveViewRoutes(router)
 
 // register single route
 // lvServer.registerLiveViewRoute("/volunteers", new VolunteerComponent())
+
+
+lvServer.expressApp.get("/foo/bar", configLiveViewHandler(
+  new LightLiveViewComponent(),
+  "root.html.ejs",
+  "signing-secret-foo",
+  (req) => {
+    return { ...req.session, csrfToken: "csrfToken"}
+  },
+  {
+    title: "Examples",
+  },
+  )
+)
 
 // add your own routes to the express app
 lvServer.expressApp.get("/", (req, res) => {

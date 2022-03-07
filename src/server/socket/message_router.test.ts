@@ -1,12 +1,12 @@
 import { SessionData } from "express-session";
-import { WebSocket, RawData } from "ws";
+import { mock } from "jest-mock-extended";
+import jwt from "jsonwebtoken";
+import { WebSocket } from "ws";
 import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "..";
+import { StringPropertyValues } from "../component";
 import { html } from "../templates";
 import { MessageRouter } from "./message_router";
-import { mock } from "jest-mock-extended";
 import { PhxClickPayload, PhxFlash, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxLivePatchIncoming } from "./types";
-import jwt from "jsonwebtoken";
-import { StringPropertyValues } from "../component";
 
 
 describe("test message router", () => {
@@ -203,22 +203,22 @@ describe("test message router", () => {
     }
   })
 
-  it("shutdown unhealth component managers", async () => {
-    const mr = new MessageRouter()
-    const ws = mock<WebSocket>()
-    const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" })
-    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
-    expect(ws.send).toHaveBeenCalledTimes(1)
-    // mark component as unhealthy
-    const c = mr.topicComponentManager["lv:phx-AAAAAAAA"];
-    if (c.isHealthy) {
-      c.shutdown()
-    }
-    // now run another message
-    const phx_hb: PhxHeartbeatIncoming = [null, "5", "phoenix", "heartbeat", {}]
-    await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_hb)), router, "1234", "my signing string")
-    expect(ws.send).toHaveBeenCalledTimes(2)
-  })
+  // it("shutdown unhealth component managers", async () => {
+  //   const mr = new MessageRouter()
+  //   const ws = mock<WebSocket>()
+  //   const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" })
+  //   await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
+  //   expect(ws.send).toHaveBeenCalledTimes(1)
+  //   // mark component as unhealthy
+  //   const c = mr.topicComponentManager["lv:phx-AAAAAAAA"];
+  //   if (c.isHealthy) {
+  //     c.shutdown()
+  //   }
+  //   // now run another message
+  //   const phx_hb: PhxHeartbeatIncoming = [null, "5", "phoenix", "heartbeat", {}]
+  //   await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_hb)), router, "1234", "my signing string")
+  //   expect(ws.send).toHaveBeenCalledTimes(2)
+  // })
 
 })
 

@@ -1,10 +1,10 @@
-import { options_for_select } from "../../server/templates/helpers/options_for_select";
-import { live_patch } from "../../server/templates/helpers/live_patch";
-import { html, HtmlSafeString, join } from "../../server/templates";
-import { LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
-import { almostExpired, Donation, listItems } from "./data";
 import { SessionData } from "express-session";
 import { BaseLiveViewComponent } from "../../server/component/base_component";
+import { LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
+import { html, HtmlSafeString, join } from "../../server/templates";
+import { live_patch } from "../../server/templates/helpers/live_patch";
+import { options_for_select } from "../../server/templates/helpers/options_for_select";
+import { almostExpired, Donation, listItems } from "./data";
 
 interface Options {
   page: number;
@@ -84,7 +84,7 @@ export class PaginateLiveViewComponent extends BaseLiveViewComponent<PaginateCon
     const page = socket.context.options.page;
     const perPage = Number(params.perPage || 10);
 
-    this.pushPatch(socket, { to: { path: "/paginate", params: { page: String(page), perPage: String(perPage) } } });
+    socket.pushPatch({ to: { path: "/paginate", params: { page: String(page), perPage: String(perPage) } } });
 
     return {
       options: { page, perPage },

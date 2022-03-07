@@ -1,7 +1,8 @@
-import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import { LiveViewChangeset } from '../../server/component/types';
+import { z } from 'zod';
 import { newChangesetFactory } from '../../server/component/changeset';
+import { LiveViewChangeset } from '../../server/component/types';
+import { PubSub } from '../../server/pubsub/SingleProcessPubSub';
 
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/
 
@@ -33,18 +34,29 @@ export const changeset = newChangesetFactory<Volunteer>(VolunteerSchema)
 export const createVolunteer = (newVolunteer: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
   const result = changeset({}, newVolunteer, 'create');
   if (result.valid) {
-    const v = result.data as Volunteer;
-    volunteers[v.id] = v;
+    const volunteer = result.data as Volunteer;
+    volunteers[volunteer.id] = volunteer;
+    broadcast({type: "created", volunteer});
   }
   return result;
 }
 
-export const updateVolunteer = (volunteer: Volunteer, updated: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
-  const result = changeset(volunteer, updated, 'update');
+export const updateVolunteer = (currentVolunteer: Volunteer, updated: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
+  const result = changeset(currentVolunteer, updated, 'update');
   if (result.valid) {
-    const v = result.data as Volunteer;
-    volunteers[v.id] = v;
+    const volunteer = result.data as Volunteer;
+    volunteers[volunteer.id] = volunteer;
+    broadcast({type: "updated", volunteer});
   }
   return result;
 }
+
+function broadcast(event: VolunteerMutationEvent) {
+  PubSub.broadcast('volunteer', event);
+}
+
+export type VolunteerMutationEvent =
+  | {type: "created", volunteer: Volunteer }
+  | {type: "updated", volunteer: Volunteer }
+
 
