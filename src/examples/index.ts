@@ -1,7 +1,6 @@
 import path from 'path';
 import { LiveViewServer } from '../server';
 import { LiveViewRouter } from '../server/component/types';
-import { configLiveViewHandler } from '../server/live_view_route';
 import { AsyncFetchLiveViewComponent } from './asyncfetch/component';
 import { AutocompleteLiveViewComponent } from './autocomplete/component';
 import { LicenseLiveViewComponent } from './license_liveview';
@@ -35,6 +34,8 @@ const lvServer = new LiveViewServer({
 
 const router: LiveViewRouter = {
   "/light": new LightLiveViewComponent(),
+  // sub paths also work
+  "/foo/light": new LightLiveViewComponent(),
   "/license": new LicenseLiveViewComponent(),
   '/sales-dashboard': new SalesDashboardLiveViewComponent(),
   '/search': new SearchLiveViewComponent(),
@@ -51,20 +52,6 @@ lvServer.registerLiveViewRoutes(router)
 
 // register single route
 // lvServer.registerLiveViewRoute("/volunteers", new VolunteerComponent())
-
-
-lvServer.expressApp.get("/foo/bar", configLiveViewHandler(
-  new LightLiveViewComponent(),
-  "root.html.ejs",
-  "signing-secret-foo",
-  (req) => {
-    return { ...req.session, csrfToken: "csrfToken"}
-  },
-  {
-    title: "Examples",
-  },
-  )
-)
 
 // add your own routes to the express app
 lvServer.expressApp.get("/", (req, res) => {
