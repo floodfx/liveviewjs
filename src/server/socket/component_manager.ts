@@ -18,7 +18,7 @@ import { newHeartbeatReply, newPhxReply } from "./util";
 export class LiveViewComponentManager {
 
   private connectionId: string;
-  private socketId: string;
+  private joinId: string;
   private ws: WebSocket;
   private subscriptionIds: Record<string,Promise<string>> = {};
 
@@ -74,12 +74,12 @@ export class LiveViewComponentManager {
       return;
     }
 
-    this.socketId = topic;
+    this.joinId = topic;
     // subscribe to events on the socketId which includes
     // events, live_patch, and phx_leave messages
-    const subId = PubSub.subscribe(topic, (data) => this.handleSubscriptions(data as PhxMessage));
+    const subId = PubSub.subscribe(this.joinId, (data) => this.handleSubscriptions(data as PhxMessage));
     // again save subscription id for unsubscribing
-    this.subscriptionIds[topic] = subId;
+    this.subscriptionIds[this.joinId] = subId;
 
     // pass in phx_join payload params, session, and socket
     this.context = await this.component.mount(payloadParams, session, this.buildLiveViewSocket());
@@ -113,7 +113,7 @@ export class LiveViewComponentManager {
     } else if(type === "phx_leave") {
       this.onPhxLeave(phxMessage.message);
     } else {
-      console.error("Unknown message type", type, phxMessage, " on connectionId:", this.connectionId, " socketId:", this.socketId);
+      console.error("Unknown message type", type, phxMessage, " on connectionId:", this.connectionId, " socketId:", this.joinId);
     }
   }
 
@@ -208,6 +208,7 @@ export class LiveViewComponentManager {
   }
 
   private onHeartbeat(message: PhxHeartbeatIncoming) {
+    // TODO - monitor lastHeartbeat and shutdown if it's been too long?
     this.lastHeartbeat = Date.now();
     this.sendPhxReply(newHeartbeatReply(message));
   }
@@ -237,7 +238,7 @@ export class LiveViewComponentManager {
     const message: PhxOutgoingLivePatchPush = [
       null, // no join reference
       null, // no message reference
-      this.socketId,
+      this.joinId,
       "live_patch",
       { kind: "push", to }
     ]
@@ -268,7 +269,7 @@ export class LiveViewComponentManager {
       const reply: PhxDiffReply = [
         null, // no join reference
         null, // no message reference
-        this.socketId,
+        this.joinId,
         "diff",
         diff
       ]
@@ -281,7 +282,7 @@ export class LiveViewComponentManager {
 
   private buildLiveViewSocket(): LiveViewSocket<unknown> {
     return {
-      id: this.socketId,
+      id: this.joinId,
       connected: true, // websocket is connected
       ws: this.ws, // the websocket TODO necessary?
       context: this.context,
