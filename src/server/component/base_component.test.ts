@@ -1,54 +1,60 @@
 import { SessionData } from "express-session";
-import { LiveViewComponentManager } from "../socket/component_manager";
+import { LiveViewTemplate } from ".";
 import { html } from "../templates";
 import { BaseLiveViewComponent } from "./base_component";
 import { LiveViewMountParams, LiveViewSocket } from "./types";
 
-describe("test base component", () => {
-  it("set csrf token correctly", () => {
+describe("test basic component", () => {
+
+  it("mount returns context", () => {
     const component = new LiveViewComponent();
-    const cm = new LiveViewComponentManager(component, "MY_VERY_SECRET_KEY");
-    const csrf = "MY_CSRF_TOKEN";
-    cm.csrfToken = csrf;
-    expect(component.csrfToken()).toBe(csrf);
+    const ctx = component.mount({_csrf_token:"foo", _mounts: -1}, {}, buildTestSocket());
+    expect(ctx.foo).toEqual("bar");
   });
 
-  it("runs pushPatch correctly", () => {
+  it("default handleParams does not change context", async() => {
     const component = new LiveViewComponent();
-    const cm = new LiveViewComponentManager(component, "MY_VERY_SECRET_KEY");
-    component.pushPatch(buildTestSocket(), { to: { path: "/test", params: {} } });
-    // TODO check if the patch was sent to the socket
+    let ctx = component.mount({_csrf_token:"foo", _mounts: -1}, {}, buildTestSocket());
+    ctx = await component.handleParams({foo: "baz"}, "", buildTestSocket(ctx));
+    expect(ctx.foo).toEqual("bar");
   });
 
-  it("warns if component not connected to component manager", () => {
+  it("render returns context view", async() => {
     const component = new LiveViewComponent();
-    component.pushPatch(buildTestSocket(), { to: { path: "/test", params: {} } });
-    // TODO check if the patch was sent to the socket
+    let ctx = component.mount({_csrf_token:"foo", _mounts: -1}, {}, buildTestSocket());
+    ctx = await component.handleParams({foo: "baz"}, "", buildTestSocket(ctx));
+    const view = await component.render(ctx);
+    expect(view.toString()).toEqual("<div>bar</div>");
   });
 
 })
 
-function buildTestSocket(): LiveViewSocket<unknown> {
+function buildTestSocket(context: Ctx = {foo: ""}): LiveViewSocket<Ctx> {
   return {
     id: "topic",
     connected: false, // websocket is connected
     ws: undefined, // the websocket
-    context: {},
+    context,
     sendInternal: (event) => { },
     repeat: (fn, intervalMillis) => { },
     pageTitle: (newPageTitle) => { },
+    pushPatch: (params) => { },
+    subscribe: (topic) => { },
   }
 }
 
+interface Ctx {
+  foo: string
+}
 
-class LiveViewComponent extends BaseLiveViewComponent<{}, {}> {
+class LiveViewComponent extends BaseLiveViewComponent<Ctx, {}> {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return {}
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Ctx>): Ctx {
+    return {foo: "bar"}
   }
 
-  render() {
-    return html`<div>test</div>`;
+  render(ctx: Ctx): LiveViewTemplate {
+    return html`<div>${ctx.foo}</div>`;
   }
 
 }

@@ -101,7 +101,7 @@ export class LiveViewComponentManager {
     this.sendPhxReply(newPhxReply(message, replyPayload));
   }
 
-  private async handleSubscriptions(phxMessage: PhxMessage) {
+  public async handleSubscriptions(phxMessage: PhxMessage) {
     // console.log("handleSubscriptions", this.connectionId, this.socketId, phxMessage);
     const { type } = phxMessage;
     if(type === "heartbeat") {
@@ -117,7 +117,7 @@ export class LiveViewComponentManager {
     }
   }
 
-  private async onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>) {
+  public async onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>) {
     const [joinRef, messageRef, topic, _, payload] = message;
     const { type, event } = payload;
 
@@ -174,7 +174,7 @@ export class LiveViewComponentManager {
 
   }
 
-  private async onLivePatch(message: PhxLivePatchIncoming) {
+  public async onLivePatch(message: PhxLivePatchIncoming) {
     const [joinRef, messageRef, topic, event, payload] = message;
 
     const { url: urlString } = payload;
@@ -207,21 +207,21 @@ export class LiveViewComponentManager {
     this.sendPhxReply(newPhxReply(message, replyPayload));
   }
 
-  private onHeartbeat(message: PhxHeartbeatIncoming) {
+  public onHeartbeat(message: PhxHeartbeatIncoming) {
     // TODO - monitor lastHeartbeat and shutdown if it's been too long?
     this.lastHeartbeat = Date.now();
     this.sendPhxReply(newHeartbeatReply(message));
   }
 
-  private async onPhxLeave(message: PhxIncomingMessage<{}>) {
+  public async onPhxLeave(message: PhxIncomingMessage<{}>) {
     await this.shutdown();
   }
 
-  private repeat(fn: () => void, intervalMillis: number) {
+  public repeat(fn: () => void, intervalMillis: number) {
     this.intervals.push(setInterval(fn, intervalMillis));
   }
 
-  private async shutdown() {
+  public async shutdown() {
     // unsubscribe from PubSubs
     Object.entries(this.subscriptionIds).forEach(async([topic, subscriptionId]) => {
       const subId = await subscriptionId;
@@ -330,10 +330,10 @@ export class LiveViewComponentManager {
 
 }
 
-function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
+export function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
   return "handleInfo" in component;
 }
 
-function isEventHandler(component: LiveViewComponent<unknown, unknown>) {
+export function isEventHandler(component: LiveViewComponent<unknown, unknown>) {
   return "handleEvent" in component;
 }
