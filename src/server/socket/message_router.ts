@@ -14,7 +14,7 @@ export type PhxMessage =
 
 export class MessageRouter {
 
-  async onMessage(ws: WebSocket, message: WebSocket.RawData, router: LiveViewRouter, connectionId: string, signingSecret: string) {
+  public async onMessage(ws: WebSocket, message: WebSocket.RawData, router: LiveViewRouter, connectionId: string, signingSecret: string) {
     // parse string to JSON
     const rawPhxMessage: PhxIncomingMessage<unknown> = JSON.parse(message.toString());
 
@@ -22,7 +22,6 @@ export class MessageRouter {
     if (typeof rawPhxMessage === 'object' && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
       const [joinRef, messageRef, topic, event, payload] = rawPhxMessage;
 
-      let componentManager: LiveViewComponentManager | undefined;
       try {
         switch (event) {
           case "phx_join":
@@ -54,8 +53,13 @@ export class MessageRouter {
 
   }
 
+  public async onClose(code: number, connectionId: string) {
+    // when client closes connection send phx_leave message
+    // to component manager via connectionId broadcast
+    await PubSub.broadcast(connectionId, {type: "phx_leave", message: [null, null, "phoenix", "phx_leave", {}]});
+  }
 
-  async onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, router: LiveViewRouter, signingSecret: string, connectionId: string) {
+  private async onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, router: LiveViewRouter, signingSecret: string, connectionId: string) {
     // use url to route join request to component
     const [joinRef, messageRef, topic, event, payload] = message;
     const { url: urlString, redirect: redirectString } = payload;
