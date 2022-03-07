@@ -37,7 +37,6 @@ class RedisPubSub<T> implements Subscriber<T>, Publisher<T> {
   }
 
   public async broadcast(topic: string, data: T): Promise<void> {
-    console.log(`Broadcasting to ${topic}`);
     if (!this.redis.isOpen) {
       await this.redis.connect();
     }

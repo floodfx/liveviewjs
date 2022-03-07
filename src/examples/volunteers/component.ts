@@ -20,7 +20,7 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<VolunteerContext>) {
     if (socket.connected) {
-      console.log("subscribing", socket.id)
+      // listen for changes to volunteer data
       socket.subscribe('volunteer');
     }
     return {
@@ -107,14 +107,14 @@ export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, 
       const createChangeset = createVolunteer(volunteer);
       return {
         volunteers: [], // no volunteers to prepend
-        changeset: createChangeset // errors for form
+        changeset: createChangeset.valid ? changeset({}, {}) : createChangeset // errors for form
       }
 
     }
   }
 
   handleInfo(event: VolunteerMutationEvent, socket: LiveViewSocket<VolunteerContext>): VolunteerContext | Promise<VolunteerContext> {
-    console.log("received", event, socket.id);
+    // console.log("received", event, socket.id);
     const { volunteer } = event;
     return {
       volunteers: [volunteer],

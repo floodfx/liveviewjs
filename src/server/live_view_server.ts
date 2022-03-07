@@ -103,7 +103,6 @@ export class LiveViewServer {
       const connectionId = nanoid();
       // handle ws messages
       socket.on('message', async message => {
-        console.log("received message", connectionId);
         await this.messageRouter.onMessage(socket, message, this._router, connectionId, this.signingSecret);
       });
       socket.on('close', async code => {
