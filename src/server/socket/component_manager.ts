@@ -2,7 +2,7 @@ import { SessionData } from "express-session";
 import jwt from 'jsonwebtoken';
 import { WebSocket } from "ws";
 import { Parts } from "..";
-import { LiveViewComponent, LiveViewSocket, PushPatchPathAndParams, StringPropertyValues } from "../component/types";
+import { LiveViewComponent, LiveViewSocket, PushPatchPathAndParams } from "../component/types";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
 import { deepDiff } from "../templates/diff";
 import { PhxMessage } from "./message_router";
@@ -232,7 +232,7 @@ export class LiveViewComponentManager {
     this.intervals.forEach(clearInterval);
   }
 
-  private async onPushPatch(patch: { to: { path: string, params: StringPropertyValues<any> } }) {
+  private async onPushPatch(patch: PushPatchPathAndParams) {
     const urlParams = new URLSearchParams(patch.to.params);
     const to = `${patch.to.path}?${urlParams}`
     const message: PhxOutgoingLivePatchPush = [
