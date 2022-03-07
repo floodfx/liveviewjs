@@ -10,3 +10,5 @@ export interface Publisher<T> {
   broadcast(topic: string, data: T): void;
 }
 
+export * from "./SingleProcessPubSub"
+
