@@ -8,13 +8,14 @@ type SessionDataProvider<T extends {csrfToken: string}> = (req: Request) => T;
 const emptyVoid = () => {};
 
 export const configLiveViewHandler = <T extends {csrfToken: string}>(
+  getPath: string,
   component: LiveViewComponent<unknown,unknown>,
   rootView: string,
   signingSecret: string,
   sessionDataProvider: SessionDataProvider<T>,
   pageTitleDefaults: PageTitleDefaults
-) => {
-  return async (req:Request, res: Response, next: NextFunction) => {
+): [string, (req:Request, res: Response, next: NextFunction) => Promise<void>] => {
+  return [getPath, async (req:Request, res: Response, next: NextFunction) => {
 
     // new LiveViewId for each request
     const liveViewId = nanoid();
@@ -57,5 +58,5 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
       statics: jwt.sign(JSON.stringify(view.statics), signingSecret),
       inner_content: view.toString()
     })
-  }
+  }]
 }

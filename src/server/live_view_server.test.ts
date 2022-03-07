@@ -1,11 +1,11 @@
 import { SessionData } from "express-session";
-import { LiveViewServer } from "./live_view_server";
-import { html } from "./templates";
-import { LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "./component/types";
-import request from "superwstest"
 import { Server } from "http";
-import { PhxJoinIncoming } from "./socket/types";
+import request from "superwstest";
 import { BaseLiveViewComponent } from "./component/base_component";
+import { LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "./component/types";
+import { LiveViewServer } from "./live_view_server";
+import { PhxJoinIncoming } from "./socket/types";
+import { html } from "./templates";
 
 
 describe("test live view server", () => {
@@ -66,6 +66,15 @@ describe("test live view server", () => {
     const lvComponent = new LiveViewComponent()
     lvServer.registerLiveViewRoute("/test", lvComponent)
     request(lvServer.httpServer).get('/test').expect(200).then(res => {
+      expect(res.text).toContain(lvComponent.render({ message: "test" }).toString())
+      done();
+    })
+  })
+
+  it("http request renders a live view component html at deeper path", (done) => {
+    const lvComponent = new LiveViewComponent()
+    lvServer.registerLiveViewRoute("/test/foo/bar", lvComponent)
+    request(lvServer.httpServer).get('/test/foo/bar').expect(200).then(res => {
       expect(res.text).toContain(lvComponent.render({ message: "test" }).toString())
       done();
     })

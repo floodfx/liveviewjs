@@ -127,8 +127,12 @@ export class LiveViewServer {
     this.httpServer.close();
   }
 
+
   private buildExpressApp() {
     const app = express();
+
+    // empty void function
+    const emptyVoid = () => {};
 
     app.use(express.static(this.publicPath))
 
@@ -153,10 +157,9 @@ export class LiveViewServer {
     // register live_title_tag helper
     app.locals.live_title_tag = live_title_tag;
 
-    app.get('/:liveview', async (req, res, next) => {
-      const liveview = req.params.liveview;
-
-      const emptyVoid = () => { };
+    // handle all views and look up components by path
+    app.use(async (req, res, next) => {
+      const liveview = req.path;
 
       // new LiveViewId per HTTP requess?
       const liveViewId = nanoid();
@@ -172,7 +175,7 @@ export class LiveViewServer {
       }
 
       // look up component for route
-      const component = this._router[`/${liveview}`];
+      const component = this._router[liveview];
       if (!component) {
         // no component found for route so call next() to
         // let a possible downstream route handle the request
@@ -185,7 +188,7 @@ export class LiveViewServer {
         req.session.csrfToken = nanoid();
       }
 
-      const jwtPayload: Omit<SessionData, "cookie"> = {
+      const sessionData: Omit<SessionData, "cookie" | "message"> = {
         ...req.session,
         csrfToken: req.session.csrfToken,
       }
@@ -193,7 +196,7 @@ export class LiveViewServer {
       // mount and render component if found
       const ctx = await component.mount(
         { _csrf_token: req.session.csrfToken, _mounts: -1 },
-        { ...jwtPayload },
+        { ...sessionData },
         liveViewSocket
       );
       const view = component.render(ctx);
@@ -205,7 +208,7 @@ export class LiveViewServer {
         page_title_suffix: this.pageTitleDefaults?.suffix,
         csrf_meta_tag: req.session.csrfToken,
         liveViewId,
-        session: jwt.sign(jwtPayload, this.signingSecret),
+        session: jwt.sign(sessionData, this.signingSecret),
         statics: jwt.sign(JSON.stringify(view.statics), this.signingSecret),
         inner_content: view.toString()
       })
