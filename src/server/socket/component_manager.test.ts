@@ -363,15 +363,18 @@ describe("test component manager", () => {
   })
 
   it("component that repeats", async() => {
+    jest.useFakeTimers();
     const c = new Repeat50msTestLiveViewComponent();
+    const spyHandleInfo = jest.spyOn(c as any, 'handleInfo');
     const cm = new LiveViewComponentManager(c, "my signing secret", connectionId, ws)
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
 
     setTimeout(async () => {
       // get private context
-      expect(cm['context'] as RepeatCtx).toHaveProperty('count', 2)
+      expect(spyHandleInfo).toReturnWith({count: 2} as RepeatCtx)
       cm.shutdown();
     }, 125)
+    jest.runAllTimers()
   })
 
   it("component that subscribes and received message", async() => {
