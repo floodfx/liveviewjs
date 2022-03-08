@@ -1,8 +1,8 @@
 import { SessionData } from "express-session";
-import { html } from "../server/templates";
-import { LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component/types";
-import { numberToCurrency } from "./utils";
+import { LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component";
 import { BaseLiveViewComponent } from "../server/component/base_component";
+import { html } from "../server/templates";
+import { numberToCurrency } from "./utils";
 
 export interface LicenseContext {
   seats: number;

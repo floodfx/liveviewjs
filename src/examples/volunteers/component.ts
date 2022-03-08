@@ -1,10 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent } from "../../server/component/base_component";
-import { LiveViewChangeset, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues } from "../../server/component/types";
-import { html } from "../../server/templates";
-import { form_for } from "../../server/templates/helpers/form_for";
-import { error_tag, telephone_input, text_input } from "../../server/templates/helpers/inputs";
-import { submit } from "../../server/templates/helpers/submit";
+import { BaseLiveViewComponent, error_tag, form_for, html, LiveViewChangeset, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues, submit, telephone_input, text_input } from "../../server";
 import { changeset, createVolunteer, getVolunteer, listVolunteers, updateVolunteer, Volunteer, VolunteerMutationEvent } from "./data";
 
 export interface VolunteerContext {

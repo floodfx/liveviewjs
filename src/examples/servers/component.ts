@@ -1,9 +1,6 @@
-import { html } from "../../server/templates";
-import { LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from "../../server/component/types";
-import { listServers, Server } from "./data";
-import { live_patch } from "../../server/templates/helpers/live_patch";
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent } from "../../server/component/base_component";
+import { BaseLiveViewComponent, html, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, live_patch } from "../../server";
+import { listServers, Server } from "./data";
 
 // Example of Phoenix "Live Navigation"
 

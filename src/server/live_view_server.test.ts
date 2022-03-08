@@ -1,8 +1,8 @@
 import { SessionData } from "express-session";
 import { Server } from "http";
 import request from "superwstest";
+import { LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "./component";
 import { BaseLiveViewComponent } from "./component/base_component";
-import { LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "./component/types";
 import { LiveViewServer } from "./live_view_server";
 import { PhxJoinIncoming } from "./socket/types";
 import { html } from "./templates";

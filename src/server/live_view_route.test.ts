@@ -2,8 +2,8 @@ import { SessionData } from "express-session";
 import { nanoid } from "nanoid";
 import request from "superwstest";
 import { configLiveViewHandler } from ".";
+import { LiveViewMountParams, LiveViewSocket } from "./component";
 import { BaseLiveViewComponent } from "./component/base_component";
-import { LiveViewMountParams, LiveViewSocket } from "./component/types";
 import { LiveViewServer } from "./live_view_server";
 import { html } from "./templates";
 

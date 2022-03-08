@@ -1,10 +1,6 @@
-import { html, HtmlSafeString, safe } from "../../server/templates";
-import { LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from "../../server/component/types";
-import { fetchXkcd, isValidXkcd, randomXkcdNum, XkcdData } from "./data";
-import { live_patch } from "../../server/templates/helpers/live_patch";
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent } from "../../server/component/base_component";
-
+import { BaseLiveViewComponent, html, HtmlSafeString, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, live_patch, safe } from "../../server";
+import { fetchXkcd, isValidXkcd, randomXkcdNum, XkcdData } from "./data";
 
 interface Context {
   comic: XkcdData

@@ -1,6 +1,6 @@
-import { SessionData } from "express-session";
 import { WebSocket } from "ws";
 import { HtmlSafeString } from "../templates";
+import { LiveViewComponent } from "./live_view";
 
 // Validation errors for a type T should
 // be keyed by the field name
@@ -19,7 +19,7 @@ export interface LiveViewChangeset<T> {
 }
 
 export interface PushPatchPathAndParams {
-  to: { path: string, params: StringPropertyValues<Record<string, string>> }
+  to: { path: string, params: Record<string, unknown> }
 }
 
 export interface LiveViewSocket<T> {
@@ -37,33 +37,7 @@ export interface LiveViewSocket<T> {
 export interface LiveViewTemplate extends HtmlSafeString {
 }
 
-export interface LiveViewMountParams {
-  ["_csrf_token"]: string;
-  ["_mounts"]: number
-}
 
-export interface LiveViewSessionParams extends Record<string, string> { }
-
-// params on url are strings
-export type StringPropertyValues<Type> = { [Property in keyof Type]: string; };
-
-export interface LiveViewComponent<T, P> {
-
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<T>): T | Promise<T>;
-  render(context: T): LiveViewTemplate;
-  handleParams(params: StringPropertyValues<P>, url: string, socket: LiveViewSocket<T>): T | Promise<T>;
-
-}
-
-// TODO: support event returing Partial<T>?
-export interface LiveViewExternalEventListener<Context, Event extends string, Params> {
-  handleEvent(event: Event, params: StringPropertyValues<Params>, socket: LiveViewSocket<Context>): Context | Promise<Context>;
-}
-
-// TODO: support event returing Partial<T>?
-export interface LiveViewInternalEventListener<T, E> {
-  handleInfo(event: E, socket: LiveViewSocket<T>): T | Promise<T>;
-}
 
 export interface LiveViewRouter {
   [key: string]: LiveViewComponent<unknown, unknown>;

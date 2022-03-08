@@ -1,8 +1,6 @@
 import { SessionData } from "express-session";
-import { html } from "../../server/templates";
-import { LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server/component/types";
+import { BaseLiveViewComponent, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server";
 import { searchByZip, Store } from "./data";
-import { BaseLiveViewComponent } from "../../server/component/base_component";
 
 
 export interface SearchContext {
