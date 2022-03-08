@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { LiveViewComponent, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, StringPropertyValues } from "./types";
+import { LiveViewComponent, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, StringPropertyValues } from ".";
 
 export abstract class BaseLiveViewComponent<T, P> implements LiveViewComponent<T, P> {
 

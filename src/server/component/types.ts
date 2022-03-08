@@ -19,7 +19,7 @@ export interface LiveViewChangeset<T> {
 }
 
 export interface PushPatchPathAndParams {
-  to: { path: string, params: Record<string, unknown> }
+  to: { path: string, params: Record<string, string> }
 }
 
 export interface LiveViewSocket<T> {

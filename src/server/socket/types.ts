@@ -1,4 +1,4 @@
-import { LiveViewMountParams } from '../component/types';
+import { LiveViewMountParams } from '..';
 
 export enum PhxSocketProtocolNames {
   joinRef = 0,

@@ -2,7 +2,7 @@ import { SessionData } from "express-session";
 import jwt from 'jsonwebtoken';
 import { WebSocket } from "ws";
 import { Parts } from "..";
-import { LiveViewComponent, LiveViewSocket, PushPatchPathAndParams } from "../component/types";
+import { LiveViewComponent, LiveViewSocket, PushPatchPathAndParams } from "../";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
 import { deepDiff } from "../templates/diff";
 import { PhxMessage } from "./message_router";

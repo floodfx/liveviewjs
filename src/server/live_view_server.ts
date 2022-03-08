@@ -5,10 +5,8 @@ import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import path from "path";
 import WebSocket from 'ws';
-import { live_title_tag } from ".";
-import { LiveViewComponent, LiveViewRouter, LiveViewSocket } from "./component";
+import { LiveViewComponent, LiveViewRouter, LiveViewSocket, live_title_tag } from ".";
 import { MessageRouter } from "./socket/message_router";
-
 
 // extend / define session interface
 declare module 'express-session' {

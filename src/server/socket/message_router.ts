@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import { LiveViewRouter } from '../component/types';
+import { LiveViewRouter } from '..';
 import { PubSub } from '../pubsub/SingleProcessPubSub';
 import { LiveViewComponentManager } from './component_manager';
 import { PhxBlurPayload, PhxClickPayload, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from './types';
