@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent, html, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, live_patch } from "../../server";
+import { BaseLiveView, html, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, live_patch } from "../../server";
 import { listServers, Server } from "./data";
 
 // Example of Phoenix "Live Navigation"
@@ -9,7 +9,7 @@ export interface ServersContext {
   selectedServer: Server
 }
 
-export class ServersLiveViewComponent extends BaseLiveViewComponent<ServersContext, { id: string }> {
+export class ServersLiveViewComponent extends BaseLiveView<ServersContext, { id: string }> {
 
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<ServersContext>): ServersContext {

@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server";
+import { BaseLiveView, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server";
 import { numberToCurrency } from "./utils";
 
 // generate a random number between min and max
@@ -18,7 +18,7 @@ export interface SalesDashboardContext {
   satisfaction: number;
 }
 
-export class SalesDashboardLiveViewComponent extends BaseLiveViewComponent<SalesDashboardContext, unknown> implements
+export class SalesDashboardLiveViewComponent extends BaseLiveView<SalesDashboardContext, unknown> implements
   LiveViewExternalEventListener<SalesDashboardContext, "refresh", any>,
   LiveViewInternalEventListener<SalesDashboardContext, "tick">
 {

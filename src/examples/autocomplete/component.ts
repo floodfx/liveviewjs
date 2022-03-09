@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server";
+import { BaseLiveView, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server";
 import { searchByCity, searchByZip, Store } from "../live-search/data";
 import { suggest } from "./data";
 
@@ -11,7 +11,7 @@ export interface AutocompleteContext {
   loading: boolean;
 }
 
-export class AutocompleteLiveViewComponent extends BaseLiveViewComponent<AutocompleteContext, unknown> implements
+export class AutocompleteLiveViewComponent extends BaseLiveView<AutocompleteContext, unknown> implements
   LiveViewExternalEventListener<AutocompleteContext, "zip-search", Pick<AutocompleteContext, "zip">>,
   LiveViewExternalEventListener<AutocompleteContext, "suggest-city", Pick<AutocompleteContext, "city">>,
   LiveViewInternalEventListener<AutocompleteContext, { type: "run_zip_search", zip: string }>,

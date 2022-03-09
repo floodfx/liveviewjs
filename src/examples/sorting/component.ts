@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent, html, HtmlSafeString, join, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, live_patch, options_for_select, StringPropertyValues } from "../../server";
+import { BaseLiveView, html, HtmlSafeString, join, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, live_patch, options_for_select, StringPropertyValues } from "../../server";
 import { almostExpired, Donation, donations, listItems } from "./data";
 
 export interface PaginateOptions {
@@ -17,7 +17,7 @@ export interface SortContext {
   donations: Donation[]
 }
 
-export class SortLiveViewComponent extends BaseLiveViewComponent<SortContext, PaginateOptions & SortOptions> implements
+export class SortLiveViewComponent extends BaseLiveView<SortContext, PaginateOptions & SortOptions> implements
   LiveViewExternalEventListener<SortContext, "select-per-page", Pick<PaginateOptions & SortOptions, "perPage">>,
   LiveViewExternalEventListener<SortContext, "change-sort", Pick<PaginateOptions & SortOptions, "sort_by" | "sortOrder">> {
 

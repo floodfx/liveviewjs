@@ -2,7 +2,7 @@ import { SessionData } from "express-session";
 import { Server } from "http";
 import request from "superwstest";
 import { LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "./component";
-import { BaseLiveViewComponent } from "./component/base_component";
+import { BaseLiveView } from "./component/base_component";
 import { LiveViewServer } from "./live_view_server";
 import { PhxJoinIncoming } from "./socket/types";
 import { html } from "./templates";
@@ -186,7 +186,7 @@ declare module 'express-session' {
   }
 }
 
-class LiveViewComponent extends BaseLiveViewComponent<{ message?: string }, {}> {
+class LiveViewComponent extends BaseLiveView<{ message?: string }, {}> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
     return { message: session.message || "test" }

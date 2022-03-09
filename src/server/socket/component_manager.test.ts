@@ -3,7 +3,7 @@ import { mock } from "jest-mock-extended";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import { WebSocket } from "ws";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket, PushPatchPathAndParams } from "..";
+import { BaseLiveView, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket, PushPatchPathAndParams } from "..";
 import { StringPropertyValues } from "../component";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
 import { html, HtmlSafeString } from "../templates";
@@ -417,7 +417,7 @@ describe("test component manager", () => {
 interface TestLiveViewComponentContext {
 
 }
-class TestLiveViewComponent extends BaseLiveViewComponent<{}, {}> implements
+class TestLiveViewComponent extends BaseLiveView<{}, {}> implements
   LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown>,
   LiveViewInternalEventListener<TestLiveViewComponentContext, "eventName">
 {
@@ -452,7 +452,7 @@ interface SendInternalContext {
   handleEventCount: number;
   handleInfoCount: number;
 }
-class SendInternalTestLiveViewComponent extends BaseLiveViewComponent<SendInternalContext, {}> implements
+class SendInternalTestLiveViewComponent extends BaseLiveView<SendInternalContext, {}> implements
   LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown>,
   LiveViewInternalEventListener<TestLiveViewComponentContext, "eventName">
 {
@@ -490,7 +490,7 @@ interface SendInternalNoHandleInfoContext {
   handleEventCount: number;
   handleInfoCount: number;
 }
-class SendInternalNoHandleInfoLiveViewComponent extends BaseLiveViewComponent<SendInternalNoHandleInfoContext, {}> implements
+class SendInternalNoHandleInfoLiveViewComponent extends BaseLiveView<SendInternalNoHandleInfoContext, {}> implements
   LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown>
 {
 
@@ -516,7 +516,7 @@ class SendInternalNoHandleInfoLiveViewComponent extends BaseLiveViewComponent<Se
 
 }
 
-class NotEventHandlerNorInfoHandlerLiveViewComponent extends BaseLiveViewComponent<{}, {}> {
+class NotEventHandlerNorInfoHandlerLiveViewComponent extends BaseLiveView<{}, {}> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
     return {}
@@ -531,7 +531,7 @@ class NotEventHandlerNorInfoHandlerLiveViewComponent extends BaseLiveViewCompone
 interface RepeatCtx {
   count: number;
 }
-class Repeat50msTestLiveViewComponent extends BaseLiveViewComponent<RepeatCtx, {}> implements
+class Repeat50msTestLiveViewComponent extends BaseLiveView<RepeatCtx, {}> implements
   LiveViewInternalEventListener<RepeatCtx, "add">
 {
 
@@ -557,7 +557,7 @@ class Repeat50msTestLiveViewComponent extends BaseLiveViewComponent<RepeatCtx, {
 interface SubscribeCtx {
   testReceived: number;
 }
-class SubscribeTestLiveViewComponent extends BaseLiveViewComponent<SubscribeCtx, {}> implements
+class SubscribeTestLiveViewComponent extends BaseLiveView<SubscribeCtx, {}> implements
   LiveViewInternalEventListener<SubscribeCtx, "testTopicReceived">
 {
 
@@ -583,7 +583,7 @@ class SubscribeTestLiveViewComponent extends BaseLiveViewComponent<SubscribeCtx,
 interface PushPatchCtx {
   pushed: number;
 }
-class PushPatchingTestComponent extends BaseLiveViewComponent<PushPatchCtx, {go?: string}> implements
+class PushPatchingTestComponent extends BaseLiveView<PushPatchCtx, {go?: string}> implements
   LiveViewExternalEventListener<PushPatchCtx, "push", {}>
 {
 
@@ -681,7 +681,7 @@ const buildLiveViewSocketMock = <T>(
   }
 }
 
-class SetsPageTitleComponent extends BaseLiveViewComponent<{}, {}> {
+class SetsPageTitleComponent extends BaseLiveView<{}, {}> {
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
     socket.pageTitle("new page title")
     return {}

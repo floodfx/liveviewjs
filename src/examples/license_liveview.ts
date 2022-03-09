@@ -1,15 +1,15 @@
 import { SessionData } from "express-session";
-import { LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component";
-import { BaseLiveViewComponent } from "../server/component/base_component";
+import { BaseLiveView, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component";
 import { html } from "../server/templates";
 import { numberToCurrency } from "./utils";
+
 
 export interface LicenseContext {
   seats: number;
   amount: number;
 }
 
-export class LicenseLiveViewComponent extends BaseLiveViewComponent<LicenseContext, unknown> implements
+export class LicenseLiveViewComponent extends BaseLiveView<LicenseContext, unknown> implements
   LiveViewExternalEventListener<LicenseContext, "update", Pick<LicenseContext, "seats">>
 {
 

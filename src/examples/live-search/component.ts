@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server";
+import { BaseLiveView, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server";
 import { searchByZip, Store } from "./data";
 
 
@@ -9,7 +9,7 @@ export interface SearchContext {
   loading: boolean;
 }
 
-export class SearchLiveViewComponent extends BaseLiveViewComponent<SearchContext, unknown> implements
+export class SearchLiveViewComponent extends BaseLiveView<SearchContext, unknown> implements
   LiveViewExternalEventListener<SearchContext, "zip-search", Pick<SearchContext, "zip">>,
   LiveViewInternalEventListener<SearchContext, { type: "run_zip_search", zip: string }>
 {

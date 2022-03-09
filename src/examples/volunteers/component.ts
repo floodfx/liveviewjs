@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent, error_tag, form_for, html, LiveViewChangeset, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues, submit, telephone_input, text_input } from "../../server";
+import { BaseLiveView, error_tag, form_for, html, LiveViewChangeset, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues, submit, telephone_input, text_input } from "../../server";
 import { changeset, createVolunteer, getVolunteer, listVolunteers, updateVolunteer, Volunteer, VolunteerMutationEvent } from "./data";
 
 export interface VolunteerContext {
@@ -9,7 +9,7 @@ export interface VolunteerContext {
 
 type VolunteerEvents = "save" | "validate" | "toggle-status";
 
-export class VolunteerComponent extends BaseLiveViewComponent<VolunteerContext, unknown> implements
+export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> implements
   LiveViewExternalEventListener<VolunteerContext, VolunteerEvents, Volunteer>,
   LiveViewInternalEventListener<VolunteerContext, VolunteerMutationEvent> {
 

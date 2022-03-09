@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent, LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from ".";
+import { BaseLiveView, LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from ".";
 import { html } from "../";
 
 describe("test basic component", () => {
@@ -45,7 +45,7 @@ interface Ctx {
   foo: string
 }
 
-class LiveViewComponent extends BaseLiveViewComponent<Ctx, {}> {
+class LiveViewComponent extends BaseLiveView<Ctx, {}> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Ctx>): Ctx {
     return {foo: "bar"}

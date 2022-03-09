@@ -2,7 +2,7 @@ import { SessionData } from "express-session";
 import { mock } from "jest-mock-extended";
 import jwt from "jsonwebtoken";
 import { WebSocket } from "ws";
-import { BaseLiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "..";
+import { BaseLiveView, LiveViewExternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "..";
 import { StringPropertyValues } from "../component";
 import { html } from "../templates";
 import { MessageRouter } from "./message_router";
@@ -226,7 +226,7 @@ describe("test message router", () => {
 interface TestLiveViewComponentContext {
 
 }
-class LiveViewComponent extends BaseLiveViewComponent<{}, {}> implements LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown> {
+class LiveViewComponent extends BaseLiveView<{}, {}> implements LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
     return {}
