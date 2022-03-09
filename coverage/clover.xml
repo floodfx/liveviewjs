@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1646863462608" clover="3.2.0">
-  <project timestamp="1646863462608" name="All files">
+<coverage generated="1646863618629" clover="3.2.0">
+  <project timestamp="1646863618629" name="All files">
     <metrics statements="569" coveredstatements="569" conditionals="305" coveredconditionals="299" methods="119" coveredmethods="115" elements="993" coveredelements="983" complexity="0" loc="569" ncloc="569" packages="9" files="24" classes="24"/>
     <package name="examples.autocomplete">
       <metrics statements="5" coveredstatements="5" conditionals="1" coveredconditionals="1" methods="2" coveredmethods="2"/>
@@ -187,7 +187,7 @@
     </package>
     <package name="server.component">
       <metrics statements="21" coveredstatements="21" conditionals="3" coveredconditionals="3" methods="7" coveredmethods="7"/>
-      <file name="base_component.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/component/base_component.ts">
+      <file name="base_live_view.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/component/base_live_view.ts">
         <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
         <line num="4" count="7" type="stmt"/>
         <line num="10" count="27" type="stmt"/>
