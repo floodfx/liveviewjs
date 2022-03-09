@@ -1,6 +1,6 @@
 import { SessionData } from "express-session";
 import { BaseLiveView, LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from ".";
-import { html } from "../";
+import { html } from "..";
 
 describe("test basic component", () => {
 

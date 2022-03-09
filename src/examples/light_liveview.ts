@@ -1,6 +1,6 @@
 import { SessionData } from "express-session";
 import { LiveView, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component";
-import { BaseLiveView } from "../server/component/base_component";
+import { BaseLiveView } from "../server/component/base_live_view";
 import { html } from "../server/templates";
 
 export interface LightContext {
