@@ -1,13 +1,47 @@
 import { SessionData } from "express-session";
 import jwt from 'jsonwebtoken';
 import { WebSocket } from "ws";
-import { HtmlSafeString, LiveComponent, LiveComponentSocket, LiveViewMetadata, LiveViewSocket, LiveViewTemplate, Parts } from "..";
-import { LiveViewComponent, PushPatchPathAndParams } from "../";
+import { HtmlSafeString, LiveComponent, LiveComponentSocket, LiveViewMeta, LiveViewSocket, LiveViewTemplate, Parts } from "..";
+import { LiveView, PushPatchPathAndParams } from "../";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
 import { deepDiff } from "../templates/diff";
 import { PhxMessage } from "./message_router";
 import { PhxBlurPayload, PhxClickPayload, PhxDiffReply, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming, PhxOutgoingLivePatchPush, PhxOutgoingMessage } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
+
+/**
+ * Data kept for each `LiveComponent` instance.
+ */
+interface StatefulLiveComponentData {
+  /**
+   * compoundId (`${componentType}_${providedComponentId}`) of the component which is used to uniquely identify it
+   * across the entire application.
+   */
+  compoundId: string;
+  /**
+   * The last calculated state of the component.
+   */
+  context: unknown;
+  /**
+   * The last `Parts` tree rendered by the component.
+   */
+  parts: Parts;
+  /**
+   * Whether the component changed between the last two `render` calls and
+   * therefore should be rerendered.
+   */
+  changed: boolean;
+  /**
+   * The internal componentId as calculated by the component manager as an
+   * index into when the component was parsed via render.
+   */
+  cid: number;
+  /**
+   * The class name of the component, used for grouping components of the
+   * same type together and running `handleEvent`s.
+   */
+  componentClass: string;
+}
 
 /**
  * The `LiveViewComponentManager` is responsible for managing the lifecycle of a `LiveViewComponent`
@@ -23,7 +57,7 @@ export class LiveViewComponentManager {
   private subscriptionIds: Record<string,Promise<string>> = {};
 
   private context: unknown;
-  private component: LiveViewComponent<unknown, unknown>;
+  private component: LiveView<unknown, unknown>;
   private signingSecret: string;
   private intervals: NodeJS.Timeout[] = [];
   private lastHeartbeat: number = Date.now();
@@ -33,7 +67,7 @@ export class LiveViewComponentManager {
   private _pageTitle: string | undefined;
   private pageTitleChanged: boolean = false;
 
-  constructor(component: LiveViewComponent<unknown, unknown>, signingSecret: string, connectionId: string, ws: WebSocket) {
+  constructor(component: LiveView<unknown, unknown>, signingSecret: string, connectionId: string, ws: WebSocket) {
     this.component = component;
     this.signingSecret = signingSecret;
     this.context = {};
@@ -123,7 +157,7 @@ export class LiveViewComponentManager {
 
   public async onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>) {
     const [joinRef, messageRef, topic, _, payload] = message;
-    const { type, event } = payload;
+    const { type, event, cid } = payload;
 
     // click and form events have different value in their payload
     // TODO - handle uploads
@@ -146,34 +180,82 @@ export class LiveViewComponentManager {
       return;
     }
 
-    if (isEventHandler(this.component)) {
-      const previousContext = this.context;
-      // @ts-ignore - already checked if handleEvent is defined
-      this.context = await this.component.handleEvent(
-        event,
-        value,
-        this.buildLiveViewSocket()
-      );
+    // determine if event is for `LiveComponent`
+    if(cid !== undefined) {
+      // console.log("LiveComponent event", type, cid, event, value);
+      // find stateful component data by cid
+      const statefulComponent = Object.values(this.statefulLiveComponents).find((c) => c.cid === cid);
+      if(statefulComponent) {
+        const { componentClass, context: oldContext, parts: oldParts, compoundId } = statefulComponent;
+        // call event handler on stateful component instance
+        const liveComponent = this.statefuleLiveComponentInstances[componentClass];
+        if(liveComponent) {
+          // run handleEvent and render then update context for cid
+          const newContext = await liveComponent.handleEvent(event, value as Record<string, string>, this.buildLiveComponentSocket(oldContext));
+          // TODO optimization - if contexts are the same, don't re-render
+          const newView = await liveComponent.render(newContext, {myself: cid});
+          const newParts = deepDiff(oldParts, newView.partsTree());
+          const changed = Object.keys(newParts).length > 0;
+          // store state for subsequent loads
+          this.statefulLiveComponents[compoundId] = {
+            ...statefulComponent,
+            context: newContext,
+            parts: newView.partsTree(),
+            changed,
+          }
 
-      // get old render tree and new render tree for diffing
-      const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
-      const view = await this.component.render(this.context, this.defaultLiveViewMeta());
 
-      const combined = deepDiff(oldView.partsTree(), view.partsTree());
-      const diff = this.maybeAddPageTitleToParts(combined);
+          // send message to re-render
+          const replyPayload = {
+            response: {
+              diff: {
+                c: {
+                  // use cid to identify component to update
+                  [`${cid}`]: newParts
+                }
+              }
+            },
+            status: "ok"
+          }
 
-      const replyPayload = {
-        response: {
-          diff
-        },
-        status: "ok"
+          this.sendPhxReply(newPhxReply(message, replyPayload));
+        } else {
+          console.error("Could not find stateful component instance for", componentClass);
+        }
+      } else {
+        console.error("Could not find stateful component for", cid);
       }
-
-      this.sendPhxReply(newPhxReply(message, replyPayload));
     }
     else {
-      console.error("no handleEvent method in component. add handleEvent method in your component to fix this error");
-      return;
+      if (isEventHandler(this.component)) {
+        const previousContext = this.context;
+        // @ts-ignore - already checked if handleEvent is defined
+        this.context = await this.component.handleEvent(
+          event,
+          value,
+          this.buildLiveViewSocket()
+        );
+
+        // get old render tree and new render tree for diffing
+        const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
+        const view = await this.component.render(this.context, this.defaultLiveViewMeta());
+
+        const combined = deepDiff(oldView.partsTree(), view.partsTree());
+        const diff = this.maybeAddPageTitleToParts(combined);
+
+        const replyPayload = {
+          response: {
+            diff
+          },
+          status: "ok"
+        }
+
+        this.sendPhxReply(newPhxReply(message, replyPayload));
+      }
+      else {
+        console.error("no handleEvent method in component. add handleEvent method in your component to fix this error");
+        return;
+      }
     }
 
   }
@@ -333,14 +415,15 @@ export class LiveViewComponentManager {
   }
 
 
+
   /**
-   * Map for stateful components where key is a compound id `${componentName}_${componentId}`
-   * and value is a tuple of [context, renderedPartsTree, changed].
+   * Records for stateful components where key is a compound id `${componentName}_${componentId}`
+   * and value is a tuple of [context, renderedPartsTree, changed, myself].
    *
-   * We are using a Map here because it is sorted in insertion order.
    */
-  private statefulLiveComponents: Map<string, [unknown, Parts, boolean]> = new Map();
-  private statelessLiveComponents: Map<string, Parts> = new Map();
+  private statefulLiveComponents: Record<string, StatefulLiveComponentData> = {};
+
+  private statefuleLiveComponentInstances: Record<string, LiveComponent<unknown>> = {};
 
   /**
    * Collect all the LiveComponents first, group by their component type (e.g. instanceof),
@@ -349,8 +432,8 @@ export class LiveViewComponentManager {
    * @param liveComponent
    * @param params
    */
-  private async liveComponentProcessor(liveComponent: LiveComponent<unknown>, params: unknown & {id? : string}): Promise<LiveViewTemplate> {
-    console.log("liveComponentProcessor", liveComponent, params);
+  private async liveComponentProcessor(liveComponent: LiveComponent<unknown>, params: unknown & {id? : number | string} = {}): Promise<LiveViewTemplate> {
+    // console.log("liveComponentProcessor", liveComponent, params);
     // TODO - determine how to collect all the live components of the same type
     // and preload them all at once
     // Can get the types by `liveComponent.constructor.name` but
@@ -359,7 +442,12 @@ export class LiveViewComponentManager {
 
     const { id } = params;
     delete params.id; // remove id from param to use as default context
-    const componentType = liveComponent.constructor.name;
+    const componentClass = liveComponent.constructor.name;
+
+    // cache single instance of each component type
+    if (!this.statefuleLiveComponentInstances[componentClass]) {
+      this.statefuleLiveComponentInstances[componentClass] = liveComponent;
+    }
 
     // setup variables
     let context: unknown = params;
@@ -367,7 +455,6 @@ export class LiveViewComponentManager {
 
     // determine if component is stateful or stateless
     if(id !== undefined) {
-      console.log("id", id)
       // stateful `LiveComponent`
       // lifecycle is:
       //   On First Load:
@@ -378,37 +465,54 @@ export class LiveViewComponentManager {
       //   On Subsequent Loads:
       //   1. update
       //   2. render
-      const compoundId = `${componentType}_${id}`;
-      if(this.statefulLiveComponents.get(compoundId) === undefined) {
+      //   On Events:
+      //   1. handleEvent
+      //   2. render
+      const compoundId = `${componentClass}_${id}`;
+      let myself: number;
+      if(this.statefulLiveComponents[compoundId] === undefined) {
+        myself = Object.keys(this.statefulLiveComponents).length + 1;
         // first load lifecycle
         context = await liveComponent.mount(this.buildLiveComponentSocket(context));
         context = await liveComponent.update(context, this.buildLiveComponentSocket(context));
 
         // no old view so just send render as diff
-        newView = await liveComponent.render(context, {myself: id});
+        newView = await liveComponent.render(context, { myself });
 
         // store state for subsequent loads
-        this.statefulLiveComponents.set(compoundId, [context, newView.partsTree(), true]);
+        this.statefulLiveComponents[compoundId] = {
+          context,
+          parts: newView.partsTree(),
+          changed: true,
+          cid: myself,
+          componentClass,
+          compoundId
+        };
       } else {
-        // store state for subsequent loads
-        const [oldContext, oldParts, _] = this.statefulLiveComponents.get(compoundId)!;
-
+        // get state for this load
+        const liveComponentData = this.statefulLiveComponents[compoundId];
+        const { context: oldContext, parts: oldParts, cid } = liveComponentData;
+        myself = cid;
         // subsequent loads lifecycle
         context = await liveComponent.update(oldContext, this.buildLiveComponentSocket(oldContext));
 
         // no old view so just send render as diff
-        newView = await liveComponent.render(context, {myself: id});
+        newView = await liveComponent.render(context, {myself});
         const newParts = deepDiff(oldParts, newView.partsTree());
         const changed = Object.keys(newParts).length > 0;
         // store state for subsequent loads
-        this.statefulLiveComponents.set(compoundId, [context, newParts, changed]);
+        this.statefulLiveComponents[compoundId] = {
+          ...liveComponentData,
+          context,
+          parts: newView.partsTree(),
+          changed,
+        };
       }
       // since stateful components are sent back as part of the render
       // tree (under the `c` key) we return an empty template here
-      return new HtmlSafeString(["1"], [], true);
+      return new HtmlSafeString([String(myself)], [], true);
     }
     else {
-      console.log("stateless", context)
       // stateless `LiveComponent`
       // lifecycle is:
       // 1. preload
@@ -426,22 +530,31 @@ export class LiveViewComponentManager {
     }
   }
 
+  private findLiveComponentByCid(cid: number): LiveComponent<unknown> | undefined {
+    const data = Object.values(this.statefulLiveComponents).find(liveComponentData => liveComponentData.cid === cid)
+    if(data) {
+      const { componentClass } = data;
+      return this.statefuleLiveComponentInstances[componentClass];
+    }
+    return undefined;
+  }
+
   private maybeAddLiveComponentsToParts(parts: Parts) {
     const changedParts: Parts = {}
-    let index = 1;
     // iterate over stateful components to find changed
-    for(const [compoundId, [context, partsTree, changed]] of this.statefulLiveComponents) {
-      if(changed) {
-        changedParts[`${index}`] = partsTree;
+    Object.values(this.statefulLiveComponents).forEach(componentData => {
+      if(componentData.changed) {
+        const { cid, parts } = componentData;
+        // changedParts key is the myself id
+        changedParts[`${cid}`] = parts;
       }
-      index++;
-    }
+    });
     // if any stateful component changed
     if (Object.keys(changedParts).length > 0) {
       // reset changed by setting all changed to false
-      this.statefulLiveComponents.forEach(([context, parts, changed], id) => {
-        this.statefulLiveComponents.set(id, [context, parts, false]);
-      })
+      Object.keys(this.statefulLiveComponents).forEach(compoundId => {
+        this.statefulLiveComponents[compoundId].changed = false;
+      });
 
       // return parts with changed LiveComponents
       return {
@@ -452,14 +565,14 @@ export class LiveViewComponentManager {
     return parts;
   }
 
-  private defaultLiveViewMeta(): LiveViewMetadata {
+  private defaultLiveViewMeta(): LiveViewMeta {
     return {
       csrfToken: this.csrfToken,
       live_component: async(liveComponent, params) => {
         const render = await this.liveComponentProcessor(liveComponent, params);
         return render;
       }
-    } as LiveViewMetadata
+    } as LiveViewMeta
   }
 
   private buildLiveComponentSocket(context: unknown): LiveComponentSocket<unknown> {
@@ -474,11 +587,11 @@ export class LiveViewComponentManager {
 
 }
 
-export function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
+export function isInfoHandler(component: LiveView<unknown, unknown>) {
   return "handleInfo" in component;
 }
 
-export function isEventHandler(component: LiveViewComponent<unknown, unknown>) {
+export function isEventHandler(component: LiveView<unknown, unknown>) {
   return "handleEvent" in component;
 }
 

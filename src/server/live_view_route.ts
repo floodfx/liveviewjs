@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
-import { html, LiveViewComponent, LiveViewSocket, PageTitleDefaults } from ".";
+import { html, LiveView, LiveViewSocket, PageTitleDefaults } from ".";
 
 type SessionDataProvider<T extends {csrfToken: string}> = (req: Request) => T;
 
@@ -9,7 +9,7 @@ const emptyVoid = () => {};
 
 export const configLiveViewHandler = <T extends {csrfToken: string}>(
   getPath: string,
-  component: LiveViewComponent<unknown,unknown>,
+  component: LiveView<unknown,unknown>,
   rootView: string,
   signingSecret: string,
   sessionDataProvider: SessionDataProvider<T>,

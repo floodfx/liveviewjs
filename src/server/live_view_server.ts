@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import path from "path";
 import WebSocket from 'ws';
-import { LiveComponent, LiveComponentSocket, LiveViewComponent, LiveViewRouter, LiveViewSocket, live_title_tag, StringPropertyValues } from ".";
+import { LiveComponent, LiveComponentSocket, LiveView, LiveViewRouter, LiveViewSocket, live_title_tag } from ".";
 import { MessageRouter } from "./socket/message_router";
 
 // extend / define session interface
@@ -80,7 +80,7 @@ export class LiveViewServer {
     this._router = { ...this._router, ...router };
   }
 
-  registerLiveViewRoute(path: string, component: LiveViewComponent<unknown, unknown>) {
+  registerLiveViewRoute(path: string, component: LiveView<unknown, unknown>) {
     this._router[path] = component;
   }
 
@@ -212,18 +212,18 @@ export class LiveViewServer {
       }
 
       // render
+      let myself: number = 1;
       const view = await component.render(ctx, {
         csrfToken: req.session.csrfToken,
-        live_component: async(liveComponent: LiveComponent<unknown>, params: StringPropertyValues<unknown> & {
-          id?: string
-        }) => {
-          const { id } = params;
+        live_component: async(liveComponent: LiveComponent<unknown>, params?: Partial<unknown & {id: number | string}>) => {
+          params = params ?? {};
           delete params.id;
           let context = await liveComponent.mount(buildLiveComponentSocket(liveViewId, params));
           context = await liveComponent.update(context, buildLiveComponentSocket(liveViewId, context));
           // no old view so just render
-          let newView = await liveComponent.render(context, {myself: id});
-          // since this is stateless send back the LiveViewTemplate
+          let newView = await liveComponent.render(context, {myself});
+          myself++;
+          // since http request is stateless send back the LiveViewTemplate
           return newView;
         }
       });
