@@ -59,11 +59,13 @@ export type Parts = { [key: string]: unknown }
 export class HtmlSafeString {
   readonly statics: readonly string[]
   readonly _dynamics: readonly unknown[]
+  readonly isLiveComponent: boolean = false
   // readonly children: readonly HtmlSafeString[]
 
-  constructor(statics: readonly string[], dynamics: readonly unknown[]) {
+  constructor(statics: readonly string[], dynamics: readonly unknown[], isLiveComponent: boolean = false) {
     this.statics = statics
     this._dynamics = dynamics
+    this.isLiveComponent = isLiveComponent
   }
 
   partsTree(includeStatics: boolean = true): Parts {
@@ -86,9 +88,23 @@ export class HtmlSafeString {
     // otherwise walk the dynamics and build the parts tree
     const parts = this._dynamics.reduce((acc: Parts, cur: unknown, index: number) => {
       if (cur instanceof HtmlSafeString) {
-        return {
-          ...acc,
-          [`${index}`]: cur.partsTree() // recurse to children
+        // handle isLiveComponent case
+        if(cur.isLiveComponent) {
+          // for live components, we only send back a number which
+          // is the index of the component in the `c` key
+          // the `c` key is added to the parts tree by the
+          // ComponentManager when it renders the `LiveView`
+          return {
+            ...acc,
+            [`${index}`]: Number(cur.statics[0])
+          }
+        } else {
+          // this isn't a live component, so we need to contine walking
+          // the tree including to the children
+          return {
+            ...acc,
+            [`${index}`]: cur.partsTree() // recurse to children
+          }
         }
       } else if (Array.isArray(cur)) {
         // if array is empty just return empty string

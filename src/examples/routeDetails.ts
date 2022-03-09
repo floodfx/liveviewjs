@@ -65,5 +65,11 @@ export const routeDetails: RouteDetails[] = [
     path: "/asyncfetch",
     summary: "Example of using async fetch to fetch data from a server.  In this case, Xkcd comic data.",
     tags: ["live-patch", "async/await"]
+  },
+  {
+    label: "Decarbonize Calculator",
+    path: "/decarbonize",
+    summary: "Example of LiveComponents within a LiveView",
+    tags: ["live_component"]
   }
 ]

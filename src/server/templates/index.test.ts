@@ -135,7 +135,7 @@ describe("test escapeHtml", () => {
 
   it("render loaded stores has the right parts", () => {
     const loaded = renderStores("80204", stores.slice(3), false);
-    console.log('partsTree', JSON.stringify(loaded.partsTree(), null, 2));
+    // console.log('partsTree', JSON.stringify(loaded.partsTree(), null, 2));
     expect(loaded.partsTree()).toEqual({
       '0': '80204',
       '1': '',
@@ -184,7 +184,7 @@ describe("test escapeHtml", () => {
       hours: "9am-9pm",
     }
     const loaded = renderStores("80204", [xssStore], false);
-    console.log('partsTree', JSON.stringify(loaded.partsTree(), null, 2));
+    // console.log('partsTree', JSON.stringify(loaded.partsTree(), null, 2));
     expect(loaded.partsTree()).toEqual({
       '0': '80204',
       '1': '',
@@ -202,6 +202,18 @@ describe("test escapeHtml", () => {
       },
       s: [...loaded.statics]
     });
+  });
+
+  it("live component parts renders", () => {
+    const liveComponentResult = new HtmlSafeString(["1"], [], true)
+
+    const liveView = html`<div>${liveComponentResult}</div>`;
+
+    expect(liveView.partsTree()).toEqual({
+      0: 1, // LiveComponents result in a single number
+      s: ["<div>", "</div>"]
+    })
+
   });
 
 });

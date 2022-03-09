@@ -1,10 +1,6 @@
-import { html, HtmlSafeString, safe } from "../../server/templates";
-import { LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from "../../server/component/types";
-import { fetchXkcd, isValidXkcd, randomXkcdNum, XkcdData } from "./data";
-import { live_patch } from "../../server/templates/helpers/live_patch";
 import { SessionData } from "express-session";
-import { BaseLiveViewComponent } from "../../server/component/base_component";
-
+import { BaseLiveView, html, HtmlSafeString, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, live_patch, safe } from "../../server";
+import { fetchXkcd, isValidXkcd, randomXkcdNum, XkcdData } from "./data";
 
 interface Context {
   comic: XkcdData
@@ -12,7 +8,7 @@ interface Context {
 }
 
 //  navigate through Xkcd comics using async/await
-export class AsyncFetchLiveViewComponent extends BaseLiveViewComponent<Context, { num: number }> {
+export class AsyncFetchLiveViewComponent extends BaseLiveView<Context, { num: number }> {
 
   async mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>): Promise<Context> {
     // get today's comic from xkcd

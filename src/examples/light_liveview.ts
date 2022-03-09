@@ -1,7 +1,7 @@
 import { SessionData } from "express-session";
+import { LiveView, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component";
+import { BaseLiveView } from "../server/component/base_live_view";
 import { html } from "../server/templates";
-import { LiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component/types";
-import { BaseLiveViewComponent } from "../server/component/base_component";
 
 export interface LightContext {
   brightness: number;
@@ -9,8 +9,8 @@ export interface LightContext {
 
 export type LightEvent = "on" | "off" | "up" | "down" | "key_update";
 
-export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, never> implements
-  LiveViewComponent<LightContext, never>,
+export class LightLiveViewComponent extends BaseLiveView<LightContext, never> implements
+  LiveView<LightContext, never>,
   LiveViewExternalEventListener<LightContext, LightEvent, { key: string }> {
 
 

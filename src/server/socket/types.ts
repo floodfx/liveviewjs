@@ -1,4 +1,4 @@
-import { LiveViewMountParams } from '../component/types';
+import { LiveViewMountParams } from '..';
 
 export enum PhxSocketProtocolNames {
   joinRef = 0,
@@ -68,7 +68,8 @@ export type PhxOutgoingLivePatchPush = PhxOutgoingMessage<PhxLivePatchPushPayloa
 export interface PhxEventPayload<Type extends string, Value> {
   type: Type,
   event: string,
-  value: Value
+  value: Value,
+  cid?: number;
 }
 
 export interface PhxEventUploads {

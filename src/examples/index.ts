@@ -3,6 +3,7 @@ import { LiveViewServer } from '../server';
 import { LiveViewRouter } from '../server/component/types';
 import { AsyncFetchLiveViewComponent } from './asyncfetch/component';
 import { AutocompleteLiveViewComponent } from './autocomplete/component';
+import { DecarbonizeLiveView } from './decarbonize/live_view';
 import { LicenseLiveViewComponent } from './license_liveview';
 import { LightLiveViewComponent } from './light_liveview';
 import { SearchLiveViewComponent } from './live-search/component';
@@ -45,6 +46,7 @@ const router: LiveViewRouter = {
   '/servers': new ServersLiveViewComponent(),
   "/volunteers": new VolunteerComponent(),
   "/asyncfetch": new AsyncFetchLiveViewComponent(),
+  "/decarbonize": new DecarbonizeLiveView()
 }
 
 // register all routes
@@ -58,9 +60,7 @@ lvServer.expressApp.get("/", (req, res) => {
 
   // this one renders the index of the examples
   res.render("index.html.ejs", {
-    routes: Object.keys(router).map(path => {
-      return routeDetails.find(route => route.path === path)
-    })
+    routes: routeDetails
   });
 })
 
