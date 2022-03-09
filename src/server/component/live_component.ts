@@ -1,13 +1,22 @@
-import { LiveViewSocket, LiveViewTemplate } from ".";
+import { WebSocket } from "ws";
+import { LiveViewTemplate } from ".";
 
 
-interface LiveComponentMetadata {
+export interface LiveComponentMeta {
   /**
    * the id of the component if it is stateful or undefined if it is stateless.
    * Generally used to identify this component in a `phx-target` attribute of
    * a `LiveViewTemplate`.
    */
   myself?: string;
+}
+
+export interface LiveComponentSocket<T> {
+  id: string;
+  connected: boolean; // true for websocket, false for http request
+  context: T;
+  ws?: WebSocket;
+  send: (event: unknown) => void;
 }
 
 /**
@@ -34,16 +43,16 @@ export interface LiveComponent<Context> {
    * This helps to solve the N+1 query problem.
    * @param contextsList
    */
-  preload(contextsList: Context[]): Partial<Context>[];
+  // preload(contextsList: Context[]): Partial<Context>[];
 
   /**
    * Mounts the `LiveComponent`'s stateful context.  This is called only once
    * for stateful `LiveComponent` and always for a stateless `LiveComponent`.
    * This is called prior to `update` and `render`.
    *
-   * @param socket a `LiveViewSocket` with the context for this `LiveComponent`
+   * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  mount(socket: LiveViewSocket<Context>): Context;
+  mount(socket: LiveComponentSocket<Context>): Context;
 
   /**
    * Allows the `LiveComponent` to update its stateful context.  This is called
@@ -56,25 +65,25 @@ export interface LiveComponent<Context> {
    * state (context).
    *
    * @param context the current state for this `LiveComponent`
-   * @param socket a `LiveViewSocket` with the context for this `LiveComponent`
+   * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  update(context: Context, socket:LiveViewSocket<Context>): Partial<Context>;
+  update(context: Context, socket:LiveComponentSocket<Context>): Partial<Context>;
 
   /**
    * Renders the `LiveComponent` by returning a `LiveViewTemplate`.  Each time a
    * a `LiveComponent` receives new data, it will be re-rendered.
    * @param context the current state for this `LiveComponent`
-   * @param socket a `LiveViewSocket` with the context for this `LiveComponent`
+   * @param meta a `LiveComponentMeta` with additional meta data for this `LiveComponent`
    */
-  render(context: Context & LiveComponentMetadata): LiveViewTemplate;
+  render(context: Context, meta: LiveComponentMeta): LiveViewTemplate;
 
   /**
    *
    * @param event the event name coming from the `LiveComponent`
    * @param params a list of string-to-string key/value pairs related to the event
-   * @param socket a `LiveViewSocket` with the context for this `LiveComponent`
+   * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  handleEvent(event: string, params: Record<string, string>, socket: LiveViewSocket<Context>): Partial<Context>;
+  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>): Partial<Context>;
 
 }
 
@@ -88,22 +97,22 @@ export interface LiveComponent<Context> {
  */
 export abstract class BaseLiveComponent<Context> implements LiveComponent<Context> {
 
-  preload(contextsList: Context[]): Partial<Context>[] {
-    return contextsList;
-  }
+  // preload(contextsList: Context[]): Partial<Context>[] {
+  //   return contextsList;
+  // }
 
-  mount(socket: LiveViewSocket<Context>): Context {
+  mount(socket: LiveComponentSocket<Context>): Context {
     return socket.context;
   }
 
-  update(context: Context, socket: LiveViewSocket<Context>): Partial<Context> {
-    return {};
+  update(context: Context, socket: LiveComponentSocket<Context>): Partial<Context> {
+    return context;
   }
 
-  abstract render(context: Context & LiveComponentMetadata): LiveViewTemplate;
+  abstract render(context: Context, meta: LiveComponentMeta): LiveViewTemplate;
 
-  handleEvent(event: string, params: Record<string, string>, socket: LiveViewSocket<Context>): Partial<Context> {
-    return {};
+  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>): Partial<Context> {
+    return socket.context;
   }
 
 }

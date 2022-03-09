@@ -1,8 +1,8 @@
 import { SessionData } from "express-session";
 import jwt from 'jsonwebtoken';
 import { WebSocket } from "ws";
-import { Parts } from "..";
-import { LiveViewComponent, LiveViewSocket, PushPatchPathAndParams } from "../";
+import { HtmlSafeString, LiveComponent, LiveComponentSocket, LiveViewMetadata, LiveViewSocket, LiveViewTemplate, Parts } from "..";
+import { LiveViewComponent, PushPatchPathAndParams } from "../";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
 import { deepDiff } from "../templates/diff";
 import { PhxMessage } from "./message_router";
@@ -86,9 +86,13 @@ export class LiveViewComponentManager {
 
     this.context = await this.component.handleParams(urlParams, joinUrl!, this.buildLiveViewSocket());
 
-    const view = this.component.render(this.context);
+    const view = await this.component.render(this.context, this.defaultLiveViewMeta());
 
-    const rendered = this.maybeAddPageTitleToParts(view.partsTree());
+    let rendered = this.maybeAddLiveComponentsToParts(view.partsTree());
+
+    rendered = this.maybeAddPageTitleToParts(rendered);
+
+
 
     // send full view parts (statics & dynaimcs back)
     const replyPayload = {
@@ -152,8 +156,8 @@ export class LiveViewComponentManager {
       );
 
       // get old render tree and new render tree for diffing
-      const oldView = this.component.render(previousContext);
-      const view = this.component.render(this.context);
+      const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
+      const view = await this.component.render(this.context, this.defaultLiveViewMeta());
 
       const combined = deepDiff(oldView.partsTree(), view.partsTree());
       const diff = this.maybeAddPageTitleToParts(combined);
@@ -190,8 +194,8 @@ export class LiveViewComponentManager {
     );
 
     // get old render tree and new render tree for diffing
-    const oldView = this.component.render(previousContext);
-    const view = this.component.render(this.context);
+    const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
+    const view = await this.component.render(this.context, this.defaultLiveViewMeta());
 
     // TODO - why is the diff causing live_patch to fail??
     // const diff = deepDiff(oldView.partsTree(), view.partsTree());
@@ -251,7 +255,7 @@ export class LiveViewComponentManager {
     this.sendPhxReply(message);
   }
 
-  private sendInternal(event: any): void {
+  private async sendInternal(event: any): Promise<void> {
     // console.log("sendInternal", event, this.socketId);
 
     if (isInfoHandler(this.component)) {
@@ -260,8 +264,8 @@ export class LiveViewComponentManager {
       this.context = this.component.handleInfo(event, this.buildLiveViewSocket());
 
       // get old render tree and new render tree for diffing
-      const oldView = this.component.render(previousContext);
-      const view = this.component.render(this.context);
+      const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
+      const view = await this.component.render(this.context, this.defaultLiveViewMeta());
 
       const combined = deepDiff(oldView.partsTree(), view.partsTree());
       const diff = this.maybeAddPageTitleToParts(combined);
@@ -328,6 +332,146 @@ export class LiveViewComponentManager {
     this.ws.send(JSON.stringify(reply), { binary: false }, (err?: Error) => this.handleError(reply, err));
   }
 
+
+  /**
+   * Map for stateful components where key is a compound id `${componentName}_${componentId}`
+   * and value is a tuple of [context, renderedPartsTree, changed].
+   *
+   * We are using a Map here because it is sorted in insertion order.
+   */
+  private statefulLiveComponents: Map<string, [unknown, Parts, boolean]> = new Map();
+  private statelessLiveComponents: Map<string, Parts> = new Map();
+
+  /**
+   * Collect all the LiveComponents first, group by their component type (e.g. instanceof),
+   * then run single preload for all components of same type. then run rest of lifecycle
+   * based on stateless or stateful.
+   * @param liveComponent
+   * @param params
+   */
+  private async liveComponentProcessor(liveComponent: LiveComponent<unknown>, params: unknown & {id? : string}): Promise<LiveViewTemplate> {
+    console.log("liveComponentProcessor", liveComponent, params);
+    // TODO - determine how to collect all the live components of the same type
+    // and preload them all at once
+    // Can get the types by `liveComponent.constructor.name` but
+    // unclear how to determine if all the `live_component` tags have
+    // been processed...  Perhaps `Parts` can track this?
+
+    const { id } = params;
+    delete params.id; // remove id from param to use as default context
+    const componentType = liveComponent.constructor.name;
+
+    // setup variables
+    let context: unknown = params;
+    let newView: LiveViewTemplate;
+
+    // determine if component is stateful or stateless
+    if(id !== undefined) {
+      console.log("id", id)
+      // stateful `LiveComponent`
+      // lifecycle is:
+      //   On First Load:
+      //   1. preload
+      //   2. mount
+      //   3. update
+      //   4. render
+      //   On Subsequent Loads:
+      //   1. update
+      //   2. render
+      const compoundId = `${componentType}_${id}`;
+      if(this.statefulLiveComponents.get(compoundId) === undefined) {
+        // first load lifecycle
+        context = await liveComponent.mount(this.buildLiveComponentSocket(context));
+        context = await liveComponent.update(context, this.buildLiveComponentSocket(context));
+
+        // no old view so just send render as diff
+        newView = await liveComponent.render(context, {myself: id});
+
+        // store state for subsequent loads
+        this.statefulLiveComponents.set(compoundId, [context, newView.partsTree(), true]);
+      } else {
+        // store state for subsequent loads
+        const [oldContext, oldParts, _] = this.statefulLiveComponents.get(compoundId)!;
+
+        // subsequent loads lifecycle
+        context = await liveComponent.update(oldContext, this.buildLiveComponentSocket(oldContext));
+
+        // no old view so just send render as diff
+        newView = await liveComponent.render(context, {myself: id});
+        const newParts = deepDiff(oldParts, newView.partsTree());
+        const changed = Object.keys(newParts).length > 0;
+        // store state for subsequent loads
+        this.statefulLiveComponents.set(compoundId, [context, newParts, changed]);
+      }
+      // since stateful components are sent back as part of the render
+      // tree (under the `c` key) we return an empty template here
+      return new HtmlSafeString(["1"], [], true);
+    }
+    else {
+      console.log("stateless", context)
+      // stateless `LiveComponent`
+      // lifecycle is:
+      // 1. preload
+      // 2. mount
+      // 3. update
+      // 4. render
+
+      // skipping preload for now... see comment above
+      context = await liveComponent.mount(this.buildLiveComponentSocket(context));
+      context = await liveComponent.update(context, this.buildLiveComponentSocket(context));
+      // no old view so just render
+      newView = await liveComponent.render(context, {myself: id});
+      // since this is stateless send back the LiveViewTemplate
+      return newView;
+    }
+  }
+
+  private maybeAddLiveComponentsToParts(parts: Parts) {
+    const changedParts: Parts = {}
+    let index = 1;
+    // iterate over stateful components to find changed
+    for(const [compoundId, [context, partsTree, changed]] of this.statefulLiveComponents) {
+      if(changed) {
+        changedParts[`${index}`] = partsTree;
+      }
+      index++;
+    }
+    // if any stateful component changed
+    if (Object.keys(changedParts).length > 0) {
+      // reset changed by setting all changed to false
+      this.statefulLiveComponents.forEach(([context, parts, changed], id) => {
+        this.statefulLiveComponents.set(id, [context, parts, false]);
+      })
+
+      // return parts with changed LiveComponents
+      return {
+        ...parts,
+        c: changedParts
+      }
+    }
+    return parts;
+  }
+
+  private defaultLiveViewMeta(): LiveViewMetadata {
+    return {
+      csrfToken: this.csrfToken,
+      live_component: async(liveComponent, params) => {
+        const render = await this.liveComponentProcessor(liveComponent, params);
+        return render;
+      }
+    } as LiveViewMetadata
+  }
+
+  private buildLiveComponentSocket(context: unknown): LiveComponentSocket<unknown> {
+    return {
+      id: this.joinId,
+      connected: true, // websocket is connected
+      ws: this.ws, // the websocket TODO necessary?
+      context,
+      send: (event) => this.sendInternal(event),
+    }
+  }
+
 }
 
 export function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
@@ -337,3 +481,4 @@ export function isInfoHandler(component: LiveViewComponent<unknown, unknown>) {
 export function isEventHandler(component: LiveViewComponent<unknown, unknown>) {
   return "handleEvent" in component;
 }
+

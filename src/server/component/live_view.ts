@@ -16,11 +16,10 @@ export interface LiveViewMountParams {
   ["_mounts"]: number
 }
 
-
 export interface LiveViewComponent<Context, Params> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>): Context | Promise<Context>;
-  render(context: Context): LiveViewTemplate;
+  render(context: Context, meta: LiveViewMetadata): LiveViewTemplate | Promise<LiveViewTemplate>;
   handleParams(params: StringPropertyValues<Params>, url: string, socket: LiveViewSocket<Context>): Context | Promise<Context>;
 
 }
@@ -39,7 +38,9 @@ export interface LiveViewInternalEventListener<T, E> {
 export type StringPropertyValues<Type> = { [Property in keyof Type]: string;};
 
 
-interface LiveViewMetadata {
+
+export interface LiveViewMetadata {
   csrfToken: string
-  liveComponent: <Context, LC extends LiveComponent<Context>>(liveComponent: LC, params: StringPropertyValues<Context>) => LiveViewTemplate
+  live_component: <Context>(liveComponent: LiveComponent<Context>, params: StringPropertyValues<Context> & {id?: string}) => Promise<LiveViewTemplate>
 }
+

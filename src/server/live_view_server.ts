@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import path from "path";
 import WebSocket from 'ws';
-import { LiveViewComponent, LiveViewRouter, LiveViewSocket, live_title_tag } from ".";
+import { LiveComponent, LiveComponentSocket, LiveViewComponent, LiveViewRouter, LiveViewSocket, live_title_tag, StringPropertyValues } from ".";
 import { MessageRouter } from "./socket/message_router";
 
 // extend / define session interface
@@ -191,13 +191,42 @@ export class LiveViewServer {
         csrfToken: req.session.csrfToken,
       }
 
-      // mount and render component if found
+      // mount
       const ctx = await component.mount(
         { _csrf_token: req.session.csrfToken, _mounts: -1 },
         { ...sessionData },
         liveViewSocket
       );
-      const view = component.render(ctx);
+
+      // TODO handle_params
+
+      // default socket builder
+      const buildLiveComponentSocket = (id: string, context: unknown): LiveComponentSocket<unknown> => {
+        return {
+          id,
+          connected: false, // websocket is not connected on http request
+          ws: undefined, // no websocke on http request
+          context,
+          send: () => {},
+        }
+      }
+
+      // render
+      const view = await component.render(ctx, {
+        csrfToken: req.session.csrfToken,
+        live_component: async(liveComponent: LiveComponent<unknown>, params: StringPropertyValues<unknown> & {
+          id?: string
+        }) => {
+          const { id } = params;
+          delete params.id;
+          let context = await liveComponent.mount(buildLiveComponentSocket(liveViewId, params));
+          context = await liveComponent.update(context, buildLiveComponentSocket(liveViewId, context));
+          // no old view so just render
+          let newView = await liveComponent.render(context, {myself: id});
+          // since this is stateless send back the LiveViewTemplate
+          return newView;
+        }
+      });
 
       // render the view with all the data
       res.render(this.rootView, {
@@ -215,3 +244,4 @@ export class LiveViewServer {
     return app;
   }
 }
+

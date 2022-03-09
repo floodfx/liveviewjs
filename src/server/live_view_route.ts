@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
-import { LiveViewComponent, LiveViewSocket, PageTitleDefaults } from ".";
+import { html, LiveViewComponent, LiveViewSocket, PageTitleDefaults } from ".";
 
 type SessionDataProvider<T extends {csrfToken: string}> = (req: Request) => T;
 
@@ -44,7 +44,11 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
       session,
       liveViewSocket
     );
-    const view = component.render(ctx);
+    const view = await component.render(ctx, {
+      csrfToken: session.csrfToken,
+      // TODO render live_components
+      live_component: () => Promise.resolve(html``)
+    });
 
     // render the view with all the data
     res.render(rootView, {
