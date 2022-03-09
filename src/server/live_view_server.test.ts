@@ -1,16 +1,12 @@
-import { SessionData } from "express-session";
-import { Server } from "http";
+import { MemoryStore, SessionData } from "express-session";
 import request from "superwstest";
-import { LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "./component";
-import { BaseLiveView } from "./component/base_component";
-import { LiveViewServer } from "./live_view_server";
+import { BaseLiveComponent, BaseLiveView, LiveComponentSocket, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServer, LiveViewSocket, LiveViewTemplate } from ".";
 import { PhxJoinIncoming } from "./socket/types";
 import { html } from "./templates";
 
 
 describe("test live view server", () => {
   let lvServer: LiveViewServer;
-  let httpServer: Server;
 
   beforeEach(() => {
     lvServer = new LiveViewServer({
@@ -22,8 +18,9 @@ describe("test live view server", () => {
         title: "Title",
       }
     });
-    httpServer = lvServer.httpServer;
     lvServer.start();
+
+
   })
   afterEach(() => {
     lvServer.shutdown();
@@ -31,13 +28,23 @@ describe("test live view server", () => {
 
   it("register route updates the internal router", () => {
     expect(Object.keys(lvServer.router).length).toBe(0);
-    lvServer.registerLiveViewRoute("/test", new LiveViewComponent())
+    lvServer.registerLiveViewRoute("/test", new TestLiveViewComponent())
     expect(Object.keys(lvServer.router).length).toBe(1);
   });
 
+  it("exercises other settings", () => {
+    const lvServerOpts = new LiveViewServer({
+      signingSecret: "MY_VERY_SECRET_KEY",
+      rootView: "foo",
+      publicPath: "/public",
+      sessionStore: new MemoryStore(),
+      viewsPath: "./views",
+    });
+  })
+
   it("register router udpates internal router", () => {
     const router: LiveViewRouter = {
-      "/test": new LiveViewComponent()
+      "/test": new TestLiveViewComponent()
     }
     expect(Object.keys(lvServer.router).length).toBe(0);
     lvServer.registerLiveViewRoutes(router)
@@ -63,7 +70,7 @@ describe("test live view server", () => {
   })
 
   it("http request renders a live view component html", (done) => {
-    const lvComponent = new LiveViewComponent()
+    const lvComponent = new TestLiveViewComponent()
     lvServer.registerLiveViewRoute("/test", lvComponent)
     request(lvServer.httpServer).get('/test').expect(200).then(res => {
       expect(res.text).toContain(lvComponent.render({ message: "test" }).toString())
@@ -72,7 +79,7 @@ describe("test live view server", () => {
   })
 
   it("http request renders a live view component html at deeper path", (done) => {
-    const lvComponent = new LiveViewComponent()
+    const lvComponent = new TestLiveViewComponent()
     lvServer.registerLiveViewRoute("/test/foo/bar", lvComponent)
     request(lvServer.httpServer).get('/test/foo/bar').expect(200).then(res => {
       expect(res.text).toContain(lvComponent.render({ message: "test" }).toString())
@@ -81,13 +88,24 @@ describe("test live view server", () => {
   })
 
   it("http request contains live title components", (done) => {
-    const lvComponent = new LiveViewComponent()
+    const lvComponent = new TestLiveViewComponent()
     lvServer.registerLiveViewRoute("/test", lvComponent)
     request(lvServer.httpServer).get('/test').expect(200).then(res => {
-      console.log("test title", res.text)
       expect(res.text).toContain("<title data-prefix=\"TitlePrefix - \" data-suffix=\" - TitleSuffix\">TitlePrefix - Title - TitleSuffix</title>")
       done();
     })
+  })
+
+  it("test LiveView with a LiveComponent", (done) => {
+
+    const liveView = new TestLiveViewAndLiveComponent()
+    lvServer.registerLiveViewRoute("/test", liveView)
+
+    request(lvServer.httpServer).get('/test').expect(200).then(res => {
+      expect(res.text).toContain(`<div>bar</div>`)
+      done();
+    })
+
   })
 
   it("http 404s on unknown route", (done) => {
@@ -108,7 +126,7 @@ describe("test live view server", () => {
   })
 
   it("socket message is accepted", async () => {
-    const lvComponent = new LiveViewComponent()
+    const lvComponent = new TestLiveViewComponent()
     lvServer.registerLiveViewRoute("/test", lvComponent)
 
     const joinMsg: PhxJoinIncoming = [
@@ -146,7 +164,7 @@ describe("test live view server", () => {
       port: 7655
     })
 
-    const lvComponent = new LiveViewComponent()
+    const lvComponent = new TestLiveViewComponent()
     testLVServer.registerLiveViewRoute("/test", lvComponent)
     testLVServer.start()
     request(testLVServer.httpServer).get('/test').expect(200).then(res => {
@@ -168,7 +186,7 @@ describe("test live view server", () => {
       port: 7655
     })
 
-    const lvComponent = new LiveViewComponent()
+    const lvComponent = new TestLiveViewComponent()
     testLVServer.registerLiveViewRoute("/test", lvComponent)
     testLVServer.start()
     request(testLVServer.httpServer).get('/test').expect(200).then(res => {
@@ -186,7 +204,7 @@ declare module 'express-session' {
   }
 }
 
-class LiveViewComponent extends BaseLiveView<{ message?: string }, {}> {
+class TestLiveViewComponent extends BaseLiveView<{ message?: string }, {}> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
     return { message: session.message || "test" }
@@ -195,6 +213,35 @@ class LiveViewComponent extends BaseLiveView<{ message?: string }, {}> {
   render(ctx: { message: string }) {
     const { message } = ctx
     return html`<div>${message}</div>`;
+  }
+
+}
+
+class TestLiveViewAndLiveComponent extends BaseLiveView<{ message?: string }, {}> {
+
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
+    return { message: session.message || "test" }
+  }
+
+  async render(ctx: { message: string }, meta: LiveViewMeta): Promise<LiveViewTemplate> {
+    const { message } = ctx
+    const { live_component } = meta
+    return html`
+      <div>${ await live_component(new TestLiveComponent(), {id: 1, foo: "bar"})}</div>
+      <div>${ await live_component(new TestLiveComponent())}</div>
+    `;
+  }
+
+}
+
+class TestLiveComponent extends BaseLiveComponent<{foo: string}> {
+
+  mount(socket: LiveComponentSocket<{ foo: string; }>): { foo: string; } {
+    return socket.context
+  }
+
+  render(ctx: {foo: string}) {
+    return html`<div>${ctx.foo}</div>`;
   }
 
 }

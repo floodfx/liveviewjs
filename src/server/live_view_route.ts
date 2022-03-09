@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
-import { html, LiveView, LiveViewSocket, PageTitleDefaults } from ".";
+import { LiveComponent, LiveComponentSocket, LiveView, LiveViewSocket, PageTitleDefaults } from ".";
 
 type SessionDataProvider<T extends {csrfToken: string}> = (req: Request) => T;
 
@@ -13,7 +13,7 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
   rootView: string,
   signingSecret: string,
   sessionDataProvider: SessionDataProvider<T>,
-  pageTitleDefaults: PageTitleDefaults
+  pageTitleDefaults?: PageTitleDefaults
 ): [string, (req:Request, res: Response, next: NextFunction) => Promise<void>] => {
   return [getPath, async (req:Request, res: Response, next: NextFunction) => {
 
@@ -44,10 +44,32 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
       session,
       liveViewSocket
     );
+
+    // default socket builder
+    const buildLiveComponentSocket = (id: string, context: unknown): LiveComponentSocket<unknown> => {
+      return {
+        id,
+        connected: false, // websocket is not connected on http request
+        ws: undefined, // no websocke on http request
+        context,
+        send: () => {},
+      }
+    }
+
+    let myself: number = 1;
     const view = await component.render(ctx, {
       csrfToken: session.csrfToken,
-      // TODO render live_components
-      live_component: () => Promise.resolve(html``)
+      live_component: async(liveComponent: LiveComponent<unknown>, params?: Partial<unknown & {id: number | string}>) => {
+        params = params ?? {};
+        delete params.id;
+        let context = await liveComponent.mount(buildLiveComponentSocket(liveViewId, params));
+        context = await liveComponent.update(context, buildLiveComponentSocket(liveViewId, context));
+        // no old view so just render
+        let newView = await liveComponent.render(context, {myself});
+        myself++;
+        // since http request is stateless send back the LiveViewTemplate
+        return newView;
+      }
     });
 
     // render the view with all the data
