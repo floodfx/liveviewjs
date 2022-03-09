@@ -7,8 +7,11 @@ export interface LiveComponentMeta {
    * the id of the component if it is stateful or undefined if it is stateless.
    * Generally used to identify this component in a `phx-target` attribute of
    * a `LiveViewTemplate`.
+   *
+   * Note this is not the same as the `id` property of the component, rather it
+   * is the index of the `LiveComponent` in the `LiveView`.
    */
-  myself?: string;
+  myself?: number;
 }
 
 export interface LiveComponentSocket<T> {
