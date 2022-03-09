@@ -31,13 +31,13 @@ export class MessageRouter {
             break;
           case "heartbeat":
             // send heartbeat to component manager via connectionId broadcast
-            PubSub.broadcast(connectionId, {type: event, message: rawPhxMessage})
+            await PubSub.broadcast(connectionId, {type: event, message: rawPhxMessage})
             break;
           case "event":
           case "live_patch":
           case "phx_leave":
             // other events we can send via topic broadcast
-            PubSub.broadcast(topic, {type: event, message: rawPhxMessage})
+            await PubSub.broadcast(topic, {type: event, message: rawPhxMessage})
             break;
           default:
             throw new Error(`unexpected protocol event ${rawPhxMessage}`);

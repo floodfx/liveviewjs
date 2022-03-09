@@ -18,7 +18,7 @@ class SingleProcessPubSub<T> implements Subscriber<T>, Publisher<T> {
   }
 
   public async subscribe(topic: string, subscriber: SubscriberFunction<T>): Promise<string> {
-    this.eventEmitter.on(topic, subscriber);
+    await this.eventEmitter.on(topic, subscriber);
     // store connection id for unsubscribe and return for caller
     const subscriberId = nanoid();
     this.subscribers[subscriberId] = subscriber;
@@ -26,13 +26,13 @@ class SingleProcessPubSub<T> implements Subscriber<T>, Publisher<T> {
   }
 
   public async broadcast(topic: string, data: T) {
-    this.eventEmitter.emit(topic, data);
+    await this.eventEmitter.emit(topic, data);
   }
 
   public async unsubscribe(topic: string, subscriberId: string) {
     // get subscriber function from id
     const subscriber = this.subscribers[subscriberId];
-    this.eventEmitter.off(topic, subscriber);
+    await this.eventEmitter.off(topic, subscriber);
     // remove subscriber from subscribers
     delete this.subscribers[subscriberId];
   }

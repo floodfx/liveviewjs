@@ -220,6 +220,8 @@ export class LiveViewComponentManager {
 
           this.sendPhxReply(newPhxReply(message, replyPayload));
         } else {
+          // not sure how we'd get here but just in case - ignore test coverage though
+          /* istanbul ignore next */
           console.error("Could not find stateful component instance for", componentClass);
         }
       } else {
@@ -528,15 +530,6 @@ export class LiveViewComponentManager {
       // since this is stateless send back the LiveViewTemplate
       return newView;
     }
-  }
-
-  private findLiveComponentByCid(cid: number): LiveComponent<unknown> | undefined {
-    const data = Object.values(this.statefulLiveComponents).find(liveComponentData => liveComponentData.cid === cid)
-    if(data) {
-      const { componentClass } = data;
-      return this.statefuleLiveComponentInstances[componentClass];
-    }
-    return undefined;
   }
 
   private maybeAddLiveComponentsToParts(parts: Parts) {
