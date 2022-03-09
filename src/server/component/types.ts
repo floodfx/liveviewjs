@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { HtmlSafeString } from "../templates";
-import { LiveViewComponent } from "./live_view";
+import { LiveView } from "./live_view";
 
 // Validation errors for a type T should
 // be keyed by the field name
@@ -40,7 +40,7 @@ export interface LiveViewTemplate extends HtmlSafeString {
 
 
 export interface LiveViewRouter {
-  [key: string]: LiveViewComponent<unknown, unknown>;
+  [key: string]: LiveView<unknown, unknown>;
 }
 
 
