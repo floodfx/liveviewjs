@@ -68,7 +68,8 @@ export type PhxOutgoingLivePatchPush = PhxOutgoingMessage<PhxLivePatchPushPayloa
 export interface PhxEventPayload<Type extends string, Value> {
   type: Type,
   event: string,
-  value: Value
+  value: Value,
+  cid?: number;
 }
 
 export interface PhxEventUploads {
