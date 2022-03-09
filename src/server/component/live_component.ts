@@ -14,11 +14,34 @@ export interface LiveComponentMeta {
   myself?: number;
 }
 
+/**
+ * Represents the `LiveComponent`'s websocket connectedness along with current
+ * state of the component.  Also provides a method for sending messages
+ * internally to the parent `LiveView`.
+ */
 export interface LiveComponentSocket<T> {
+  /**
+   * The id of the parent `LiveView`
+   */
   id: string;
-  connected: boolean; // true for websocket, false for http request
+  // cid: number; TODO should we provide this as well?
+  /**
+   * Whether the websocket is connected (i.e. http request or joined via websocket)
+   * true if connected to a websocket, false for http request
+   */
+  connected: boolean;
+  /**
+   * The current state of the `LiveComponent`
+   */
   context: T;
+  /**
+   * The actual websocket connection (if connected)
+   */
   ws?: WebSocket;
+  /**
+   * helper method to send messages to the parent `LiveView` - requires the parent
+   * `LiveView` to implement `handleInfo`.
+   */
   send: (event: unknown) => void;
 }
 
@@ -109,7 +132,7 @@ export abstract class BaseLiveComponent<Context> implements LiveComponent<Contex
   }
 
   update(context: Context, socket: LiveComponentSocket<Context>): Partial<Context> {
-    return context;
+    return socket.context;
   }
 
   abstract render(context: Context, meta: LiveComponentMeta): LiveViewTemplate;
