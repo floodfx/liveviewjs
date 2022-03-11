@@ -1,67 +1,55 @@
 import { BaseLiveComponent, LiveViewTemplate } from ".";
 import { html } from "..";
-import { LiveComponentSocket } from "./live_component";
+import { HttpLiveComponentSocket } from "./live_component";
+import { LiveViewContext } from "./live_view";
 
 describe("test BaseLiveComponent", () => {
 
   it("mount returns context", () => {
     const component = new TestLiveComponent();
-    let ctx = component.mount(buildTestSocket());
-    expect(ctx.foo).toEqual("");
+    const socket = new HttpLiveComponentSocket<TestLVContext>("foo", {foo: ""});
+    component.mount(socket);
+    expect(socket.context.foo).toEqual("");
   });
 
   it("default update does NOT change context", async() => {
     const component = new TestLiveComponent();
-    let ctx = component.mount(buildTestSocket({foo: "bar"}));
-    ctx = {
-      ...ctx,
-      ...await component.update({foo: "baz"}, buildTestSocket(ctx))
-    }
-    expect(ctx.foo).toEqual("bar");
+    const socket = new HttpLiveComponentSocket<TestLVContext>("foo", {foo: "bar"});
+    component.mount(socket);
+    await component.update(socket);
+    expect(socket.context.foo).toEqual("bar");
   });
 
   it("render returns context view", async() => {
     const component = new TestLiveComponent();
-    let ctx = component.mount(buildTestSocket({foo: "bar"}));
-    ctx = {
-      ...ctx,
-      ...await component.update({foo: "baz"}, buildTestSocket(ctx))
-    }
-    const view = await component.render(ctx);
+    const socket = new HttpLiveComponentSocket<TestLVContext>("foo", {foo: "bar"});
+    component.mount(socket);
+    await component.update(socket);
+    expect(socket.context.foo).toEqual("bar");
+    const view = await component.render(socket.context);
     expect(view.toString()).toEqual("<div>bar</div>");
   });
 
   it("handleEvent returns unchanged context", async() => {
     const component = new TestLiveComponent();
-    let ctx = component.mount(buildTestSocket({foo: "bar"}));
-    ctx = {
-      ...ctx,
-      ...await component.handleEvent("event", {foo: "baz"}, buildTestSocket(ctx))
-    }
-
-    const view = await component.render(ctx);
+    const socket = new HttpLiveComponentSocket<TestLVContext>("foo", {foo: "bar"});
+    component.mount(socket);
+    await component.update(socket);
+    await component.handleEvent("event", {foo: "baz"}, socket);
+    expect(socket.context.foo).toEqual("bar");
+    const view = await component.render(socket.context);
     expect(view.toString()).toEqual("<div>bar</div>");
   });
 
 })
 
-function buildTestSocket(context: Ctx = {foo: ""}): LiveComponentSocket<Ctx> {
-  return {
-    id: "id",
-    connected: false, // websocket is connected
-    ws: undefined, // the websocket
-    context,
-    send: (event) => { },
-  }
-}
-
-interface Ctx {
+interface TestLVContext extends LiveViewContext {
   foo: string
 }
 
-class TestLiveComponent extends BaseLiveComponent<Ctx> {
+class TestLiveComponent extends BaseLiveComponent<TestLVContext> {
 
-  render(ctx: Ctx): LiveViewTemplate {
+  render(ctx: TestLVContext): LiveViewTemplate {
     return html`<div>${ctx.foo}</div>`;
   }
 
