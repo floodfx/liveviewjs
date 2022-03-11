@@ -1,4 +1,3 @@
-import { fromJS, mergeDeep } from "immutable";
 import { WebSocket } from "ws";
 import { LiveViewTemplate } from ".";
 
@@ -54,12 +53,9 @@ export interface LiveComponentSocket<Context extends LiveComponentContext> {
   assign: (context: Partial<Context>) => void;
 }
 
-export class HttpLiveComponentSocket<Context extends LiveComponentContext> implements LiveComponentSocket<Context> {
-  contextChanged: boolean = false;
+abstract class BaseLiveComponentSocket<Context extends LiveComponentContext> implements LiveComponentSocket<Context> {
 
   readonly id: string;
-  readonly connected: boolean = false;
-
   private _context: Context;
 
   constructor(id: string, context: Context) {
@@ -67,53 +63,43 @@ export class HttpLiveComponentSocket<Context extends LiveComponentContext> imple
     this._context = context;
   }
 
-  get context() {
+  get context(): Context {
     return this._context;
   }
 
   assign(context: Partial<Context>) {
-    const currentContext = fromJS(this._context);
-    const partialData = fromJS(context);
-    const mergedContext = mergeDeep(partialData, currentContext).toJS() as Context;
-    if(currentContext.equals(mergedContext)) {
-      this.contextChanged = false;
-    } else {
-      this.contextChanged = true;
+    this._context = {
+      ...(this._context || {}),
+      ...context
     }
-    this._context = mergedContext;
-  };
+  }
 
-  send(){};
+  send(event: unknown) {
+    // no-op
+  }
+
+  abstract connected: boolean;
+
 }
 
-export class WsLiveComponentSocket<Context extends LiveComponentContext> implements LiveComponentSocket<Context> {
-  contextChanged: boolean = false;
+export class HttpLiveComponentSocket<Context extends LiveComponentContext> extends BaseLiveComponentSocket<Context> {
 
-  readonly id: string;
+  readonly connected: boolean = false;
+
+  constructor(id: string, context: Context) {
+    super(id, context);
+  }
+
+}
+
+export class WsLiveComponentSocket<Context extends LiveComponentContext> extends BaseLiveComponentSocket<Context> {
+
   readonly connected: boolean = true;
 
-  private _context: Context;
   private sendCallback:  (event: unknown) => void;
   constructor(id: string, context: Context, sendCallback: (event: unknown) => void) {
-    this.id = id;
-    this._context = context;
+    super(id, context);
     this.sendCallback = sendCallback;
-  }
-
-  get context() {
-    return this._context;
-  }
-
-  assign(context: Partial<Context>) {
-    const currentContext = fromJS(this._context);
-    const partialData = fromJS(context);
-    const mergedContext = mergeDeep(partialData, currentContext).toJS() as Context;
-    if(currentContext.equals(mergedContext)) {
-      this.contextChanged = false;
-    } else {
-      this.contextChanged = true;
-    }
-    this._context = mergedContext;
   }
 
   send(event: unknown) {

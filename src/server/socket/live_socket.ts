@@ -1,4 +1,3 @@
-import { Collection, fromJS, mergeDeep } from "immutable";
 import { LiveViewContext } from "../component";
 /**
  * Main interface to update state, interact, manage, message, and otherwise
@@ -41,45 +40,69 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
   subscribe: (topic: string) => void;
 }
 
-/**
- * Minimal implementation which only provides `context` and `assign` for use with
- * HTTP requests.
- */
-export class HttpLiveViewSocket<Context extends LiveViewContext> implements LiveViewSocket<Context> {
+abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements LiveViewSocket<Context> {
 
-  readonly id: string;
-  readonly connected: boolean = false;
+  abstract connected: boolean;
+  abstract id: string;
+
   private _context: Context;
-
-  constructor(id: string, context: Context) {
-    this.id = id;
-    this._context = context;
-  }
 
   get context(): Context {
     return this._context;
   }
 
   assign(context: Partial<Context>) {
-    this._context = { ...this.context, ...context };
+    this._context = {
+      ...this._context,
+      ...context
+    }
+  }
+
+  pageTitle(newPageTitle: string) {
+    // no-op
+  }
+  pushEvent(event: string, params: Record<string, any>) {
+    // no-op
+  }
+  pushPatch(path: string, params: Record<string, string | number>) {
+    // no-op
+  }
+  repeat(fn: () => void, intervalMillis: number) {
+    // no-op
+  }
+  send(event: unknown) {
+    // no-op
+  }
+  subscribe(topic: string) {
+    // no-op
   };
 
-  // empty implementations for HTTP requests
-  pageTitle(){}
-  pushEvent(){}
-  pushPatch(){}
-  repeat(){}
-  send(){};
-  subscribe(){}
 }
 
-export class WsLiveViewSocket<Context extends LiveViewContext> implements LiveViewSocket<Context> {
-  contextChanged: boolean = false;
+/**
+ * Minimal implementation which only provides `context` and `assign` for use with
+ * HTTP requests.
+ */
+export class HttpLiveViewSocket<Context extends LiveViewContext> extends BaseLiveViewSocket<Context> implements LiveViewSocket<Context> {
+
+  readonly id: string;
+  readonly connected: boolean = false;
+
+  constructor(id: string, context: Context) {
+    super();
+    this.id = id;
+    this.assign(context);
+  }
+}
+
+export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveViewSocket<Context> implements LiveViewSocket<Context> {
 
   readonly id: string;
   readonly connected: boolean = true;
 
-  private _context: Collection<unknown,unknown>
+  pushEventData?: {event: string, params: Record<string, any>};
+  pageTitleData?: string;
+
   // callbacks to the ComponentManager
   private subscribeCallback: (topic: string) => void;
   private pushPatchCallback: (path: string, params: Record<string, string | number>) => void;
@@ -97,6 +120,7 @@ export class WsLiveViewSocket<Context extends LiveViewContext> implements LiveVi
     sendCallback: (event: unknown) => void,
     subscribeCallback: (topic: string) => void,
   ) {
+    super();
     this.id = id;
     this.pageTitleCallback = pageTitleCallback;
     this.pushEventCallback = pushEventCallback;
@@ -104,22 +128,6 @@ export class WsLiveViewSocket<Context extends LiveViewContext> implements LiveVi
     this.repeatCallback = repeatCallback;
     this.sendCallback = sendCallback;
     this.subscribeCallback = subscribeCallback;
-  }
-
-  get context(): Context {
-    return this._context.toJS() as Context;
-  }
-
-  assign(context: Partial<Context>) {
-    const currentContext = this._context;
-    const partialData = fromJS(context);
-    const mergedContext = mergeDeep(partialData, currentContext);
-    if(currentContext.equals(mergedContext)) {
-      this.contextChanged = false;
-    } else {
-      this.contextChanged = true;
-    }
-    this._context = mergedContext;
   }
 
   pageTitle(newPageTitle: string) {
@@ -142,3 +150,4 @@ export class WsLiveViewSocket<Context extends LiveViewContext> implements LiveVi
   };
 
 }
+
