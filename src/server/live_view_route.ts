@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import { LiveComponent, LiveComponentSocket, LiveView, LiveViewSocket, PageTitleDefaults } from ".";
+import { LiveComponentContext, LiveViewContext } from "./component";
 
 type SessionDataProvider<T extends {csrfToken: string}> = (req: Request) => T;
 
@@ -9,7 +10,7 @@ const emptyVoid = () => {};
 
 export const configLiveViewHandler = <T extends {csrfToken: string}>(
   getPath: string,
-  component: LiveView<unknown,unknown>,
+  component: LiveView<LiveViewContext,unknown>,
   rootView: string,
   signingSecret: string,
   sessionDataProvider: SessionDataProvider<T>,
@@ -21,15 +22,17 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
     const liveViewId = nanoid();
 
     // mock socket
-    const liveViewSocket: LiveViewSocket<T> = {
+    const liveViewSocket: LiveViewSocket<LiveViewContext> = {
       id: liveViewId,
       connected: false, // ws socket not connected on http request
       context: {} as T,
-      sendInternal: emptyVoid,
+      assign: (context) => context,
+      send: emptyVoid,
       repeat: emptyVoid,
       pageTitle: emptyVoid,
       subscribe: emptyVoid,
       pushPatch: emptyVoid,
+      pushEvent: emptyVoid
     }
 
     // get session data from provider
@@ -46,7 +49,7 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
     );
 
     // default socket builder
-    const buildLiveComponentSocket = (id: string, context: unknown): LiveComponentSocket<unknown> => {
+    const buildLiveComponentSocket = (id: string, context: LiveComponentContext): LiveComponentSocket<LiveComponentContext> => {
       return {
         id,
         connected: false, // websocket is not connected on http request
@@ -59,7 +62,7 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
     let myself: number = 1;
     const view = await component.render(ctx, {
       csrfToken: session.csrfToken,
-      live_component: async(liveComponent: LiveComponent<unknown>, params?: Partial<unknown & {id: number | string}>) => {
+      live_component: async(liveComponent: LiveComponent<LiveComponentContext>, params?: Partial<unknown & {id: number | string}>) => {
         params = params ?? {};
         delete params.id;
         let context = await liveComponent.mount(buildLiveComponentSocket(liveViewId, params));

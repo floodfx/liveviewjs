@@ -2,11 +2,12 @@ import { SessionData } from "express-session";
 import jwt from 'jsonwebtoken';
 import { WebSocket } from "ws";
 import { HtmlSafeString, LiveComponent, LiveComponentSocket, LiveViewMeta, LiveViewSocket, LiveViewTemplate, Parts } from "..";
-import { LiveView, PushPatchPathAndParams } from "../";
+import { LiveView } from "../";
+import { LiveComponentContext, LiveViewContext } from "../component";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
 import { deepDiff } from "../templates/diff";
 import { PhxMessage } from "./message_router";
-import { PhxBlurPayload, PhxClickPayload, PhxDiffReply, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming, PhxOutgoingLivePatchPush, PhxOutgoingMessage } from "./types";
+import { PhxBlurPayload, PhxClickPayload, PhxDiffReply, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming, PhxOutgoingLivePatchPush, PhxOutgoingMessage, PhxOutgoingPushEvent } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
 
 /**
@@ -21,7 +22,7 @@ interface StatefulLiveComponentData {
   /**
    * The last calculated state of the component.
    */
-  context: unknown;
+  context: LiveComponentContext;
   /**
    * The last `Parts` tree rendered by the component.
    */
@@ -56,8 +57,8 @@ export class LiveViewComponentManager {
   private ws: WebSocket;
   private subscriptionIds: Record<string,Promise<string>> = {};
 
-  private context: unknown;
-  private component: LiveView<unknown, unknown>;
+  private context: LiveViewContext;
+  private component: LiveView<LiveViewContext, unknown>;
   private signingSecret: string;
   private intervals: NodeJS.Timeout[] = [];
   private lastHeartbeat: number = Date.now();
@@ -67,7 +68,7 @@ export class LiveViewComponentManager {
   private _pageTitle: string | undefined;
   private pageTitleChanged: boolean = false;
 
-  constructor(component: LiveView<unknown, unknown>, signingSecret: string, connectionId: string, ws: WebSocket) {
+  constructor(component: LiveView<LiveViewContext, unknown>, signingSecret: string, connectionId: string, ws: WebSocket) {
     this.component = component;
     this.signingSecret = signingSecret;
     this.context = {};
@@ -320,9 +321,12 @@ export class LiveViewComponentManager {
     this.intervals.forEach(clearInterval);
   }
 
-  private async onPushPatch(patch: PushPatchPathAndParams) {
-    const urlParams = new URLSearchParams(patch.to.params);
-    const to = `${patch.to.path}?${urlParams}`
+  private async onPushPatch(path: string, params: Record<string, string | number>) {
+    const onlyStringParams = Object.entries(params).map(([key, value]) => {
+      return [key, String(value)];
+    });
+    const urlParams = new URLSearchParams(onlyStringParams);
+    const to = `${path}?${urlParams}`
     const message: PhxOutgoingLivePatchPush = [
       null, // no join reference
       null, // no message reference
@@ -332,9 +336,32 @@ export class LiveViewComponentManager {
     ]
 
     // @ts-ignore - URLSearchParams has an entries method but not typed
-    const params = Object.fromEntries(urlParams);
+    const searchParams = Object.fromEntries(urlParams);
 
-    this.context = await this.component.handleParams(params, to, this.buildLiveViewSocket());
+    this.context = await this.component.handleParams(searchParams, to, this.buildLiveViewSocket());
+
+    this.sendPhxReply(message);
+  }
+
+  private async onPushEvent(event: string, value: Record<string, any>) {
+
+    const message: PhxOutgoingPushEvent = [
+      null, // no join reference
+      null, // no message reference
+      this.joinId,
+      "phx_reply",
+      {
+        response: {
+          diff: {
+            e: [[
+              event,
+              value
+            ]]
+          }
+        },
+        status: "ok"
+      }
+    ]
 
     this.sendPhxReply(message);
   }
@@ -368,21 +395,31 @@ export class LiveViewComponentManager {
     }
   }
 
-  private buildLiveViewSocket(): LiveViewSocket<unknown> {
+  private buildLiveViewSocket(): LiveViewSocket<LiveViewContext> {
     return {
       id: this.joinId,
       connected: true, // websocket is connected
       ws: this.ws, // the websocket TODO necessary?
       context: this.context,
-      sendInternal: (event) => this.sendInternal(event),
+      assign: (partialContext) => {
+        this.context = {
+          ...this.context,
+          ...partialContext
+        }
+        return this.context;
+      },
+      send: (event) => this.sendInternal(event),
       repeat: (fn, intervalMillis) => this.repeat(fn, intervalMillis),
       pageTitle: (newTitle: string) => { this.pageTitle = newTitle },
       subscribe: (topic: string) => {
         const subId = PubSub.subscribe(topic, (event) => this.sendInternal(event))
         this.subscriptionIds[topic] = subId;
       },
-      pushPatch: (params: PushPatchPathAndParams) => {
-        this.onPushPatch(params);
+      pushPatch: (path: string, params: Record<string, string | number>) => {
+        this.onPushPatch(path, params);
+      },
+      pushEvent: (event: string, params: Record<string, any>) => {
+        this.onPushEvent(event, params);
       }
     }
   }
@@ -425,7 +462,7 @@ export class LiveViewComponentManager {
    */
   private statefulLiveComponents: Record<string, StatefulLiveComponentData> = {};
 
-  private statefuleLiveComponentInstances: Record<string, LiveComponent<unknown>> = {};
+  private statefuleLiveComponentInstances: Record<string, LiveComponent<LiveComponentContext>> = {};
 
   /**
    * Collect all the LiveComponents first, group by their component type (e.g. instanceof),
@@ -434,7 +471,7 @@ export class LiveViewComponentManager {
    * @param liveComponent
    * @param params
    */
-  private async liveComponentProcessor(liveComponent: LiveComponent<unknown>, params: unknown & {id? : number | string} = {}): Promise<LiveViewTemplate> {
+  private async liveComponentProcessor(liveComponent: LiveComponent<LiveComponentContext>, params: unknown & {id? : number | string} = {}): Promise<LiveViewTemplate> {
     // console.log("liveComponentProcessor", liveComponent, params);
     // TODO - determine how to collect all the live components of the same type
     // and preload them all at once
@@ -452,7 +489,7 @@ export class LiveViewComponentManager {
     }
 
     // setup variables
-    let context: unknown = params;
+    let context: LiveComponentContext = params;
     let newView: LiveViewTemplate;
 
     // determine if component is stateful or stateless
@@ -568,7 +605,7 @@ export class LiveViewComponentManager {
     } as LiveViewMeta
   }
 
-  private buildLiveComponentSocket(context: unknown): LiveComponentSocket<unknown> {
+  private buildLiveComponentSocket(context: LiveComponentContext): LiveComponentSocket<LiveComponentContext> {
     return {
       id: this.joinId,
       connected: true, // websocket is connected
@@ -580,11 +617,11 @@ export class LiveViewComponentManager {
 
 }
 
-export function isInfoHandler(component: LiveView<unknown, unknown>) {
+export function isInfoHandler(component: LiveView<LiveViewContext, unknown>) {
   return "handleInfo" in component;
 }
 
-export function isEventHandler(component: LiveView<unknown, unknown>) {
+export function isEventHandler(component: LiveView<LiveViewContext, unknown>) {
   return "handleEvent" in component;
 }
 

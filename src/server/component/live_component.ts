@@ -1,6 +1,10 @@
 import { WebSocket } from "ws";
 import { LiveViewTemplate } from ".";
 
+/**
+ * Contexts can only be objects with string keys.
+ */
+export type LiveComponentContext = {[key: string]: unknown}
 
 export interface LiveComponentMeta {
   /**
@@ -19,7 +23,7 @@ export interface LiveComponentMeta {
  * state of the component.  Also provides a method for sending messages
  * internally to the parent `LiveView`.
  */
-export interface LiveComponentSocket<T> {
+export interface LiveComponentSocket<Context extends LiveComponentContext> {
   /**
    * The id of the parent `LiveView`
    */
@@ -33,7 +37,7 @@ export interface LiveComponentSocket<T> {
   /**
    * The current state of the `LiveComponent`
    */
-  context: T;
+  context: Context;
   /**
    * The actual websocket connection (if connected)
    */
@@ -61,7 +65,7 @@ export interface LiveComponentSocket<T> {
  * To make a `LiveComponent` stateful, you must pass an `id` to the `live_component` helper in the
  * `LiveView` template.
  */
-export interface LiveComponent<Context> {
+export interface LiveComponent<Context extends LiveComponentContext> {
 
   /**
    * `preload` is useful when multiple `LiveComponent`s of the same type are loaded
@@ -121,7 +125,7 @@ export interface LiveComponent<Context> {
  * a stateful `LiveComponent` you most likely want to implement at least `mount` and
  * perhaps `update` as well.  See `LiveComponent` for more details.
  */
-export abstract class BaseLiveComponent<Context> implements LiveComponent<Context> {
+export abstract class BaseLiveComponent<Context extends LiveComponentContext> implements LiveComponent<Context> {
 
   // preload(contextsList: Context[]): Partial<Context>[] {
   //   return contextsList;

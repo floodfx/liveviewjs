@@ -20,7 +20,7 @@ export type PhxOutgoingMessage<Payload> = [
   joinRef: string | null, // number
   messageRef: string | null, // number
   topic: "phoenix" | string,
-  event: "phx_reply" | "diff" | "live_patch",
+  event: "phx_reply" | "diff" | "live_patch" | "push_event",
   payload: Payload
 ]
 
@@ -64,6 +64,8 @@ export interface PhxLivePatchPushPayload {
   to: string,
 }
 export type PhxOutgoingLivePatchPush = PhxOutgoingMessage<PhxLivePatchPushPayload>;
+
+export type PhxOutgoingPushEvent = PhxOutgoingMessage<unknown>;
 
 export interface PhxEventPayload<Type extends string, Value> {
   type: Type,

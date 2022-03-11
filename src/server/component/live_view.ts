@@ -1,5 +1,12 @@
 import { SessionData } from "express-session";
-import { LiveComponent, LiveViewSocket, LiveViewTemplate } from ".";
+import { LiveComponent, LiveViewTemplate } from ".";
+import { LiveViewSocket } from "../socket/live_socket";
+import { LiveComponentContext } from "./live_component";
+
+/**
+ * Contexts can only be objects with string keys.
+ */
+ export type LiveViewContext = {[key: string]: unknown}
 
 /**
  * Paramter passed into the `mount` function of a LiveViewComponent.
@@ -22,7 +29,7 @@ export interface LiveViewMountParams {
  * The `Params` type is for defining what URLSearchParams may be added to the
  * `LiveView` URL.
  */
-export interface LiveView<Context, Params> {
+export interface LiveView<Context extends LiveViewContext, Params> {
 
   /**
    * `mount` is both when the `LiveView` is rendered for the HTTP request
@@ -60,7 +67,7 @@ export interface LiveView<Context, Params> {
  * Interface to be implemented if a `LiveView` component wants to recieve events initiated
  * on the client (from `phx-click`, `phx-change`, `phx-submit`, etc).
  */
-export interface LiveViewExternalEventListener<Context, Event extends string, Params> {
+export interface LiveViewExternalEventListener<Context extends LiveViewContext, Event extends string, Params> {
   /**
    * Events initiated by the client (i.e. user interactions with the `LiveView`) will be
    * passed into this handler.  Internal state (i.e. context) will be updated based on the
@@ -75,7 +82,7 @@ export interface LiveViewExternalEventListener<Context, Event extends string, Pa
 /**
  * Interface to be implemented if a `LiveView` component will handle internal events.
  */
-export interface LiveViewInternalEventListener<Context, Event> {
+export interface LiveViewInternalEventListener<Context extends LiveViewContext, Event> {
   /**
    * Events initiated by the `LiveView` or `LiveComponent`s that are childern of this
    * `LiveView` will be passed into this handler.  The internal state (context) will
@@ -104,6 +111,6 @@ export interface LiveViewMeta {
   /**
    * A helper for loading `LiveComponent`s within a `LiveView`.
    */
-  live_component: <Context>(liveComponent: LiveComponent<Context>, params?: Partial<Context & {id: number | string}>) => Promise<LiveViewTemplate>
+  live_component: <Context  extends LiveComponentContext>(liveComponent: LiveComponent<Context>, params?: Partial<Context & {id: number | string}>) => Promise<LiveViewTemplate>
 }
 
