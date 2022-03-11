@@ -1,11 +1,13 @@
 import { SessionData } from "express-session";
+import { fromJS } from "immutable";
 import jwt from 'jsonwebtoken';
 import { WebSocket } from "ws";
-import { HtmlSafeString, LiveComponent, LiveComponentSocket, LiveViewMeta, LiveViewSocket, LiveViewTemplate, Parts } from "..";
+import { HtmlSafeString, LiveComponent, LiveViewMeta, LiveViewSocket, LiveViewTemplate, Parts } from "..";
 import { LiveView } from "../";
-import { LiveComponentContext, LiveViewContext } from "../component";
+import { LiveComponentContext, LiveViewContext, WsLiveComponentSocket } from "../component";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
 import { deepDiff } from "../templates/diff";
+import { WsLiveViewSocket } from "./live_socket";
 import { PhxMessage } from "./message_router";
 import { PhxBlurPayload, PhxClickPayload, PhxDiffReply, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming, PhxOutgoingLivePatchPush, PhxOutgoingMessage, PhxOutgoingPushEvent } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
@@ -57,7 +59,7 @@ export class LiveViewComponentManager {
   private ws: WebSocket;
   private subscriptionIds: Record<string,Promise<string>> = {};
 
-  private context: LiveViewContext;
+  // private context: LiveViewContext;
   private component: LiveView<LiveViewContext, unknown>;
   private signingSecret: string;
   private intervals: NodeJS.Timeout[] = [];
@@ -67,13 +69,15 @@ export class LiveViewComponentManager {
 
   private _pageTitle: string | undefined;
   private pageTitleChanged: boolean = false;
+  private socket: LiveViewSocket<LiveViewContext>;
 
   constructor(component: LiveView<LiveViewContext, unknown>, signingSecret: string, connectionId: string, ws: WebSocket) {
     this.component = component;
     this.signingSecret = signingSecret;
-    this.context = {};
+    // this.context = {};
     this.connectionId = connectionId;
     this.ws = ws;
+
     // subscribe to events on connectionId which should just be
     // heartbeat messages
     const subId = PubSub.subscribe(connectionId, (data) => this.handleSubscriptions(data as PhxMessage));
@@ -116,18 +120,30 @@ export class LiveViewComponentManager {
     // again save subscription id for unsubscribing
     this.subscriptionIds[this.joinId] = subId;
 
-    // pass in phx_join payload params, session, and socket
-    this.context = await this.component.mount(payloadParams, session, this.buildLiveViewSocket());
+    // create the liveViewSocket now
+    this.socket = new WsLiveViewSocket(
+      this.joinId,
+      (newTitle: string) => { this.pageTitle = newTitle },
+      this.onPushEvent,
+      this.onPushPatch,
+      this.repeat,
+      this.sendInternal,
+      (topic: string) => {
+        const subId = PubSub.subscribe(topic, (event) => this.sendInternal(event))
+        this.subscriptionIds[topic] = subId;
+      }
+    );
 
-    this.context = await this.component.handleParams(urlParams, joinUrl!, this.buildLiveViewSocket());
+    // initial lifecycle steps mount => handleParams => render
+    await this.component.mount(payloadParams, session, this.socket);
+    await this.component.handleParams(urlParams, joinUrl!, this.socket);
+    const view = await this.component.render(this.socket.context, this.defaultLiveViewMeta());
 
-    const view = await this.component.render(this.context, this.defaultLiveViewMeta());
-
+    // add `LiveComponent` to the render tree
     let rendered = this.maybeAddLiveComponentsToParts(view.partsTree());
 
+    // change the page title if it has been set
     rendered = this.maybeAddPageTitleToParts(rendered);
-
-
 
     // send full view parts (statics & dynaimcs back)
     const replyPayload = {
@@ -191,16 +207,24 @@ export class LiveViewComponentManager {
         // call event handler on stateful component instance
         const liveComponent = this.statefuleLiveComponentInstances[componentClass];
         if(liveComponent) {
+          // socker for this live component instance
+          const lcSocket = new WsLiveComponentSocket(this.joinId, oldContext, this.sendInternal);
+
           // run handleEvent and render then update context for cid
-          const newContext = await liveComponent.handleEvent(event, value as Record<string, string>, this.buildLiveComponentSocket(oldContext));
+          await liveComponent.handleEvent(event, value as Record<string, string>, lcSocket);
+
+          console.log("lcSocket.context", lcSocket.context, lcSocket.contextChanged);
+
           // TODO optimization - if contexts are the same, don't re-render
-          const newView = await liveComponent.render(newContext, {myself: cid});
+          const newView = await liveComponent.render(lcSocket.context, {myself: cid});
+
+          //
           const newParts = deepDiff(oldParts, newView.partsTree());
           const changed = Object.keys(newParts).length > 0;
           // store state for subsequent loads
           this.statefulLiveComponents[compoundId] = {
             ...statefulComponent,
-            context: newContext,
+            context: lcSocket.context,
             parts: newView.partsTree(),
             changed,
           }
@@ -229,22 +253,32 @@ export class LiveViewComponentManager {
         console.error("Could not find stateful component for", cid);
       }
     }
+    // event is not for LiveComponent rather it is for LiveView
     else {
       if (isEventHandler(this.component)) {
-        const previousContext = this.context;
+        // copy previous context
+        const previousContext = this.socket.context;
         // @ts-ignore - already checked if handleEvent is defined
-        this.context = await this.component.handleEvent(
+        await this.component.handleEvent(
           event,
           value,
-          this.buildLiveViewSocket()
+          this.socket
         );
 
-        // get old render tree and new render tree for diffing
-        const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
-        const view = await this.component.render(this.context, this.defaultLiveViewMeta());
+        const ctxEqual = areContextsValueEqual(previousContext, this.socket.context)
+        let diff: Parts = {}
 
-        const combined = deepDiff(oldView.partsTree(), view.partsTree());
-        const diff = this.maybeAddPageTitleToParts(combined);
+        // only calc diff if contexts have changed
+        if(!ctxEqual) {
+
+          // get old render tree and new render tree for diffing
+          const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
+          const view = await this.component.render(this.socket.context, this.defaultLiveViewMeta());
+
+          diff = deepDiff(oldView.partsTree(), view.partsTree());
+        }
+
+        diff = this.maybeAddPageTitleToParts(diff);
 
         const replyPayload = {
           response: {
@@ -271,16 +305,16 @@ export class LiveViewComponentManager {
     // @ts-ignore - URLSearchParams has an entries method but not typed
     const params = Object.fromEntries(url.searchParams);
 
-    const previousContext = this.context;
-    this.context = await this.component.handleParams(
+    const previousContext = this.socket.context;
+    await this.component.handleParams(
       params,
       urlString,
-      this.buildLiveViewSocket()
-    );
+      this.socket
+    )
 
     // get old render tree and new render tree for diffing
-    const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
-    const view = await this.component.render(this.context, this.defaultLiveViewMeta());
+    // const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
+    const view = await this.component.render(this.socket.context, this.defaultLiveViewMeta());
 
     // TODO - why is the diff causing live_patch to fail??
     // const diff = deepDiff(oldView.partsTree(), view.partsTree());
@@ -338,7 +372,7 @@ export class LiveViewComponentManager {
     // @ts-ignore - URLSearchParams has an entries method but not typed
     const searchParams = Object.fromEntries(urlParams);
 
-    this.context = await this.component.handleParams(searchParams, to, this.buildLiveViewSocket());
+    await this.component.handleParams(searchParams, to, this.socket);
 
     this.sendPhxReply(message);
   }
@@ -370,16 +404,22 @@ export class LiveViewComponentManager {
     // console.log("sendInternal", event, this.socketId);
 
     if (isInfoHandler(this.component)) {
-      const previousContext = this.context;
+      const previousContext = this.socket.context;
       // @ts-ignore - already checked if handleInfo is defined
-      this.context = this.component.handleInfo(event, this.buildLiveViewSocket());
+      this.component.handleInfo(event, this.socket);
 
-      // get old render tree and new render tree for diffing
-      const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
-      const view = await this.component.render(this.context, this.defaultLiveViewMeta());
+      const ctxEqual = areContextsValueEqual(previousContext, this.socket.context)
+      let diff: Parts = {}
+      // only calc diff if contexts have changed
+      if(!ctxEqual) {
 
-      const combined = deepDiff(oldView.partsTree(), view.partsTree());
-      const diff = this.maybeAddPageTitleToParts(combined);
+        // get old render tree and new render tree for diffing
+        const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
+        const view = await this.component.render(this.socket.context, this.defaultLiveViewMeta());
+
+        const diff = deepDiff(oldView.partsTree(), view.partsTree());
+      }
+      diff = this.maybeAddPageTitleToParts(diff);
 
       const reply: PhxDiffReply = [
         null, // no join reference
@@ -392,35 +432,6 @@ export class LiveViewComponentManager {
     }
     else {
       console.error("received internal event but no handleInfo in component", this.component);
-    }
-  }
-
-  private buildLiveViewSocket(): LiveViewSocket<LiveViewContext> {
-    return {
-      id: this.joinId,
-      connected: true, // websocket is connected
-      ws: this.ws, // the websocket TODO necessary?
-      context: this.context,
-      assign: (partialContext) => {
-        this.context = {
-          ...this.context,
-          ...partialContext
-        }
-        return this.context;
-      },
-      send: (event) => this.sendInternal(event),
-      repeat: (fn, intervalMillis) => this.repeat(fn, intervalMillis),
-      pageTitle: (newTitle: string) => { this.pageTitle = newTitle },
-      subscribe: (topic: string) => {
-        const subId = PubSub.subscribe(topic, (event) => this.sendInternal(event))
-        this.subscriptionIds[topic] = subId;
-      },
-      pushPatch: (path: string, params: Record<string, string | number>) => {
-        this.onPushPatch(path, params);
-      },
-      pushEvent: (event: string, params: Record<string, any>) => {
-        this.onPushEvent(event, params);
-      }
     }
   }
 
@@ -511,16 +522,18 @@ export class LiveViewComponentManager {
       let myself: number;
       if(this.statefulLiveComponents[compoundId] === undefined) {
         myself = Object.keys(this.statefulLiveComponents).length + 1;
-        // first load lifecycle
-        context = await liveComponent.mount(this.buildLiveComponentSocket(context));
-        context = await liveComponent.update(context, this.buildLiveComponentSocket(context));
 
-        // no old view so just send render as diff
-        newView = await liveComponent.render(context, { myself });
+        // setup socket
+        const lcSocket = new WsLiveComponentSocket(this.joinId, context, this.sendInternal);
+
+        // first load lifecycle mount => update => render
+        await liveComponent.mount(lcSocket);
+        await liveComponent.update(lcSocket);
+        newView = await liveComponent.render(lcSocket.context, { myself });
 
         // store state for subsequent loads
         this.statefulLiveComponents[compoundId] = {
-          context,
+          context: lcSocket.context,
           parts: newView.partsTree(),
           changed: true,
           cid: myself,
@@ -532,17 +545,21 @@ export class LiveViewComponentManager {
         const liveComponentData = this.statefulLiveComponents[compoundId];
         const { context: oldContext, parts: oldParts, cid } = liveComponentData;
         myself = cid;
-        // subsequent loads lifecycle
-        context = await liveComponent.update(oldContext, this.buildLiveComponentSocket(oldContext));
 
-        // no old view so just send render as diff
+        // setup socket
+        const lcSocket = new WsLiveComponentSocket(this.joinId, oldContext, this.sendInternal);
+
+        // subsequent loads lifecycle update => render (no mount)
+        await liveComponent.update(lcSocket);
         newView = await liveComponent.render(context, {myself});
+
         const newParts = deepDiff(oldParts, newView.partsTree());
         const changed = Object.keys(newParts).length > 0;
+
         // store state for subsequent loads
         this.statefulLiveComponents[compoundId] = {
           ...liveComponentData,
-          context,
+          context: lcSocket.context,
           parts: newView.partsTree(),
           changed,
         };
@@ -559,10 +576,13 @@ export class LiveViewComponentManager {
       // 3. update
       // 4. render
 
+      // setup socket
+      const lcSocket = new WsLiveComponentSocket(this.joinId, context, this.sendInternal);
+
       // skipping preload for now... see comment above
-      context = await liveComponent.mount(this.buildLiveComponentSocket(context));
-      context = await liveComponent.update(context, this.buildLiveComponentSocket(context));
-      // no old view so just render
+      // first load lifecycle mount => update => render
+      await liveComponent.mount(lcSocket);
+      await liveComponent.update(lcSocket);
       newView = await liveComponent.render(context, {myself: id});
       // since this is stateless send back the LiveViewTemplate
       return newView;
@@ -598,22 +618,24 @@ export class LiveViewComponentManager {
   private defaultLiveViewMeta(): LiveViewMeta {
     return {
       csrfToken: this.csrfToken,
-      live_component: async(liveComponent, params) => {
-        const render = await this.liveComponentProcessor(liveComponent, params);
+      live_component: async(liveComponent: LiveComponent<LiveComponentContext>, params?: Partial<LiveComponentContext & { id: string | number; }> | undefined): Promise<LiveViewTemplate> => {
+        const render = await this.liveComponentProcessor(liveComponent as LiveComponent<LiveComponentContext>, params);
         return render;
       }
     } as LiveViewMeta
   }
 
-  private buildLiveComponentSocket(context: LiveComponentContext): LiveComponentSocket<LiveComponentContext> {
-    return {
-      id: this.joinId,
-      connected: true, // websocket is connected
-      ws: this.ws, // the websocket TODO necessary?
-      context,
-      send: (event) => this.sendInternal(event),
-    }
-  }
+  // private buildLiveComponentSocket(context: LiveComponentContext): LiveComponentSocket<LiveComponentContext> {
+  //   return {
+  //     id: this.joinId,
+  //     connected: true, // websocket is connected
+  //     ws: this.ws, // the websocket TODO necessary?
+  //     context,
+  //     send: (event) => this.sendInternal(event),
+  //   }
+  // }
+
+
 
 }
 
@@ -623,5 +645,11 @@ export function isInfoHandler(component: LiveView<LiveViewContext, unknown>) {
 
 export function isEventHandler(component: LiveView<LiveViewContext, unknown>) {
   return "handleEvent" in component;
+}
+
+function areContextsValueEqual(context1: LiveComponentContext, context2: LiveComponentContext): boolean {
+  const c1 = fromJS(context1);
+  const c2 = fromJS(context2);
+  return c1.equals(c2);
 }
 

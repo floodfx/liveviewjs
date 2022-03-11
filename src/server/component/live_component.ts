@@ -1,10 +1,11 @@
+import { fromJS, mergeDeep } from "immutable";
 import { WebSocket } from "ws";
 import { LiveViewTemplate } from ".";
 
 /**
  * Contexts can only be objects with string keys.
  */
-export type LiveComponentContext = {[key: string]: unknown}
+export interface LiveComponentContext {[key: string]: unknown}
 
 export interface LiveComponentMeta {
   /**
@@ -35,7 +36,7 @@ export interface LiveComponentSocket<Context extends LiveComponentContext> {
    */
   connected: boolean;
   /**
-   * The current state of the `LiveComponent`
+   * Read-only, current state of the `LiveComponent`
    */
   context: Context;
   /**
@@ -47,6 +48,77 @@ export interface LiveComponentSocket<Context extends LiveComponentContext> {
    * `LiveView` to implement `handleInfo`.
    */
   send: (event: unknown) => void;
+  /**
+   * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
+   */
+  assign: (context: Partial<Context>) => void;
+}
+
+export class HttpLiveComponentSocket<Context extends LiveComponentContext> implements LiveComponentSocket<Context> {
+  contextChanged: boolean = false;
+
+  readonly id: string;
+  readonly connected: boolean = false;
+
+  private _context: Context;
+
+  constructor(id: string, context: Context) {
+    this.id = id;
+    this._context = context;
+  }
+
+  get context() {
+    return this._context;
+  }
+
+  assign(context: Partial<Context>) {
+    const currentContext = fromJS(this._context);
+    const partialData = fromJS(context);
+    const mergedContext = mergeDeep(partialData, currentContext).toJS() as Context;
+    if(currentContext.equals(mergedContext)) {
+      this.contextChanged = false;
+    } else {
+      this.contextChanged = true;
+    }
+    this._context = mergedContext;
+  };
+
+  send(){};
+}
+
+export class WsLiveComponentSocket<Context extends LiveComponentContext> implements LiveComponentSocket<Context> {
+  contextChanged: boolean = false;
+
+  readonly id: string;
+  readonly connected: boolean = true;
+
+  private _context: Context;
+  private sendCallback:  (event: unknown) => void;
+  constructor(id: string, context: Context, sendCallback: (event: unknown) => void) {
+    this.id = id;
+    this._context = context;
+    this.sendCallback = sendCallback;
+  }
+
+  get context() {
+    return this._context;
+  }
+
+  assign(context: Partial<Context>) {
+    const currentContext = fromJS(this._context);
+    const partialData = fromJS(context);
+    const mergedContext = mergeDeep(partialData, currentContext).toJS() as Context;
+    if(currentContext.equals(mergedContext)) {
+      this.contextChanged = false;
+    } else {
+      this.contextChanged = true;
+    }
+    this._context = mergedContext;
+  }
+
+  send(event: unknown) {
+    this.sendCallback(event);
+  }
 }
 
 /**
@@ -82,7 +154,7 @@ export interface LiveComponent<Context extends LiveComponentContext> {
    *
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  mount(socket: LiveComponentSocket<Context>): Context;
+  mount(socket: LiveComponentSocket<Context>): void | Promise<void>;
 
   /**
    * Allows the `LiveComponent` to update its stateful context.  This is called
@@ -97,7 +169,7 @@ export interface LiveComponent<Context extends LiveComponentContext> {
    * @param context the current state for this `LiveComponent`
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  update(context: Context, socket:LiveComponentSocket<Context>): Partial<Context>;
+  update(socket:LiveComponentSocket<Context>): void | Promise<void>;
 
   /**
    * Renders the `LiveComponent` by returning a `LiveViewTemplate`.  Each time a
@@ -113,7 +185,7 @@ export interface LiveComponent<Context extends LiveComponentContext> {
    * @param params a list of string-to-string key/value pairs related to the event
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>): Partial<Context>;
+  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>): void | Promise<void>;
 
 }
 
@@ -131,18 +203,18 @@ export abstract class BaseLiveComponent<Context extends LiveComponentContext> im
   //   return contextsList;
   // }
 
-  mount(socket: LiveComponentSocket<Context>): Context {
-    return socket.context;
+  mount(socket: LiveComponentSocket<Context>) {
+    // no-op
   }
 
-  update(context: Context, socket: LiveComponentSocket<Context>): Partial<Context> {
-    return socket.context;
+  update(socket: LiveComponentSocket<Context>) {
+    // no-op
+  }
+
+  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>) {
+    // no-op
   }
 
   abstract render(context: Context, meta: LiveComponentMeta): LiveViewTemplate;
-
-  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>): Partial<Context> {
-    return socket.context;
-  }
 
 }

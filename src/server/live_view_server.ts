@@ -5,8 +5,8 @@ import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import path from "path";
 import WebSocket from 'ws';
-import { LiveComponent, LiveComponentSocket, LiveView, LiveViewRouter, LiveViewSocket, live_title_tag } from ".";
-import { LiveComponentContext, LiveViewContext } from "./component";
+import { LiveView, LiveViewRouter, LiveViewSocket, live_title_tag } from ".";
+import { HttpLiveViewMeta, LiveViewContext } from "./component";
 import { MessageRouter } from "./socket/message_router";
 
 // extend / define session interface
@@ -203,33 +203,10 @@ export class LiveViewServer {
 
       // TODO handle_params
 
-      // default socket builder
-      const buildLiveComponentSocket = (id: string, context: LiveComponentContext): LiveComponentSocket<LiveComponentContext> => {
-        return {
-          id,
-          connected: false, // websocket is not connected on http request
-          ws: undefined, // no websocke on http request
-          context,
-          send: () => {},
-        }
-      }
-
-      // render
-      let myself: number = 1;
-      const view = await component.render(ctx, {
-        csrfToken: req.session.csrfToken,
-        live_component: async(liveComponent: LiveComponent<LiveComponentContext>, params?: Partial<unknown & {id: number | string}>) => {
-          params = params ?? {};
-          delete params.id;
-          let context = await liveComponent.mount(buildLiveComponentSocket(liveViewId, params));
-          context = await liveComponent.update(context, buildLiveComponentSocket(liveViewId, context));
-          // no old view so just render
-          let newView = await liveComponent.render(context, {myself});
-          myself++;
-          // since http request is stateless send back the LiveViewTemplate
-          return newView;
-        }
-      });
+      // pass LiveViewContext and LiveViewMeta to render
+      const lvContext = liveViewSocket.context;
+      const liveViewMeta = new HttpLiveViewMeta(liveViewId, req.session.csrfToken)
+      const view = await component.render(lvContext, liveViewMeta);
 
       // render the view with all the data
       res.render(this.rootView, {
