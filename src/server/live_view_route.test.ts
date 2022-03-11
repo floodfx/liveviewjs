@@ -2,7 +2,7 @@ import { SessionData } from "express-session";
 import { nanoid } from "nanoid";
 import request from "superwstest";
 import { BaseLiveComponent, BaseLiveView, configLiveViewHandler, LiveViewMeta, LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from ".";
-import { LiveComponentSocket } from "./component";
+import { LiveComponentContext, LiveViewContext } from "./component";
 import { LiveViewServer } from "./live_view_server";
 import { html } from "./templates";
 
@@ -107,26 +107,30 @@ declare module 'express-session' {
   }
 }
 
-class TestLiveView extends BaseLiveView<{ message?: string }, {}> {
+interface TestLVContext extends LiveViewContext {
+  message?: string;
+}
+class TestLiveView extends BaseLiveView<TestLVContext, {}> {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return { message: session.message || "test" }
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVContext>) {
+    socket.assign({ message: session.message || "test" })
   }
 
-  render(ctx: { message: string }) {
+  render(ctx: TestLVContext) {
     const { message } = ctx
     return html`<div>${message}</div>`;
   }
 
 }
 
-class TestLiveViewAndLiveComponent extends BaseLiveView<{ message?: string }, {}> {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return { message: session.message || "test" }
+class TestLiveViewAndLiveComponent extends BaseLiveView<TestLVContext, {}> {
+
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVContext>) {
+    socket.assign({ message: session.message || "test" })
   }
 
-  async render(ctx: { message: string }, meta: LiveViewMeta): Promise<LiveViewTemplate> {
+  async render(ctx: TestLVContext, meta: LiveViewMeta): Promise<LiveViewTemplate> {
     const { message } = ctx
     const { live_component } = meta
     return html`
@@ -137,11 +141,10 @@ class TestLiveViewAndLiveComponent extends BaseLiveView<{ message?: string }, {}
 
 }
 
-class TestLiveComponent extends BaseLiveComponent<{foo: string}> {
-
-  mount(socket: LiveComponentSocket<{ foo: string; }>): { foo: string; } {
-    return socket.context
-  }
+interface TestLCContext extends LiveComponentContext {
+  foo: string
+}
+class TestLiveComponent extends BaseLiveComponent<TestLCContext> {
 
   render(ctx: {foo: string}) {
     return html`<div>${ctx.foo}</div>`;
