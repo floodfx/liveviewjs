@@ -114,6 +114,47 @@ export interface LiveViewMeta {
   live_component(liveComponent: LiveComponent<LiveComponentContext>, params?: Partial<LiveComponentContext & {id: number | string}>): Promise<LiveViewTemplate>
 }
 
+export class HttpLiveViewMeta implements LiveViewMeta {
+  /**
+   * The cross site request forgery token from the `LiveView` html page which
+   * should be used to validate form submissions.
+   */
+  csrfToken: string;
+
+  private myself: number = 0
+  liveViewId: string;
+  constructor(liveViewId: string , csrfToken: string) {
+    this.csrfToken = csrfToken;
+    this.liveViewId = liveViewId;
+  }
+
+
+  async live_component(liveComponent: LiveComponent<LiveComponentContext>, params?: Partial<LiveComponentContext & { id: string | number; }>): Promise<LiveViewTemplate> {
+    // TODO why are these locals not working????
+    // params may be empty
+    params = params ?? {};
+    delete params.id; // remove id before passing to socket
+
+    // create live component socket
+    const lcSocket = new HttpLiveComponentSocket<LiveComponentContext>("", params as unknown as LiveComponentContext);
+
+    // update socket with params
+    lcSocket.assign(params);
+
+    // run lifecycle
+    await liveComponent.mount(lcSocket);
+    await liveComponent.update(lcSocket);
+
+    // render view with context
+    const lcContext = lcSocket.context;
+    const newView = await liveComponent.render(lcContext, {myself: this.myself});
+    this.myself++;
+    // since http request is stateless send back the LiveViewTemplate
+    return newView;
+  }
+
+
+}
 
 export class WsLiveViewMeta implements LiveViewMeta {
   /**

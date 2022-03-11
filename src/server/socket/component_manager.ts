@@ -200,7 +200,7 @@ export class LiveViewComponentManager {
         const liveComponent = this.statefuleLiveComponentInstances[componentClass];
         if(liveComponent) {
           // socker for this live component instance
-          const lcSocket = new WsLiveComponentSocket(this.joinId, {...oldContext}, this.sendInternal);
+          const lcSocket = this.newLiveComponentSocket({...oldContext});
 
           // run handleEvent and render then update context for cid
           await liveComponent.handleEvent(event, value as Record<string, string>, lcSocket);
@@ -219,15 +219,19 @@ export class LiveViewComponentManager {
             changed,
           }
 
+          let diff: Parts = {
+            c: {
+              // use cid to identify component to update
+              [`${cid}`]: newParts
+            }
+          }
+
+          diff = this.maybeAddEventsToParts(diff);
+
           // send message to re-render
           const replyPayload = {
             response: {
-              diff: {
-                c: {
-                  // use cid to identify component to update
-                  [`${cid}`]: newParts
-                }
-              }
+              diff
             },
             status: "ok"
           }
@@ -370,29 +374,9 @@ export class LiveViewComponentManager {
   }
 
   private async onPushEvent(event: string, value: Record<string, any>) {
-
+    // queue event for sending
     this._events.push({event, value})
     this.eventAdded = true;
-
-    // const message: PhxOutgoingPushEvent = [
-    //   4, // no join reference
-    //   6, // no message reference
-    //   this.joinId,
-    //   "phx_reply",
-    //   {
-    //     response: {
-    //       diff: {
-    //         e: [[
-    //           event,
-    //           value
-    //         ]]
-    //       }
-    //     },
-    //     status: "ok"
-    //   }
-    // ]
-
-    // this.sendPhxReply(message);
   }
 
   private async sendInternal(event: any): Promise<void> {
@@ -534,7 +518,7 @@ export class LiveViewComponentManager {
         myself = Object.keys(this.statefulLiveComponents).length + 1;
 
         // setup socket
-        const lcSocket = new WsLiveComponentSocket(this.joinId, context, this.sendInternal);
+        const lcSocket = this.newLiveComponentSocket({...context});
 
         // first load lifecycle mount => update => render
         await liveComponent.mount(lcSocket);
@@ -557,7 +541,7 @@ export class LiveViewComponentManager {
         myself = cid;
 
         // setup socket
-        const lcSocket = new WsLiveComponentSocket(this.joinId, oldContext, this.sendInternal);
+        const lcSocket = this.newLiveComponentSocket({...oldContext});
 
         // subsequent loads lifecycle update => render (no mount)
         await liveComponent.update(lcSocket);
@@ -587,7 +571,7 @@ export class LiveViewComponentManager {
       // 4. render
 
       // setup socket
-      const lcSocket = new WsLiveComponentSocket(this.joinId, context, this.sendInternal);
+      const lcSocket = this.newLiveComponentSocket({...context});
 
       // skipping preload for now... see comment above
       // first load lifecycle mount => update => render
@@ -648,6 +632,15 @@ export class LiveViewComponentManager {
         this.subscriptionIds[topic] = subId;
       }
     );
+  }
+
+  private newLiveComponentSocket(context: LiveComponentContext) {
+    return new WsLiveComponentSocket(
+      this.joinId,
+      context,
+      (event) => this.sendInternal(event),
+      (event, params) => this.onPushEvent(event, params)
+    )
   }
 
   // private buildLiveComponentSocket(context: LiveComponentContext): LiveComponentSocket<LiveComponentContext> {

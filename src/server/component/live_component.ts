@@ -51,6 +51,10 @@ export interface LiveComponentSocket<Context extends LiveComponentContext> {
    * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
    */
   assign: (context: Partial<Context>) => void;
+  /**
+   * helper method to send events to Hooks on the parent `LiveView`
+   */
+  pushEvent: (event: string, params: Record<string, any>) => void;
 }
 
 abstract class BaseLiveComponentSocket<Context extends LiveComponentContext> implements LiveComponentSocket<Context> {
@@ -78,6 +82,10 @@ abstract class BaseLiveComponentSocket<Context extends LiveComponentContext> imp
     // no-op
   }
 
+  pushEvent(event: string, params: Record<string, any>) {
+    // no-op
+  }
+
   abstract connected: boolean;
 
 }
@@ -97,13 +105,20 @@ export class WsLiveComponentSocket<Context extends LiveComponentContext> extends
   readonly connected: boolean = true;
 
   private sendCallback:  (event: unknown) => void;
-  constructor(id: string, context: Context, sendCallback: (event: unknown) => void) {
+  private pushEventCallback: (event: string, params: Record<string, any>) => void;
+
+  constructor(id: string, context: Context, sendCallback: (event: unknown) => void, pushEventCallback: (event: string, params: Record<string, any>) => void) {
     super(id, context);
     this.sendCallback = sendCallback;
+    this.pushEventCallback = pushEventCallback;
   }
 
   send(event: unknown) {
     this.sendCallback(event);
+  }
+
+  pushEvent(event: string, params: Record<string, any>): void {
+    this.pushEventCallback(event, params);
   }
 }
 
