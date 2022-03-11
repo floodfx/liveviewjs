@@ -48,12 +48,12 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
   private _context: Context;
 
   get context(): Context {
-    return this._context;
+    return this._context || {};
   }
 
   assign(context: Partial<Context>) {
     this._context = {
-      ...this._context,
+      ...this.context,
       ...context
     }
   }

@@ -3,7 +3,8 @@ import { mock } from "jest-mock-extended";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import { WebSocket } from "ws";
-import { BaseLiveComponent, BaseLiveView, html, HtmlSafeString, LiveComponentSocket, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PushPatchPathAndParams, StringPropertyValues } from "..";
+import { BaseLiveComponent, BaseLiveView, html, HtmlSafeString, LiveComponentSocket, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, StringPropertyValues } from "..";
+import { LiveComponentContext, LiveViewContext } from "../component";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
 import { isEventHandler, isInfoHandler, LiveViewComponentManager } from "./component_manager";
 import { PhxBlurPayload, PhxClickPayload, PhxFlash, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from "./types";
@@ -98,7 +99,10 @@ describe("test component manager", () => {
     await cmLiveViewAndLiveComponent.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveViewAndLiveComponent.handleSubscriptions({type: "event", message: phx_click});
     await cmLiveViewAndLiveComponent.onEvent(phx_click);
-    expect(ws.send).toHaveBeenCalledTimes(3) // join, subscription, event
+    // join, subscription, event then live component
+    // event handler kicks off send which send to live component
+    // which calls send again
+    expect(ws.send).toHaveBeenCalledTimes(5)
     expect(spySendInternal).toHaveBeenCalledTimes(2) // subscription, event
   })
 
@@ -135,9 +139,10 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
+    await cmLiveView.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveView.handleSubscriptions({type: "event", message: phx_click});
     await cmLiveView.onEvent(phx_click);
-    expect(ws.send).toHaveBeenCalledTimes(2)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("onEvent valid click event but not eventHandler", async () => {
@@ -171,9 +176,10 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
+    await cmLiveView.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveView.handleSubscriptions({type: "event", message: phx_click});
     await cmLiveView.onEvent(phx_click);
-    expect(ws.send).toHaveBeenCalledTimes(2)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("onEvent valid form event", async () => {
@@ -189,9 +195,10 @@ describe("test component manager", () => {
         uploads: {},
       }
     ]
+    await cmLiveView.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveView.handleSubscriptions({type: "event", message: phx_form});
     await cmLiveView.onEvent(phx_form);
-    expect(ws.send).toHaveBeenCalledTimes(2)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("onEvent valid keyup event", async () => {
@@ -206,9 +213,10 @@ describe("test component manager", () => {
         value: { key: "key", value: "eventValue" },
       }
     ]
+    await cmLiveView.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveView.handleSubscriptions({type: "event", message: phx_keyup});
     await cmLiveView.onEvent(phx_keyup);
-    expect(ws.send).toHaveBeenCalledTimes(2)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("onEvent valid keydown event", async () => {
@@ -223,9 +231,10 @@ describe("test component manager", () => {
         value: { key: "key", value: "eventValue" },
       }
     ]
+    await cmLiveView.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveView.handleSubscriptions({type: "event", message: phx_keydown});
     await cmLiveView.onEvent(phx_keydown);
-    expect(ws.send).toHaveBeenCalledTimes(2)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("onEvent valid blur event", async () => {
@@ -240,9 +249,10 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
+    await cmLiveView.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveView.handleSubscriptions({type: "event", message: phx_blur});
     await cmLiveView.onEvent(phx_blur);
-    expect(ws.send).toHaveBeenCalledTimes(2)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("onEvent valid focus event", async () => {
@@ -257,9 +267,10 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
+    await cmLiveView.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveView.handleSubscriptions({type: "event", message: phx_focus});
     await cmLiveView.onEvent(phx_focus);
-    expect(ws.send).toHaveBeenCalledTimes(2)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("onEvent valid hook event", async () => {
@@ -274,9 +285,10 @@ describe("test component manager", () => {
         value: { blah: "something" },
       }
     ]
+    await cmLiveView.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveView.handleSubscriptions({type: "event", message: phx_hook});
     await cmLiveView.onEvent(phx_hook);
-    expect(ws.send).toHaveBeenCalledTimes(2)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("onEvent unknown event type", async () => {
@@ -308,26 +320,10 @@ describe("test component manager", () => {
         url: "http://localhost:4444/test?id=1",
       }
     ]
+    await cmLiveView.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveView.handleSubscriptions({type: "live_patch", message: phxLivePatch});
     await cmLiveView.onLivePatch(phxLivePatch);
-    expect(ws.send).toHaveBeenCalledTimes(2)
-  })
-
-  it("onPushPatch calls send", async () => {
-    const pushPatchFn = jest.fn()
-    const liveSocket: LiveViewSocket<unknown> = buildLiveViewSocketMock(
-      "lv:phx-AAAAAAAA",
-      true,
-      {},
-      ws,
-      () => { },
-      () => { },
-      () => { },
-      () => { },
-      pushPatchFn
-    )
-    liveSocket.pushPatch({to: {params: {}, path: "/test"}})
-    expect(pushPatchFn).toHaveBeenCalledTimes(1)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("test repeat / shutdown", (done) => {
@@ -353,8 +349,9 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cm.handleSubscriptions({type: "event", message: phx_click});
-    expect(ws.send).toHaveBeenCalledTimes(2)
+    expect(ws.send).toHaveBeenCalledTimes(3)
   })
 
   it("sendInternal with no handleInfo", async() => {
@@ -371,8 +368,9 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cm.handleSubscriptions({type: "event", message: phx_click});
-    expect(ws.send).toHaveBeenCalledTimes(1);
+    expect(ws.send).toHaveBeenCalledTimes(2);
   })
 
   it("send phxReply on unknown socket error", async() => {
@@ -401,8 +399,7 @@ describe("test component manager", () => {
         value: { value: "eventValue" },
       }
     ]
-
-    await cm.handleSubscriptions({type: "event", message: phx_click});
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
   })
 
   it("a component that sets page title", async() => {
@@ -423,9 +420,10 @@ describe("test component manager", () => {
     const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws)
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
 
+
     setTimeout(async () => {
-      // get private context
-      expect(spyHandleInfo).toReturnWith({count: 2} as RepeatCtx)
+      // get private socket context
+      expect((cm['socket'] as LiveViewSocket<LiveViewContext>).context).toHaveProperty('count', 2)
       cm.shutdown();
     }, 125)
     jest.runAllTimers()
@@ -437,7 +435,7 @@ describe("test component manager", () => {
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
 
     await PubSub.broadcast("testTopic", { test: "test" })
-    expect(cm['context'] as SubscribeCtx).toHaveProperty('testReceived', 1)
+    expect((cm['socket'] as LiveViewSocket<LiveViewContext>).context).toHaveProperty('testReceived', 1)
     cm.shutdown();
   })
 
@@ -460,7 +458,7 @@ describe("test component manager", () => {
     ]
     await cm.onEvent(phx_click);
     expect(spyHandleParams).toHaveBeenCalledTimes(2);
-    expect(spyHandleParams).toReturnWith({pushed: 1} as PushPatchCtx)
+    expect((cm['socket'] as LiveViewSocket<LiveViewContext>).context).toHaveProperty('pushed', 1)
     cm.shutdown();
 
   })
@@ -484,7 +482,7 @@ describe("test component manager", () => {
     ]
     await cm.onEvent(phx_click);
     expect(spyHandleParams).toHaveBeenCalledTimes(2);
-    expect(spyHandleParams).toReturnWith({pushed: 1} as PushPatchCtx)
+    expect((cm['socket'] as LiveViewSocket<LiveViewContext>).context).toHaveProperty('pushed', 1)
     cm.shutdown();
 
   })
@@ -492,32 +490,28 @@ describe("test component manager", () => {
 })
 
 
-interface TestLiveViewComponentContext {
+interface TestLiveViewComponentContext extends LiveViewContext {
 
 }
-class TestLiveViewComponent extends BaseLiveView<{}, {}> implements
+class TestLiveViewComponent extends BaseLiveView<TestLiveViewComponentContext, {}> implements
   LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown>,
-  LiveViewInternalEventListener<TestLiveViewComponentContext, "eventName">
+  LiveViewInternalEventListener<TestLiveViewComponentContext, "internalEvent">
 {
   private newPageTitle?: string;
+
   constructor(newPageTitle?: string) {
     super();
     this.newPageTitle = newPageTitle;
   }
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return {}
+  handleInfo(event: "internalEvent", socket: LiveViewSocket<TestLiveViewComponentContext>): void | Promise<void> {
+    // no op but expected for test
   }
 
-  handleEvent(event: "eventName", params: StringPropertyValues<unknown>, socket: LiveViewSocket<TestLiveViewComponentContext>): TestLiveViewComponentContext {
+  handleEvent(event: "eventName", params: StringPropertyValues<unknown>, socket: LiveViewSocket<TestLiveViewComponentContext>) {
     if (this.newPageTitle) {
       socket.pageTitle(this.newPageTitle);
     }
-    return {}
-  }
-
-  handleInfo(event: "eventName", socket: LiveViewSocket<TestLiveViewComponentContext>): TestLiveViewComponentContext {
-    return {}
   }
 
   render() {
@@ -526,35 +520,35 @@ class TestLiveViewComponent extends BaseLiveView<{}, {}> implements
 
 }
 
-interface SendInternalContext {
+interface SendInternalContext extends LiveViewContext{
   handleEventCount: number;
   handleInfoCount: number;
 }
 class SendInternalTestLiveViewComponent extends BaseLiveView<SendInternalContext, {}> implements
-  LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown>,
-  LiveViewInternalEventListener<TestLiveViewComponentContext, "eventName">
+  LiveViewExternalEventListener<SendInternalContext, "eventName", unknown>,
+  LiveViewInternalEventListener<SendInternalContext, "eventName">
 {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): SendInternalContext {
-    return {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>) {
+    socket.assign( {
       handleEventCount: 0,
       handleInfoCount: 0,
-    }
+    })
   }
 
-  handleEvent(event: "eventName", params: StringPropertyValues<unknown>, socket: LiveViewSocket<SendInternalContext>): SendInternalContext {
-    socket.sendInternal("eventName")
-    return {
+  handleEvent(event: "eventName", params: StringPropertyValues<unknown>, socket: LiveViewSocket<SendInternalContext>) {
+    socket.send("eventName")
+    socket.assign( {
       handleEventCount: socket.context.handleEventCount + 1,
       handleInfoCount: socket.context.handleInfoCount,
-    }
+    })
   }
 
-  handleInfo(event: "eventName", socket: LiveViewSocket<SendInternalContext>): SendInternalContext {
-    return {
+  handleInfo(event: "eventName", socket: LiveViewSocket<SendInternalContext>) {
+    socket.assign( {
       handleEventCount: socket.context.handleEventCount,
       handleInfoCount: socket.context.handleInfoCount + 1,
-    }
+    })
   }
 
   render(context: SendInternalContext) {
@@ -564,41 +558,37 @@ class SendInternalTestLiveViewComponent extends BaseLiveView<SendInternalContext
 
 }
 
-interface SendInternalNoHandleInfoContext {
+interface SendInternalNoHandleInfoContext extends LiveViewContext {
   handleEventCount: number;
   handleInfoCount: number;
 }
 class SendInternalNoHandleInfoLiveViewComponent extends BaseLiveView<SendInternalNoHandleInfoContext, {}> implements
-  LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown>
+  LiveViewExternalEventListener<SendInternalNoHandleInfoContext, "eventName", unknown>
 {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): SendInternalNoHandleInfoContext {
-    return {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>) {
+    socket.assign( {
       handleEventCount: 0,
       handleInfoCount: 0,
-    }
+    })
   }
 
-  handleEvent(event: "eventName", params: StringPropertyValues<unknown>, socket: LiveViewSocket<SendInternalNoHandleInfoContext>): SendInternalNoHandleInfoContext {
-    socket.sendInternal("eventName")
-    return {
+  handleEvent(event: "eventName", params: StringPropertyValues<unknown>, socket: LiveViewSocket<SendInternalNoHandleInfoContext>) {
+    socket.send("eventName")
+    socket.assign( {
       handleEventCount: socket.context.handleEventCount + 1,
       handleInfoCount: socket.context.handleInfoCount,
-    }
+    })
   }
 
-  render(context: SendInternalContext) {
+  render(context: SendInternalNoHandleInfoContext) {
     const { handleEventCount, handleInfoCount } = context
     return html`<div>${handleEventCount},${handleInfoCount}</div>`;
   }
 
 }
 
-class NotEventHandlerNorInfoHandlerLiveViewComponent extends BaseLiveView<{}, {}> {
-
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return {}
-  }
+class NotEventHandlerNorInfoHandlerLiveViewComponent extends BaseLiveView<LiveViewContext, {}> {
 
   render() {
     return html`<div>test</div>`;
@@ -606,24 +596,20 @@ class NotEventHandlerNorInfoHandlerLiveViewComponent extends BaseLiveView<{}, {}
 
 }
 
-interface RepeatCtx {
+interface RepeatCtx extends LiveViewContext{
   count: number;
 }
 class Repeat50msTestLiveViewComponent extends BaseLiveView<RepeatCtx, {}> implements
   LiveViewInternalEventListener<RepeatCtx, "add">
 {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<RepeatCtx>): RepeatCtx {
-    socket.repeat(() => { socket.sendInternal("add") }, 50)
-    return {
-      count: 0,
-    }
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<RepeatCtx>) {
+    socket.repeat(() => { socket.send("add") }, 50)
+    socket.assign({count: 0})
   }
 
-  handleInfo(event: "add", socket: LiveViewSocket<RepeatCtx>): RepeatCtx {
-    return {
-      count: socket.context.count + 1,
-    }
+  handleInfo(event: "add", socket: LiveViewSocket<RepeatCtx>) {
+    socket.assign({count: socket.context.count + 1})
   }
 
   render() {
@@ -632,24 +618,24 @@ class Repeat50msTestLiveViewComponent extends BaseLiveView<RepeatCtx, {}> implem
 
 }
 
-interface SubscribeCtx {
+interface SubscribeCtx  extends LiveViewContext{
   testReceived: number;
 }
 class SubscribeTestLiveViewComponent extends BaseLiveView<SubscribeCtx, {}> implements
   LiveViewInternalEventListener<SubscribeCtx, "testTopicReceived">
 {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SubscribeCtx>): SubscribeCtx {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SubscribeCtx>) {
     socket.subscribe("testTopic")
-    return {
+    socket.assign({
       testReceived: 0,
-    }
+    })
   }
 
-  handleInfo(event: "testTopicReceived", socket: LiveViewSocket<SubscribeCtx>): SubscribeCtx {
-    return {
+  handleInfo(event: "testTopicReceived", socket: LiveViewSocket<SubscribeCtx>) {
+    socket.assign({
       testReceived: socket.context.testReceived + 1,
-    }
+    })
   }
 
   render() {
@@ -658,40 +644,33 @@ class SubscribeTestLiveViewComponent extends BaseLiveView<SubscribeCtx, {}> impl
 
 }
 
-interface PushPatchCtx {
+interface PushPatchCtx extends LiveViewContext {
   pushed: number;
 }
 class PushPatchingTestComponent extends BaseLiveView<PushPatchCtx, {go?: string}> implements
   LiveViewExternalEventListener<PushPatchCtx, "push", {}>
 {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PushPatchCtx>): PushPatchCtx {
-    return {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PushPatchCtx>) {
+    socket.assign({
       pushed: 0,
-    }
+    })
   }
 
-  handleParams(params: StringPropertyValues<{go?: string}>, url: string, socket: LiveViewSocket<PushPatchCtx>): PushPatchCtx | Promise<PushPatchCtx> {
+  handleParams(params: StringPropertyValues<{go?: string}>, url: string, socket: LiveViewSocket<PushPatchCtx>) {
     let pushed = Number(socket.context.pushed);
     if (params.go === "dog") {
       // only increment if passed params.go is dog
       pushed += 1;
+      socket.assign({
+        pushed,
+      })
     }
-    return {
-      pushed,
-    }
+
   }
 
-  handleEvent(event: "push", params: StringPropertyValues<{}>, socket: LiveViewSocket<PushPatchCtx>): PushPatchCtx | Promise<PushPatchCtx> {
-    socket.pushPatch({
-      to: {
-        path: "pushed",
-        params: {go: "dog"}
-      }
-    })
-    return {
-      pushed: socket.context.pushed,
-    }
+  handleEvent(event: "push", params: StringPropertyValues<{}>, socket: LiveViewSocket<PushPatchCtx>) {
+    socket.pushPatch("pushed", {go: "dog"})
   }
 
   render() {
@@ -736,33 +715,9 @@ const newPhxJoin = (csrfToken: string, signingSecret: string, options: NewPhxJoi
   ]
 }
 
-const buildLiveViewSocketMock = <T>(
-  topic: string,
-  connected: boolean,
-  context: T,
-  ws: WebSocket,
-  sendInternal: (event: any) => void = () => {},
-  repeat: (fn: Function, intervalMills: number) => void = () => {},
-  pageTitle: (title: string) => void = () => {},
-  subscribe: (topic: string) => void = () => {},
-  pushPatch: (pushPatch: PushPatchPathAndParams) => void = () => {}): LiveViewSocket<T> => {
-  return {
-    id: topic,
-    connected, // websocket is connected
-    ws, // the websocket
-    context,
-    sendInternal,
-    repeat,
-    pageTitle,
-    subscribe,
-    pushPatch,
-  }
-}
-
-class SetsPageTitleComponent extends BaseLiveView<{}, {}> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
+class SetsPageTitleComponent extends BaseLiveView<LiveViewContext, {}> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>) {
     socket.pageTitle("new page title")
-    return {}
   }
   render(): HtmlSafeString {
     return html`<div>test</div>`;
@@ -770,15 +725,18 @@ class SetsPageTitleComponent extends BaseLiveView<{}, {}> {
 }
 
 
+interface TestLVAndLCContext extends LiveViewContext {
+  message?: string
+}
 
-class TestLiveViewAndLiveComponent extends BaseLiveView<{ message?: string }, {}>
-implements LiveViewInternalEventListener<{ message?: string }, "test"> {
+class TestLiveViewAndLiveComponent extends BaseLiveView<TestLVAndLCContext, {}>
+implements LiveViewInternalEventListener<TestLVAndLCContext, "test"> {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return { message: "test" }
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVAndLCContext>) {
+    socket.assign({message: "test"})
   }
 
-  async render(ctx: { message: string }, meta: LiveViewMeta): Promise<LiveViewTemplate> {
+  async render(ctx: TestLVAndLCContext, meta: LiveViewMeta): Promise<LiveViewTemplate> {
     const { message } = ctx
     const { live_component } = meta
     return html`
@@ -787,27 +745,24 @@ implements LiveViewInternalEventListener<{ message?: string }, "test"> {
     `;
   }
 
-  handleInfo(event: "test", socket: LiveViewSocket<{ message?: string; }>): { message?: string; } | Promise<{ message?: string; }> {
-    return { message: "test" }
+  handleInfo(event: "test", socket: LiveViewSocket<TestLVAndLCContext>) {
+    socket.assign({ message: "test" })
   }
 
 }
 
-class TestLiveComponent extends BaseLiveComponent<{foo: string}> {
+interface TestLVContext extends LiveComponentContext {
+  foo: string
+}
+class TestLiveComponent extends BaseLiveComponent<TestLVContext> {
 
-  mount(socket: LiveComponentSocket<{ foo: string; }>): { foo: string; } {
-    return socket.context
-  }
-
-  render(ctx: {foo: string}) {
+  render(ctx: TestLVContext) {
     return html`<div>${ctx.foo}</div>`;
   }
 
-  handleEvent(event: "test", params: StringPropertyValues<{}>, socket: LiveComponentSocket<{ foo: string; }>): {} {
+  handleEvent(event: "test", params: StringPropertyValues<TestLVContext>, socket: LiveComponentSocket<TestLVContext>) {
     socket.send("test")
-    return {
-      foo: "bar",
-    }
+    socket.assign({ foo: "bar" })
   }
 
 }
