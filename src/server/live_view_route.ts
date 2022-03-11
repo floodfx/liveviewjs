@@ -38,6 +38,9 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
       liveViewSocket
     );
 
+    // handle params
+    await component.handleParams(req.query, req.url, liveViewSocket);
+
     // pass LiveViewContext and LiveViewMeta to render
     const lvContext = liveViewSocket.context;
     const liveViewMeta = new HttpLiveViewMeta(liveViewId, session.csrfToken)
