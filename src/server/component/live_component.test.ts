@@ -1,6 +1,6 @@
 import { BaseLiveComponent, LiveViewTemplate } from ".";
 import { html } from "..";
-import { HttpLiveComponentSocket, WsLiveComponentSocket } from "./live_component";
+import { HttpLiveComponentSocket, LiveComponentSocket, WsLiveComponentSocket } from "./live_component";
 import { LiveViewContext } from "./live_view";
 
 describe("test BaseLiveComponent", () => {
@@ -85,6 +85,16 @@ describe("test BaseLiveComponent", () => {
     expect(view.toString()).toEqual("<div>bar</div>");
   });
 
+  it("push and send cb works ws", async() => {
+    const component = new TestLVPushAndSendComponent();
+    const sendCallback = jest.fn()
+    const pushCallback = jest.fn()
+    const socket = new WsLiveComponentSocket<TestLVPushAndSendContext>("foo", {foo: "bar"}, sendCallback, pushCallback);
+    component.mount(socket);
+    expect(sendCallback).toHaveBeenCalledTimes(1);
+    expect(pushCallback).toHaveBeenCalledTimes(1);
+  });
+
 })
 
 interface TestLVContext extends LiveViewContext {
@@ -98,3 +108,21 @@ class TestLiveComponent extends BaseLiveComponent<TestLVContext> {
   }
 
 }
+
+interface TestLVPushAndSendContext extends LiveViewContext {
+  foo: string
+}
+
+class TestLVPushAndSendComponent extends BaseLiveComponent<TestLVPushAndSendContext> {
+
+  mount(socket: LiveComponentSocket<TestLVPushAndSendContext>): void {
+    socket.pushEvent("event", {data: "blah"});
+    socket.send("my_event");
+  }
+
+  render(ctx: TestLVPushAndSendContext): LiveViewTemplate {
+    return html`<div>${ctx.foo}</div>`;
+  }
+
+}
+
