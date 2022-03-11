@@ -1,8 +1,8 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, html, HtmlSafeString, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, live_patch, safe } from "../../server";
+import { BaseLiveView, html, HtmlSafeString, LiveViewContext, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, live_patch, safe } from "../../server";
 import { fetchXkcd, isValidXkcd, randomXkcdNum, XkcdData } from "./data";
 
-interface Context {
+interface Context extends LiveViewContext {
   comic: XkcdData
   num?: number
 }
@@ -10,20 +10,23 @@ interface Context {
 //  navigate through Xkcd comics using async/await
 export class AsyncFetchLiveViewComponent extends BaseLiveView<Context, { num: number }> {
 
-  async mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>): Promise<Context> {
+  async mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     // get today's comic from xkcd
     const comic = await fetchXkcd();
-    return {
-      comic,
-    }
+    socket.pageTitle(`Xkcd: ${comic.title}`);
+    socket.assign({
+      comic
+    })
   }
 
-  async handleParams(params: { num: string; }, url: string, socket: LiveViewSocket<Context>): Promise<Context> {
+  async handleParams(params: { num: string; }, url: string, socket: LiveViewSocket<Context>) {
     const n = Number(params.num);
     // num should be between 1 and 2580
     const num = Number(params.num) === NaN ? undefined : Math.max(1, Math.min(2580, Number(params.num)));
     const comic = await fetchXkcd(num);
-    return { comic, num };
+    socket.assign({
+      comic, num
+    })
   }
 
   render(context: Context): LiveViewTemplate {

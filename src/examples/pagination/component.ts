@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, html, HtmlSafeString, join, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, live_patch, options_for_select, StringPropertyValues } from "../../server";
+import { BaseLiveView, html, HtmlSafeString, join, LiveViewContext, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, live_patch, options_for_select, StringPropertyValues } from "../../server";
 import { almostExpired, Donation, listItems } from "./data";
 
 interface Options {
@@ -7,7 +7,7 @@ interface Options {
   perPage: number;
 }
 
-export interface PaginateContext {
+export interface PaginateContext extends LiveViewContext{
   options: Options
   donations: Donation[]
 }
@@ -16,19 +16,22 @@ export class PaginateLiveViewComponent extends BaseLiveView<PaginateContext, Opt
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PaginateContext>) {
     const options = { page: 1, perPage: 10 }
-    return {
-      options: options,
-      donations: listItems(options.page, options.perPage)
-    };
+    const { page, perPage } = options;
+    const donations = listItems(page, perPage);
+    socket.assign({
+      options,
+      donations
+    });
   };
 
-  handleParams(params: StringPropertyValues<Options>, url: string, socket: LiveViewSocket<PaginateContext>): PaginateContext {
+  handleParams(params: StringPropertyValues<Options>, url: string, socket: LiveViewSocket<PaginateContext>) {
     const page = Number(params.page || 1);
     const perPage = Number(params.perPage || 10);
-    return {
+    const donations = listItems(page, perPage);
+    socket.assign({
       options: { page, perPage },
-      donations: listItems(page, perPage)
-    };
+      donations
+    });
   }
 
   render(context: PaginateContext) {
@@ -76,16 +79,16 @@ export class PaginateLiveViewComponent extends BaseLiveView<PaginateContext, Opt
     `
   };
 
-  handleEvent(event: "select-per-page", params: StringPropertyValues<Pick<Options, "perPage">>, socket: LiveViewSocket<PaginateContext>): PaginateContext {
+  handleEvent(event: "select-per-page", params: StringPropertyValues<Pick<Options, "perPage">>, socket: LiveViewSocket<PaginateContext>) {
     const page = socket.context.options.page;
     const perPage = Number(params.perPage || 10);
 
-    socket.pushPatch({ to: { path: "/paginate", params: { page: String(page), perPage: String(perPage) } } });
+    socket.pushPatch("/paginate", { page: String(page), perPage: String(perPage) });
 
-    return {
+    socket.assign({
       options: { page, perPage },
       donations: listItems(page, perPage)
-    };
+    });
   }
 
   pageLinks(page: number, perPage: number) {

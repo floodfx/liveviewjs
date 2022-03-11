@@ -1,9 +1,9 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server";
+import { BaseLiveView, html, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server";
 import { searchByZip, Store } from "./data";
 
 
-export interface SearchContext {
+export interface SearchContext extends LiveViewContext {
   zip: string;
   stores: Store[];
   loading: boolean;
@@ -18,7 +18,7 @@ export class SearchLiveViewComponent extends BaseLiveView<SearchContext, unknown
     const zip = "";
     const stores: Store[] = [];
     const loading = false
-    return { zip, stores, loading };
+    socket.assign({ zip, stores, loading });
   };
 
   renderStoreStatus(store: Store) {
@@ -90,20 +90,20 @@ export class SearchLiveViewComponent extends BaseLiveView<SearchContext, unknown
     const { zip } = params;
     // wait 300ms to send the message
     setTimeout(async () => {
-      socket.sendInternal({ type: "run_zip_search", zip });
+      socket.send({ type: "run_zip_search", zip });
     }, 300);
 
-    return { zip, stores: [], loading: true };
+    socket.assign({ zip, stores: [], loading: true });
   }
 
   handleInfo(event: { type: "run_zip_search", zip: string }, socket: LiveViewSocket<SearchContext>) {
     const { zip } = event;
     const stores = searchByZip(zip);
-    return {
+    socket.assign({
       zip,
       stores,
       loading: false
-    }
+    });
   }
 
 }

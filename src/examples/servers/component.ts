@@ -1,10 +1,10 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, html, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, live_patch } from "../../server";
+import { BaseLiveView, html, LiveViewContext, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, live_patch } from "../../server";
 import { listServers, Server } from "./data";
 
 // Example of Phoenix "Live Navigation"
 
-export interface ServersContext {
+export interface ServersContext extends LiveViewContext {
   servers: Server[]
   selectedServer: Server
 }
@@ -12,17 +12,24 @@ export interface ServersContext {
 export class ServersLiveViewComponent extends BaseLiveView<ServersContext, { id: string }> {
 
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<ServersContext>): ServersContext {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<ServersContext>) {
     const servers = listServers();
     const selectedServer = servers[0];
-    return { servers, selectedServer };
+
+    socket.assign({
+      servers,
+      selectedServer
+    })
   }
 
-  handleParams(params: { id: string; }, url: string, socket: LiveViewSocket<ServersContext>): ServersContext {
+  handleParams(params: { id: string; }, url: string, socket: LiveViewSocket<ServersContext>) {
     const servers = listServers();
     const selectedServer = servers.find(server => server.id === params.id) || servers[0];
     socket.pageTitle(selectedServer.name);
-    return { servers, selectedServer };
+    socket.assign({
+      servers,
+      selectedServer
+    })
   }
 
   render(context: ServersContext): LiveViewTemplate {

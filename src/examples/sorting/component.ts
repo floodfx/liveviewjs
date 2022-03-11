@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, html, HtmlSafeString, join, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, live_patch, options_for_select, StringPropertyValues } from "../../server";
+import { BaseLiveView, html, HtmlSafeString, join, LiveViewContext, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket, live_patch, options_for_select, StringPropertyValues } from "../../server";
 import { almostExpired, Donation, donations, listItems } from "./data";
 
 export interface PaginateOptions {
@@ -12,7 +12,7 @@ export interface SortOptions {
   sortOrder: "asc" | "desc";
 }
 
-export interface SortContext {
+export interface SortContext extends LiveViewContext {
   options: PaginateOptions & SortOptions;
   donations: Donation[]
 }
@@ -30,22 +30,22 @@ export class SortLiveViewComponent extends BaseLiveView<SortContext, PaginateOpt
       sort_by: "item",
       sortOrder: "asc"
     }
-    return {
+    socket.assign({
       options: { ...paginateOptions, ...sortOptions },
       donations: listItems(paginateOptions, sortOptions)
-    };
+    });
   };
 
-  handleParams(params: StringPropertyValues<PaginateOptions & SortOptions>, url: string, socket: LiveViewSocket<SortContext>): SortContext {
+  handleParams(params: StringPropertyValues<PaginateOptions & SortOptions>, url: string, socket: LiveViewSocket<SortContext>) {
     const page = Number(params.page || 1);
     const perPage = Number(params.perPage || 10);
     const validSortBy = Object.keys(donations[0]).includes(params.sort_by)
     const sort_by = validSortBy ? params.sort_by as keyof Donation : "item";
     const sortOrder = params.sortOrder === "desc" ? "desc" : "asc";
-    return {
+    socket.assign({
       options: { page, perPage, sort_by, sortOrder },
       donations: listItems({ page, perPage }, { sort_by, sortOrder })
-    };
+    });
   }
 
   render(context: SortContext) {
@@ -93,7 +93,7 @@ export class SortLiveViewComponent extends BaseLiveView<SortContext, PaginateOpt
     `
   };
 
-  handleEvent(event: "select-per-page" | "change-sort", params: StringPropertyValues<Pick<PaginateOptions & SortOptions, "perPage" | "sort_by" | "sortOrder">>, socket: LiveViewSocket<SortContext>): SortContext {
+  handleEvent(event: "select-per-page" | "change-sort", params: StringPropertyValues<Pick<PaginateOptions & SortOptions, "perPage" | "sort_by" | "sortOrder">>, socket: LiveViewSocket<SortContext>) {
     const page = socket.context.options.page;
     let perPage = socket.context.options.perPage;
     let sort_by = socket.context.options.sort_by;
@@ -114,12 +114,12 @@ export class SortLiveViewComponent extends BaseLiveView<SortContext, PaginateOpt
     }
 
 
-    socket.pushPatch({ to: { path: "/sort", params: { page: String(page), perPage: String(perPage), sortOrder, sort_by } } });
+    socket.pushPatch( "/sort", { page: String(page), perPage: String(perPage), sortOrder, sort_by });
 
-    return {
+    socket.assign({
       options: { page, perPage, sort_by, sortOrder },
       donations: listItems({ page, perPage }, { sort_by, sortOrder })
-    };
+    })
   }
 
   sort_emoji(sort_by: keyof Donation, sort_by_value: string, sortOrder: "asc" | "desc") {

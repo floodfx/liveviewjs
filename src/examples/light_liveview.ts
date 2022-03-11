@@ -1,9 +1,9 @@
 import { SessionData } from "express-session";
-import { LiveView, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component";
+import { LiveView, LiveViewContext, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server";
 import { BaseLiveView } from "../server/component/base_live_view";
 import { html } from "../server/templates";
 
-export interface LightContext {
+export interface LightContext extends LiveViewContext {
   brightness: number;
 }
 
@@ -16,7 +16,7 @@ export class LightLiveViewComponent extends BaseLiveView<LightContext, never> im
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LightContext>) {
     socket.pageTitle("Front Porch Light");
-    return { brightness: 10 };
+    socket.assign({brightness: 10})
   };
 
   render(context: LightContext) {
@@ -55,22 +55,22 @@ export class LightLiveViewComponent extends BaseLiveView<LightContext, never> im
     switch (lightEvent) {
       case 'off':
       case 'ArrowLeft':
-        ctx.brightness = 0;
+        socket.assign({brightness: 0});
         break;
       case 'on':
       case 'ArrowRight':
-        ctx.brightness = 100;
+        socket.assign({brightness: 100});
         break;
       case 'up':
       case 'ArrowUp':
-        ctx.brightness = Math.min(ctx.brightness + 10, 100);
+        socket.assign({brightness: Math.min(ctx.brightness + 10, 100)});
         break;
       case 'down':
       case 'ArrowDown':
-        ctx.brightness = Math.max(ctx.brightness - 10, 0);
+        socket.assign({brightness: Math.max(ctx.brightness - 10, 0)});
         break;
     }
-    return ctx;
+
   }
 
 }
