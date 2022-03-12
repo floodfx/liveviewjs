@@ -59,22 +59,22 @@ export class LiveViewComponentManager {
   private ws: WebSocket;
   private subscriptionIds: Record<string,Promise<string>> = {};
 
-  // private context: LiveViewContext;
-  private component: LiveView<LiveViewContext, unknown>;
+  private liveView: LiveView<LiveViewContext, unknown>;
   private signingSecret: string;
   private intervals: NodeJS.Timeout[] = [];
-  private lastHeartbeat: number = Date.now();
 
   private csrfToken?: string;
 
   private _events: {event: string, value: Record<string, any>}[] = [];
   private eventAdded: boolean = false;
+
   private _pageTitle: string | undefined;
   private pageTitleChanged: boolean = false;
+
   private socket: LiveViewSocket<LiveViewContext>;
 
   constructor(component: LiveView<LiveViewContext, unknown>, signingSecret: string, connectionId: string, ws: WebSocket) {
-    this.component = component;
+    this.liveView = component;
     this.signingSecret = signingSecret;
     // this.context = {};
     this.connectionId = connectionId;
@@ -126,9 +126,9 @@ export class LiveViewComponentManager {
     this.socket = this.newLiveViewSocket();
 
     // initial lifecycle steps mount => handleParams => render
-    await this.component.mount(payloadParams, session, this.socket);
-    await this.component.handleParams(urlParams, joinUrl!, this.socket);
-    const view = await this.component.render(this.socket.context, this.defaultLiveViewMeta());
+    await this.liveView.mount(payloadParams, session, this.socket);
+    await this.liveView.handleParams(urlParams, joinUrl!, this.socket);
+    const view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
     // add `LiveComponent` to the render tree
     let rendered = this.maybeAddLiveComponentsToParts(view.partsTree());
@@ -249,11 +249,11 @@ export class LiveViewComponentManager {
     // event is not for LiveComponent rather it is for LiveView
     else {
       // console.log("LiveView event", type, event, value);
-      if (isEventHandler(this.component)) {
+      if (isEventHandler(this.liveView)) {
         // copy previous context
         const previousContext = this.socket.context;
         // @ts-ignore - already checked if handleEvent is defined
-        await this.component.handleEvent(
+        await this.liveView.handleEvent(
           event,
           value,
           this.socket
@@ -266,8 +266,8 @@ export class LiveViewComponentManager {
         if(!ctxEqual) {
 
           // get old render tree and new render tree for diffing
-          const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
-          const view = await this.component.render(this.socket.context, this.defaultLiveViewMeta());
+          const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+          const view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
           diff = deepDiff(oldView.partsTree(), view.partsTree());
         }
@@ -301,7 +301,7 @@ export class LiveViewComponentManager {
     const params = Object.fromEntries(url.searchParams);
 
     const previousContext = this.socket.context;
-    await this.component.handleParams(
+    await this.liveView.handleParams(
       params,
       urlString,
       this.socket
@@ -309,7 +309,7 @@ export class LiveViewComponentManager {
 
     // get old render tree and new render tree for diffing
     // const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
-    const view = await this.component.render(this.socket.context, this.defaultLiveViewMeta());
+    const view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
     // TODO - why is the diff causing live_patch to fail??
     // const diff = deepDiff(oldView.partsTree(), view.partsTree());
@@ -368,7 +368,7 @@ export class LiveViewComponentManager {
     // @ts-ignore - URLSearchParams has an entries method but not typed
     const searchParams = Object.fromEntries(urlParams);
 
-    await this.component.handleParams(searchParams, to, this.socket);
+    await this.liveView.handleParams(searchParams, to, this.socket);
 
     this.sendPhxReply(message);
   }
@@ -382,18 +382,18 @@ export class LiveViewComponentManager {
   private async sendInternal(event: any): Promise<void> {
     // console.log("sendInternal", event, this.socketId);
 
-    if (isInfoHandler(this.component)) {
+    if (isInfoHandler(this.liveView)) {
       const previousContext = this.socket.context;
       // @ts-ignore - already checked if handleInfo is defined
-      this.component.handleInfo(event, this.socket);
+      this.liveView.handleInfo(event, this.socket);
 
       const ctxEqual = areContextsValueEqual(previousContext, this.socket.context)
       let diff: Parts = {}
       // only calc diff if contexts have changed
       if(!ctxEqual) {
         // get old render tree and new render tree for diffing
-        const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
-        const view = await this.component.render(this.socket.context, this.defaultLiveViewMeta());
+        const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+        const view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
         diff = deepDiff(oldView.partsTree(), view.partsTree());
       }
@@ -410,7 +410,7 @@ export class LiveViewComponentManager {
       this.sendPhxReply(reply);
     }
     else {
-      console.error("received internal event but no handleInfo in component", this.component);
+      console.error("received internal event but no handleInfo in component", this.liveView);
     }
   }
 
@@ -450,7 +450,7 @@ export class LiveViewComponentManager {
   private handleError(reply: PhxOutgoingMessage<any>, err?: Error) {
     if (err) {
       this.shutdown();
-      console.error(`socket readystate:${this.ws.readyState}. Shutting down topic:${reply[2]}. For component:${this.component}. Error: ${err}`);
+      console.error(`socket readystate:${this.ws.readyState}. Shutting down topic:${reply[2]}. For component:${this.liveView}. Error: ${err}`);
     }
   }
 
