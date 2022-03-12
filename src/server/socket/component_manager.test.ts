@@ -3,10 +3,10 @@ import { mock } from "jest-mock-extended";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import { WebSocket } from "ws";
-import { BaseLiveComponent, BaseLiveView, html, HtmlSafeString, LiveComponentSocket, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, StringPropertyValues } from "..";
-import { LiveComponentContext, LiveViewContext } from "../component";
+import { BaseLiveComponent, BaseLiveView, html, HtmlSafeString, LiveComponentSocket, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMeta, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, StringPropertyValues } from "..";
+import { LiveViewContext } from "../component";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
-import { isEventHandler, isInfoHandler, LiveViewComponentManager } from "./component_manager";
+import { areContextsValueEqual, isEventHandler, isInfoHandler, LiveViewComponentManager } from "./component_manager";
 import { PhxBlurPayload, PhxClickPayload, PhxFlash, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from "./types";
 
 
@@ -99,11 +99,32 @@ describe("test component manager", () => {
     await cmLiveViewAndLiveComponent.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
     await cmLiveViewAndLiveComponent.handleSubscriptions({type: "event", message: phx_click});
     await cmLiveViewAndLiveComponent.onEvent(phx_click);
-    // join, subscription, event then live component
-    // event handler kicks off send which send to live component
-    // which calls send again
-    expect(ws.send).toHaveBeenCalledTimes(5)
+    // join, subscription, event
+    expect(ws.send).toHaveBeenCalledTimes(3)
     expect(spySendInternal).toHaveBeenCalledTimes(2) // subscription, event
+    await cmLiveViewAndLiveComponent.onEvent(phx_click);
+    expect(ws.send).toHaveBeenCalledTimes(4)
+  })
+
+  it("multiple clicks for LiveComponent", async () => {
+    const phx_click: PhxIncomingMessage<PhxClickPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        cid: 1,
+        type: "click",
+        event: "eventName",
+        value: { value: "eventValue" },
+      }
+    ]
+    await cmLiveViewAndLiveComponent.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
+    await cmLiveViewAndLiveComponent.handleSubscriptions({type: "event", message: phx_click});
+    await cmLiveViewAndLiveComponent.onEvent(phx_click);
+    // join, subscription, event
+    expect(ws.send).toHaveBeenCalledTimes(3)
+
   })
 
   it("find LiveComponent by cid that does not exist skips event", async () => {
@@ -114,7 +135,7 @@ describe("test component manager", () => {
       "lv:phx-AAAAAAAA",
       "event",
       {
-        cid: 10,
+        cid: 10, // not found
         type: "click",
         event: "eventName",
         value: { value: "eventValue" },
@@ -463,6 +484,30 @@ describe("test component manager", () => {
 
   })
 
+  it("component that pushEvents", async() => {
+    const c = new PushEventTestComponent();
+    const spyHandleParams = jest.spyOn(c as any, 'handleParams');
+    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws)
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }))
+
+    const phx_click: PhxIncomingMessage<PhxClickPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        type: "click",
+        event: "eventName",
+        value: { value: "eventValue" },
+      }
+    ]
+    await cm.onEvent(phx_click);
+    expect(spyHandleParams).toHaveBeenCalledTimes(1);
+    expect((cm['socket'] as LiveViewSocket<LiveViewContext>).context).toHaveProperty('pushed', 0)
+    cm.shutdown();
+
+  })
+
   it("default live view meta", async() => {
     const c = new PushPatchingTestComponent();
     const spyHandleParams = jest.spyOn(c as any, 'handleParams');
@@ -485,6 +530,11 @@ describe("test component manager", () => {
     expect((cm['socket'] as LiveViewSocket<LiveViewContext>).context).toHaveProperty('pushed', 1)
     cm.shutdown();
 
+  })
+
+  it("areContextsValueEqual test", () => {
+    // @ts-ignore
+    expect(areContextsValueEqual(undefined, undefined)).toBeFalsy()
   })
 
 })
@@ -679,8 +729,39 @@ class PushPatchingTestComponent extends BaseLiveView<PushPatchCtx, {go?: string}
 
 }
 
-const router: LiveViewRouter = {
-  "/test": new TestLiveViewComponent()
+interface PushEventCtx extends LiveViewContext {
+  pushed: number;
+}
+class PushEventTestComponent extends BaseLiveView<PushEventCtx, {go?: string}> implements
+  LiveViewExternalEventListener<PushEventCtx, "push", {}>
+{
+
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PushEventCtx>) {
+    socket.assign({
+      pushed: 0,
+    })
+  }
+
+  handleParams(params: StringPropertyValues<{go?: string}>, url: string, socket: LiveViewSocket<PushEventCtx>) {
+    let pushed = Number(socket.context.pushed);
+    if (params.go === "dog") {
+      // only increment if passed params.go is dog
+      pushed += 1;
+      socket.assign({
+        pushed,
+      })
+    }
+
+  }
+
+  handleEvent(event: "push", params: StringPropertyValues<{}>, socket: LiveViewSocket<PushEventCtx>) {
+    socket.pushEvent("pushed", {go: "dog"})
+  }
+
+  render() {
+    return html`<div>test</div>`;
+  }
+
 }
 
 interface NewPhxJoinOptions {
@@ -726,32 +807,32 @@ class SetsPageTitleComponent extends BaseLiveView<LiveViewContext, {}> {
 
 
 interface TestLVAndLCContext extends LiveViewContext {
-  message?: string
+  called: number
 }
 
 class TestLiveViewAndLiveComponent extends BaseLiveView<TestLVAndLCContext, {}>
 implements LiveViewInternalEventListener<TestLVAndLCContext, "test"> {
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVAndLCContext>) {
-    socket.assign({message: "test"})
+    socket.assign({called: 0})
   }
 
   async render(ctx: TestLVAndLCContext, meta: LiveViewMeta): Promise<LiveViewTemplate> {
-    const { message } = ctx
+    const { called } = ctx
     const { live_component } = meta
     return html`
-      <div>${ await live_component(new TestLiveComponent(), {id: 1, foo: "bar"})}</div>
-      <div>${ await live_component(new TestLiveComponent())}</div>
+      <div>${ await live_component(new TestLiveComponent(), {id: 1, subcalled: called  })}</div>
+      <div>${ await live_component(new TestLiveComponent(), { foo: "bar" })}</div>
     `;
   }
 
   handleInfo(event: "test", socket: LiveViewSocket<TestLVAndLCContext>) {
-    socket.assign({ message: "test" })
+    socket.assign({called: socket.context.called + 1})
   }
 
 }
 
-interface TestLVContext extends LiveComponentContext {
+interface TestLVContext extends LiveViewContext{
   foo: string
 }
 class TestLiveComponent extends BaseLiveComponent<TestLVContext> {
@@ -762,6 +843,7 @@ class TestLiveComponent extends BaseLiveComponent<TestLVContext> {
 
   handleEvent(event: "test", params: StringPropertyValues<TestLVContext>, socket: LiveComponentSocket<TestLVContext>) {
     socket.send("test")
+    socket.pushEvent("test", {foo: "bar"})
     socket.assign({ foo: "bar" })
   }
 

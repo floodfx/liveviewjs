@@ -15,7 +15,7 @@ import { newHeartbeatReply, newPhxReply } from "./util";
 /**
  * Data kept for each `LiveComponent` instance.
  */
-interface StatefulLiveComponentData {
+interface StatefulLiveComponentData<Context extends LiveComponentContext> {
   /**
    * compoundId (`${componentType}_${providedComponentId}`) of the component which is used to uniquely identify it
    * across the entire application.
@@ -24,7 +24,7 @@ interface StatefulLiveComponentData {
   /**
    * The last calculated state of the component.
    */
-  context: LiveComponentContext;
+  context: Context;
   /**
    * The last `Parts` tree rendered by the component.
    */
@@ -465,9 +465,9 @@ export class LiveViewComponentManager {
    * and value is a tuple of [context, renderedPartsTree, changed, myself].
    *
    */
-  private statefulLiveComponents: Record<string, StatefulLiveComponentData> = {};
+  private statefulLiveComponents: Record<string, StatefulLiveComponentData<LiveComponentContext>> = {};
 
-  private statefuleLiveComponentInstances: Record<string, LiveComponent<LiveComponentContext>> = {};
+  private statefuleLiveComponentInstances: Record<string, LiveComponent<any>> = {};
 
   /**
    * Collect all the LiveComponents first, group by their component type (e.g. instanceof),
@@ -476,7 +476,7 @@ export class LiveViewComponentManager {
    * @param liveComponent
    * @param params
    */
-  private async liveComponentProcessor(liveComponent: LiveComponent<LiveComponentContext>, params: unknown & {id? : number | string} = {}): Promise<LiveViewTemplate> {
+  private async liveComponentProcessor<Context extends LiveComponentContext>(liveComponent: LiveComponent<Context>, params: Partial<Context & {id? : number | string}> = {} as Context): Promise<LiveViewTemplate> {
     // console.log("liveComponentProcessor", liveComponent, params);
     // TODO - determine how to collect all the live components of the same type
     // and preload them all at once
@@ -494,7 +494,7 @@ export class LiveViewComponentManager {
     }
 
     // setup variables
-    let context: LiveComponentContext = params;
+    let context: Partial<Context> = {...params};
     let newView: LiveViewTemplate;
 
     // determine if component is stateful or stateless
@@ -518,7 +518,7 @@ export class LiveViewComponentManager {
         myself = Object.keys(this.statefulLiveComponents).length + 1;
 
         // setup socket
-        const lcSocket = this.newLiveComponentSocket({...context});
+        const lcSocket = this.newLiveComponentSocket({...context} as Context);
 
         // first load lifecycle mount => update => render
         await liveComponent.mount(lcSocket);
@@ -534,18 +534,20 @@ export class LiveViewComponentManager {
           componentClass,
           compoundId
         };
-      } else {
+      }
+      else {
+        // subsequent loads lifecycle update => render
         // get state for this load
         const liveComponentData = this.statefulLiveComponents[compoundId];
         const { context: oldContext, parts: oldParts, cid } = liveComponentData;
         myself = cid;
 
         // setup socket
-        const lcSocket = this.newLiveComponentSocket({...oldContext});
+        const lcSocket = this.newLiveComponentSocket<Context>({...oldContext} as Context);
 
         // subsequent loads lifecycle update => render (no mount)
         await liveComponent.update(lcSocket);
-        newView = await liveComponent.render(context, {myself});
+        newView = await liveComponent.render(lcSocket.context, {myself});
 
         const newParts = deepDiff(oldParts, newView.partsTree());
         const changed = Object.keys(newParts).length > 0;
@@ -571,13 +573,13 @@ export class LiveViewComponentManager {
       // 4. render
 
       // setup socket
-      const lcSocket = this.newLiveComponentSocket({...context});
+      const lcSocket = this.newLiveComponentSocket<Context>({...context} as Context);
 
       // skipping preload for now... see comment above
       // first load lifecycle mount => update => render
       await liveComponent.mount(lcSocket);
       await liveComponent.update(lcSocket);
-      newView = await liveComponent.render(context, {myself: id});
+      newView = await liveComponent.render(lcSocket.context, {myself: id});
       // since this is stateless send back the LiveViewTemplate
       return newView;
     }
@@ -612,8 +614,8 @@ export class LiveViewComponentManager {
   private defaultLiveViewMeta(): LiveViewMeta {
     return {
       csrfToken: this.csrfToken,
-      live_component: async(liveComponent: LiveComponent<LiveComponentContext>, params?: Partial<LiveComponentContext & { id: string | number; }> | undefined): Promise<LiveViewTemplate> => {
-        const render = await this.liveComponentProcessor(liveComponent as LiveComponent<LiveComponentContext>, params);
+      live_component: async<Context extends LiveComponentContext>(liveComponent: LiveComponent<Context>, params?: Partial<Context & { id: string | number; }> | undefined): Promise<LiveViewTemplate> => {
+        const render = await this.liveComponentProcessor<Context>(liveComponent, params);
         return render;
       }
     } as LiveViewMeta
@@ -634,7 +636,7 @@ export class LiveViewComponentManager {
     );
   }
 
-  private newLiveComponentSocket(context: LiveComponentContext) {
+  private newLiveComponentSocket<Context extends LiveComponentContext>(context: Context) {
     return new WsLiveComponentSocket(
       this.joinId,
       context,
@@ -665,7 +667,7 @@ export function isEventHandler(component: LiveView<LiveViewContext, unknown>) {
   return "handleEvent" in component;
 }
 
-function areContextsValueEqual(context1: LiveComponentContext, context2: LiveComponentContext): boolean {
+export function areContextsValueEqual(context1: LiveComponentContext, context2: LiveComponentContext): boolean {
   if(!!context1 && !!context2) {
     const c1 = fromJS(context1);
     const c2 = fromJS(context2);
