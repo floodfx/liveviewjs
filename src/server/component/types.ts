@@ -17,16 +17,7 @@ export interface LiveViewChangeset<T> {
   valid: boolean // true if no validation errors
 }
 
-export interface PushPatchPathAndParams {
-  to: { path: string, params: Record<string, string | number> }
-}
-
-
-
-export interface LiveViewTemplate extends HtmlSafeString {
-}
-
-
+export interface LiveViewTemplate extends HtmlSafeString {}
 
 export interface LiveViewRouter {
   [key: string]: LiveView<LiveViewContext, unknown>;
