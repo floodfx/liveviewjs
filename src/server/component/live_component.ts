@@ -1,6 +1,10 @@
 import { WebSocket } from "ws";
 import { LiveViewTemplate } from ".";
 
+/**
+ * Contexts can only be objects with string keys.
+ */
+export interface LiveComponentContext {[key: string]: unknown}
 
 export interface LiveComponentMeta {
   /**
@@ -19,7 +23,7 @@ export interface LiveComponentMeta {
  * state of the component.  Also provides a method for sending messages
  * internally to the parent `LiveView`.
  */
-export interface LiveComponentSocket<T> {
+export interface LiveComponentSocket<Context extends LiveComponentContext> {
   /**
    * The id of the parent `LiveView`
    */
@@ -31,9 +35,9 @@ export interface LiveComponentSocket<T> {
    */
   connected: boolean;
   /**
-   * The current state of the `LiveComponent`
+   * Read-only, current state of the `LiveComponent`
    */
-  context: T;
+  context: Context;
   /**
    * The actual websocket connection (if connected)
    */
@@ -43,6 +47,79 @@ export interface LiveComponentSocket<T> {
    * `LiveView` to implement `handleInfo`.
    */
   send: (event: unknown) => void;
+  /**
+   * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
+   */
+  assign: (context: Partial<Context>) => void;
+  /**
+   * helper method to send events to Hooks on the parent `LiveView`
+   */
+  pushEvent: (event: string, params: Record<string, any>) => void;
+}
+
+abstract class BaseLiveComponentSocket<Context extends LiveComponentContext> implements LiveComponentSocket<Context> {
+
+  readonly id: string;
+  private _context: Context;
+
+  constructor(id: string, context: Context) {
+    this.id = id;
+    this._context = context;
+  }
+
+  get context(): Context {
+    return this._context || {};
+  }
+
+  assign(context: Partial<Context>) {
+    this._context = {
+      ...this.context,
+      ...context
+    }
+  }
+
+  send(event: unknown) {
+    // no-op
+  }
+
+  pushEvent(event: string, params: Record<string, any>) {
+    // no-op
+  }
+
+  abstract connected: boolean;
+
+}
+
+export class HttpLiveComponentSocket<Context extends LiveComponentContext> extends BaseLiveComponentSocket<Context> {
+
+  readonly connected: boolean = false;
+
+  constructor(id: string, context: Context) {
+    super(id, context);
+  }
+
+}
+
+export class WsLiveComponentSocket<Context extends LiveComponentContext> extends BaseLiveComponentSocket<Context> {
+
+  readonly connected: boolean = true;
+
+  private sendCallback:  (event: unknown) => void;
+  private pushEventCallback: (event: string, params: Record<string, any>) => void;
+
+  constructor(id: string, context: Context, sendCallback: (event: unknown) => void, pushEventCallback: (event: string, params: Record<string, any>) => void) {
+    super(id, context);
+    this.sendCallback = sendCallback;
+    this.pushEventCallback = pushEventCallback;
+  }
+
+  send(event: unknown) {
+    this.sendCallback(event);
+  }
+
+  pushEvent(event: string, params: Record<string, any>): void {
+    this.pushEventCallback(event, params);
+  }
 }
 
 /**
@@ -61,7 +138,7 @@ export interface LiveComponentSocket<T> {
  * To make a `LiveComponent` stateful, you must pass an `id` to the `live_component` helper in the
  * `LiveView` template.
  */
-export interface LiveComponent<Context> {
+export interface LiveComponent<Context extends LiveComponentContext> {
 
   /**
    * `preload` is useful when multiple `LiveComponent`s of the same type are loaded
@@ -78,7 +155,7 @@ export interface LiveComponent<Context> {
    *
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  mount(socket: LiveComponentSocket<Context>): Context;
+  mount(socket: LiveComponentSocket<Context>): void | Promise<void>;
 
   /**
    * Allows the `LiveComponent` to update its stateful context.  This is called
@@ -93,7 +170,7 @@ export interface LiveComponent<Context> {
    * @param context the current state for this `LiveComponent`
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  update(context: Context, socket:LiveComponentSocket<Context>): Partial<Context>;
+  update(socket:LiveComponentSocket<Context>): void | Promise<void>;
 
   /**
    * Renders the `LiveComponent` by returning a `LiveViewTemplate`.  Each time a
@@ -109,7 +186,7 @@ export interface LiveComponent<Context> {
    * @param params a list of string-to-string key/value pairs related to the event
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>): Partial<Context>;
+  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>): void | Promise<void>;
 
 }
 
@@ -121,24 +198,24 @@ export interface LiveComponent<Context> {
  * a stateful `LiveComponent` you most likely want to implement at least `mount` and
  * perhaps `update` as well.  See `LiveComponent` for more details.
  */
-export abstract class BaseLiveComponent<Context> implements LiveComponent<Context> {
+export abstract class BaseLiveComponent<Context extends LiveComponentContext> implements LiveComponent<Context> {
 
   // preload(contextsList: Context[]): Partial<Context>[] {
   //   return contextsList;
   // }
 
-  mount(socket: LiveComponentSocket<Context>): Context {
-    return socket.context;
+  mount(socket: LiveComponentSocket<Context>) {
+    // no-op
   }
 
-  update(context: Context, socket: LiveComponentSocket<Context>): Partial<Context> {
-    return socket.context;
+  update(socket: LiveComponentSocket<Context>) {
+    // no-op
+  }
+
+  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>) {
+    // no-op
   }
 
   abstract render(context: Context, meta: LiveComponentMeta): LiveViewTemplate;
-
-  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>): Partial<Context> {
-    return socket.context;
-  }
 
 }

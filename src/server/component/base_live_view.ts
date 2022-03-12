@@ -1,13 +1,18 @@
 import { SessionData } from "express-session";
-import { LiveView, LiveViewMeta, LiveViewMountParams, LiveViewSocket, LiveViewTemplate, StringPropertyValues } from ".";
+import { LiveView, LiveViewMeta, LiveViewMountParams, LiveViewTemplate, StringPropertyValues } from ".";
+import { LiveViewSocket } from "../socket/live_socket";
+import { LiveViewContext } from "./live_view";
 
-export abstract class BaseLiveView<T, P> implements LiveView<T, P> {
+export abstract class BaseLiveView<Context extends LiveViewContext, Params> implements LiveView<Context, Params> {
 
-  abstract mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<T>): T | Promise<T>;
-  abstract render(context: T, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>){
+    // no-op
+  }
 
-  handleParams(params: StringPropertyValues<P>, url: string, socket: LiveViewSocket<T>): T | Promise<T> {
-    return socket.context;
+  abstract render(context: Context, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+
+  handleParams(params: StringPropertyValues<Params>, url: string, socket: LiveViewSocket<Context>) {
+    // no-op
   }
 
 }

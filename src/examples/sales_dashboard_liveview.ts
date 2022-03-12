@@ -1,5 +1,5 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server";
+import { BaseLiveView, html, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server";
 import { numberToCurrency } from "./utils";
 
 // generate a random number between min and max
@@ -12,7 +12,7 @@ const randomNewOrders = random(5, 20);
 const randomSatisfaction = random(95, 100);
 
 
-export interface SalesDashboardContext {
+export interface SalesDashboardContext extends LiveViewContext {
   newOrders: number;
   salesAmount: number;
   satisfaction: number;
@@ -23,15 +23,13 @@ export class SalesDashboardLiveViewComponent extends BaseLiveView<SalesDashboard
   LiveViewInternalEventListener<SalesDashboardContext, "tick">
 {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SalesDashboardContext>): SalesDashboardContext {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SalesDashboardContext>) {
     if (socket.connected) {
       socket.repeat(() => {
-        socket.sendInternal("tick");
+        socket.send("tick");
       }, 1000);
     }
-    return {
-      ...generateSalesDashboardContext()
-    }
+    socket.assign(generateSalesDashboardContext());
   };
 
   render(context: SalesDashboardContext) {
@@ -72,16 +70,12 @@ export class SalesDashboardLiveViewComponent extends BaseLiveView<SalesDashboard
     `
   }
 
-  handleEvent(event: "refresh", params: any, socket: any): SalesDashboardContext {
-    return {
-      ...generateSalesDashboardContext()
-    }
+  handleEvent(event: "refresh", params: any, socket: any) {
+    socket.assign(generateSalesDashboardContext());
   }
 
-  handleInfo(event: "tick", socket: LiveViewSocket<SalesDashboardContext>): SalesDashboardContext {
-    return {
-      ...generateSalesDashboardContext()
-    }
+  handleInfo(event: "tick", socket: LiveViewSocket<SalesDashboardContext>) {
+    socket.assign(generateSalesDashboardContext());
   }
 
 }

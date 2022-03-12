@@ -3,7 +3,7 @@ import { mock } from "jest-mock-extended";
 import jwt from "jsonwebtoken";
 import { WebSocket } from "ws";
 import { BaseLiveView, LiveViewExternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "..";
-import { StringPropertyValues } from "../component";
+import { LiveViewContext, StringPropertyValues } from "../component";
 import { html } from "../templates";
 import { MessageRouter } from "./message_router";
 import { PhxClickPayload, PhxFlash, PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxLivePatchIncoming } from "./types";
@@ -223,17 +223,13 @@ describe("test message router", () => {
 })
 
 
-interface TestLiveViewComponentContext {
+interface TestLiveViewComponentContext extends LiveViewContext {
 
 }
 class LiveViewComponent extends BaseLiveView<{}, {}> implements LiveViewExternalEventListener<TestLiveViewComponentContext, "eventName", unknown> {
 
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>): {} {
-    return {}
-  }
-
-  handleEvent(event: "eventName", params: StringPropertyValues<unknown>, socket: LiveViewSocket<TestLiveViewComponentContext>): TestLiveViewComponentContext {
-    return {}
+  handleEvent(event: "eventName", params: StringPropertyValues<unknown>, socket: LiveViewSocket<TestLiveViewComponentContext>) {
+    // no op
   }
 
   render() {

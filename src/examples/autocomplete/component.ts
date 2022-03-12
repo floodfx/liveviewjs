@@ -1,9 +1,9 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, html, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server";
+import { BaseLiveView, html, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket } from "../../server";
 import { searchByCity, searchByZip, Store } from "../live-search/data";
 import { suggest } from "./data";
 
-export interface AutocompleteContext {
+export interface AutocompleteContext extends LiveViewContext{
   zip: string;
   city: string;
   stores: Store[];
@@ -24,7 +24,7 @@ export class AutocompleteLiveViewComponent extends BaseLiveView<AutocompleteCont
     const stores: Store[] = [];
     const matches: string[] = [];
     const loading = false
-    return { zip, city, stores, matches, loading };
+    socket.assign({ zip, city, stores, matches, loading });
   };
 
   renderStoreStatus(store: Store) {
@@ -119,29 +119,29 @@ export class AutocompleteLiveViewComponent extends BaseLiveView<AutocompleteCont
       const { zip } = params;
       // wait a second to send the message
       setTimeout(() => {
-        socket.sendInternal({ type: "run_zip_search", zip });
+        socket.send({ type: "run_zip_search", zip });
       }, 1000);
-      return { zip, city: "", stores: [], matches: [], loading: true };
+      socket.assign({zip, loading: true, stores: [], matches: []});
     }
     else if (event === "suggest-city") {
 
       // @ts-ignore TODO better params types for different events
       const { city } = params;
       const matches = suggest(city);
-      return { zip: "", city, stores: [], matches, loading: false };
+      socket.assign({city, loading: false, matches});
     }
     else if (event === "city-search") {
       // @ts-ignore TODO better params types for different events
       const { city } = params;
       // wait a second to send the message
       setTimeout(() => {
-        socket.sendInternal({ type: "run_city_search", city });
+        socket.send({ type: "run_city_search", city });
       }, 1000);
-      return { zip: "", city, stores: [], matches: [], loading: true };
+      socket.assign({city, loading: true, matches: [], stores: []});
     }
-    else {
-      return { zip: "", city: "", stores: [], matches: [], loading: false };
-    }
+    // else {
+    //   return { zip: "", city: "", stores: [], matches: [], loading: false };
+    // }
   }
 
   handleInfo(event: { type: "run_zip_search", zip: string } | { type: "run_city_search", city: string }, socket: LiveViewSocket<AutocompleteContext>) {
@@ -151,23 +151,27 @@ export class AutocompleteLiveViewComponent extends BaseLiveView<AutocompleteCont
       case "run_zip_search":
         const { zip } = event;
         stores = searchByZip(zip);
-        return {
+        socket.assign({
           zip,
-          city: "",
           stores,
-          matches: [],
-          loading: false
-        }
+          loading: false,
+        })
+        break;
       case "run_city_search":
         const { city } = event;
         stores = searchByCity(city);
-        return {
-          zip: "",
+        socket.assign({
           city,
           stores,
-          matches: [],
-          loading: false
-        }
+          loading: false,
+        })
+        // return {
+        //   zip: "",
+        //   city,
+        //   stores,
+        //   matches: [],
+        //   loading: false
+        // }
 
     }
   }

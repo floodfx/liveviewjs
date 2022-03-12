@@ -1,10 +1,10 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server/component";
+import { BaseLiveView, LiveViewContext, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "../server";
 import { html } from "../server/templates";
 import { numberToCurrency } from "./utils";
 
 
-export interface LicenseContext {
+export interface LicenseContext extends LiveViewContext {
   seats: number;
   amount: number;
 }
@@ -16,7 +16,7 @@ export class LicenseLiveViewComponent extends BaseLiveView<LicenseContext, unkno
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LicenseContext>) {
     const seats = 2;
     const amount = calculateLicenseAmount(seats);
-    return { seats, amount };
+    socket.assign({ seats, amount });
   };
 
   render(context: LicenseContext) {
@@ -50,7 +50,7 @@ export class LicenseLiveViewComponent extends BaseLiveView<LicenseContext, unkno
   handleEvent(event: "update", params: { seats: string }, socket: LiveViewSocket<LicenseContext>) {
     const seats = Number(params.seats || 2);
     const amount = calculateLicenseAmount(seats);
-    return { seats, amount };
+    socket.assign({ seats, amount });
   }
 
 }

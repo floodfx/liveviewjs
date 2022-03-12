@@ -1,8 +1,8 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, error_tag, form_for, html, LiveViewChangeset, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues, submit, telephone_input, text_input } from "../../server";
+import { BaseLiveView, error_tag, form_for, html, LiveViewChangeset, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues, submit, telephone_input, text_input } from "../../server";
 import { changeset, createVolunteer, getVolunteer, listVolunteers, updateVolunteer, Volunteer, VolunteerMutationEvent } from "./data";
 
-export interface VolunteerContext {
+export interface VolunteerContext extends LiveViewContext {
   volunteers: Volunteer[]
   changeset: LiveViewChangeset<Volunteer>
 }
@@ -18,10 +18,10 @@ export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> 
       // listen for changes to volunteer data
       socket.subscribe('volunteer');
     }
-    return {
+    socket.assign({
       volunteers: listVolunteers(),
       changeset: changeset({}, {})
-    }
+    });
   };
 
   render(context: VolunteerContext) {
@@ -74,25 +74,25 @@ export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> 
     `
   }
 
-  handleEvent(event: VolunteerEvents, params: StringPropertyValues<Pick<Volunteer, "name" | "phone" | "id">>, socket: LiveViewSocket<VolunteerContext>): VolunteerContext {
+  handleEvent(event: VolunteerEvents, params: StringPropertyValues<Pick<Volunteer, "name" | "phone" | "id">>, socket: LiveViewSocket<VolunteerContext>) {
     if (event === "toggle-status") {
       // lookup volunteer by id
       const volunteer = getVolunteer(params.id);
       // toggle checked_out status (ignoring changeset for now)
       updateVolunteer(volunteer!, { checked_out: !volunteer!.checked_out });
-      return {
+      socket.assign({
         volunteers: listVolunteers(),
         changeset: changeset({}, {})
-      }
+      })
     } else if (event === "validate") {
       const validateChangeset = changeset({}, params);
       // set an action or else the changeset will be ignored
       // and form errors will not be shown
       validateChangeset.action = "validate";
-      return {
+      socket.assign({
         volunteers: [],
         changeset: validateChangeset
-      }
+      })
     } else {
       const volunteer: Partial<Volunteer> = {
         name: params.name,
@@ -100,21 +100,20 @@ export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> 
       }
       // attempt to create the volunteer from the form data
       const createChangeset = createVolunteer(volunteer);
-      return {
-        volunteers: [], // no volunteers to prepend
+      socket.assign({
+        volunteers: createChangeset.valid ? [createChangeset.data as Volunteer] : [], // no volunteers to prepend
         changeset: createChangeset.valid ? changeset({}, {}) : createChangeset // errors for form
-      }
-
+      })
     }
   }
 
-  handleInfo(event: VolunteerMutationEvent, socket: LiveViewSocket<VolunteerContext>): VolunteerContext | Promise<VolunteerContext> {
+  handleInfo(event: VolunteerMutationEvent, socket: LiveViewSocket<VolunteerContext>) {
     // console.log("received", event, socket.id);
     const { volunteer } = event;
-    return {
+    socket.assign({
       volunteers: [volunteer],
       changeset: changeset({}, {})
-    }
+    })
   }
 
 }

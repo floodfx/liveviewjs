@@ -1,4 +1,4 @@
-import { BaseLiveComponent, html, LiveComponentMeta, LiveComponentSocket, LiveViewTemplate } from "../../server";
+import { BaseLiveComponent, html, LiveComponentContext, LiveComponentMeta, LiveComponentSocket, LiveViewTemplate, safe } from "../../server";
 
 type VehicleType = "gas" | "electric" | "hybrid" | "dontHave";
 
@@ -54,7 +54,7 @@ const gridElectricityCarbonFootprint: Record<GridElectricityType, number> = {
   notSure: 6 // assume 6 is average
 }
 
-export interface DecarboinizeCalculatorContext {
+export interface DecarboinizeCalculatorContext extends LiveComponentContext {
   vehicle1: VehicleType;
   vehicle2: VehicleType;
   spaceHeating: SpaceHeatingType;
@@ -105,22 +105,33 @@ export class DecarboinizeCalculator extends BaseLiveComponent<DecarboinizeCalcul
 
         </form>
 
-        ${carbonFootprintTons > 0 ? this.renderFootprint(carbonFootprintTons, myself || 0) : ""}
+        ${carbonFootprintTons > 0 ? this.renderFootprint(carbonFootprintTons, myself || 0, context) : ""}
 
       </div>
     `;
   }
 
-  renderFootprint(carbonFootprintTons: number, myself: number) {
+
+
+  renderFootprint(carbonFootprintTons: number, myself: number, context: DecarboinizeCalculatorContext) {
     return html`
       <div id="footprint_${myself}">
         <h3>Carbon Footprint 👣</h3>
         <p>${carbonFootprintTons} tons of CO2</p>
+        ${this.renderChart("footprint_chart", context)}
       </div>
     `;
   }
 
-  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<DecarboinizeCalculatorContext>): Partial<DecarboinizeCalculatorContext> {
+  renderChart(id: string, context: DecarboinizeCalculatorContext) {
+    const data = this.getChartData(id, context).data;
+    return html`
+      <span id="${id}-init-data" style="display: none;">${safe(JSON.stringify(data))}</span>
+      <canvas id="${id}" phx-hook="Chart"></canvas>
+    `;
+  }
+
+  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<DecarboinizeCalculatorContext>){
 
       // calculate footprint
       const { vehicle1, vehicle2, spaceHeating, gridElectricity} = params;
@@ -129,11 +140,49 @@ export class DecarboinizeCalculator extends BaseLiveComponent<DecarboinizeCalcul
       const shTons = spaceHeatingCarbonFootprint[spaceHeating as SpaceHeatingType];
       const geTons = gridElectricityCarbonFootprint[gridElectricity as GridElectricityType];
 
-      const carbonFootprintTons = v1Tons + v2Tons + shTons + geTons;
-      return {
+      const carbonFootprintData = [
+        v1Tons,
+        v2Tons,
+        shTons,
+        geTons
+      ];
+
+      socket.pushEvent("updateChart", carbonFootprintData)
+
+      socket.assign({
         ...params,
-        carbonFootprintTons
-      };
+        carbonFootprintTons: carbonFootprintData.reduce((a, b) => a + b, 0)
+      });
+  }
+
+  getChartData(id: string, context: DecarboinizeCalculatorContext) {
+    return {
+      chartId: id,
+      data: {
+        labels: [
+          "Vehicle 1",
+          "Vehicle 2",
+          "Space heating",
+          "Electricity (non-heat)",
+        ],
+        datasets: [
+          {
+            data: [
+              vehicleCarbonFootprint[context.vehicle1],
+              vehicleCarbonFootprint[context.vehicle2],
+              spaceHeatingCarbonFootprint[context.spaceHeating],
+              gridElectricityCarbonFootprint[context.gridElectricity],
+            ],
+            backgroundColor: [
+              '#4E0606',
+              '#4E2706',
+              '#06284E',
+              '#DBD111',
+            ],
+          },
+        ],
+      },
+    };
   }
 
 }

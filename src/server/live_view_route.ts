@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
-import { LiveComponent, LiveComponentSocket, LiveView, LiveViewSocket, PageTitleDefaults } from ".";
+import { LiveView, PageTitleDefaults } from ".";
+import { HttpLiveComponentSocket, LiveComponent, LiveComponentContext, LiveViewContext, LiveViewTemplate } from "./component";
+import { HttpLiveViewSocket } from "./socket/live_socket";
 
 type SessionDataProvider<T extends {csrfToken: string}> = (req: Request) => T;
 
@@ -9,7 +11,7 @@ const emptyVoid = () => {};
 
 export const configLiveViewHandler = <T extends {csrfToken: string}>(
   getPath: string,
-  component: LiveView<unknown,unknown>,
+  component: LiveView<LiveViewContext,unknown>,
   rootView: string,
   signingSecret: string,
   sessionDataProvider: SessionDataProvider<T>,
@@ -21,22 +23,13 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
     const liveViewId = nanoid();
 
     // mock socket
-    const liveViewSocket: LiveViewSocket<T> = {
-      id: liveViewId,
-      connected: false, // ws socket not connected on http request
-      context: {} as T,
-      sendInternal: emptyVoid,
-      repeat: emptyVoid,
-      pageTitle: emptyVoid,
-      subscribe: emptyVoid,
-      pushPatch: emptyVoid,
-    }
+    const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId, {});
 
     // get session data from provider
     const session = sessionDataProvider(req);
 
     // mount and render component
-    const ctx = await component.mount(
+    await component.mount(
       {
         _csrf_token: session.csrfToken,
         _mounts: -1
@@ -45,27 +38,32 @@ export const configLiveViewHandler = <T extends {csrfToken: string}>(
       liveViewSocket
     );
 
-    // default socket builder
-    const buildLiveComponentSocket = (id: string, context: unknown): LiveComponentSocket<unknown> => {
-      return {
-        id,
-        connected: false, // websocket is not connected on http request
-        ws: undefined, // no websocke on http request
-        context,
-        send: () => {},
-      }
-    }
+    // handle params
+    await component.handleParams(req.query, req.url, liveViewSocket);
 
-    let myself: number = 1;
-    const view = await component.render(ctx, {
+    // pass LiveViewContext and LiveViewMeta to render
+    const lvContext = liveViewSocket.context;
+    let myself = 1;
+    const view = await component.render(lvContext, {
       csrfToken: session.csrfToken,
-      live_component: async(liveComponent: LiveComponent<unknown>, params?: Partial<unknown & {id: number | string}>) => {
+      async live_component(liveComponent: LiveComponent<LiveComponentContext>, params?: Partial<LiveComponentContext & { id: string | number; }>): Promise<LiveViewTemplate> {
+        // params may be empty
         params = params ?? {};
-        delete params.id;
-        let context = await liveComponent.mount(buildLiveComponentSocket(liveViewId, params));
-        context = await liveComponent.update(context, buildLiveComponentSocket(liveViewId, context));
-        // no old view so just render
-        let newView = await liveComponent.render(context, {myself});
+        delete params.id; // remove id before passing to socket
+
+        // create live component socket
+        const lcSocket = new HttpLiveComponentSocket<LiveComponentContext>(liveViewId, params as unknown as LiveComponentContext);
+
+        // update socket with params
+        lcSocket.assign(params);
+
+        // run lifecycle
+        await liveComponent.mount(lcSocket);
+        await liveComponent.update(lcSocket);
+
+        // render view with context
+        const lcContext = lcSocket.context;
+        const newView = await liveComponent.render(lcContext, {myself: myself});
         myself++;
         // since http request is stateless send back the LiveViewTemplate
         return newView;
