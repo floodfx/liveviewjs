@@ -1,14 +1,8 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, html, LiveViewContext, LiveViewExternalEventListener, LiveViewMeta, LiveViewMountParams, LiveViewSocket } from "../../server";
+import { BaseLiveView, html, LiveViewContext, LiveViewMeta, LiveViewMountParams, LiveViewSocket } from "../../server";
 import { DecarboinizeCalculator } from "./live_component";
 
-export class DecarbonizeLiveView extends BaseLiveView<LiveViewContext, unknown>
- implements LiveViewExternalEventListener<LiveViewContext, "clicked", never>
-{
-  handleEvent(event: "clicked", params: never, socket: LiveViewSocket<LiveViewContext>): void | Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
+export class DecarbonizeLiveView extends BaseLiveView<LiveViewContext, unknown>{
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LiveViewContext>): void {
     socket.pageTitle("Decarbonize Calculator");
   }
