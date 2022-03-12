@@ -65,8 +65,6 @@ export interface PhxLivePatchPushPayload {
 }
 export type PhxOutgoingLivePatchPush = PhxOutgoingMessage<PhxLivePatchPushPayload>;
 
-export type PhxOutgoingPushEvent = PhxOutgoingMessage<unknown>;
-
 export interface PhxEventPayload<Type extends string, Value> {
   type: Type,
   event: string,
