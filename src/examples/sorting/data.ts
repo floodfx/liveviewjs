@@ -1,12 +1,11 @@
 import { PaginateOptions, SortOptions } from "./component";
 
-
 export interface Donation {
   id: number;
-  emoji: string
-  item: string
-  quantity: number
-  days_until_expires: number
+  emoji: string;
+  item: string;
+  quantity: number;
+  days_until_expires: number;
 }
 
 const items = [
@@ -61,14 +60,14 @@ const items = [
   { emoji: "🍠", item: "Sweet Potatoes" },
   { emoji: "🥯", item: "Bagels" },
   { emoji: "🥫", item: "Soup" },
-  { emoji: "🍪", item: "Cookies" }
-]
+  { emoji: "🍪", item: "Cookies" },
+];
 
 export const donations: Donation[] = items.map((item, id) => {
   const quantity = Math.floor(Math.random() * 20) + 1;
   const days_until_expires = Math.floor(Math.random() * 30) + 1;
-  return { ...item, quantity, days_until_expires, id: (id + 1) }
-})
+  return { ...item, quantity, days_until_expires, id: id + 1 };
+});
 
 export const listItems = (paginateOptions: PaginateOptions, sortOptions: SortOptions) => {
   const { page, perPage } = paginateOptions;
@@ -82,7 +81,7 @@ export const listItems = (paginateOptions: PaginateOptions, sortOptions: SortOpt
     }
     return 0;
   });
-  return sorted.slice((page - 1) * perPage, page * perPage)
-}
+  return sorted.slice((page - 1) * perPage, page * perPage);
+};
 
-export const almostExpired = (donation: Donation) => donation.days_until_expires <= 10
+export const almostExpired = (donation: Donation) => donation.days_until_expires <= 10;

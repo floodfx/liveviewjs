@@ -1,5 +1,5 @@
-import { EventEmitter } from 'events';
-import { nanoid } from 'nanoid';
+import { EventEmitter } from "events";
+import { nanoid } from "nanoid";
 import { Publisher, Subscriber, SubscriberFunction } from ".";
 
 /**
@@ -9,7 +9,6 @@ import { Publisher, Subscriber, SubscriberFunction } from ".";
  * or a single instance.  In a multi-process environment, use RedisPubSub.
  */
 class SingleProcessPubSub<T> implements Subscriber<T>, Publisher<T> {
-
   private eventEmitter: EventEmitter;
   private subscribers: Record<string, SubscriberFunction<T>> = {};
 
@@ -36,7 +35,6 @@ class SingleProcessPubSub<T> implements Subscriber<T>, Publisher<T> {
     // remove subscriber from subscribers
     delete this.subscribers[subscriberId];
   }
-
 }
 
 export const PubSub = new SingleProcessPubSub<unknown>();

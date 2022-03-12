@@ -1,17 +1,23 @@
 import express from "express";
 import session, { MemoryStore, SessionData } from "express-session";
-import { Server } from 'http';
+import { Server } from "http";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import path from "path";
-import WebSocket from 'ws';
+import WebSocket from "ws";
 import { LiveView, LiveViewRouter, live_title_tag } from ".";
-import { HttpLiveComponentSocket, LiveComponent, LiveComponentContext, LiveViewContext, LiveViewTemplate } from "./component";
+import {
+  HttpLiveComponentSocket,
+  LiveComponent,
+  LiveComponentContext,
+  LiveViewContext,
+  LiveViewTemplate,
+} from "./component";
 import { HttpLiveViewSocket } from "./socket/live_socket";
 import { MessageRouter } from "./socket/message_router";
 
 // extend / define session interface
-declare module 'express-session' {
+declare module "express-session" {
   interface SessionData {
     csrfToken: string;
   }
@@ -40,12 +46,12 @@ export class LiveViewServer {
   private port: number = 4444;
   private rootView: string = "root.html.ejs";
   // defaults to path relative to this module in /node_modules/
-  private publicPath: string = path.join(__dirname, "..", "client")
+  private publicPath: string = path.join(__dirname, "..", "client");
   private viewsPath: string[];
   private signingSecret: string;
   private sessionStore: session.Store = new MemoryStore();
   private _router: LiveViewRouter = {};
-  private messageRouter = new MessageRouter()
+  private messageRouter = new MessageRouter();
   private _isStarted = false;
   private pageTitleDefaults?: PageTitleDefaults;
   private middleware: express.Handler[] = [];
@@ -60,11 +66,11 @@ export class LiveViewServer {
     this.publicPath = options.publicPath ?? this.publicPath;
     this.viewsPath = options.viewsPath ? [options.viewsPath, MODULE_VIEWS_PATH] : [MODULE_VIEWS_PATH];
     this.sessionStore = options.sessionStore ?? this.sessionStore;
-    this.middleware = options.middleware ?? this.middleware
+    this.middleware = options.middleware ?? this.middleware;
     this.signingSecret = options.signingSecret;
     this.httpServer = new Server();
     this.socketServer = new WebSocket.Server({
-      server: this.httpServer
+      server: this.httpServer,
     });
     this.pageTitleDefaults = options.pageTitleDefaults;
     this.expressApp = this.buildExpressApp();
@@ -95,25 +101,23 @@ export class LiveViewServer {
     }
 
     // register express app for http requests
-    this.httpServer.on('request', this.expressApp);
+    this.httpServer.on("request", this.expressApp);
 
     // register websocket server ws requests
-    this.socketServer.on('connection', socket => {
-
+    this.socketServer.on("connection", (socket) => {
       const connectionId = nanoid();
       // handle ws messages
-      socket.on('message', async message => {
+      socket.on("message", async (message) => {
         await this.messageRouter.onMessage(socket, message, this._router, connectionId, this.signingSecret);
       });
-      socket.on('close', async code => {
+      socket.on("close", async (code) => {
         await this.messageRouter.onClose(code, connectionId);
-      })
+      });
     });
 
     this.httpServer.listen(this.port, () => {
-      console.log(`LiveView App is listening on port ${this.port} !`)
-    })
-
+      console.log(`LiveView App is listening on port ${this.port} !`);
+    });
   }
 
   shutdown() {
@@ -127,31 +131,32 @@ export class LiveViewServer {
     this.httpServer.close();
   }
 
-
   private buildExpressApp() {
     const app = express();
 
     // empty void function
     const emptyVoid = () => {};
 
-    app.use(express.static(this.publicPath))
+    app.use(express.static(this.publicPath));
 
-    app.set('view engine', 'ejs');
-    app.set("views", this.viewsPath)
+    app.set("view engine", "ejs");
+    app.set("views", this.viewsPath);
 
     // setup session
-    app.use(session({
-      secret: this.signingSecret,
-      resave: false,
-      rolling: true,
-      saveUninitialized: true,
-      cookie: { secure: process.env.NODE_ENV === "production" },
-      store: this.sessionStore,
-    }))
+    app.use(
+      session({
+        secret: this.signingSecret,
+        resave: false,
+        rolling: true,
+        saveUninitialized: true,
+        cookie: { secure: process.env.NODE_ENV === "production" },
+        store: this.sessionStore,
+      })
+    );
 
     // register middleware
     for (const middleware of this.middleware) {
-      app.use(middleware)
+      app.use(middleware);
     }
 
     // register live_title_tag helper
@@ -181,17 +186,13 @@ export class LiveViewServer {
       const sessionData: Omit<SessionData, "cookie" | "message"> = {
         ...req.session,
         csrfToken: req.session.csrfToken,
-      }
+      };
 
       // http  socket
       const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId, {});
 
       // mount
-      await component.mount(
-        { _csrf_token: req.session.csrfToken, _mounts: -1 },
-        { ...sessionData },
-        liveViewSocket
-      );
+      await component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, { ...sessionData }, liveViewSocket);
 
       // handle_params
       await component.handleParams(req.query, req.url, liveViewSocket);
@@ -203,13 +204,19 @@ export class LiveViewServer {
       let myself = 1;
       const view = await component.render(lvContext, {
         csrfToken: req.session.csrfToken,
-        async live_component(liveComponent: LiveComponent<LiveComponentContext>, params?: Partial<LiveComponentContext & { id: string | number; }>): Promise<LiveViewTemplate> {
+        async live_component(
+          liveComponent: LiveComponent<LiveComponentContext>,
+          params?: Partial<LiveComponentContext & { id: string | number }>
+        ): Promise<LiveViewTemplate> {
           // params may be empty
           params = params ?? {};
           delete params.id; // remove id before passing to socket
 
           // create live component socket
-          const lcSocket = new HttpLiveComponentSocket<LiveComponentContext>(liveViewId, params as unknown as LiveComponentContext);
+          const lcSocket = new HttpLiveComponentSocket<LiveComponentContext>(
+            liveViewId,
+            params as unknown as LiveComponentContext
+          );
 
           // update socket with params
           lcSocket.assign(params);
@@ -220,11 +227,11 @@ export class LiveViewServer {
 
           // render view with context
           const lcContext = lcSocket.context;
-          const newView = await liveComponent.render(lcContext, {myself: myself});
+          const newView = await liveComponent.render(lcContext, { myself: myself });
           myself++;
           // since http request is stateless send back the LiveViewTemplate
           return newView;
-        }
+        },
       });
 
       // render the view with all the data
@@ -236,11 +243,10 @@ export class LiveViewServer {
         liveViewId,
         session: jwt.sign(sessionData, this.signingSecret),
         statics: jwt.sign(JSON.stringify(view.statics), this.signingSecret),
-        inner_content: view.toString()
-      })
+        inner_content: view.toString(),
+      });
     });
 
     return app;
   }
 }
-

@@ -6,7 +6,9 @@ import { HttpLiveComponentSocket, LiveComponentContext } from "./live_component"
 /**
  * Contexts can only be objects with string keys.
  */
- export interface LiveViewContext {[key: string]: unknown}
+export interface LiveViewContext {
+  [key: string]: unknown;
+}
 
 /**
  * Paramter passed into the `mount` function of a LiveViewComponent.
@@ -15,11 +17,11 @@ export interface LiveViewMountParams {
   /**
    * The cross site request forgery token from the `LiveView` html page.
    */
-  ["_csrf_token"]: string
+  ["_csrf_token"]: string;
   /**
    * The number of mounts for this `LiveView` component.
    */
-  ["_mounts"]: number
+  ["_mounts"]: number;
 }
 
 /**
@@ -30,7 +32,6 @@ export interface LiveViewMountParams {
  * `LiveView` URL.
  */
 export interface LiveView<Context extends LiveViewContext, Params> {
-
   /**
    * `mount` is both when the `LiveView` is rendered for the HTTP request
    * and upon the first time the `LiveView` is mounted (i.e. connected) via
@@ -40,7 +41,11 @@ export interface LiveView<Context extends LiveViewContext, Params> {
    * @param session the `SessionData` for this session (i.e. the user)
    * @param socket the `LiveViewSocket` for this `LiveView`
    */
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>): void | Promise<void>;
+  mount(
+    params: LiveViewMountParams,
+    session: Partial<SessionData>,
+    socket: LiveViewSocket<Context>
+  ): void | Promise<void>;
 
   /**
    * `render` is where the user interface is defined and calculated based on
@@ -59,8 +64,11 @@ export interface LiveView<Context extends LiveViewContext, Params> {
    * @param url
    * @param socket
    */
-  handleParams(params: StringPropertyValues<Params>, url: string, socket: LiveViewSocket<Context>): void | Promise<void>;
-
+  handleParams(
+    params: StringPropertyValues<Params>,
+    url: string,
+    socket: LiveViewSocket<Context>
+  ): void | Promise<void>;
 }
 
 /**
@@ -76,7 +84,11 @@ export interface LiveViewExternalEventListener<Context extends LiveViewContext, 
    * @param params any parameters associated with the event
    * @param socket The `LiveViewSocket` for this `LiveView` component
    */
-  handleEvent(event: Event, params: StringPropertyValues<Params>, socket: LiveViewSocket<Context>): void | Promise<void>;
+  handleEvent(
+    event: Event,
+    params: StringPropertyValues<Params>,
+    socket: LiveViewSocket<Context>
+  ): void | Promise<void>;
 }
 
 /**
@@ -96,8 +108,7 @@ export interface LiveViewInternalEventListener<Context extends LiveViewContext, 
 /**
  * Type that transforms all the properties types to strings
  */
-export type StringPropertyValues<Type> = { [Property in keyof Type]: string;};
-
+export type StringPropertyValues<Type> = { [Property in keyof Type]: string };
 
 /**
  * Meta data and helpers for `LiveView` components.
@@ -107,13 +118,15 @@ export interface LiveViewMeta {
    * The cross site request forgery token from the `LiveView` html page which
    * should be used to validate form submissions.
    */
-  csrfToken: string
+  csrfToken: string;
   /**
    * A helper for loading `LiveComponent`s within a `LiveView`.
    */
-  live_component(liveComponent: LiveComponent<LiveComponentContext>, params?: Partial<LiveComponentContext & {id: number | string}>): Promise<LiveViewTemplate>
+  live_component(
+    liveComponent: LiveComponent<LiveComponentContext>,
+    params?: Partial<LiveComponentContext & { id: number | string }>
+  ): Promise<LiveViewTemplate>;
 }
-
 
 export class WsLiveViewMeta implements LiveViewMeta {
   /**
@@ -122,14 +135,17 @@ export class WsLiveViewMeta implements LiveViewMeta {
    */
   csrfToken: string;
 
-  private myself: number = 0
+  private myself: number = 0;
   private liveViewId: string;
-  constructor(liveViewId: string , csrfToken: string) {
+  constructor(liveViewId: string, csrfToken: string) {
     this.csrfToken = csrfToken;
     this.liveViewId = liveViewId;
   }
 
-  async live_component<Context extends LiveComponentContext>(liveComponent: LiveComponent<Context>, params?: Partial<Context & { id: string | number; }> | undefined): Promise<LiveViewTemplate>  {
+  async live_component<Context extends LiveComponentContext>(
+    liveComponent: LiveComponent<Context>,
+    params?: Partial<Context & { id: string | number }> | undefined
+  ): Promise<LiveViewTemplate> {
     // params may be empty
     params = params ?? {};
     delete params.id; // remove id before passing to socket
@@ -146,12 +162,9 @@ export class WsLiveViewMeta implements LiveViewMeta {
 
     // render view with context
     const lcContext = lcSocket.context;
-    const newView = await liveComponent.render(lcContext, {myself: this.myself});
+    const newView = await liveComponent.render(lcContext, { myself: this.myself });
     this.myself++;
     // since http request is stateless send back the LiveViewTemplate
     return newView;
   }
-
-
 }
-

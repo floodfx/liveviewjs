@@ -1,5 +1,4 @@
-
-export type SubscriberFunction<T> = (data: T) => void
+export type SubscriberFunction<T> = (data: T) => void;
 
 export interface Subscriber<T> {
   subscribe(topic: string, subscriber: SubscriberFunction<T>): string | Promise<string>;
@@ -10,5 +9,4 @@ export interface Publisher<T> {
   broadcast(topic: string, data: T): void;
 }
 
-export * from "./SingleProcessPubSub"
-
+export * from "./SingleProcessPubSub";

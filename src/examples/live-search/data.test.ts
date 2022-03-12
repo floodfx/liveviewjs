@@ -1,5 +1,4 @@
-
-import { listStores, searchByCity, searchByZip } from './data';
+import { listStores, searchByCity, searchByZip } from "./data";
 
 describe("test stores", () => {
   it("stores list", () => {
@@ -16,5 +15,4 @@ describe("test stores", () => {
     const stores = searchByCity("Denver, CO");
     expect(stores.length).toBe(4);
   });
-
 });

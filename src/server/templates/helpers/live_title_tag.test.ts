@@ -8,17 +8,16 @@ describe("live title tag helper", () => {
 
   it("returns live title tag with prefix", () => {
     const result = live_title_tag("title", {
-      prefix: "prefix "
+      prefix: "prefix ",
     }).toString();
-    expect(result).toBe(`<title data-prefix="prefix ">prefix title</title>`)
+    expect(result).toBe(`<title data-prefix="prefix ">prefix title</title>`);
   });
 
   it("returns live title tag with prefix and suffix", () => {
     const result = live_title_tag("title", {
       prefix: "prefix ",
-      suffix: " suffix"
+      suffix: " suffix",
     }).toString();
-    expect(result).toBe(`<title data-prefix="prefix " data-suffix=" suffix">prefix title suffix</title>`)
+    expect(result).toBe(`<title data-prefix="prefix " data-suffix=" suffix">prefix title suffix</title>`);
   });
-
 });

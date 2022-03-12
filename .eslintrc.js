@@ -1,11 +1,9 @@
 module.exports = {
-  plugins: [
-    "eta"
-  ],
+  plugins: ["eta"],
   overrides: [
     {
       files: ["*.eta"],
-      processor: "eta/eta"
-    }
+      processor: "eta/eta",
+    },
   ],
 };

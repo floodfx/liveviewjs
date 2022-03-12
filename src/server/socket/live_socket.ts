@@ -26,7 +26,7 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
    * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
    * @param context you can pass a partial of the current context to update
    */
-  assign: (context: Partial<Context>) => void
+  assign: (context: Partial<Context>) => void;
   /**
    * helper method to send messages back to the `LiveView` -
    * requires the `LiveView` to implement `handleInfo`.
@@ -41,7 +41,6 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
 }
 
 abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements LiveViewSocket<Context> {
-
   abstract connected: boolean;
   abstract id: string;
 
@@ -54,8 +53,8 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
   assign(context: Partial<Context>) {
     this._context = {
       ...this.context,
-      ...context
-    }
+      ...context,
+    };
   }
 
   pageTitle(newPageTitle: string) {
@@ -75,16 +74,17 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
   }
   subscribe(topic: string) {
     // no-op
-  };
-
+  }
 }
 
 /**
  * Minimal implementation which only provides `context` and `assign` for use with
  * HTTP requests.
  */
-export class HttpLiveViewSocket<Context extends LiveViewContext> extends BaseLiveViewSocket<Context> implements LiveViewSocket<Context> {
-
+export class HttpLiveViewSocket<Context extends LiveViewContext>
+  extends BaseLiveViewSocket<Context>
+  implements LiveViewSocket<Context>
+{
   readonly id: string;
   readonly connected: boolean = false;
 
@@ -95,12 +95,14 @@ export class HttpLiveViewSocket<Context extends LiveViewContext> extends BaseLiv
   }
 }
 
-export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveViewSocket<Context> implements LiveViewSocket<Context> {
-
+export class WsLiveViewSocket<Context extends LiveViewContext>
+  extends BaseLiveViewSocket<Context>
+  implements LiveViewSocket<Context>
+{
   readonly id: string;
   readonly connected: boolean = true;
 
-  pushEventData?: {event: string, params: Record<string, any>};
+  pushEventData?: { event: string; params: Record<string, any> };
   pageTitleData?: string;
 
   // callbacks to the ComponentManager
@@ -118,7 +120,7 @@ export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveV
     pushPatchCallback: (path: string, params: Record<string, string | number>) => void,
     repeatCallback: (fn: () => void, intervalMillis: number) => void,
     sendCallback: (event: unknown) => void,
-    subscribeCallback: (topic: string) => void,
+    subscribeCallback: (topic: string) => void
   ) {
     super();
     this.id = id;
@@ -147,7 +149,5 @@ export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveV
   }
   subscribe(topic: string) {
     this.subscribeCallback(topic);
-  };
-
+  }
 }
-

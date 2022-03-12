@@ -1,25 +1,53 @@
-import WebSocket from 'ws';
-import { LiveViewRouter } from '..';
-import { PubSub } from '../pubsub/SingleProcessPubSub';
-import { LiveViewComponentManager } from './component_manager';
-import { PhxBlurPayload, PhxClickPayload, PhxFocusPayload, PhxFormPayload, PhxHeartbeatIncoming, PhxHookPayload, PhxIncomingMessage, PhxJoinIncoming, PhxKeyDownPayload, PhxKeyUpPayload, PhxLivePatchIncoming } from './types';
+import WebSocket from "ws";
+import { LiveViewRouter } from "..";
+import { PubSub } from "../pubsub/SingleProcessPubSub";
+import { LiveViewComponentManager } from "./component_manager";
+import {
+  PhxBlurPayload,
+  PhxClickPayload,
+  PhxFocusPayload,
+  PhxFormPayload,
+  PhxHeartbeatIncoming,
+  PhxHookPayload,
+  PhxIncomingMessage,
+  PhxJoinIncoming,
+  PhxKeyDownPayload,
+  PhxKeyUpPayload,
+  PhxLivePatchIncoming,
+} from "./types";
 
 export type PhxMessage =
- // incoming from client
- | {type: "phx_join", message: PhxJoinIncoming}
- | {type: "heartbeat", message: PhxHeartbeatIncoming}
- | {type: "event", message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload | PhxHookPayload>}
- | {type: "live_patch", message: PhxLivePatchIncoming}
- | {type: "phx_leave", message: PhxIncomingMessage<{}>}
+  // incoming from client
+  | { type: "phx_join"; message: PhxJoinIncoming }
+  | { type: "heartbeat"; message: PhxHeartbeatIncoming }
+  | {
+      type: "event";
+      message: PhxIncomingMessage<
+        | PhxClickPayload
+        | PhxFormPayload
+        | PhxKeyDownPayload
+        | PhxKeyUpPayload
+        | PhxFocusPayload
+        | PhxBlurPayload
+        | PhxHookPayload
+      >;
+    }
+  | { type: "live_patch"; message: PhxLivePatchIncoming }
+  | { type: "phx_leave"; message: PhxIncomingMessage<{}> };
 
 export class MessageRouter {
-
-  public async onMessage(ws: WebSocket, message: WebSocket.RawData, router: LiveViewRouter, connectionId: string, signingSecret: string) {
+  public async onMessage(
+    ws: WebSocket,
+    message: WebSocket.RawData,
+    router: LiveViewRouter,
+    connectionId: string,
+    signingSecret: string
+  ) {
     // parse string to JSON
     const rawPhxMessage: PhxIncomingMessage<unknown> = JSON.parse(message.toString());
 
     // rawPhxMessage must be an array with 5 elements
-    if (typeof rawPhxMessage === 'object' && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
+    if (typeof rawPhxMessage === "object" && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
       const [joinRef, messageRef, topic, event, payload] = rawPhxMessage;
 
       try {
@@ -31,13 +59,13 @@ export class MessageRouter {
             break;
           case "heartbeat":
             // send heartbeat to component manager via connectionId broadcast
-            await PubSub.broadcast(connectionId, {type: event, message: rawPhxMessage})
+            await PubSub.broadcast(connectionId, { type: event, message: rawPhxMessage });
             break;
           case "event":
           case "live_patch":
           case "phx_leave":
             // other events we can send via topic broadcast
-            await PubSub.broadcast(topic, {type: event, message: rawPhxMessage})
+            await PubSub.broadcast(topic, { type: event, message: rawPhxMessage });
             break;
           default:
             throw new Error(`unexpected protocol event ${rawPhxMessage}`);
@@ -45,21 +73,25 @@ export class MessageRouter {
       } catch (e) {
         throw e;
       }
-    }
-    else {
+    } else {
       // unknown message type
       throw new Error(`unknown message type ${rawPhxMessage}`);
     }
-
   }
 
   public async onClose(code: number, connectionId: string) {
     // when client closes connection send phx_leave message
     // to component manager via connectionId broadcast
-    await PubSub.broadcast(connectionId, {type: "phx_leave", message: [null, null, "phoenix", "phx_leave", {}]});
+    await PubSub.broadcast(connectionId, { type: "phx_leave", message: [null, null, "phoenix", "phx_leave", {}] });
   }
 
-  private async onPhxJoin(ws: WebSocket, message: PhxJoinIncoming, router: LiveViewRouter, signingSecret: string, connectionId: string) {
+  private async onPhxJoin(
+    ws: WebSocket,
+    message: PhxJoinIncoming,
+    router: LiveViewRouter,
+    signingSecret: string,
+    connectionId: string
+  ) {
     // use url to route join request to component
     const [joinRef, messageRef, topic, event, payload] = message;
     const { url: urlString, redirect: redirectString } = payload;
@@ -76,5 +108,4 @@ export class MessageRouter {
     const componentManager = new LiveViewComponentManager(component, signingSecret, connectionId, ws);
     await componentManager.handleJoin(message);
   }
-
 }

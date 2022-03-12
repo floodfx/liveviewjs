@@ -1,5 +1,4 @@
-
-import { listCities, suggest } from './data';
+import { listCities, suggest } from "./data";
 
 describe("test cities", () => {
   it("cities list", () => {
@@ -16,5 +15,4 @@ describe("test cities", () => {
     const cities = suggest("");
     expect(cities.length).toBe(0);
   });
-
 });

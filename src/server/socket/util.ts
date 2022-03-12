@@ -1,4 +1,4 @@
-import { PhxIncomingMessage, PhxReply, PhxSocketProtocolNames } from "./types"
+import { PhxIncomingMessage, PhxReply, PhxSocketProtocolNames } from "./types";
 
 export const newPhxReply = (from: PhxIncomingMessage<unknown>, payload: any): PhxReply => {
   return [
@@ -6,9 +6,9 @@ export const newPhxReply = (from: PhxIncomingMessage<unknown>, payload: any): Ph
     from[PhxSocketProtocolNames.messageRef],
     from[PhxSocketProtocolNames.topic],
     "phx_reply",
-    payload
-  ]
-}
+    payload,
+  ];
+};
 
 export const newHeartbeatReply = (incoming: PhxIncomingMessage<{}>): PhxReply => {
   return [
@@ -18,7 +18,7 @@ export const newHeartbeatReply = (incoming: PhxIncomingMessage<{}>): PhxReply =>
     "phx_reply",
     {
       response: {},
-      status: "ok"
-    }
-  ]
-}
+      status: "ok",
+    },
+  ];
+};

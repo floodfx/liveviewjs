@@ -1,62 +1,63 @@
-import { nanoid } from 'nanoid';
-import { z } from 'zod';
-import { newChangesetFactory } from '../../server/component/changeset';
-import { LiveViewChangeset } from '../../server/component/types';
-import { PubSub } from '../../server/pubsub/SingleProcessPubSub';
+import { nanoid } from "nanoid";
+import { z } from "zod";
+import { newChangesetFactory } from "../../server/component/changeset";
+import { LiveViewChangeset } from "../../server/component/types";
+import { PubSub } from "../../server/pubsub/SingleProcessPubSub";
 
-const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/
+const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/;
 
 // Use Zod to define the schema for the Volunteer model
 // More on Zod - https://github.com/colinhacks/zod
 export const VolunteerSchema = z.object({
   id: z.string().default(nanoid),
   name: z.string().min(2).max(100),
-  phone: z.string().regex(phoneRegex, 'Should be a valid phone number'),
+  phone: z.string().regex(phoneRegex, "Should be a valid phone number"),
   checked_out: z.boolean().default(false),
-})
+});
 
 // infer the Volunteer model from the Zod Schema
 export type Volunteer = z.infer<typeof VolunteerSchema>;
 
 // in memory data store
-const volunteers: Record<string, Volunteer> = {}
+const volunteers: Record<string, Volunteer> = {};
 
 export const listVolunteers = (): Volunteer[] => {
-  return Object.values(volunteers)
-}
+  return Object.values(volunteers);
+};
 
 export const getVolunteer = (id: string): Volunteer | undefined => {
-  return volunteers[id]
-}
+  return volunteers[id];
+};
 
-export const changeset = newChangesetFactory<Volunteer>(VolunteerSchema)
+export const changeset = newChangesetFactory<Volunteer>(VolunteerSchema);
 
 export const createVolunteer = (newVolunteer: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
-  const result = changeset({}, newVolunteer, 'create');
+  const result = changeset({}, newVolunteer, "create");
   if (result.valid) {
     const volunteer = result.data as Volunteer;
     volunteers[volunteer.id] = volunteer;
-    broadcast({type: "created", volunteer});
+    broadcast({ type: "created", volunteer });
   }
   return result;
-}
+};
 
-export const updateVolunteer = (currentVolunteer: Volunteer, updated: Partial<Volunteer>): LiveViewChangeset<Volunteer> => {
-  const result = changeset(currentVolunteer, updated, 'update');
+export const updateVolunteer = (
+  currentVolunteer: Volunteer,
+  updated: Partial<Volunteer>
+): LiveViewChangeset<Volunteer> => {
+  const result = changeset(currentVolunteer, updated, "update");
   if (result.valid) {
     const volunteer = result.data as Volunteer;
     volunteers[volunteer.id] = volunteer;
-    broadcast({type: "updated", volunteer});
+    broadcast({ type: "updated", volunteer });
   }
   return result;
-}
+};
 
 function broadcast(event: VolunteerMutationEvent) {
-  PubSub.broadcast('volunteer', event);
+  PubSub.broadcast("volunteer", event);
 }
 
 export type VolunteerMutationEvent =
-  | {type: "created", volunteer: Volunteer }
-  | {type: "updated", volunteer: Volunteer }
-
-
+  | { type: "created"; volunteer: Volunteer }
+  | { type: "updated"; volunteer: Volunteer };

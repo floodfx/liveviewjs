@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
 // see: https://xkcd.com/json.html
 export interface XkcdData {
@@ -14,7 +14,6 @@ export interface XkcdData {
   img: string;
   title: string;
 }
-
 
 export function randomXkcdNum(): number {
   return Math.floor(Math.random() * 2580) + 1;

@@ -12,25 +12,11 @@
     "strict": true,
     "skipLibCheck": true,
     "target": "es2019",
-    "lib": [
-      "es2019",
-      "esnext.asynciterable",
-      "DOM"
-    ],
-    "types": [
-      "node",
-      "jest"
-    ],
+    "lib": ["es2019", "esnext.asynciterable", "DOM"],
+    "types": ["node", "jest"],
     "outDir": "./dist",
-    "baseUrl": ".",
+    "baseUrl": "."
   },
-  "include": [
-    "src/server/**/*",
-    "src/examples/**/*",
-  ],
-  "exclude": [
-    "dist",
-    "node_modules",
-    "**/*.test.ts"
-  ]
+  "include": ["src/server/**/*", "src/examples/**/*"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts"]
 }

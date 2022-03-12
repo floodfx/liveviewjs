@@ -1,28 +1,53 @@
 import { SessionData } from "express-session";
-import { BaseLiveView, error_tag, form_for, html, LiveViewChangeset, LiveViewContext, LiveViewExternalEventListener, LiveViewInternalEventListener, LiveViewMountParams, LiveViewSocket, StringPropertyValues, submit, telephone_input, text_input } from "../../server";
-import { changeset, createVolunteer, getVolunteer, listVolunteers, updateVolunteer, Volunteer, VolunteerMutationEvent } from "./data";
+import {
+  BaseLiveView,
+  error_tag,
+  form_for,
+  html,
+  LiveViewChangeset,
+  LiveViewContext,
+  LiveViewExternalEventListener,
+  LiveViewInternalEventListener,
+  LiveViewMountParams,
+  LiveViewSocket,
+  StringPropertyValues,
+  submit,
+  telephone_input,
+  text_input,
+} from "../../server";
+import {
+  changeset,
+  createVolunteer,
+  getVolunteer,
+  listVolunteers,
+  updateVolunteer,
+  Volunteer,
+  VolunteerMutationEvent,
+} from "./data";
 
 export interface VolunteerContext extends LiveViewContext {
-  volunteers: Volunteer[]
-  changeset: LiveViewChangeset<Volunteer>
+  volunteers: Volunteer[];
+  changeset: LiveViewChangeset<Volunteer>;
 }
 
 type VolunteerEvents = "save" | "validate" | "toggle-status";
 
-export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> implements
-  LiveViewExternalEventListener<VolunteerContext, VolunteerEvents, Volunteer>,
-  LiveViewInternalEventListener<VolunteerContext, VolunteerMutationEvent> {
-
+export class VolunteerComponent
+  extends BaseLiveView<VolunteerContext, unknown>
+  implements
+    LiveViewExternalEventListener<VolunteerContext, VolunteerEvents, Volunteer>,
+    LiveViewInternalEventListener<VolunteerContext, VolunteerMutationEvent>
+{
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<VolunteerContext>) {
     if (socket.connected) {
       // listen for changes to volunteer data
-      socket.subscribe('volunteer');
+      socket.subscribe("volunteer");
     }
     socket.assign({
       volunteers: listVolunteers(),
-      changeset: changeset({}, {})
+      changeset: changeset({}, {}),
     });
-  };
+  }
 
   render(context: VolunteerContext) {
     const { changeset, volunteers } = context;
@@ -32,8 +57,8 @@ export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> 
 
       ${form_for<Volunteer>("#", {
         phx_submit: "save",
-        phx_change: "validate"
-        })}
+        phx_change: "validate",
+      })}
 
         <div class="field">
           ${text_input<Volunteer>(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
@@ -42,8 +67,10 @@ export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> 
 
         <div class="field">
           ${telephone_input<Volunteer>(changeset, "phone", {
-            placeholder: "Phone", autocomplete: "off", phx_debounce: "blur"
-            })}
+            placeholder: "Phone",
+            autocomplete: "off",
+            phx_debounce: "blur",
+          })}
             ${error_tag(changeset, "phone")}
         </div>
         ${submit("Check In", { phx_disable_with: "Saving..." })}
@@ -53,28 +80,28 @@ export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> 
           ${volunteers.map(this.renderVolunteer)}
         </div>
     </div>
-    `
-  };
+    `;
+  }
 
   renderVolunteer(volunteer: Volunteer) {
     return html`
-    <div id="${volunteer.id}" class="volunteer ${volunteer.checked_out ? " out" : "" }">
-      <div class="name">
-        ${volunteer.name}
+      <div id="${volunteer.id}" class="volunteer ${volunteer.checked_out ? " out" : ""}">
+        <div class="name">${volunteer.name}</div>
+        <div class="phone">📞 ${volunteer.phone}</div>
+        <div class="status">
+          <button phx-click="toggle-status" phx-value-id="${volunteer.id}" phx-disable-with="Saving...">
+            ${volunteer.checked_out ? "Check In" : "Check Out"}
+          </button>
+        </div>
       </div>
-      <div class="phone">
-        📞 ${volunteer.phone}
-      </div>
-      <div class="status">
-        <button phx-click="toggle-status" phx-value-id="${volunteer.id}" phx-disable-with="Saving...">
-          ${volunteer.checked_out ? "Check In" : "Check Out"}
-        </button>
-      </div>
-    </div>
-    `
+    `;
   }
 
-  handleEvent(event: VolunteerEvents, params: StringPropertyValues<Pick<Volunteer, "name" | "phone" | "id">>, socket: LiveViewSocket<VolunteerContext>) {
+  handleEvent(
+    event: VolunteerEvents,
+    params: StringPropertyValues<Pick<Volunteer, "name" | "phone" | "id">>,
+    socket: LiveViewSocket<VolunteerContext>
+  ) {
     if (event === "toggle-status") {
       // lookup volunteer by id
       const volunteer = getVolunteer(params.id);
@@ -82,8 +109,8 @@ export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> 
       updateVolunteer(volunteer!, { checked_out: !volunteer!.checked_out });
       socket.assign({
         volunteers: listVolunteers(),
-        changeset: changeset({}, {})
-      })
+        changeset: changeset({}, {}),
+      });
     } else if (event === "validate") {
       const validateChangeset = changeset({}, params);
       // set an action or else the changeset will be ignored
@@ -91,19 +118,19 @@ export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> 
       validateChangeset.action = "validate";
       socket.assign({
         volunteers: [],
-        changeset: validateChangeset
-      })
+        changeset: validateChangeset,
+      });
     } else {
       const volunteer: Partial<Volunteer> = {
         name: params.name,
         phone: params.phone,
-      }
+      };
       // attempt to create the volunteer from the form data
       const createChangeset = createVolunteer(volunteer);
       socket.assign({
         volunteers: createChangeset.valid ? [createChangeset.data as Volunteer] : [], // no volunteers to prepend
-        changeset: createChangeset.valid ? changeset({}, {}) : createChangeset // errors for form
-      })
+        changeset: createChangeset.valid ? changeset({}, {}) : createChangeset, // errors for form
+      });
     }
   }
 
@@ -112,8 +139,7 @@ export class VolunteerComponent extends BaseLiveView<VolunteerContext, unknown> 
     const { volunteer } = event;
     socket.assign({
       volunteers: [volunteer],
-      changeset: changeset({}, {})
-    })
+      changeset: changeset({}, {}),
+    });
   }
-
 }

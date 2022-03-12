@@ -3,7 +3,7 @@ import { Parts } from ".";
 // returns a Parts tree that only contains the differences between
 // the oldParts tree and the newParts tree
 export function deepDiff(oldParts: Parts, newParts: Parts): Parts {
-  let diff: Parts = {}
+  let diff: Parts = {};
 
   // ok to use JSON stringify here since Parts is ordered
   if (JSON.stringify(oldParts) === JSON.stringify(newParts)) {
@@ -17,26 +17,26 @@ export function deepDiff(oldParts: Parts, newParts: Parts): Parts {
 
     // if key is 's' should always be a statics array
     // if key is 'd' should always be an array of Parts[]
-    if (key === 's' || key === 'd') {
+    if (key === "s" || key === "d") {
       if (diffArrays(oldParts[key] as Array<unknown>, newParts[key] as Array<unknown>)) {
-        diff[key] = newParts[key]
+        diff[key] = newParts[key];
       }
     }
     // if oldParts[key] is present is can only be a string or Parts object
     else if (oldParts[key]) {
       // check if string and diff it
-      if (typeof newParts[key] === 'string' && typeof oldParts[key] === 'string') {
+      if (typeof newParts[key] === "string" && typeof oldParts[key] === "string") {
         if (newParts[key] !== oldParts[key]) {
           diff[key] = newParts[key];
         }
       }
       // since both aren't strings, check if they are Parts objects
-      else if (typeof newParts[key] === 'object' && typeof oldParts[key] === 'object') {
+      else if (typeof newParts[key] === "object" && typeof oldParts[key] === "object") {
         // check children for diffs
         const oldPart = oldParts[key] as Parts;
         const newPart = newParts[key] as Parts;
         // diff based on object type
-        if (typeof newPart === 'object' && typeof oldPart === 'object') {
+        if (typeof newPart === "object" && typeof oldPart === "object") {
           const maybeDiff = deepDiff(oldPart, newPart);
           // keep if any keys are different
           if (Object.keys(maybeDiff).length > 0) {
@@ -66,13 +66,13 @@ export function diffArrays(oldArray: unknown[], newArray: unknown[]): boolean {
     const newPart = newArray[i];
     const oldPart = oldArray[i];
     // parts are both strings
-    if (typeof newPart === 'string' && typeof oldPart === 'string') {
+    if (typeof newPart === "string" && typeof oldPart === "string") {
       if (newPart !== oldPart) {
         return true;
       }
     }
     // parts are both objects (potentially arrays or not)
-    else if (typeof newPart === 'object' && typeof oldPart === 'object') {
+    else if (typeof newPart === "object" && typeof oldPart === "object") {
       // both parts are arrays
       if (Array.isArray(newPart) && Array.isArray(oldPart)) {
         if (diffArrays(oldPart, newPart)) {

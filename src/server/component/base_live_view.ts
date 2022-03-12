@@ -4,8 +4,7 @@ import { LiveViewSocket } from "../socket/live_socket";
 import { LiveViewContext } from "./live_view";
 
 export abstract class BaseLiveView<Context extends LiveViewContext, Params> implements LiveView<Context, Params> {
-
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>){
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     // no-op
   }
 
@@ -14,5 +13,4 @@ export abstract class BaseLiveView<Context extends LiveViewContext, Params> impl
   handleParams(params: StringPropertyValues<Params>, url: string, socket: LiveViewSocket<Context>) {
     // no-op
   }
-
 }

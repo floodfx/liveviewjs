@@ -1,9 +1,7 @@
-import { RedisClientOptions, RedisClientType } from '@node-redis/client';
-import { nanoid } from 'nanoid';
-import { createClient } from 'redis';
-import { Publisher, Subscriber, SubscriberFunction } from '.';
-
-
+import { RedisClientOptions, RedisClientType } from "@node-redis/client";
+import { nanoid } from "nanoid";
+import { createClient } from "redis";
+import { Publisher, Subscriber, SubscriberFunction } from ".";
 
 /**
  * A PubSub implementation that uses Redis as a backend.
@@ -11,7 +9,6 @@ import { Publisher, Subscriber, SubscriberFunction } from '.';
  * See: https://github.com/redis/node-redis#pubsub
  */
 class RedisPubSub<T> implements Subscriber<T>, Publisher<T> {
-
   private redis: RedisClientType;
   private subscribers: Record<string, RedisClientType> = {};
 
@@ -50,9 +47,6 @@ class RedisPubSub<T> implements Subscriber<T>, Publisher<T> {
     // remove subscriber from subscribers
     delete this.subscribers[subscriberId];
   }
-
 }
 
-export const PubSub = new RedisPubSub(
-  { url: process.env.REDIS_URL || "redis://localhost:6379" }
-);
+export const PubSub = new RedisPubSub({ url: process.env.REDIS_URL || "redis://localhost:6379" });

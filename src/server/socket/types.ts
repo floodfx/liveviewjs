@@ -1,11 +1,11 @@
-import { LiveViewMountParams } from '..';
+import { LiveViewMountParams } from "..";
 
 export enum PhxSocketProtocolNames {
   joinRef = 0,
   messageRef,
   topic,
   event,
-  payload
+  payload,
 }
 
 export type PhxIncomingMessage<Payload> = [
@@ -14,7 +14,7 @@ export type PhxIncomingMessage<Payload> = [
   topic: "phoenix" | string,
   event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
   payload: Payload
-]
+];
 
 export type PhxOutgoingMessage<Payload> = [
   joinRef: string | null, // number
@@ -22,58 +22,57 @@ export type PhxOutgoingMessage<Payload> = [
   topic: "phoenix" | string,
   event: "phx_reply" | "diff" | "live_patch",
   payload: Payload
-]
+];
 
 // guess at Flash shape
 export type PhxFlash = {
-  info?: string
-  error?: string
-}
+  info?: string;
+  error?: string;
+};
 
 export interface PhxJoinPayload {
-  params: LiveViewMountParams
-  session: string
-  static: string
-  url?: string
-  redirect?: string
-  flash?: PhxFlash | null
+  params: LiveViewMountParams;
+  session: string;
+  static: string;
+  url?: string;
+  redirect?: string;
+  flash?: PhxFlash | null;
 }
 
 export type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
 export type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
 export type PhxLivePatchIncoming = PhxIncomingMessage<{ url: string }>;
 
+export type Diff = { [key: string]: unknown | Diff };
 
-export type Diff = { [key: string]: unknown | Diff }
-
-export type RenderedNode = { [key: string]: string | RenderedNode } & { [key in "s"]: readonly string[] }
+export type RenderedNode = { [key: string]: string | RenderedNode } & { [key in "s"]: readonly string[] };
 
 export interface PhxReplyPayload {
   response: {
-    rendered?: RenderedNode
-    diff?: Diff
-  }
-  status: "ok"
+    rendered?: RenderedNode;
+    diff?: Diff;
+  };
+  status: "ok";
 }
 
 export type PhxReply = PhxOutgoingMessage<PhxReplyPayload>;
 export type PhxDiffReply = PhxOutgoingMessage<Diff>;
 
 export interface PhxLivePatchPushPayload {
-  kind: "push",
-  to: string,
+  kind: "push";
+  to: string;
 }
 export type PhxOutgoingLivePatchPush = PhxOutgoingMessage<PhxLivePatchPushPayload>;
 
 export interface PhxEventPayload<Type extends string, Value> {
-  type: Type,
-  event: string,
-  value: Value,
+  type: Type;
+  event: string;
+  value: Value;
   cid?: number;
 }
 
 export interface PhxEventUploads {
-  uploads: { [key: string]: unknown }
+  uploads: { [key: string]: unknown };
 }
 
 //{type: "click", event: "down", value: {value: ""}}
@@ -88,8 +87,8 @@ export type PhxFormPayload = PhxEventPayload<"form", { value: string }> & PhxEve
 // {type: "keyup", event: "key_update", value: {key: "ArrowUp", value: ""}}
 // {type: "keyup", event: "key_update", value: {key: "ArrowUp", value: "foo"}}
 // NOTE: these payloads are the same for phx-window-key* events and phx-key* events
-export type PhxKeyUpPayload = PhxEventPayload<"keyup", { key: string, value?: string }>;
-export type PhxKeyDownPayload = PhxEventPayload<"keydown", { key: string, value?: string }>;
+export type PhxKeyUpPayload = PhxEventPayload<"keyup", { key: string; value?: string }>;
+export type PhxKeyDownPayload = PhxEventPayload<"keydown", { key: string; value?: string }>;
 
 // Focus and Blur events
 // {type: "focus", event: "focus", value: {value: ""}}

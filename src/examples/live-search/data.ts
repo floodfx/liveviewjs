@@ -1,4 +1,3 @@
-
 export interface Store {
   name: string;
   street: string;
@@ -9,12 +8,12 @@ export interface Store {
   hours: string;
 }
 
-export function searchByZip(zip: string):  Store[] {
-  return stores.filter(store => store.zip === zip);
+export function searchByZip(zip: string): Store[] {
+  return stores.filter((store) => store.zip === zip);
 }
 
 export function searchByCity(city: string): Store[] {
-  return stores.filter(store => store.city === city);
+  return stores.filter((store) => store.city === city);
 }
 
 export function listStores(): Store[] {
@@ -29,7 +28,7 @@ const stores: Store[] = [
     city: "Helena, MT",
     zip: "59602",
     open: true,
-    hours: "8am - 10pm M-F"
+    hours: "8am - 10pm M-F",
   },
   {
     name: "East Helena",
@@ -38,7 +37,7 @@ const stores: Store[] = [
     city: "Helena, MT",
     zip: "59602",
     open: false,
-    hours: "8am - 10pm M-F"
+    hours: "8am - 10pm M-F",
   },
   {
     name: "Westside Helena",
@@ -47,7 +46,7 @@ const stores: Store[] = [
     city: "Helena, MT",
     zip: "59602",
     open: true,
-    hours: "8am - 10pm M-F"
+    hours: "8am - 10pm M-F",
   },
   {
     name: "Downtown Denver",
@@ -56,7 +55,7 @@ const stores: Store[] = [
     city: "Denver, CO",
     zip: "80204",
     open: true,
-    hours: "8am - 10pm M-F"
+    hours: "8am - 10pm M-F",
   },
   {
     name: "Midtown Denver",
@@ -65,7 +64,7 @@ const stores: Store[] = [
     city: "Denver, CO",
     zip: "80204",
     open: false,
-    hours: "8am - 10pm M-F"
+    hours: "8am - 10pm M-F",
   },
   {
     name: "Denver Stapleton",
@@ -74,7 +73,7 @@ const stores: Store[] = [
     city: "Denver, CO",
     zip: "80204",
     open: true,
-    hours: "8am - 10pm M-F"
+    hours: "8am - 10pm M-F",
   },
   {
     name: "Denver West",
@@ -83,6 +82,6 @@ const stores: Store[] = [
     city: "Denver, CO",
     zip: "80204",
     open: true,
-    hours: "8am - 10pm M-F"
-  }
-]
+    hours: "8am - 10pm M-F",
+  },
+];

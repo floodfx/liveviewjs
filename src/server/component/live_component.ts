@@ -4,7 +4,9 @@ import { LiveViewTemplate } from ".";
 /**
  * Contexts can only be objects with string keys.
  */
-export interface LiveComponentContext {[key: string]: unknown}
+export interface LiveComponentContext {
+  [key: string]: unknown;
+}
 
 export interface LiveComponentMeta {
   /**
@@ -58,7 +60,6 @@ export interface LiveComponentSocket<Context extends LiveComponentContext> {
 }
 
 abstract class BaseLiveComponentSocket<Context extends LiveComponentContext> implements LiveComponentSocket<Context> {
-
   readonly id: string;
   private _context: Context;
 
@@ -74,8 +75,8 @@ abstract class BaseLiveComponentSocket<Context extends LiveComponentContext> imp
   assign(context: Partial<Context>) {
     this._context = {
       ...this.context,
-      ...context
-    }
+      ...context,
+    };
   }
 
   send(event: unknown) {
@@ -87,27 +88,28 @@ abstract class BaseLiveComponentSocket<Context extends LiveComponentContext> imp
   }
 
   abstract connected: boolean;
-
 }
 
 export class HttpLiveComponentSocket<Context extends LiveComponentContext> extends BaseLiveComponentSocket<Context> {
-
   readonly connected: boolean = false;
 
   constructor(id: string, context: Context) {
     super(id, context);
   }
-
 }
 
 export class WsLiveComponentSocket<Context extends LiveComponentContext> extends BaseLiveComponentSocket<Context> {
-
   readonly connected: boolean = true;
 
-  private sendCallback:  (event: unknown) => void;
+  private sendCallback: (event: unknown) => void;
   private pushEventCallback: (event: string, params: Record<string, any>) => void;
 
-  constructor(id: string, context: Context, sendCallback: (event: unknown) => void, pushEventCallback: (event: string, params: Record<string, any>) => void) {
+  constructor(
+    id: string,
+    context: Context,
+    sendCallback: (event: unknown) => void,
+    pushEventCallback: (event: string, params: Record<string, any>) => void
+  ) {
     super(id, context);
     this.sendCallback = sendCallback;
     this.pushEventCallback = pushEventCallback;
@@ -139,7 +141,6 @@ export class WsLiveComponentSocket<Context extends LiveComponentContext> extends
  * `LiveView` template.
  */
 export interface LiveComponent<Context extends LiveComponentContext> {
-
   /**
    * `preload` is useful when multiple `LiveComponent`s of the same type are loaded
    * within the same `LiveView` and you want to preload data for all of them in batch.
@@ -170,7 +171,7 @@ export interface LiveComponent<Context extends LiveComponentContext> {
    * @param context the current state for this `LiveComponent`
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  update(socket:LiveComponentSocket<Context>): void | Promise<void>;
+  update(socket: LiveComponentSocket<Context>): void | Promise<void>;
 
   /**
    * Renders the `LiveComponent` by returning a `LiveViewTemplate`.  Each time a
@@ -186,8 +187,11 @@ export interface LiveComponent<Context extends LiveComponentContext> {
    * @param params a list of string-to-string key/value pairs related to the event
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>): void | Promise<void>;
-
+  handleEvent(
+    event: string,
+    params: Record<string, string>,
+    socket: LiveComponentSocket<Context>
+  ): void | Promise<void>;
 }
 
 /**
@@ -199,7 +203,6 @@ export interface LiveComponent<Context extends LiveComponentContext> {
  * perhaps `update` as well.  See `LiveComponent` for more details.
  */
 export abstract class BaseLiveComponent<Context extends LiveComponentContext> implements LiveComponent<Context> {
-
   // preload(contextsList: Context[]): Partial<Context>[] {
   //   return contextsList;
   // }
@@ -217,5 +220,4 @@ export abstract class BaseLiveComponent<Context extends LiveComponentContext> im
   }
 
   abstract render(context: Context, meta: LiveComponentMeta): LiveViewTemplate;
-
 }
