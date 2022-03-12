@@ -643,19 +643,6 @@ export class LiveViewComponentManager {
       (event, params) => this.onPushEvent(event, params)
     )
   }
-
-  // private buildLiveComponentSocket(context: LiveComponentContext): LiveComponentSocket<LiveComponentContext> {
-  //   return {
-  //     id: this.joinId,
-  //     connected: true, // websocket is connected
-  //     ws: this.ws, // the websocket TODO necessary?
-  //     context,
-  //     send: (event) => this.sendInternal(event),
-  //   }
-  // }
-
-
-
 }
 
 export function isInfoHandler(component: LiveView<LiveViewContext, unknown>) {
