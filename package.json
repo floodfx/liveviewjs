@@ -30,7 +30,8 @@
     "check": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "jest --expand",
-    "prepublish": "npm run clean; npm run test; npm run build; npm run copy-root-view; npm run client-build"
+    "prepublish": "npm run clean; npm run test; npm run build; npm run copy-root-view; npm run client-build",
+    "format": "prettier --write '**/*.{ts,js,json,html,css}'"
   },
   "keywords": [
     "liveviewjs",
@@ -81,6 +82,7 @@
     "jest-mock-extended": "^2.0.4",
     "nodemon": "^2.0.15",
     "parcel": "^2.2.1",
+    "prettier": "^2.5.1",
     "supertest": "^6.2.2",
     "superwstest": "^2.0.0",
     "ts-jest": "^27.1.3",
