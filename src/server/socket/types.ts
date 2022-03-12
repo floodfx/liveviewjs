@@ -20,7 +20,7 @@ export type PhxOutgoingMessage<Payload> = [
   joinRef: string | null, // number
   messageRef: string | null, // number
   topic: "phoenix" | string,
-  event: "phx_reply" | "diff" | "live_patch" | "push_event",
+  event: "phx_reply" | "diff" | "live_patch",
   payload: Payload
 ]
 
