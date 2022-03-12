@@ -328,7 +328,6 @@ export class LiveViewComponentManager {
 
   public onHeartbeat(message: PhxHeartbeatIncoming) {
     // TODO - monitor lastHeartbeat and shutdown if it's been too long?
-    this.lastHeartbeat = Date.now();
     this.sendPhxReply(newHeartbeatReply(message));
   }
 
