@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import inquirer from "inquirer";
 import meow from "meow";
 import * as path from "path";

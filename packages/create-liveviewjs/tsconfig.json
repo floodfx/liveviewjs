@@ -1,29 +1,22 @@
 {
   "compilerOptions": {
+    "target": "es5",
     "module": "commonjs",
+    "lib": ["es5"],
+    "declaration": true,
+    "types": ["node"],
+    "strict": true,
+
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
     "esModuleInterop": true,
     "noEmitOnError": true,
-    "noFallthroughCasesInSwitch": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "strictPropertyInitialization": false,
-    "declaration": true,
-    "resolveJsonModule": true,
-    "strict": true,
+
     "skipLibCheck": true,
-    "target": "es2019",
-    "lib": ["es2019"],
-    "types": ["node"],
+
     "outDir": "./dist",
-    "baseUrl": ".",
+    "baseUrl": "."
   },
-  "include": [
-    "src/create/**/*",
-    "src/foo/**/*"
-  ],
-  "exclude": [
-    "dist",
-    "node_modules",
-    "**/*.test.ts"
-  ]
+  "include": ["src/create/**/*", "src/foo/**/*"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts"]
 }
