@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="csrf-token" content="<%= csrf_meta_tag %>" />
+		<%- live_title_tag(page_title, {prefix: page_title_prefix, suffix: page_title_suffix}) %>
+		<link rel="stylesheet" href="/css/app.css" />
+		<link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
+		<script defer type="text/javascript" src="/js/app.js"></script>
+	</head>
+	<body>
+
+		<div data-phx-main="true" data-phx-session="<%= session %>" data-phx-static="<%= statics %>" id="phx-<%= liveViewId %>">
+			<%- inner_content %>
+		</div>
+
+	</body>
+</html>

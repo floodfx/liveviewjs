@@ -3,30 +3,30 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "start": "npm run clean; npm run build; npm run copy-views; npm run client-build; nodemon -e js -w dist dist/index.js",
-    "client-build": "rm -rf dist/client; npm run appjs; npm run appcss; npm run copy-public",
-    "appjs": "npm run check; parcel build",
-    "appcss": "tailwindcss -i ./src/client/app.css -o ./dist/client/app.css",
-    "copy-views": "mkdir -p dist/views; cp -r src/views/* dist/views",
-    "copy-public": "cp -r public/* dist/client",
+    "dist": "npm run clean; npm run build; npm run copy-views; npm run client-build",
+    "start": "npm run dist; nodemon -e js -w dist dist/config/app.js",
+    "client-build": "rm -rf dist/client; npm run appjs; npm run appcss; npm run copy-images",
+    "appjs": "npm run check;mkdir -p dist/public/js; parcel build",
+    "appcss": "tailwindcss -i ./app/assets/css/app.css -o ./dist/public/css/app.css",
+    "copy-views": "mkdir -p dist/views; cp -r app/views/* dist/views",
+    "copy-images": "mkdir -p dist/public/images; cp -r app/assets/images/* dist/public/images",
     "check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "targets": {
     "client": {
       "source": [
-        "src/client/app.ts"
+        "app/assets/js/app.ts"
       ],
       "context": "browser",
-      "distDir": "dist/client"
+      "distDir": "dist/public/js"
     }
   },
   "dependencies": {
-    "@tailwindcss/forms": "^0.4.0",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "express-session": "^1.17.2",
-    "liveviewjs": "^0.0.7",
+    "liveviewjs": "^0.2.0",
     "nprogress": "^0.2.0",
     "phoenix": "^1.6.6",
     "phoenix_html": "^3.2.0",

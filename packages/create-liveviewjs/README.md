@@ -5,7 +5,7 @@ Ship faster and create dynamic front-end user experiences without writing front-
 This tool helps you to create a new LiveViewJS application.  To get started, open a new shell and run the following command:
 
 ```sh
-$ npx create-liveviewjs@latest
+$ npx create-liveviewjs-app@latest
 ```
 
 Then follow the prompts...

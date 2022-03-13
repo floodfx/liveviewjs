@@ -11,25 +11,13 @@
     "resolveJsonModule": true,
     "strict": true,
     "skipLibCheck": true,
+    "sourceMap": true,
     "target": "es2019",
-    "lib": [
-      "es2019",
-      "esnext.asynciterable",
-      "DOM"
-    ],
-    "types": [
-      "node",
-    ],
+    "lib": ["es2019", "esnext.asynciterable", "DOM"],
+    "types": ["node"],
     "outDir": "./dist",
-    "baseUrl": ".",
+    "baseUrl": "."
   },
-  "include": [
-    "src/**/*",
-  ],
-  "exclude": [
-    "dist",
-    "node_modules",
-    "**/*.test.ts",
-    "src/client/**/*",
-  ]
+  "include": ["app/**/*", "config/**/*"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "app/assets/**/*"]
 }
