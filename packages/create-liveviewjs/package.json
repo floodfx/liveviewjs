@@ -1,6 +1,6 @@
 {
   "name": "create-liveview-app",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Command line interface to easily create a new LiveViewJS app",
   "homepage": "https://liveviewjs.com",
   "license": "MIT",
@@ -12,8 +12,11 @@
   "bugs": {
     "url": "https://github.com/floodfx/liveviewjs/issues"
   },
-  "main": "dist/cli.js",
-  "types": "dist/cli.d.ts",
+  "main": "./dist/cli.js",
+  "bin": {
+    "create-liveview-app": "./dist/cli.js"
+  },
+  "types": "./dist/cli.d.ts",
   "files": [
     "dist/*.js",
     "dist/templates/**/*"
