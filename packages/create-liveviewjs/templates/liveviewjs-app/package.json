@@ -1,0 +1,48 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dist": "npm run clean; npm run build; npm run copy-views; npm run client-build",
+    "start": "npm run dist; nodemon -e js -w dist dist/config/app.js",
+    "client-build": "rm -rf dist/client; npm run appjs; npm run appcss; npm run copy-images",
+    "appjs": "npm run check;mkdir -p dist/public/js; parcel build",
+    "appcss": "tailwindcss -i ./app/assets/css/app.css -o ./dist/public/css/app.css",
+    "copy-views": "mkdir -p dist/views; cp -r app/views/* dist/views",
+    "copy-images": "mkdir -p dist/public/images; cp -r app/assets/images/* dist/public/images",
+    "check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "targets": {
+    "client": {
+      "source": [
+        "app/assets/js/app.ts"
+      ],
+      "context": "browser",
+      "distDir": "dist/public/js"
+    }
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.17.3",
+    "express-session": "^1.17.2",
+    "liveviewjs": "^0.2.0",
+    "nprogress": "^0.2.0",
+    "phoenix": "^1.6.6",
+    "phoenix_html": "^3.2.0",
+    "phoenix_live_view": "^0.17.7",
+    "zod": "^3.11.6"
+  },
+  "devDependencies": {
+    "@types/express-session": "^1.17.4",
+    "@types/node": "^17.0.17",
+    "@types/nprogress": "^0.2.0",
+    "@types/phoenix": "^1.5.4",
+    "@types/phoenix_live_view": "^0.15.1",
+    "nodemon": "^2.0.15",
+    "parcel": "^2.3.2",
+    "tailwindcss": "^3.0.23",
+    "ts-node": "^10.5.0",
+    "typescript": "^4.5.5"
+  }
+}

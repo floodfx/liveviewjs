@@ -1,0 +1,7 @@
+/*
+ We use Tailwindcss by default.
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
