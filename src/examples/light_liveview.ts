@@ -51,10 +51,6 @@ export class LightLiveViewComponent
   }
 
   handleEvent(event: LightEvent, params: { key: string }, socket: LiveViewSocket<LightContext>) {
-    // @ts-ignore
-    if (event === "reload") {
-      socket.pushRedirect("/light");
-    }
     const { brightness } = socket.context;
     // map key_update to arrow keys
     const lightEvent = event === "key_update" ? params.key : event;
