@@ -46,11 +46,16 @@ export class LightLiveViewComponent
 
         <button phx-click="on" phx-window-keydown="key_update" phx-key="ArrowRight">➡️ On</button>
       </div>
+      <button phx-click="reload">Reload</button>
     `;
   }
 
   handleEvent(event: LightEvent, params: { key: string }, socket: LiveViewSocket<LightContext>) {
-    const ctx: LightContext = { brightness: socket.context.brightness };
+    // @ts-ignore
+    if (event === "reload") {
+      socket.pushRedirect("/light");
+    }
+    const { brightness } = socket.context;
     // map key_update to arrow keys
     const lightEvent = event === "key_update" ? params.key : event;
     switch (lightEvent) {
@@ -64,11 +69,11 @@ export class LightLiveViewComponent
         break;
       case "up":
       case "ArrowUp":
-        socket.assign({ brightness: Math.min(ctx.brightness + 10, 100) });
+        socket.assign({ brightness: Math.min(brightness + 10, 100) });
         break;
       case "down":
       case "ArrowDown":
-        socket.assign({ brightness: Math.max(ctx.brightness - 10, 0) });
+        socket.assign({ brightness: Math.max(brightness - 10, 0) });
         break;
     }
   }

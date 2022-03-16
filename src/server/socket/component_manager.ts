@@ -385,18 +385,43 @@ export class LiveViewComponentManager {
     this.intervals.forEach(clearInterval);
   }
 
-  private async onPushPatch(path: string, params: Record<string, string | number>) {
-    const onlyStringParams = Object.entries(params).map(([key, value]) => {
-      return [key, String(value)];
-    });
-    const urlParams = new URLSearchParams(onlyStringParams);
-    const to = `${path}?${urlParams}`;
+  private async onPushPatch(path: string, params?: Record<string, string | number>, replaceHistory: boolean = false) {
+    this.onPushNavigation("live_patch", path, params, replaceHistory);
+  }
+
+  private async onPushRedirect(
+    path: string,
+    params?: Record<string, string | number>,
+    replaceHistory: boolean = false
+  ) {
+    this.onPushNavigation("live_redirect", path, params, replaceHistory);
+  }
+
+  private async onPushNavigation(
+    navEvent: "live_redirect" | "live_patch",
+    path: string,
+    params?: Record<string, string | number>,
+    replaceHistory: boolean = false
+  ) {
+    // make params into query string
+    let stringParams: string | undefined;
+    let urlParams = new URLSearchParams();
+    if (params && Object.keys(params).length > 0) {
+      const onlyStringParams = Object.entries(params).map(([key, value]) => {
+        return [key, String(value)];
+      });
+      urlParams = new URLSearchParams(onlyStringParams);
+      stringParams = urlParams.toString();
+    }
+
+    const to = stringParams ? `${path}?${stringParams}` : path;
+    const kind = replaceHistory ? "replace" : "push";
     const message: PhxOutgoingLivePatchPush = [
       null, // no join reference
       null, // no message reference
       this.joinId,
-      "live_patch",
-      { kind: "push", to },
+      navEvent,
+      { kind, to },
     ];
 
     // @ts-ignore - URLSearchParams has an entries method but not typed
@@ -669,7 +694,8 @@ export class LiveViewComponentManager {
         this.pageTitle = newTitle;
       },
       (event, params) => this.onPushEvent(event, params),
-      (path, params) => this.onPushPatch(path, params),
+      (path, params, replace) => this.onPushPatch(path, params, replace),
+      (path, params, replace) => this.onPushRedirect(path, params, replace),
       (fn, intervalMillis) => this.repeat(fn, intervalMillis),
       (event) => this.sendInternal(event),
       (topic: string) => {

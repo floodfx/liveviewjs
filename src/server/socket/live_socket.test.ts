@@ -8,6 +8,7 @@ describe("test LiveViewSocket", () => {
   let component: LiveView<LiveViewContext, unknown>;
   let pageTitleCallback: jest.Mock<any, any>;
   let pushEventCallback = jest.fn();
+  let pushRedirectCallback = jest.fn();
   let pushPatchCallback = jest.fn();
   let repeatCallback = jest.fn();
   let sendCallback = jest.fn();
@@ -16,16 +17,18 @@ describe("test LiveViewSocket", () => {
   beforeEach(() => {
     component = new TestLiveView();
     pageTitleCallback = jest.fn();
-    pushPatchCallback = jest.fn();
-    sendCallback = jest.fn();
     pushEventCallback = jest.fn();
+    pushPatchCallback = jest.fn();
+    pushRedirectCallback = jest.fn();
     repeatCallback = jest.fn();
+    sendCallback = jest.fn();
     subscribeCallback = jest.fn();
     socket = new WsLiveViewSocket<TestLVContext>(
       "id",
       pageTitleCallback,
       pushEventCallback,
       pushPatchCallback,
+      pushRedirectCallback,
       sendCallback,
       repeatCallback,
       subscribeCallback
@@ -60,6 +63,7 @@ describe("test LiveViewSocket", () => {
       pageTitleCallback,
       pushEventCallback,
       pushPatchCallback,
+      pushRedirectCallback,
       sendCallback,
       repeatCallback,
       subscribeCallback
@@ -75,6 +79,7 @@ describe("test LiveViewSocket", () => {
       pageTitleCallback,
       pushEventCallback,
       pushPatchCallback,
+      pushRedirectCallback,
       sendCallback,
       repeatCallback,
       subscribeCallback
@@ -83,7 +88,8 @@ describe("test LiveViewSocket", () => {
 
     expect(pageTitleCallback).toHaveBeenCalledTimes(1);
     expect(pushEventCallback).toHaveBeenCalledTimes(1);
-    expect(pushPatchCallback).toHaveBeenCalledTimes(1);
+    expect(pushPatchCallback).toHaveBeenCalledTimes(3);
+    expect(pushRedirectCallback).toHaveBeenCalledTimes(3);
     expect(repeatCallback).toHaveBeenCalledTimes(1);
     expect(sendCallback).toHaveBeenCalledTimes(1);
     expect(subscribeCallback).toHaveBeenCalledTimes(1);
@@ -95,6 +101,7 @@ describe("test LiveViewSocket", () => {
       pageTitleCallback,
       pushEventCallback,
       pushPatchCallback,
+      pushRedirectCallback,
       sendCallback,
       repeatCallback,
       subscribeCallback
@@ -130,7 +137,12 @@ class TestLVPushAndSend extends BaseLiveView<TestLVPushAndSendContext, {}> {
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVPushAndSendContext>) {
     socket.pageTitle("new page title");
     socket.pushEvent("event", { data: "blah" });
+    socket.pushPatch("path");
     socket.pushPatch("path", { param: 1 });
+    socket.pushPatch("path", { param: 1 }, true);
+    socket.pushRedirect("/new/path");
+    socket.pushRedirect("/new/path", { param: 1 });
+    socket.pushRedirect("/new/path", { param: 1 }, true);
     socket.repeat(() => {}, 1000);
     socket.send("my_event");
     socket.subscribe("topic");

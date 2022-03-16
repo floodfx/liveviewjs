@@ -550,8 +550,33 @@ describe("test component manager", () => {
       },
     ];
     await cm.onEvent(phx_click);
-    expect(spyHandleParams).toHaveBeenCalledTimes(2);
-    expect((cm["socket"] as LiveViewSocket<LiveViewContext>).context).toHaveProperty("pushed", 1);
+    await cm.onEvent(phx_click);
+    expect(spyHandleParams).toHaveBeenCalledTimes(3);
+    expect((cm["socket"] as LiveViewSocket<LiveViewContext>).context).toHaveProperty("pushed", 3);
+    cm.shutdown();
+  });
+
+  it("component that pushRedirects", async () => {
+    const c = new PushRedirectingTestComponent();
+    const spyHandleParams = jest.spyOn(c as any, "handleParams");
+    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
+
+    const phx_click: PhxIncomingMessage<PhxClickPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        type: "click",
+        event: "eventName",
+        value: { value: "eventValue" },
+      },
+    ];
+    await cm.onEvent(phx_click);
+    await cm.onEvent(phx_click);
+    expect(spyHandleParams).toHaveBeenCalledTimes(3);
+    expect((cm["socket"] as LiveViewSocket<LiveViewContext>).context).toHaveProperty("pushed", 3);
     cm.shutdown();
   });
 
@@ -597,7 +622,7 @@ describe("test component manager", () => {
     ];
     await cm.onEvent(phx_click);
     expect(spyHandleParams).toHaveBeenCalledTimes(2);
-    expect((cm["socket"] as LiveViewSocket<LiveViewContext>).context).toHaveProperty("pushed", 1);
+    expect((cm["socket"] as LiveViewSocket<LiveViewContext>).context).toHaveProperty("pushed", 2);
     cm.shutdown();
   });
 
@@ -780,17 +805,54 @@ class PushPatchingTestComponent
 
   handleParams(params: StringPropertyValues<{ go?: string }>, url: string, socket: LiveViewSocket<PushPatchCtx>) {
     let pushed = Number(socket.context.pushed);
-    if (params.go === "dog") {
-      // only increment if passed params.go is dog
-      pushed += 1;
-      socket.assign({
-        pushed,
-      });
-    }
+    socket.assign({
+      pushed: pushed + 1,
+    });
   }
 
   handleEvent(event: "push", params: StringPropertyValues<{}>, socket: LiveViewSocket<PushPatchCtx>) {
-    socket.pushPatch("pushed", { go: "dog" });
+    if (socket.context.pushed === 0) {
+      socket.pushPatch("pushed");
+    } else if (socket.context.pushed === 1) {
+      socket.pushPatch("pushed", { go: "dog" });
+    } else {
+      socket.pushPatch("pushed", { go: "dog" }, true);
+    }
+  }
+
+  render() {
+    return html`<div>test</div>`;
+  }
+}
+
+interface PushRedirectCtx extends LiveViewContext {
+  pushed: number;
+}
+class PushRedirectingTestComponent
+  extends BaseLiveView<PushRedirectCtx, { go?: string }>
+  implements LiveViewExternalEventListener<PushRedirectCtx, "push", {}>
+{
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PushRedirectCtx>) {
+    socket.assign({
+      pushed: 0,
+    });
+  }
+
+  handleParams(params: StringPropertyValues<{ go?: string }>, url: string, socket: LiveViewSocket<PushRedirectCtx>) {
+    let pushed = Number(socket.context.pushed);
+    socket.assign({
+      pushed: pushed + 1,
+    });
+  }
+
+  handleEvent(event: "push", params: StringPropertyValues<{}>, socket: LiveViewSocket<PushRedirectCtx>) {
+    if (socket.context.pushed === 0) {
+      socket.pushRedirect("pushed");
+    } else if (socket.context.pushed === 1) {
+      socket.pushRedirect("pushed", { go: "dog" });
+    } else {
+      socket.pushRedirect("pushed", { go: "dog" }, true);
+    }
   }
 
   render() {
