@@ -5,6 +5,7 @@ import { WebSocket } from "ws";
 import { HtmlSafeString, LiveComponent, LiveViewMeta, LiveViewTemplate, Parts } from "..";
 import { LiveView } from "../";
 import { LiveComponentContext, LiveViewContext, WsLiveComponentSocket } from "../component";
+import { Flash } from "../component/flash";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
 import { deepDiff } from "../templates/diff";
 import { WsLiveViewSocket } from "./live_socket";
@@ -76,6 +77,7 @@ export class LiveViewComponentManager {
   private liveView: LiveView<LiveViewContext, unknown>;
   private signingSecret: string;
   private intervals: NodeJS.Timeout[] = [];
+  private session: SessionData;
 
   private csrfToken?: string;
 
@@ -86,18 +88,20 @@ export class LiveViewComponentManager {
   private pageTitleChanged: boolean = false;
 
   private socket: WsLiveViewSocket<LiveViewContext>;
+  private liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
 
   constructor(
     component: LiveView<LiveViewContext, unknown>,
     signingSecret: string,
     connectionId: string,
-    ws: WebSocket
+    ws: WebSocket,
+    liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString
   ) {
     this.liveView = component;
     this.signingSecret = signingSecret;
-    // this.context = {};
     this.connectionId = connectionId;
     this.ws = ws;
+    this.liveViewRootTemplate = liveViewRootTemplate;
 
     // subscribe to events on connectionId which should just be
     // heartbeat messages
@@ -120,13 +124,14 @@ export class LiveViewComponentManager {
     // set component manager csfr token
     this.csrfToken = payloadParams._csrf_token;
 
-    let session: Omit<SessionData, "cookie">;
     try {
-      session = jwt.verify(payloadSession, this.signingSecret) as Omit<SessionData, "cookie">;
+      this.session = jwt.verify(payloadSession, this.signingSecret) as SessionData;
+      this.session.flash = new Flash(Object.entries(this.session.flash || {}));
+
       // compare sesison csrfToken with csrfToken from payload
-      if (session.csrfToken !== this.csrfToken) {
+      if (this.session.csrfToken !== this.csrfToken) {
         // if session csrfToken does not match payload csrfToken, reject join
-        console.error("Rejecting join due to mismatched csrfTokens", session.csrfToken, this.csrfToken);
+        console.error("Rejecting join due to mismatched csrfTokens", this.session.csrfToken, this.csrfToken);
         return;
       }
     } catch (e) {
@@ -145,9 +150,12 @@ export class LiveViewComponentManager {
     this.socket = this.newLiveViewSocket();
 
     // initial lifecycle steps mount => handleParams => render
-    await this.liveView.mount(payloadParams, session, this.socket);
+    await this.liveView.mount(payloadParams, this.session, this.socket);
     await this.liveView.handleParams(urlParams, joinUrl!, this.socket);
-    const view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+    let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+
+    // wrap in root template if there is one
+    view = await this.maybeWrapInRootTemplate(view);
 
     // add `LiveComponent` to the render tree
     let rendered = this.maybeAddLiveComponentsToParts(view.partsTree());
@@ -289,20 +297,27 @@ export class LiveViewComponentManager {
     // event is not for LiveComponent rather it is for LiveView
     else {
       // console.log("LiveView event", type, event, value);
-      if (isEventHandler(this.liveView)) {
+      if (isEventHandler(this.liveView) || event === "lv:clear-flash") {
         // copy previous context
-        const previousContext = this.socket.context;
-        // @ts-ignore - already checked if handleEvent is defined
-        await this.liveView.handleEvent(event, value, this.socket);
+        const previousContext = { ...this.socket.context };
+
+        // check again because event could be a lv:clear-flash
+        if (isEventHandler(this.liveView)) {
+          // @ts-ignore - already checked if handleEvent is defined
+          await this.liveView.handleEvent(event, value, this.socket);
+        }
 
         const ctxEqual = areContextsValueEqual(previousContext, this.socket.context);
         let diff: Parts = {};
 
         // only calc diff if contexts have changed
-        if (!ctxEqual) {
+        if (!ctxEqual || event === "lv:clear-flash") {
           // get old render tree and new render tree for diffing
           const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
-          const view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+          let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+
+          // wrap in root template if there is one
+          view = await this.maybeWrapInRootTemplate(view);
 
           diff = deepDiff(oldView.partsTree(), view.partsTree());
         }
@@ -341,7 +356,10 @@ export class LiveViewComponentManager {
 
     // get old render tree and new render tree for diffing
     // const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
-    const view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+    let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+
+    // wrap in root template if there is one
+    view = await this.maybeWrapInRootTemplate(view);
 
     // TODO - why is the diff causing live_patch to fail??
     // const diff = deepDiff(oldView.partsTree(), view.partsTree());
@@ -441,6 +459,10 @@ export class LiveViewComponentManager {
     this.eventAdded = true;
   }
 
+  private putFlash(key: string, value: string) {
+    this.session.flash.set(key, value);
+  }
+
   private async sendInternal(event: any): Promise<void> {
     // console.log("sendInternal", event, this.socketId);
 
@@ -455,7 +477,10 @@ export class LiveViewComponentManager {
       if (!ctxEqual) {
         // get old render tree and new render tree for diffing
         const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
-        const view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+        let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+
+        // wrap in root template if there is one
+        view = await this.maybeWrapInRootTemplate(view);
 
         diff = deepDiff(oldView.partsTree(), view.partsTree());
       }
@@ -483,6 +508,13 @@ export class LiveViewComponentManager {
       this._pageTitle = newTitle;
       this.pageTitleChanged = true;
     }
+  }
+
+  private async maybeWrapInRootTemplate(view: HtmlSafeString) {
+    if (this.liveViewRootTemplate) {
+      return await this.liveViewRootTemplate(this.session, view);
+    }
+    return view;
   }
 
   private maybeAddPageTitleToParts(parts: Parts) {
@@ -696,6 +728,7 @@ export class LiveViewComponentManager {
       (event, params) => this.onPushEvent(event, params),
       (path, params, replace) => this.onPushPatch(path, params, replace),
       (path, params, replace) => this.onPushRedirect(path, params, replace),
+      (key, value) => this.putFlash(key, value),
       (fn, intervalMillis) => this.repeat(fn, intervalMillis),
       (event) => this.sendInternal(event),
       (topic: string) => {

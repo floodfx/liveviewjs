@@ -72,6 +72,12 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
    */
   pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
   /**
+   * Add flash to the socket for a given key and value.
+   * @param key
+   * @param value
+   */
+  putFlash(key: string, value: string): void;
+  /**
    * Runs the given function on the given interval until this `LiveView` is
    * unloaded.
    *
@@ -133,6 +139,9 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
   pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean) {
     // no-op
   }
+  putFlash(key: string, value: string) {
+    // no-op
+  }
   repeat(fn: () => void, intervalMillis: number) {
     // no-op
   }
@@ -189,6 +198,7 @@ export class WsLiveViewSocket<Context extends LiveViewContext>
     params?: Record<string, string | number>,
     replaceHistory?: boolean
   ) => void;
+  private putFlashCallback: (key: string, value: string) => void;
   private repeatCallback: (fn: () => void, intervalMillis: number) => void;
   private sendCallback: (event: unknown) => void;
   private subscribeCallback: (topic: string) => void;
@@ -199,6 +209,7 @@ export class WsLiveViewSocket<Context extends LiveViewContext>
     pushEventCallback: (event: string, params: Record<string, any>) => void,
     pushPatchCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void,
     pushRedirectCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void,
+    putFlashCallback: (key: string, value: string) => void,
     repeatCallback: (fn: () => void, intervalMillis: number) => void,
     sendCallback: (event: unknown) => void,
     subscribeCallback: (topic: string) => void
@@ -209,11 +220,14 @@ export class WsLiveViewSocket<Context extends LiveViewContext>
     this.pushEventCallback = pushEventCallback;
     this.pushPatchCallback = pushPatchCallback;
     this.pushRedirectCallback = pushRedirectCallback;
+    this.putFlashCallback = putFlashCallback;
     this.repeatCallback = repeatCallback;
     this.sendCallback = sendCallback;
     this.subscribeCallback = subscribeCallback;
   }
-
+  putFlash(key: string, value: string): void {
+    this.putFlashCallback(key, value);
+  }
   pageTitle(newPageTitle: string) {
     this.pageTitleCallback(newPageTitle);
   }

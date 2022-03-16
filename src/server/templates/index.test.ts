@@ -1,5 +1,5 @@
 import { escapehtml, join } from "..";
-import { html, HtmlSafeString } from "./index";
+import { html, HtmlSafeString, safe } from "./index";
 
 describe("test escapeHtml", () => {
   it("combines statics and dynamics properly", () => {
@@ -57,6 +57,12 @@ describe("test escapeHtml", () => {
     const empty: string[] = [];
     const result = join(empty);
     expect(result.toString()).toBe("");
+  });
+
+  it("escapes unsafe child even if parent is rendered with safe", () => {
+    const child = html`${"<foo>"}`;
+    const parent = safe(`<span>${child}</span>`);
+    expect(parent.toString()).toBe("<span>&lt;foo&gt;</span>");
   });
 
   it("more join array without commas on multiple levels", () => {

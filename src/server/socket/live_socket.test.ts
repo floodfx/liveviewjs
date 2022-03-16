@@ -10,6 +10,7 @@ describe("test LiveViewSocket", () => {
   let pushEventCallback = jest.fn();
   let pushRedirectCallback = jest.fn();
   let pushPatchCallback = jest.fn();
+  let putFlashCallback = jest.fn();
   let repeatCallback = jest.fn();
   let sendCallback = jest.fn();
   let subscribeCallback = jest.fn();
@@ -20,6 +21,7 @@ describe("test LiveViewSocket", () => {
     pushEventCallback = jest.fn();
     pushPatchCallback = jest.fn();
     pushRedirectCallback = jest.fn();
+    putFlashCallback = jest.fn();
     repeatCallback = jest.fn();
     sendCallback = jest.fn();
     subscribeCallback = jest.fn();
@@ -29,6 +31,7 @@ describe("test LiveViewSocket", () => {
       pushEventCallback,
       pushPatchCallback,
       pushRedirectCallback,
+      putFlashCallback,
       sendCallback,
       repeatCallback,
       subscribeCallback
@@ -64,6 +67,7 @@ describe("test LiveViewSocket", () => {
       pushEventCallback,
       pushPatchCallback,
       pushRedirectCallback,
+      putFlashCallback,
       sendCallback,
       repeatCallback,
       subscribeCallback
@@ -80,6 +84,7 @@ describe("test LiveViewSocket", () => {
       pushEventCallback,
       pushPatchCallback,
       pushRedirectCallback,
+      putFlashCallback,
       sendCallback,
       repeatCallback,
       subscribeCallback
@@ -90,6 +95,7 @@ describe("test LiveViewSocket", () => {
     expect(pushEventCallback).toHaveBeenCalledTimes(1);
     expect(pushPatchCallback).toHaveBeenCalledTimes(3);
     expect(pushRedirectCallback).toHaveBeenCalledTimes(3);
+    expect(putFlashCallback).toHaveBeenCalledTimes(1);
     expect(repeatCallback).toHaveBeenCalledTimes(1);
     expect(sendCallback).toHaveBeenCalledTimes(1);
     expect(subscribeCallback).toHaveBeenCalledTimes(1);
@@ -102,6 +108,7 @@ describe("test LiveViewSocket", () => {
       pushEventCallback,
       pushPatchCallback,
       pushRedirectCallback,
+      putFlashCallback,
       sendCallback,
       repeatCallback,
       subscribeCallback
@@ -143,6 +150,7 @@ class TestLVPushAndSend extends BaseLiveView<TestLVPushAndSendContext, {}> {
     socket.pushRedirect("/new/path");
     socket.pushRedirect("/new/path", { param: 1 });
     socket.pushRedirect("/new/path", { param: 1 }, true);
+    socket.putFlash("info", "Helpful message");
     socket.repeat(() => {}, 1000);
     socket.send("my_event");
     socket.subscribe("topic");

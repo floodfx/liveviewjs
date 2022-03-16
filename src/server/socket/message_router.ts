@@ -1,6 +1,8 @@
+import { SessionData } from "express-session";
 import WebSocket from "ws";
 import { LiveViewRouter } from "..";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
+import { HtmlSafeString } from "../templates";
 import { LiveViewComponentManager } from "./component_manager";
 import {
   PhxBlurPayload,
@@ -36,6 +38,13 @@ export type PhxMessage =
   | { type: "phx_leave"; message: PhxIncomingMessage<{}> };
 
 export class MessageRouter {
+  private router: LiveViewRouter;
+  private liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
+
+  constructor(liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString) {
+    this.liveViewRootTemplate = liveViewRootTemplate;
+  }
+
   public async onMessage(
     ws: WebSocket,
     message: WebSocket.RawData,
@@ -105,7 +114,13 @@ export class MessageRouter {
       throw Error(`no component found for ${url}`);
     }
 
-    const componentManager = new LiveViewComponentManager(component, signingSecret, connectionId, ws);
+    const componentManager = new LiveViewComponentManager(
+      component,
+      signingSecret,
+      connectionId,
+      ws,
+      this.liveViewRootTemplate
+    );
     await componentManager.handleJoin(message);
   }
 }

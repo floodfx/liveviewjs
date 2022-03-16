@@ -12,10 +12,14 @@ import {
 } from ".";
 import { LiveComponentContext, LiveViewContext } from "./component";
 import { PhxJoinIncoming } from "./socket/types";
-import { html } from "./templates";
+import { html, HtmlSafeString } from "./templates";
 
 describe("test live view server", () => {
   let lvServer: LiveViewServer;
+
+  const liveViewRootTemplate = (session: SessionData, inner_content: HtmlSafeString) => html`<div>
+    ${session.csrfToken} ${inner_content}
+  </div>`;
 
   beforeEach(() => {
     lvServer = new LiveViewServer({
@@ -26,6 +30,7 @@ describe("test live view server", () => {
         suffix: " - TitleSuffix",
         title: "Title",
       },
+      liveViewRootTemplate,
     });
     lvServer.start();
   });
@@ -46,7 +51,21 @@ describe("test live view server", () => {
       publicPath: "/public",
       sessionStore: new MemoryStore(),
       viewsPath: "./views",
+      liveViewRootTemplate,
     });
+    expect(lvServerOpts["rootView"] as string).toBe("foo");
+    expect(lvServerOpts["publicPath"] as string).toBe("/public");
+    expect((lvServerOpts["viewsPath"] as string[])[0]).toBe("./views");
+    expect((lvServerOpts["viewsPath"] as string[])[1]).toContain("/web/views");
+    expect(lvServerOpts["sessionStore"]).toBeInstanceOf(MemoryStore);
+    expect(lvServerOpts["signingSecret"]).toEqual("MY_VERY_SECRET_KEY");
+    expect(
+      (lvServerOpts["liveViewRootTemplate"] as Function)({ csrfToken: "my csrf" }, html`<div>inner</div>`).toString()
+    ).toMatchInlineSnapshot(`
+      "<div>
+          my csrf <div>inner</div>
+        </div>"
+    `);
   });
 
   it("register router udpates internal router", () => {
@@ -138,7 +157,7 @@ describe("test live view server", () => {
       });
   });
 
-  it("socket connection is accepted", async () => {
+  it("socket connection is accepted and closed", async () => {
     await request(lvServer.httpServer).ws("/liveview").close().expectClosed();
   });
 
@@ -222,6 +241,28 @@ describe("test live view server", () => {
         testLVServer.shutdown();
         done();
       });
+  });
+
+  it("first request sets session flash, second request reads it from cookie", (done) => {
+    const lvComponent = new TestLiveViewComponent();
+    lvServer.registerLiveViewRoute("/test", lvComponent);
+    let cookies: string;
+    let req = request(lvServer.httpServer).get("/test");
+    let req2 = request(lvServer.httpServer).get("/test");
+
+    // set session flash
+    req.expect(200).then((res) => {
+      expect(res.text).toContain(lvComponent.render({ message: "test" }).toString());
+      // read session cookie
+      cookies = res.headers["set-cookie"].pop().split(";")[0];
+
+      // set request2 cookie
+      req2.cookies = cookies;
+      req2.expect(200).then((res) => {
+        expect(res.text).toContain(lvComponent.render({ message: "test" }).toString());
+        done();
+      });
+    });
   });
 });
 
