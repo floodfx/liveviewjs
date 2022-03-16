@@ -129,7 +129,7 @@ server.start();
 
 #### Other features to be implemented:
 * [LiveView Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Vote for [Issue 17](https://github.com/floodfx/liveviewjs/issues/17)
-* [Build in Flash Message Support](https://hexdocs.pm/phoenix_live_view/0.17.6/Phoenix.LiveView.html#put_flash/3) - Vote for [Issue 19](https://github.com/floodfx/liveviewjs/issues/19)
+* ~~[Build in Flash Message Support](https://hexdocs.pm/phoenix_live_view/0.17.6/Phoenix.LiveView.html#put_flash/3)~~ v0.2.3
 * [File Uploads](https://hexdocs.pm/phoenix_live_view/uploads.html) - Vote for [Issue 20](https://github.com/floodfx/liveviewjs/issues/20)
 
 
