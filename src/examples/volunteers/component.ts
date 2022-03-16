@@ -43,10 +43,15 @@ export class VolunteerComponent
       // listen for changes to volunteer data
       socket.subscribe("volunteer");
     }
+
     socket.assign({
       volunteers: listVolunteers(),
       changeset: changeset({}, {}),
     });
+
+    // reset volunteers to empty array after each render
+    // in other words don't store this in memory
+    socket.tempAssign({ volunteers: [] });
   }
 
   render(context: VolunteerContext) {
@@ -117,7 +122,6 @@ export class VolunteerComponent
       // and form errors will not be shown
       validateChangeset.action = "validate";
       socket.assign({
-        volunteers: [],
         changeset: validateChangeset,
       });
     } else {

@@ -189,7 +189,7 @@ export class LiveViewServer {
       };
 
       // http  socket
-      const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId, {});
+      const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId);
 
       // mount
       await component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, { ...sessionData }, liveViewSocket);

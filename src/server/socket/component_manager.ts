@@ -2,7 +2,7 @@ import { SessionData } from "express-session";
 import { fromJS } from "immutable";
 import jwt from "jsonwebtoken";
 import { WebSocket } from "ws";
-import { HtmlSafeString, LiveComponent, LiveViewMeta, LiveViewSocket, LiveViewTemplate, Parts } from "..";
+import { HtmlSafeString, LiveComponent, LiveViewMeta, LiveViewTemplate, Parts } from "..";
 import { LiveView } from "../";
 import { LiveComponentContext, LiveViewContext, WsLiveComponentSocket } from "../component";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
@@ -85,7 +85,7 @@ export class LiveViewComponentManager {
   private _pageTitle: string | undefined;
   private pageTitleChanged: boolean = false;
 
-  private socket: LiveViewSocket<LiveViewContext>;
+  private socket: WsLiveViewSocket<LiveViewContext>;
 
   constructor(
     component: LiveView<LiveViewContext, unknown>,
@@ -165,6 +165,9 @@ export class LiveViewComponentManager {
     };
 
     this.sendPhxReply(newPhxReply(message, replyPayload));
+
+    // remove temp data
+    this.socket.updateContextWithTempAssigns();
   }
 
   public async handleSubscriptions(phxMessage: PhxMessage) {
@@ -315,6 +318,9 @@ export class LiveViewComponentManager {
         };
 
         this.sendPhxReply(newPhxReply(message, replyPayload));
+
+        // remove temp data
+        this.socket.updateContextWithTempAssigns();
       } else {
         console.error("no handleEvent method in component. add handleEvent method in your component to fix this error");
         return;
@@ -350,6 +356,9 @@ export class LiveViewComponentManager {
     };
 
     this.sendPhxReply(newPhxReply(message, replyPayload));
+
+    // remove temp data
+    this.socket.updateContextWithTempAssigns();
   }
 
   public onHeartbeat(message: PhxHeartbeatIncoming) {
@@ -396,6 +405,9 @@ export class LiveViewComponentManager {
     await this.liveView.handleParams(searchParams, to, this.socket);
 
     this.sendPhxReply(message);
+
+    // remove temp data
+    this.socket.updateContextWithTempAssigns();
   }
 
   private async onPushEvent(event: string, value: Record<string, any>) {
@@ -433,6 +445,9 @@ export class LiveViewComponentManager {
         diff,
       ];
       this.sendPhxReply(reply);
+
+      // remove temp data
+      this.socket.updateContextWithTempAssigns();
     } else {
       console.error("received internal event but no handleInfo in component", this.liveView);
     }

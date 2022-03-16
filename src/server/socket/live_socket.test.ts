@@ -33,27 +33,24 @@ describe("test LiveViewSocket", () => {
   });
 
   it("http mount returns context", () => {
-    const component = new TestLiveView();
-    const socket = new HttpLiveViewSocket("id", { foo: "" });
+    const socket = new HttpLiveViewSocket<TestLVContext>("id");
     component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
-    expect(socket.context.foo).toEqual("");
+    expect(socket.context.foo).toEqual("bar");
   });
 
   it("http default handleParams does NOT change context", async () => {
-    const component = new TestLiveView();
-    const socket = new HttpLiveViewSocket("id", { foo: "bar" });
+    const socket = new HttpLiveViewSocket<TestLVContext>("id");
     component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
     await component.handleParams({ foo: "baz" }, "", socket);
     expect(socket.context.foo).toEqual("bar");
   });
 
   it("http render returns context view", async () => {
-    const component = new TestLiveView();
-    const socket = new HttpLiveViewSocket("id", { foo: "bar" });
+    const socket = new HttpLiveViewSocket<TestLVContext>("id");
     component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
     await component.handleParams({ foo: "baz" }, "", socket);
     expect(socket.context.foo).toEqual("bar");
-    const view = await component.render(socket.context);
+    const view = await component.render(socket.context, { csrfToken: "csrf", live_component: jest.fn() });
     expect(view.toString()).toEqual("<div>bar</div>");
   });
 
@@ -68,7 +65,7 @@ describe("test LiveViewSocket", () => {
       subscribeCallback
     );
     await component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
-    expect(socket.context.foo).toBeUndefined();
+    expect(socket.context.foo).toEqual("bar");
   });
 
   it("calls all callbacks", async () => {
@@ -91,6 +88,24 @@ describe("test LiveViewSocket", () => {
     expect(sendCallback).toHaveBeenCalledTimes(1);
     expect(subscribeCallback).toHaveBeenCalledTimes(1);
   });
+
+  it("tempAssign works to clear assigns", () => {
+    const socket = new WsLiveViewSocket<TestLVContext>(
+      "id",
+      pageTitleCallback,
+      pushEventCallback,
+      pushPatchCallback,
+      sendCallback,
+      repeatCallback,
+      subscribeCallback
+    );
+    component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
+    socket.assign({ foo: "bar" });
+    socket.tempAssign({ foo: "" });
+    expect(socket.context.foo).toEqual("bar");
+    socket.updateContextWithTempAssigns();
+    expect(socket.context.foo).toEqual("");
+  });
 });
 
 interface TestLVContext extends LiveViewContext {
@@ -98,7 +113,9 @@ interface TestLVContext extends LiveViewContext {
 }
 
 class TestLiveView extends BaseLiveView<TestLVContext, {}> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVContext>) {}
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVContext>) {
+    socket.assign({ foo: "bar" });
+  }
 
   render(ctx: TestLVContext): LiveViewTemplate {
     return html`<div>${ctx.foo}</div>`;
