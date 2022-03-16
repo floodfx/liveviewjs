@@ -13,13 +13,17 @@ import {
   LiveViewContext,
   LiveViewTemplate,
 } from "./component";
+import { Flash } from "./component/flash";
 import { HttpLiveViewSocket } from "./socket/live_socket";
 import { MessageRouter } from "./socket/message_router";
+import { html, HtmlSafeString, safe } from "./templates";
+import { live_flash } from "./templates/helpers/live_flash";
 
 // extend / define session interface
 declare module "express-session" {
   interface SessionData {
     csrfToken: string;
+    flash: Flash;
   }
 }
 
@@ -37,6 +41,7 @@ export interface LiveViewServerOptions {
   sessionStore?: session.Store;
   pageTitleDefaults?: PageTitleDefaults;
   middleware?: express.Handler[];
+  liveViewRootTemplate?: (session: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
   signingSecret: string;
 }
 
@@ -51,10 +56,11 @@ export class LiveViewServer {
   private signingSecret: string;
   private sessionStore: session.Store = new MemoryStore();
   private _router: LiveViewRouter = {};
-  private messageRouter = new MessageRouter();
+  private messageRouter: MessageRouter;
   private _isStarted = false;
   private pageTitleDefaults?: PageTitleDefaults;
   private middleware: express.Handler[] = [];
+  private liveViewRootTemplate?: (session: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
 
   readonly httpServer: Server;
   readonly socketServer: WebSocket.Server;
@@ -73,6 +79,8 @@ export class LiveViewServer {
       server: this.httpServer,
     });
     this.pageTitleDefaults = options.pageTitleDefaults;
+    this.liveViewRootTemplate = options.liveViewRootTemplate;
+    this.messageRouter = new MessageRouter(this.liveViewRootTemplate);
     this.expressApp = this.buildExpressApp();
   }
 
@@ -161,6 +169,7 @@ export class LiveViewServer {
 
     // register live_title_tag helper
     app.locals.live_title_tag = live_title_tag;
+    app.locals.live_flash = live_flash;
 
     // handle all views and look up components by path
     app.use(async (req, res, next) => {
@@ -183,16 +192,19 @@ export class LiveViewServer {
         req.session.csrfToken = nanoid();
       }
 
-      const sessionData: Omit<SessionData, "cookie" | "message"> = {
-        ...req.session,
-        csrfToken: req.session.csrfToken,
-      };
+      if (!req.session.flash) {
+        // add flash if need be
+        req.session.flash = new Flash();
+      } else {
+        // otherwise take plain object and make Flash
+        req.session.flash = new Flash(Object.entries(req.session.flash || {}));
+      }
 
       // http  socket
       const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId);
 
       // mount
-      await component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, { ...sessionData }, liveViewSocket);
+      await component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, { ...req.session }, liveViewSocket);
 
       // handle_params
       await component.handleParams(req.query, req.url, liveViewSocket);
@@ -234,16 +246,27 @@ export class LiveViewServer {
         },
       });
 
+      const session = jwt.sign({ ...req.session }, this.signingSecret);
+      const statics = jwt.sign(JSON.stringify(view.statics), this.signingSecret);
+
+      let live_inner_content: HtmlSafeString = safe(view);
+      if (this.liveViewRootTemplate) {
+        live_inner_content = this.liveViewRootTemplate(req.session as SessionData, safe(view));
+      }
+
+      const root_inner_content = html`
+        <div data-phx-main="true" data-phx-session="${session}" data-phx-static="${statics}" id="phx-${liveViewId}">
+          ${safe(live_inner_content)}
+        </div>
+      `;
+
       // render the view with all the data
       res.render(this.rootView, {
         page_title: this.pageTitleDefaults?.title ?? "",
         page_title_prefix: this.pageTitleDefaults?.prefix,
         page_title_suffix: this.pageTitleDefaults?.suffix,
         csrf_meta_tag: req.session.csrfToken,
-        liveViewId,
-        session: jwt.sign(sessionData, this.signingSecret),
-        statics: jwt.sign(JSON.stringify(view.statics), this.signingSecret),
-        inner_content: view.toString(),
+        inner_content: root_inner_content,
       });
     });
 

@@ -15,17 +15,7 @@
 <body>
   <header>
   </header>
-  <div data-phx-main="true" data-phx-session="<%= session %>" data-phx-static="<%= statics %>"
-    id="phx-<%= liveViewId %>">
-    <main role="main" class="container">
-      <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info"></p>
-
-      <p class="alert alert-danger" role="alert" phx-click="lv:clear-flash" phx-value-key="error"></p>
-
-      <%- inner_content %>
-
-    </main>
-  </div>
+  <%- inner_content %>
 </body>
 
 </html>

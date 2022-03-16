@@ -534,8 +534,8 @@ describe("test component manager", () => {
 
   it("component that pushPatches", async () => {
     const c = new PushPatchingTestComponent();
-    const spyHandleParams = jest.spyOn(c as any, "handleParams");
     const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const spyCm = jest.spyOn(cm as any, "onPushPatch");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -551,15 +551,15 @@ describe("test component manager", () => {
     ];
     await cm.onEvent(phx_click);
     await cm.onEvent(phx_click);
-    expect(spyHandleParams).toHaveBeenCalledTimes(3);
-    expect((cm["socket"] as LiveViewSocket<LiveViewContext>).context).toHaveProperty("pushed", 3);
+    await cm.onEvent(phx_click);
+    expect(spyCm).toHaveBeenCalledTimes(3);
     cm.shutdown();
   });
 
   it("component that pushRedirects", async () => {
     const c = new PushRedirectingTestComponent();
-    const spyHandleParams = jest.spyOn(c as any, "handleParams");
     const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const spyCm = jest.spyOn(cm as any, "onPushRedirect");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -575,15 +575,15 @@ describe("test component manager", () => {
     ];
     await cm.onEvent(phx_click);
     await cm.onEvent(phx_click);
-    expect(spyHandleParams).toHaveBeenCalledTimes(3);
-    expect((cm["socket"] as LiveViewSocket<LiveViewContext>).context).toHaveProperty("pushed", 3);
+    await cm.onEvent(phx_click);
+    expect(spyCm).toHaveBeenCalledTimes(3);
     cm.shutdown();
   });
 
   it("component that pushEvents", async () => {
     const c = new PushEventTestComponent();
-    const spyHandleParams = jest.spyOn(c as any, "handleParams");
     const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const spyCm = jest.spyOn(cm as any, "onPushEvent");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -598,8 +598,29 @@ describe("test component manager", () => {
       },
     ];
     await cm.onEvent(phx_click);
-    expect(spyHandleParams).toHaveBeenCalledTimes(1);
-    expect((cm["socket"] as LiveViewSocket<LiveViewContext>).context).toHaveProperty("pushed", 0);
+    expect(spyCm).toHaveBeenCalledTimes(1);
+    cm.shutdown();
+  });
+
+  it("component that putFlash", async () => {
+    const c = new PutFlashComponent();
+    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const spyPutFlash = jest.spyOn(cm as any, "putFlash");
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
+
+    const phx_click: PhxIncomingMessage<PhxClickPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        type: "click",
+        event: "eventName",
+        value: { value: "eventValue" },
+      },
+    ];
+    await cm.onEvent(phx_click);
+    expect(spyPutFlash).toHaveBeenCalledTimes(1);
     cm.shutdown();
   });
 
@@ -623,6 +644,35 @@ describe("test component manager", () => {
     await cm.onEvent(phx_click);
     expect(spyHandleParams).toHaveBeenCalledTimes(2);
     expect((cm["socket"] as LiveViewSocket<LiveViewContext>).context).toHaveProperty("pushed", 2);
+    cm.shutdown();
+  });
+
+  it("test liveViewRootTemplate", async () => {
+    const c = new TestLiveViewComponent();
+    const liveViewRootTemplate = (session: SessionData, inner_content: HtmlSafeString) =>
+      html`<div>${session.csrfToken} ${inner_content}</div>`;
+    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws, liveViewRootTemplate);
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
+    // use inline shapshot to see liveViewRootTemplate rendered
+    expect(ws.send).toMatchInlineSnapshot(`
+      [MockFunction] {
+        "calls": Array [
+          Array [
+            "[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":\\"my csrf token\\",\\"1\\":{\\"s\\":[\\"<div>test</div>\\"]},\\"s\\":[\\"<div>\\",\\" \\",\\"</div>\\"]}},\\"status\\":\\"ok\\"}]",
+            Object {
+              "binary": false,
+            },
+            [Function],
+          ],
+        ],
+        "results": Array [
+          Object {
+            "type": "return",
+            "value": undefined,
+          },
+        ],
+      }
+    `);
     cm.shutdown();
   });
 
@@ -886,6 +936,28 @@ class PushEventTestComponent
 
   handleEvent(event: "push", params: StringPropertyValues<{}>, socket: LiveViewSocket<PushEventCtx>) {
     socket.pushEvent("pushed", { go: "dog" });
+  }
+
+  render() {
+    return html`<div>test</div>`;
+  }
+}
+
+interface PutFlashContext extends LiveViewContext {
+  called: number;
+}
+class PutFlashComponent
+  extends BaseLiveView<PutFlashContext, never>
+  implements LiveViewExternalEventListener<PutFlashContext, "something", {}>
+{
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PutFlashContext>) {
+    socket.assign({
+      called: 0,
+    });
+  }
+
+  handleEvent(event: "something", params: StringPropertyValues<{}>, socket: LiveViewSocket<PutFlashContext>) {
+    socket.putFlash("info", "flash test");
   }
 
   render() {
