@@ -79,7 +79,6 @@ LiveViewExternalEventListener<ClickDemoContext, MyEvent, never>{
   // mount only called once per http request and per socket connection
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<ClickDemoContext>){
     socket.assign({count: 0}); // set initial count to 0
-    socket.pageTitle("Click Demo"); // page title
   }
 
   // render the LiveView content (called each time an event is received)
@@ -125,7 +124,7 @@ server.start();
 ### Additional Feature Documentation
  * [Updating HTML Document `<title />`](docs/updating-html-title.md)
  * [LiveViewJS Changesets](docs/changesets.md).
- * [Temporary Assigns](docs/routing.md).
+ * [Temporary Assigns](docs/temp-assign.md).
  * [Routing Details](docs/routing.md).
 
 #### Other features to be implemented:
