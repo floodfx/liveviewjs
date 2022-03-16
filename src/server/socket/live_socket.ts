@@ -28,32 +28,66 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
    */
   assign: (context: Partial<Context>) => void;
   /**
-   * helper method to send messages back to the `LiveView` -
-   * requires the `LiveView` to implement `handleInfo`.
+   * Marks any set properties as temporary and will be reset to the given
+   * value after the next render cycle.  Typically used to ensure large but
+   * infrequently updated values are not kept in memory.
    */
-
+  tempAssign: (context: Partial<Context>) => void;
+  /**
+   * Updates the `<title>` tag of the `LiveView` page.  Requires using the
+   * `live_title` helper in rendering the page.
+   */
   pageTitle: (newPageTitle: string) => void;
+  /**
+   * Pushes data from the server to the client with the given event name and
+   * params.  Requires a client `Hook` to be defined and to be listening for
+   * the event via `this.handleEvent` callback.
+   */
   pushEvent: (event: string, params: Record<string, any>) => void;
+  /**
+   * Updates the browser's URL with the given path and query parameters.
+   */
   pushPatch: (path: string, params: Record<string, string | number>) => void;
+  /**
+   * Runs the given function on the given interval until this `LiveView` is
+   * unloaded.
+   */
   repeat: (fn: () => void, intervalMillis: number) => void;
+  /**
+   * Initiates a `LiveView.handleInfo` event from within the `LiveView` itself.
+   */
   send: (event: unknown) => void;
+  /**
+   * Subscribes to the given topic using pub/sub.  Any events published to the topic
+   * will be received by the `LiveView` instance via `handleEvent`.
+   */
   subscribe: (topic: string) => void;
 }
+
+export interface PartialLiveViewSocket<Context extends LiveViewContext> extends LiveViewSocket<Context> {}
 
 abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements LiveViewSocket<Context> {
   abstract connected: boolean;
   abstract id: string;
 
   private _context: Context;
+  private _tempContext: Partial<Context> = {}; // values to reset the context to post render cycle
 
   get context(): Context {
-    return this._context || {};
+    return this._context || ({} as Context);
   }
 
   assign(context: Partial<Context>) {
     this._context = {
       ...this.context,
       ...context,
+    };
+  }
+
+  tempAssign(tempContext: Partial<Context>) {
+    this._tempContext = {
+      ...this._tempContext,
+      ...tempContext,
     };
   }
 
@@ -75,11 +109,17 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
   subscribe(topic: string) {
     // no-op
   }
+
+  updateContextWithTempAssigns() {
+    if (Object.keys(this._tempContext).length > 0) {
+      this.assign(this._tempContext);
+    }
+  }
 }
 
 /**
- * Minimal implementation which only provides `context` and `assign` for use with
- * HTTP requests.
+ * Used to render Http requests for `LiveView`s.  Only support setting the context via
+ * `assign` and reading the context via `context`.
  */
 export class HttpLiveViewSocket<Context extends LiveViewContext>
   extends BaseLiveViewSocket<Context>
@@ -88,13 +128,15 @@ export class HttpLiveViewSocket<Context extends LiveViewContext>
   readonly id: string;
   readonly connected: boolean = false;
 
-  constructor(id: string, context: Context) {
+  constructor(id: string) {
     super();
     this.id = id;
-    this.assign(context);
   }
 }
 
+/**
+ * Full inmplementation used once a `LiveView` is mounted to a websocket.
+ */
 export class WsLiveViewSocket<Context extends LiveViewContext>
   extends BaseLiveViewSocket<Context>
   implements LiveViewSocket<Context>

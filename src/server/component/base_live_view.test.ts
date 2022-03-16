@@ -7,14 +7,14 @@ import { LiveViewContext } from "./live_view";
 describe("test basic component", () => {
   it("mount returns context", () => {
     const component = new LiveViewComponent();
-    const socket = new HttpLiveViewSocket("id", { foo: "" });
+    const socket = new HttpLiveViewSocket<Ctx>("id");
     component.mount({ _csrf_token: "foo", _mounts: -1 }, {}, socket);
     expect(socket.context.foo).toEqual("bar");
   });
 
   it("default handleParams does not change context", async () => {
     const component = new LiveViewComponent();
-    const socket = new HttpLiveViewSocket("id", { foo: "" });
+    const socket = new HttpLiveViewSocket<Ctx>("id");
     component.mount({ _csrf_token: "foo", _mounts: -1 }, {}, socket);
     await component.handleParams({ foo: "baz" }, "", socket);
     expect(socket.context.foo).toEqual("bar");
@@ -22,7 +22,7 @@ describe("test basic component", () => {
 
   it("render returns context view", async () => {
     const component = new LiveViewComponent();
-    const socket = new HttpLiveViewSocket("id", { foo: "" });
+    const socket = new HttpLiveViewSocket<Ctx>("id");
     component.mount({ _csrf_token: "foo", _mounts: -1 }, {}, socket);
     await component.handleParams({ foo: "baz" }, "", socket);
     const view = await component.render(socket.context);

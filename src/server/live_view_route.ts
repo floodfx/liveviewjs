@@ -30,7 +30,7 @@ export const configLiveViewHandler = <T extends { csrfToken: string }>(
       const liveViewId = nanoid();
 
       // mock socket
-      const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId, {});
+      const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId);
 
       // get session data from provider
       const session = sessionDataProvider(req);

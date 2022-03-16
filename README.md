@@ -64,116 +64,72 @@ Detailed documentation on [LiveViewJS Changesets](docs/changesets.md).
 **Step 1** Implement a `LiveViewComponent`
 ```ts
 import { SessionData } from "express-session";
-import {html, BaseLiveViewComponent, LiveViewComponent, LiveViewExternalEventListener, LiveViewMountParams, LiveViewSocket } from "liveviewjs";
+import { BaseLiveView, html, LiveViewContext, LiveViewExternalEventListener, LiveViewMeta, LiveViewMountParams, LiveViewSocket, LiveViewTemplate } from "liveviewjs";
 
-// define your component's data shape
-export interface LightContext {
-  brightness: number;
+// describe the context (i.e. state of the view)
+interface ClickDemoContext extends LiveViewContext{
+  count: number;
 }
+type MyEvent = "user-clicked";
+// implement the LiveView
+export class ClickDemo extends BaseLiveView<ClickDemoContext, never> implements
+// add listener for external events
+LiveViewExternalEventListener<ClickDemoContext, MyEvent, never>{
 
-// define the component events
-export type LightEvent = "on" | "off" | "up" | "down";
+  // mount only called once per http request and per socket connection
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<ClickDemoContext>){
+    socket.assign({count: 0}); // set initial count to 0
+    socket.pageTitle("Click Demo"); // page title
+  }
 
-// implement your component
-export class LightLiveViewComponent extends BaseLiveViewComponent<LightContext, never> implements
-  LiveViewComponent<LightContext, never>,
-  LiveViewExternalEventListener<LightContext, LightEvent, never> {
-
-  // mount is called before html render on HTTP requests and
-  // when the socket is connected on the phx-join event
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LightContext>) {
-    // set the default value(s) for the component data
-    return { brightness: 10 };
-  };
-
-  // Define and render the HTML for your LiveViewComponent
-  // This function is called after any context change and
-  // only diffs are sent back to the page to re-render
-  render(context: LightContext) {
-    const { brightness } = context;
+  // render the LiveView content (called each time an event is received)
+  render(context: ClickDemoContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate> {
+    const { count } = context;
     return html`
-    <div id="light">
-      <h1>Front Porch Light </h1>
-      <div class="meter">
-        <div>${brightness}%</div>
-        <progress id="light_level" value="${brightness}" max="100">
-        </progress>
-      </div>
-
-      <button phx-click="off">
-        Off
-      </button>
-
-      <button phx-click="down">
-        Down
-      </button>
-
-      <button phx-click="up">
-        Up
-      </button>
-
-      <button phx-click="on">
-        On
-      </button>
-    </div>
+      <h2>Click Demo</h2>
+      <button phx-click="${MyEvent}" type="button">Click to Increment</button>
+      <p><strong>Count:</strong>${count}</p>
     `
-  };
+  }
 
-  // Handle events sent back from the client...  Events
-  // may update the state (context) of the component and
-  // cause a re-render
-  handleEvent(event: LightEvent, params: never, socket: LiveViewSocket<LightContext>) {
-    const ctx: LightContext = { brightness: socket.context.brightness };
-    switch (event) {
-      case 'off':
-        ctx.brightness = 0;
-        break;
-      case 'on':
-        ctx.brightness = 100;
-        break;
-      case 'up':
-        ctx.brightness = Math.min(ctx.brightness + 10, 100);
-        break;
-      case 'down':
-        ctx.brightness = Math.max(ctx.brightness - 10, 0);
-        break;
-    }
-    return ctx;
+  // handle user interactions from client
+  handleEvent(event: MyEvent, params: never, socket: LiveViewSocket<ClickDemoContext>): void | Promise<void> {
+    socket.assign({count: socket.context.count + 1}); // increment count
   }
 
 }
 ```
 
-**Step 2** - Register your `LiveViewComponent`s and start the HTTP and Socket server with `LiveViewServer`
+**Step 2** - Register your `LiveViewComponent`s and start the server with `LiveViewServer`
 ```ts
 // import package
 import {LiveViewServer} from "liveviewjs";
 
 // create new LiveViewServer
-const lvServer = new LiveViewServer();
+const server = new LiveViewServer();
 
 // define your routes by mapping paths to LiveViewComponents
-const lvRouter: LiveViewRouter = {
-  "/light": new LightLiveViewComponent();
+const router: LiveViewRouter = {
+  "/clickdemo": new ClickDemo();
 }
 // AND then passing the router to the server
-lvServer.registerLiveViewRoutes(lvRouter);
+server.registerLiveViewRoutes(router);
 
 // OR register your route with the server directly
-lvServer.registerLiveViewRoute("/light", new LightLiveViewComponent());
+// server.registerLiveViewRoute("/clickdemo", new ClickDemo());
 
 // then start the server
-lvServer.start();
+server.start();
 ```
 
 ### Additional Feature Documentation
  * [Updating HTML Document `<title />`](docs/updating-html-title.md)
  * [LiveViewJS Changesets](docs/changesets.md).
+ * [Temporary Assigns](docs/routing.md).
  * [Routing Details](docs/routing.md).
 
 #### Other features to be implemented:
 * [LiveView Helpers](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.Helpers.html) - Vote for [Issue 17](https://github.com/floodfx/liveviewjs/issues/17)
-* [Temporary Assigns](https://hexdocs.pm/phoenix_live_view/dom-patching.html#temporary-assigns) - Vote for [Issue 18](https://github.com/floodfx/liveviewjs/issues/18)
 * [Build in Flash Message Support](https://hexdocs.pm/phoenix_live_view/0.17.6/Phoenix.LiveView.html#put_flash/3) - Vote for [Issue 19](https://github.com/floodfx/liveviewjs/issues/19)
 * [File Uploads](https://hexdocs.pm/phoenix_live_view/uploads.html) - Vote for [Issue 20](https://github.com/floodfx/liveviewjs/issues/20)
 
