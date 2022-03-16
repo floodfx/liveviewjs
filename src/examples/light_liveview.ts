@@ -46,7 +46,6 @@ export class LightLiveViewComponent
 
         <button phx-click="on" phx-window-keydown="key_update" phx-key="ArrowRight">➡️ On</button>
       </div>
-      <button phx-click="reload">Reload</button>
     `;
   }
 

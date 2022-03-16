@@ -1,6 +1,8 @@
+import { SessionData } from "express-session";
 import path from "path";
-import { LiveViewServer } from "../server";
+import { html, HtmlSafeString, LiveViewServer } from "../server";
 import { LiveViewRouter } from "../server/component/types";
+import { live_flash } from "../server/templates/helpers/live_flash";
 import { AsyncFetchLiveViewComponent } from "./asyncfetch/component";
 import { AutocompleteLiveViewComponent } from "./autocomplete/component";
 import { DecarbonizeLiveView } from "./decarbonize/live_view";
@@ -23,6 +25,19 @@ const lvServer = new LiveViewServer({
     title: "Examples",
     suffix: " · LiveViewJS",
   },
+  liveViewRootTemplate: (session: SessionData, inner_content: HtmlSafeString) => html`
+    <main role="main" class="container">
+      <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info">
+        ${live_flash(session.flash, "info")}
+      </p>
+
+      <p class="alert alert-danger" role="alert" phx-click="lv:clear-flash" phx-value-key="error">
+        ${live_flash(session.flash, "error")}
+      </p>
+
+      ${inner_content}
+    </main>
+  `,
   middleware: [
     // debugging middleware example
     (req, res, next) => {
