@@ -26,42 +26,72 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
    * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
    * @param context you can pass a partial of the current context to update
    */
-  assign: (context: Partial<Context>) => void;
+  assign(context: Partial<Context>): void;
   /**
    * Marks any set properties as temporary and will be reset to the given
    * value after the next render cycle.  Typically used to ensure large but
    * infrequently updated values are not kept in memory.
+   *
+   * @param context a partial of the context that should be temporary and the value to reset it to
    */
-  tempAssign: (context: Partial<Context>) => void;
+  tempAssign(context: Partial<Context>): void;
   /**
    * Updates the `<title>` tag of the `LiveView` page.  Requires using the
    * `live_title` helper in rendering the page.
+   *
+   * @param newPageTitle the new text value of the page - note the prefix and suffix will not be changed
    */
-  pageTitle: (newPageTitle: string) => void;
+  pageTitle(newPageTitle: string): void;
   /**
    * Pushes data from the server to the client with the given event name and
    * params.  Requires a client `Hook` to be defined and to be listening for
    * the event via `this.handleEvent` callback.
+   *
+   * @param event the name of the event to push to the client
+   * @param params the data to pass to the client
    */
-  pushEvent: (event: string, params: Record<string, any>) => void;
+  pushEvent(event: string, params: Record<string, any>): void;
   /**
    * Updates the browser's URL with the given path and query parameters.
+   *
+   * @param path the path whose query params are being updated
+   * @param params the query params to update the path with
+   * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
    */
-  pushPatch: (path: string, params: Record<string, string | number>) => void;
+  // pushPatch(path: string, params: Record<string, string | number>): void;
+  pushPatch(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
+
+  /**
+   * Shutdowns the current `LiveView` and load another `LiveView` in its place without reloading the
+   * whole page (i.e. making a full HTTP request).  Can be used to remount the current `LiveView` if
+   * need be. Use `pushPatch` to update the current `LiveView` without unloading and remounting.
+   *
+   * @param path the path whose query params are being updated
+   * @param params the query params to update the path with
+   * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
+   */
+  pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
   /**
    * Runs the given function on the given interval until this `LiveView` is
    * unloaded.
+   *
+   * @param fn the function to run on the interval
+   * @param intervalMillis the interval to run the function on in milliseconds
    */
-  repeat: (fn: () => void, intervalMillis: number) => void;
+  repeat(fn: () => void, intervalMillis: number): void;
   /**
-   * Initiates a `LiveView.handleInfo` event from within the `LiveView` itself.
+   * Send an event internally to the server which initiates a `LiveView.handleInfo` invocation.
+   *
+   * @param event the event to send to `handleInfo`
    */
-  send: (event: unknown) => void;
+  send(event: unknown): void;
   /**
    * Subscribes to the given topic using pub/sub.  Any events published to the topic
    * will be received by the `LiveView` instance via `handleEvent`.
+   *
+   * @param topic the topic to subscribe this `LiveView` to
    */
-  subscribe: (topic: string) => void;
+  subscribe(topic: string): void;
 }
 
 export interface PartialLiveViewSocket<Context extends LiveViewContext> extends LiveViewSocket<Context> {}
@@ -97,7 +127,10 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
   pushEvent(event: string, params: Record<string, any>) {
     // no-op
   }
-  pushPatch(path: string, params: Record<string, string | number>) {
+  pushPatch(path: string, params?: Record<string, string | number>, replaceHistory?: boolean) {
+    // no-op
+  }
+  pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean) {
     // no-op
   }
   repeat(fn: () => void, intervalMillis: number) {
@@ -148,18 +181,24 @@ export class WsLiveViewSocket<Context extends LiveViewContext>
   pageTitleData?: string;
 
   // callbacks to the ComponentManager
-  private subscribeCallback: (topic: string) => void;
-  private pushPatchCallback: (path: string, params: Record<string, string | number>) => void;
-  private pushEventCallback: (event: string, params: Record<string, any>) => void;
   private pageTitleCallback: (newPageTitle: string) => void;
+  private pushEventCallback: (event: string, params: Record<string, any>) => void;
+  private pushPatchCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void;
+  private pushRedirectCallback: (
+    path: string,
+    params?: Record<string, string | number>,
+    replaceHistory?: boolean
+  ) => void;
   private repeatCallback: (fn: () => void, intervalMillis: number) => void;
   private sendCallback: (event: unknown) => void;
+  private subscribeCallback: (topic: string) => void;
 
   constructor(
     id: string,
     pageTitleCallback: (newPageTitle: string) => void,
     pushEventCallback: (event: string, params: Record<string, any>) => void,
-    pushPatchCallback: (path: string, params: Record<string, string | number>) => void,
+    pushPatchCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void,
+    pushRedirectCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void,
     repeatCallback: (fn: () => void, intervalMillis: number) => void,
     sendCallback: (event: unknown) => void,
     subscribeCallback: (topic: string) => void
@@ -169,6 +208,7 @@ export class WsLiveViewSocket<Context extends LiveViewContext>
     this.pageTitleCallback = pageTitleCallback;
     this.pushEventCallback = pushEventCallback;
     this.pushPatchCallback = pushPatchCallback;
+    this.pushRedirectCallback = pushRedirectCallback;
     this.repeatCallback = repeatCallback;
     this.sendCallback = sendCallback;
     this.subscribeCallback = subscribeCallback;
@@ -180,8 +220,11 @@ export class WsLiveViewSocket<Context extends LiveViewContext>
   pushEvent(event: string, params: Record<string, any>) {
     this.pushEventCallback(event, params);
   }
-  pushPatch(path: string, params: Record<string, string | number>) {
-    this.pushPatchCallback(path, params);
+  pushPatch(path: string, params?: Record<string, string | number>, replaceHistory: boolean = false) {
+    this.pushPatchCallback(path, params, replaceHistory);
+  }
+  pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory: boolean = false) {
+    this.pushRedirectCallback(path, params, replaceHistory);
   }
   repeat(fn: () => void, intervalMillis: number) {
     this.repeatCallback(fn, intervalMillis);

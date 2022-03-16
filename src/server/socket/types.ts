@@ -20,7 +20,7 @@ export type PhxOutgoingMessage<Payload> = [
   joinRef: string | null, // number
   messageRef: string | null, // number
   topic: "phoenix" | string,
-  event: "phx_reply" | "diff" | "live_patch",
+  event: "phx_reply" | "diff" | "live_patch" | "live_redirect",
   payload: Payload
 ];
 
@@ -58,11 +58,13 @@ export interface PhxReplyPayload {
 export type PhxReply = PhxOutgoingMessage<PhxReplyPayload>;
 export type PhxDiffReply = PhxOutgoingMessage<Diff>;
 
-export interface PhxLivePatchPushPayload {
-  kind: "push";
+export interface PhxLiveNavPushPayload {
+  kind: "push" | "replace";
   to: string;
 }
-export type PhxOutgoingLivePatchPush = PhxOutgoingMessage<PhxLivePatchPushPayload>;
+export type PhxOutgoingLivePatchPush = PhxOutgoingMessage<PhxLiveNavPushPayload>;
+
+export type PhxOutgoingLiveRedirectPush = PhxOutgoingMessage<PhxLiveNavPushPayload>;
 
 export interface PhxEventPayload<Type extends string, Value> {
   type: Type;
