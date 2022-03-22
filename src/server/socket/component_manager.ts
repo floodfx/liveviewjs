@@ -423,12 +423,11 @@ export class LiveViewComponentManager {
   ) {
     // make params into query string
     let stringParams: string | undefined;
-    let urlParams = new URLSearchParams();
+    const urlParams = new URLSearchParams();
     if (params && Object.keys(params).length > 0) {
-      const onlyStringParams = Object.entries(params).map(([key, value]) => {
-        return [key, String(value)];
-      });
-      urlParams = new URLSearchParams(onlyStringParams);
+      for (const [key, value] of Object.entries(params)) {
+        urlParams.set(key, String(value));
+      }
       stringParams = urlParams.toString();
     }
 

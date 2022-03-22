@@ -11,7 +11,7 @@ import {
   LiveViewSocket,
   LiveViewTemplate,
 } from ".";
-import { LiveComponentContext, LiveViewContext } from "./component";
+import { LiveComponentContext, LiveViewContext, StringPropertyValues } from "./component";
 import { PhxJoinIncoming } from "./socket/types";
 import { html, HtmlSafeString } from "./templates";
 
@@ -265,6 +265,29 @@ describe("test live view server", () => {
       });
     });
   });
+
+  it("pushRedirect works in mount and handleParams in HTTP request", (done) => {
+    let lvComponent = new TestRedirectingLiveView("mount");
+    lvServer.registerLiveViewRoute("/test", lvComponent);
+    request(lvServer.httpServer)
+      .get("/test")
+      .expect(302)
+      .then((res) => {
+        expect(res.headers.location).toEqual("/new/path?param=mount");
+        done();
+      });
+
+    // second redirect should be from handleParams
+    lvComponent = new TestRedirectingLiveView("handleParams");
+    lvServer.registerLiveViewRoute("/test2", lvComponent);
+    request(lvServer.httpServer)
+      .get("/test2")
+      .expect(302)
+      .then((res) => {
+        expect(res.headers.location).toEqual("/new/path?param=handleParams");
+        done();
+      });
+  });
 });
 
 declare module "express-session" {
@@ -309,5 +332,29 @@ interface TestLCContext extends LiveComponentContext {
 class TestLiveComponent extends BaseLiveComponent<TestLCContext> {
   render(ctx: { foo: string }) {
     return html`<div>${ctx.foo}</div>`;
+  }
+}
+
+class TestRedirectingLiveView extends BaseLiveView<LiveViewContext, {}> {
+  private redirectIn: "mount" | "handleParams";
+  constructor(redirectIn: "mount" | "handleParams") {
+    super();
+    this.redirectIn = redirectIn;
+  }
+
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LiveViewContext>) {
+    if (this.redirectIn === "mount") {
+      socket.pushRedirect("/new/path", { param: "mount" }, false);
+    }
+  }
+
+  handleParams(params: StringPropertyValues<{}>, url: string, socket: LiveViewSocket<LiveViewContext>): void {
+    if (this.redirectIn === "handleParams") {
+      socket.pushRedirect("/new/path", { param: "handleParams" }, true);
+    }
+  }
+
+  render(ctx: LiveViewContext): LiveViewTemplate {
+    return html`<div>never</div>`;
   }
 }

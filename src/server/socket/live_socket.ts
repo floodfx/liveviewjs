@@ -1,3 +1,4 @@
+import { URLSearchParams } from "url";
 import { LiveViewContext } from "../component";
 /**
  * Main interface to update state, interact, manage, message, and otherwise
@@ -170,9 +171,31 @@ export class HttpLiveViewSocket<Context extends LiveViewContext>
   readonly id: string;
   readonly connected: boolean = false;
 
+  private _redirect: { to: string; replace: boolean } | undefined;
   constructor(id: string) {
     super();
     this.id = id;
+  }
+
+  get redirect(): { to: string; replace: boolean } | undefined {
+    return this._redirect;
+  }
+
+  pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void {
+    let stringParams: string | undefined;
+    const urlParams = new URLSearchParams();
+    if (params && Object.keys(params).length > 0) {
+      for (const [key, value] of Object.entries(params)) {
+        urlParams.set(key, String(value));
+      }
+      stringParams = urlParams.toString();
+    }
+
+    const to = stringParams ? `${path}?${stringParams}` : path;
+    this._redirect = {
+      to,
+      replace: replaceHistory || false,
+    };
   }
 }
 
