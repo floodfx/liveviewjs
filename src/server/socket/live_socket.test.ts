@@ -1,6 +1,13 @@
 import { SessionData } from "express-session";
 import { html } from "..";
-import { BaseLiveView, LiveView, LiveViewContext, LiveViewMountParams, LiveViewTemplate } from "../component";
+import {
+  BaseLiveView,
+  LiveView,
+  LiveViewContext,
+  LiveViewMountParams,
+  LiveViewTemplate,
+  StringPropertyValues,
+} from "../component";
 import { HttpLiveViewSocket, LiveViewSocket, WsLiveViewSocket } from "./live_socket";
 
 describe("test LiveViewSocket", () => {
@@ -120,6 +127,17 @@ describe("test LiveViewSocket", () => {
     socket.updateContextWithTempAssigns();
     expect(socket.context.foo).toEqual("");
   });
+
+  it("pushRedirect works in mount and handleParams in HTTP request", () => {
+    const socket = new HttpLiveViewSocket<TestRedirectingContext>("id");
+    const c = new TestRedirectingLiveView();
+    c.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
+    expect(socket.redirect).toEqual({ to: "/new/path?param=mount", replace: false });
+    expect(socket.context.redirectedIn).toEqual("mount");
+    c.handleParams({}, "", socket);
+    expect(socket.redirect).toEqual({ to: "/new/path?param=handleParams", replace: true });
+    expect(socket.context.redirectedIn).toEqual("handleParams");
+  });
 });
 
 interface TestLVContext extends LiveViewContext {
@@ -157,6 +175,30 @@ class TestLVPushAndSend extends BaseLiveView<TestLVPushAndSendContext, {}> {
   }
 
   render(ctx: TestLVPushAndSendContext): LiveViewTemplate {
+    return html`<div>${ctx.foo}</div>`;
+  }
+}
+
+interface TestRedirectingContext extends LiveViewContext {
+  redirectedIn: "mount" | "handleParams";
+}
+
+class TestRedirectingLiveView extends BaseLiveView<TestRedirectingContext, {}> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestRedirectingContext>) {
+    if (!socket.context.redirectedIn) {
+      socket.assign({ redirectedIn: "mount" });
+      socket.pushRedirect("/new/path", { param: "mount" }, false);
+    }
+  }
+
+  handleParams(params: StringPropertyValues<{}>, url: string, socket: LiveViewSocket<TestRedirectingContext>): void {
+    if (socket.context.redirectedIn === "mount") {
+      socket.assign({ redirectedIn: "handleParams" });
+      socket.pushRedirect("/new/path", { param: "handleParams" }, true);
+    }
+  }
+
+  render(ctx: TestRedirectingContext): LiveViewTemplate {
     return html`<div>${ctx.foo}</div>`;
   }
 }

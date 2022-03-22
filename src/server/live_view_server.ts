@@ -207,8 +207,22 @@ export class LiveViewServer {
         // mount
         await component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, { ...req.session }, liveViewSocket);
 
+        // check for redirects in mount
+        if (liveViewSocket.redirect) {
+          console.log("redirecting to", liveViewSocket.redirect);
+          res.redirect(liveViewSocket.redirect.to);
+          return;
+        }
+
         // handle_params
         await component.handleParams(req.query, req.url, liveViewSocket);
+
+        // check for redirects in handle params
+        if (liveViewSocket.redirect) {
+          const { to } = liveViewSocket.redirect;
+          res.redirect(to);
+          return;
+        }
 
         // pass LiveViewContext and LiveViewMeta to render
         const lvContext = liveViewSocket.context;
