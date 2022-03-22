@@ -15,6 +15,7 @@ export interface RequestAdaptor {
   getRequestParameters: GetRequestParametersFunction;
   getRequestUrl: GetRequestUrl;
   getRequestPath: GetRequestPath;
+  onRedirect: (to: string) => void;
 }
 
 export const configLiveViewHandler = (
@@ -30,7 +31,7 @@ export const configLiveViewHandler = (
 ): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adaptor = createRequestAdaptor(req, res);
+      const adaptor = new ExpressRequestAdaptor(req, res);
       const { getRequestPath } = adaptor;
 
       // look up component for route
@@ -51,6 +52,11 @@ export const configLiveViewHandler = (
         liveViewTemplateRenderer
       );
 
+      if (adaptor.redirect) {
+        res.redirect(adaptor.redirect);
+        return;
+      }
+
       res.format({
         html: () => {
           res.send(rootViewHtml);
@@ -62,19 +68,28 @@ export const configLiveViewHandler = (
   };
 };
 
-export function createRequestAdaptor(req: Request, res: Response): RequestAdaptor {
-  return {
-    getSessionData: (): SessionData => {
-      return req.session;
-    },
-    getRequestParameters: (): { [key: string]: any } => {
-      return req.query;
-    },
-    getRequestUrl: (): string => {
-      return req.url;
-    },
-    getRequestPath: (): string => {
-      return req.path;
-    },
-  };
+class ExpressRequestAdaptor implements RequestAdaptor {
+  redirect: string | undefined;
+  req: Request;
+  res: Response;
+  constructor(req: Request, res: Response) {
+    this.req = req;
+    this.res = res;
+  }
+
+  getSessionData(): SessionData {
+    return this.req.session;
+  }
+  getRequestParameters(): { [key: string]: any } {
+    return this.req.query;
+  }
+  getRequestUrl(): string {
+    return this.req.url;
+  }
+  getRequestPath(): string {
+    return this.req.path;
+  }
+  onRedirect(to: string) {
+    this.redirect = to;
+  }
 }
