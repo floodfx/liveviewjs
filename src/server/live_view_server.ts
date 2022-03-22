@@ -209,7 +209,6 @@ export class LiveViewServer {
 
         // check for redirects in mount
         if (liveViewSocket.redirect) {
-          console.log("redirecting to", liveViewSocket.redirect);
           res.redirect(liveViewSocket.redirect.to);
           return;
         }
