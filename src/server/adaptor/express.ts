@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { renderHttpLiveView } from ".";
+import { handleHttpLiveView } from ".";
 import { LiveViewRouter, LiveViewTemplate } from "../component";
 import { PageTitleDefaults } from "../live_view_server";
 
@@ -43,7 +43,7 @@ export const configLiveViewHandler = (
         return;
       }
 
-      const rootViewHtml = renderHttpLiveView(
+      const rootViewHtml = await handleHttpLiveView(
         liveview,
         adaptor,
         rootTemplateRenderer,
