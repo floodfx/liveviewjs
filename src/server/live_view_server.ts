@@ -1,4 +1,4 @@
-import express from "express";
+import express, { ErrorRequestHandler, RequestHandler } from "express";
 import session, { MemoryStore, SessionData } from "express-session";
 import { Server } from "http";
 import jwt from "jsonwebtoken";
@@ -40,7 +40,7 @@ export interface LiveViewServerOptions {
   publicPath?: string;
   sessionStore?: session.Store;
   pageTitleDefaults?: PageTitleDefaults;
-  middleware?: express.Handler[];
+  middleware?: (RequestHandler | ErrorRequestHandler)[];
   liveViewRootTemplate?: (session: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
   signingSecret: string;
 }
@@ -59,7 +59,7 @@ export class LiveViewServer {
   private messageRouter: MessageRouter;
   private _isStarted = false;
   private pageTitleDefaults?: PageTitleDefaults;
-  private middleware: express.Handler[] = [];
+  private middleware: (RequestHandler | ErrorRequestHandler)[] = [];
   private liveViewRootTemplate?: (session: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
 
   readonly httpServer: Server;
@@ -157,7 +157,11 @@ export class LiveViewServer {
         resave: false,
         rolling: true,
         saveUninitialized: true,
-        cookie: { secure: process.env.NODE_ENV === "production" },
+        cookie: {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+        },
         store: this.sessionStore,
       })
     );
