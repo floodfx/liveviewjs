@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1647444218880" clover="3.2.0">
-  <project timestamp="1647444218880" name="All files">
-    <metrics statements="719" coveredstatements="719" conditionals="351" coveredconditionals="337" methods="166" coveredmethods="154" elements="1236" coveredelements="1210" complexity="0" loc="719" ncloc="719" packages="9" files="28" classes="28"/>
+<coverage generated="1647960114434" clover="3.2.0">
+  <project timestamp="1647960114434" name="All files">
+    <metrics statements="723" coveredstatements="721" conditionals="351" coveredconditionals="337" methods="166" coveredmethods="154" elements="1240" coveredelements="1212" complexity="0" loc="723" ncloc="723" packages="9" files="28" classes="28"/>
     <package name="examples.autocomplete">
       <metrics statements="5" coveredstatements="5" conditionals="1" coveredconditionals="1" methods="2" coveredmethods="2"/>
       <file name="data.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/examples/autocomplete/data.ts">
@@ -60,7 +60,7 @@
       </file>
     </package>
     <package name="server">
-      <metrics statements="138" coveredstatements="138" conditionals="73" coveredconditionals="72" methods="19" coveredmethods="17"/>
+      <metrics statements="141" coveredstatements="139" conditionals="73" coveredconditionals="72" methods="19" coveredmethods="17"/>
       <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/index.ts">
         <metrics statements="7" coveredstatements="7" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="9" type="stmt"/>
@@ -101,7 +101,7 @@
         <line num="87" count="2" type="stmt"/>
       </file>
       <file name="live_view_server.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/live_view_server.ts">
-        <metrics statements="105" coveredstatements="105" conditionals="53" coveredconditionals="52" methods="15" coveredmethods="14"/>
+        <metrics statements="108" coveredstatements="106" conditionals="53" coveredconditionals="52" methods="15" coveredmethods="14"/>
         <line num="1" count="9" type="stmt"/>
         <line num="2" count="9" type="stmt"/>
         <line num="3" count="9" type="stmt"/>
@@ -173,40 +173,43 @@
         <line num="172" count="21" type="stmt"/>
         <line num="175" count="21" type="stmt"/>
         <line num="176" count="11" type="stmt"/>
-        <line num="179" count="11" type="stmt"/>
-        <line num="182" count="11" type="stmt"/>
-        <line num="183" count="11" type="cond" truecount="1" falsecount="0"/>
-        <line num="186" count="3" type="stmt"/>
+        <line num="177" count="11" type="stmt"/>
+        <line num="180" count="11" type="stmt"/>
+        <line num="183" count="11" type="stmt"/>
+        <line num="184" count="11" type="cond" truecount="1" falsecount="0"/>
         <line num="187" count="3" type="stmt"/>
-        <line num="191" count="8" type="cond" truecount="1" falsecount="0"/>
-        <line num="192" count="7" type="stmt"/>
-        <line num="195" count="8" type="cond" truecount="2" falsecount="0"/>
-        <line num="197" count="7" type="stmt"/>
-        <line num="200" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="204" count="8" type="stmt"/>
-        <line num="207" count="8" type="stmt"/>
-        <line num="210" count="8" type="stmt"/>
-        <line num="213" count="8" type="stmt"/>
-        <line num="216" count="8" type="stmt"/>
+        <line num="188" count="3" type="stmt"/>
+        <line num="192" count="8" type="cond" truecount="1" falsecount="0"/>
+        <line num="193" count="7" type="stmt"/>
+        <line num="196" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="198" count="7" type="stmt"/>
+        <line num="201" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="205" count="8" type="stmt"/>
+        <line num="208" count="8" type="stmt"/>
+        <line num="211" count="8" type="stmt"/>
+        <line num="214" count="8" type="stmt"/>
         <line num="217" count="8" type="stmt"/>
-        <line num="224" count="2" type="cond" truecount="4" falsecount="0"/>
-        <line num="225" count="2" type="stmt"/>
-        <line num="228" count="2" type="stmt"/>
-        <line num="234" count="2" type="stmt"/>
-        <line num="237" count="2" type="stmt"/>
+        <line num="218" count="8" type="stmt"/>
+        <line num="225" count="2" type="cond" truecount="4" falsecount="0"/>
+        <line num="226" count="2" type="stmt"/>
+        <line num="229" count="2" type="stmt"/>
+        <line num="235" count="2" type="stmt"/>
         <line num="238" count="2" type="stmt"/>
-        <line num="241" count="2" type="stmt"/>
+        <line num="239" count="2" type="stmt"/>
         <line num="242" count="2" type="stmt"/>
         <line num="243" count="2" type="stmt"/>
-        <line num="245" count="2" type="stmt"/>
-        <line num="249" count="8" type="stmt"/>
+        <line num="244" count="2" type="stmt"/>
+        <line num="246" count="2" type="stmt"/>
         <line num="250" count="8" type="stmt"/>
-        <line num="252" count="8" type="stmt"/>
-        <line num="253" count="8" type="cond" truecount="1" falsecount="0"/>
-        <line num="254" count="6" type="stmt"/>
-        <line num="257" count="8" type="stmt"/>
-        <line num="264" count="8" type="stmt"/>
-        <line num="273" count="21" type="stmt"/>
+        <line num="251" count="8" type="stmt"/>
+        <line num="253" count="8" type="stmt"/>
+        <line num="254" count="8" type="cond" truecount="1" falsecount="0"/>
+        <line num="255" count="6" type="stmt"/>
+        <line num="258" count="8" type="stmt"/>
+        <line num="265" count="8" type="stmt"/>
+        <line num="273" count="0" type="stmt"/>
+        <line num="274" count="0" type="stmt"/>
+        <line num="278" count="21" type="stmt"/>
       </file>
     </package>
     <package name="server.component">
@@ -736,7 +739,7 @@
       </file>
     </package>
     <package name="server.templates.helpers">
-      <metrics statements="70" coveredstatements="70" conditionals="117" coveredconditionals="113" methods="17" coveredmethods="17"/>
+      <metrics statements="71" coveredstatements="71" conditionals="117" coveredconditionals="113" methods="17" coveredmethods="17"/>
       <file name="form_for.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/templates/helpers/form_for.ts">
         <metrics statements="7" coveredstatements="7" conditionals="26" coveredconditionals="25" methods="1" coveredmethods="1"/>
         <line num="1" count="12" type="stmt"/>
@@ -748,13 +751,14 @@
         <line num="17" count="5" type="stmt"/>
       </file>
       <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/templates/helpers/index.ts">
-        <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <metrics statements="7" coveredstatements="7" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="11" type="stmt"/>
         <line num="2" count="11" type="stmt"/>
         <line num="3" count="11" type="stmt"/>
         <line num="4" count="11" type="stmt"/>
         <line num="5" count="11" type="stmt"/>
         <line num="6" count="11" type="stmt"/>
+        <line num="7" count="11" type="stmt"/>
       </file>
       <file name="inputs.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/templates/helpers/inputs.ts">
         <metrics statements="18" coveredstatements="18" conditionals="49" coveredconditionals="46" methods="3" coveredmethods="3"/>
@@ -779,8 +783,8 @@
       </file>
       <file name="live_flash.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/templates/helpers/live_flash.ts">
         <metrics statements="5" coveredstatements="5" conditionals="5" coveredconditionals="5" methods="1" coveredmethods="1"/>
-        <line num="1" count="10" type="stmt"/>
-        <line num="4" count="10" type="stmt"/>
+        <line num="1" count="12" type="stmt"/>
+        <line num="4" count="12" type="stmt"/>
         <line num="5" count="3" type="cond" truecount="1" falsecount="0"/>
         <line num="6" count="1" type="stmt"/>
         <line num="9" count="2" type="cond" truecount="4" falsecount="0"/>

@@ -173,101 +173,106 @@ export class LiveViewServer {
 
     // handle all views and look up components by path
     app.use(async (req, res, next) => {
-      const liveview = req.path;
+      try {
+        const liveview = req.path;
 
-      // new LiveViewId per HTTP requess?
-      const liveViewId = nanoid();
+        // new LiveViewId per HTTP requess?
+        const liveViewId = nanoid();
 
-      // look up component for route
-      const component = this._router[liveview];
-      if (!component) {
-        // no component found for route so call next() to
-        // let a possible downstream route handle the request
-        next();
-        return;
+        // look up component for route
+        const component = this._router[liveview];
+        if (!component) {
+          // no component found for route so call next() to
+          // let a possible downstream route handle the request
+          next();
+          return;
+        }
+
+        // lookup / gen csrf token for this session
+        if (!req.session.csrfToken) {
+          req.session.csrfToken = nanoid();
+        }
+
+        if (!req.session.flash) {
+          // add flash if need be
+          req.session.flash = new Flash();
+        } else {
+          // otherwise take plain object and make Flash
+          req.session.flash = new Flash(Object.entries(req.session.flash || {}));
+        }
+
+        // http  socket
+        const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId);
+
+        // mount
+        await component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, { ...req.session }, liveViewSocket);
+
+        // handle_params
+        await component.handleParams(req.query, req.url, liveViewSocket);
+
+        // pass LiveViewContext and LiveViewMeta to render
+        const lvContext = liveViewSocket.context;
+        // const liveViewMeta = new HttpLiveViewMeta(liveViewId, req.session.csrfToken);
+
+        let myself = 1;
+        const view = await component.render(lvContext, {
+          csrfToken: req.session.csrfToken,
+          async live_component(
+            liveComponent: LiveComponent<LiveComponentContext>,
+            params?: Partial<LiveComponentContext & { id: string | number }>
+          ): Promise<LiveViewTemplate> {
+            // params may be empty
+            params = params ?? {};
+            delete params.id; // remove id before passing to socket
+
+            // create live component socket
+            const lcSocket = new HttpLiveComponentSocket<LiveComponentContext>(
+              liveViewId,
+              params as unknown as LiveComponentContext
+            );
+
+            // update socket with params
+            lcSocket.assign(params);
+
+            // run lifecycle
+            await liveComponent.mount(lcSocket);
+            await liveComponent.update(lcSocket);
+
+            // render view with context
+            const lcContext = lcSocket.context;
+            const newView = await liveComponent.render(lcContext, { myself: myself });
+            myself++;
+            // since http request is stateless send back the LiveViewTemplate
+            return newView;
+          },
+        });
+
+        const session = jwt.sign({ ...req.session }, this.signingSecret);
+        const statics = jwt.sign(JSON.stringify(view.statics), this.signingSecret);
+
+        let live_inner_content: HtmlSafeString = safe(view);
+        if (this.liveViewRootTemplate) {
+          live_inner_content = this.liveViewRootTemplate(req.session as SessionData, safe(view));
+        }
+
+        const root_inner_content = html`
+          <div data-phx-main="true" data-phx-session="${session}" data-phx-static="${statics}" id="phx-${liveViewId}">
+            ${safe(live_inner_content)}
+          </div>
+        `;
+
+        // render the view with all the data
+        res.render(this.rootView, {
+          page_title: this.pageTitleDefaults?.title ?? "",
+          page_title_prefix: this.pageTitleDefaults?.prefix,
+          page_title_suffix: this.pageTitleDefaults?.suffix,
+          csrf_meta_tag: req.session.csrfToken,
+          inner_content: root_inner_content,
+        });
+      } catch (e) {
+        console.error(e);
+        next(e);
       }
-
-      // lookup / gen csrf token for this session
-      if (!req.session.csrfToken) {
-        req.session.csrfToken = nanoid();
-      }
-
-      if (!req.session.flash) {
-        // add flash if need be
-        req.session.flash = new Flash();
-      } else {
-        // otherwise take plain object and make Flash
-        req.session.flash = new Flash(Object.entries(req.session.flash || {}));
-      }
-
-      // http  socket
-      const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId);
-
-      // mount
-      await component.mount({ _csrf_token: req.session.csrfToken, _mounts: -1 }, { ...req.session }, liveViewSocket);
-
-      // handle_params
-      await component.handleParams(req.query, req.url, liveViewSocket);
-
-      // pass LiveViewContext and LiveViewMeta to render
-      const lvContext = liveViewSocket.context;
-      // const liveViewMeta = new HttpLiveViewMeta(liveViewId, req.session.csrfToken);
-
-      let myself = 1;
-      const view = await component.render(lvContext, {
-        csrfToken: req.session.csrfToken,
-        async live_component(
-          liveComponent: LiveComponent<LiveComponentContext>,
-          params?: Partial<LiveComponentContext & { id: string | number }>
-        ): Promise<LiveViewTemplate> {
-          // params may be empty
-          params = params ?? {};
-          delete params.id; // remove id before passing to socket
-
-          // create live component socket
-          const lcSocket = new HttpLiveComponentSocket<LiveComponentContext>(
-            liveViewId,
-            params as unknown as LiveComponentContext
-          );
-
-          // update socket with params
-          lcSocket.assign(params);
-
-          // run lifecycle
-          await liveComponent.mount(lcSocket);
-          await liveComponent.update(lcSocket);
-
-          // render view with context
-          const lcContext = lcSocket.context;
-          const newView = await liveComponent.render(lcContext, { myself: myself });
-          myself++;
-          // since http request is stateless send back the LiveViewTemplate
-          return newView;
-        },
-      });
-
-      const session = jwt.sign({ ...req.session }, this.signingSecret);
-      const statics = jwt.sign(JSON.stringify(view.statics), this.signingSecret);
-
-      let live_inner_content: HtmlSafeString = safe(view);
-      if (this.liveViewRootTemplate) {
-        live_inner_content = this.liveViewRootTemplate(req.session as SessionData, safe(view));
-      }
-
-      const root_inner_content = html`
-        <div data-phx-main="true" data-phx-session="${session}" data-phx-static="${statics}" id="phx-${liveViewId}">
-          ${safe(live_inner_content)}
-        </div>
-      `;
-
-      // render the view with all the data
-      res.render(this.rootView, {
-        page_title: this.pageTitleDefaults?.title ?? "",
-        page_title_prefix: this.pageTitleDefaults?.prefix,
-        page_title_suffix: this.pageTitleDefaults?.suffix,
-        csrf_meta_tag: req.session.csrfToken,
-        inner_content: root_inner_content,
-      });
     });
 
     return app;

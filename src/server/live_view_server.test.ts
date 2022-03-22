@@ -1,3 +1,4 @@
+import { NextFunction, Request, Response } from "express";
 import { MemoryStore, SessionData } from "express-session";
 import request from "superwstest";
 import {
@@ -194,7 +195,7 @@ describe("test live view server", () => {
     let middlewareCalled = false;
     const testLVServer = new LiveViewServer({
       middleware: [
-        (req, res, next) => {
+        (req: Request, res: Response, next: NextFunction) => {
           middlewareCalled = true;
           next();
         },
@@ -221,7 +222,7 @@ describe("test live view server", () => {
     const message = "blah";
     const testLVServer = new LiveViewServer({
       middleware: [
-        (req, res, next) => {
+        (req: Request, res: Response, next: NextFunction) => {
           req.session.message = message;
           next();
         },
