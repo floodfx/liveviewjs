@@ -1,3 +1,4 @@
+import { NextFunction, Request, Response } from "express";
 import { SessionData } from "express-session";
 import path from "path";
 import { html, HtmlSafeString, LiveViewServer } from "../server";
@@ -40,7 +41,7 @@ const lvServer = new LiveViewServer({
   `,
   middleware: [
     // debugging middleware example
-    (req, res, next) => {
+    (req: Request, res: Response, next: NextFunction) => {
       console.log(`${req.method} ${req.url} - ${new Date().toISOString()}`);
       next();
     },
@@ -80,6 +81,12 @@ lvServer.expressApp.get("/", (req, res) => {
 // simple example of non-LiveView route not at root
 lvServer.expressApp.get("/foo", (req, res) => {
   res.send("Foo!");
+});
+
+// add error handler after all routes
+lvServer.expressApp.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  // show something nice to the user...
+  res.status(500).send("<h1>Uh Oh.  We had a problem loading your page</h1><div>We are working on it.</div>");
 });
 
 // start server
