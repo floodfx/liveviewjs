@@ -25,7 +25,7 @@ export const renderHttpLiveView = async (
   pageTitleDefaults?: PageTitleDefaults,
   liveViewTemplateRenderer?: (session: SessionData, liveViewContent: LiveViewTemplate) => LiveViewTemplate
 ) => {
-  const { getSessionData, getRequestParameters, getRequestUrl } = adaptor;
+  const { getSessionData, getRequestParameters, getRequestUrl, onRedirect } = adaptor;
   // new LiveViewId for each request
   const liveViewId = nanoid();
 
@@ -41,8 +41,22 @@ export const renderHttpLiveView = async (
   // mount
   await liveView.mount({ _csrf_token: sessionData.csrfToken, _mounts: -1 }, { ...sessionData }, liveViewSocket);
 
-  // pass http request data to component for handling
+  // check for redirects in mount
+  if (liveViewSocket.redirect) {
+    const { to } = liveViewSocket.redirect;
+    onRedirect(to);
+    return;
+  }
+
+  // handle_params
   await liveView.handleParams(getRequestParameters(), getRequestUrl(), liveViewSocket);
+
+  // check for redirects in handle params
+  if (liveViewSocket.redirect) {
+    const { to } = liveViewSocket.redirect;
+    onRedirect(to);
+    return;
+  }
 
   let myself = 1; // counter for live_component calls
   const view = await liveView.render(liveViewSocket.context, {
