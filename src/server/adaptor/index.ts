@@ -13,7 +13,7 @@ import { HttpLiveViewSocket } from "../socket/live_socket";
 import { html, safe } from "../templates";
 import { RequestAdaptor, SessionData } from "./express";
 
-export const renderHttpLiveView = async (
+export const handleHttpLiveView = async (
   liveView: LiveView<LiveViewContext, unknown>,
   adaptor: RequestAdaptor,
   rootTemplateRenderer: (
