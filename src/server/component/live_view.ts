@@ -1,4 +1,3 @@
-import { SessionData } from "express-session";
 import { LiveComponent, LiveViewTemplate } from ".";
 import { LiveViewSocket } from "../socket/live_socket";
 import { HttpLiveComponentSocket, LiveComponentContext } from "./live_component";
