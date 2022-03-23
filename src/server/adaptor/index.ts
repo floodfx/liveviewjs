@@ -8,10 +8,24 @@ import {
   LiveViewContext,
   LiveViewTemplate,
 } from "../component";
-import { PageTitleDefaults } from "../live_view_server";
 import { HttpLiveViewSocket } from "../socket/live_socket";
 import { html, safe } from "../templates";
-import { RequestAdaptor, SessionData } from "./express";
+import { PageTitleDefaults } from "../templates/helpers/page_title";
+
+export type SessionData = { [key: string]: any };
+
+export type GetSessionDataFunction = () => { [key: string]: any };
+export type GetRequestParametersFunction = () => { [key: string]: any };
+export type GetRequestUrl = () => string;
+export type GetRequestPath = () => string;
+
+export interface RequestAdaptor {
+  getSessionData: GetSessionDataFunction;
+  getRequestParameters: GetRequestParametersFunction;
+  getRequestUrl: GetRequestUrl;
+  getRequestPath: GetRequestPath;
+  onRedirect: (to: string) => void;
+}
 
 export const handleHttpLiveView = async (
   liveView: LiveView<LiveViewContext, unknown>,

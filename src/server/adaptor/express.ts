@@ -1,22 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { handleHttpLiveView } from ".";
+import { handleHttpLiveView, RequestAdaptor, SessionData } from ".";
 import { LiveViewRouter, LiveViewTemplate } from "../component";
 import { PageTitleDefaults } from "../live_view_server";
-
-export type SessionData = { [key: string]: any };
-
-export type GetSessionDataFunction = () => { [key: string]: any };
-export type GetRequestParametersFunction = () => { [key: string]: any };
-export type GetRequestUrl = () => string;
-export type GetRequestPath = () => string;
-
-export interface RequestAdaptor {
-  getSessionData: GetSessionDataFunction;
-  getRequestParameters: GetRequestParametersFunction;
-  getRequestUrl: GetRequestUrl;
-  getRequestPath: GetRequestPath;
-  onRedirect: (to: string) => void;
-}
 
 export const configLiveViewHandler = (
   getRouter: () => LiveViewRouter,
