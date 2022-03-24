@@ -17,6 +17,7 @@ import { html, HtmlSafeString } from "./templates";
 
 describe("test live view server", () => {
   let lvServer: LiveViewServer;
+  let caughtError = jest.fn();
 
   const liveViewRootTemplate = (session: SessionData, inner_content: HtmlSafeString) => html`<div>
     ${session.csrfToken} ${inner_content}
@@ -32,6 +33,11 @@ describe("test live view server", () => {
         title: "Title",
       },
       liveViewRootTemplate,
+    });
+    lvServer.expressApp.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+      caughtError(error);
+      res.status(501).send("error");
+      next();
     });
     lvServer.start();
   });
@@ -288,6 +294,19 @@ describe("test live view server", () => {
         done();
       });
   });
+
+  it("catches a throwing LiveView in HTTP", (done) => {
+    let lvComponent = new ThrowingLiveView();
+    lvServer.registerLiveViewRoute("/test", lvComponent);
+    request(lvServer.httpServer)
+      .get("/test")
+      .expect(501)
+      .then((res) => {
+        expect(caughtError).toHaveBeenCalled();
+        expect(res.text).toEqual("error");
+        done();
+      });
+  });
 });
 
 declare module "express-session" {
@@ -352,6 +371,16 @@ class TestRedirectingLiveView extends BaseLiveView<LiveViewContext, {}> {
     if (this.redirectIn === "handleParams") {
       socket.pushRedirect("/new/path", { param: "handleParams" }, true);
     }
+  }
+
+  render(ctx: LiveViewContext): LiveViewTemplate {
+    return html`<div>never</div>`;
+  }
+}
+
+class ThrowingLiveView extends BaseLiveView<LiveViewContext, {}> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LiveViewContext>) {
+    throw new Error("test");
   }
 
   render(ctx: LiveViewContext): LiveViewTemplate {

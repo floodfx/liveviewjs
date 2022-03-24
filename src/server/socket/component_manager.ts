@@ -307,20 +307,21 @@ export class LiveViewComponentManager {
           await this.liveView.handleEvent(event, value, this.socket);
         }
 
+        // skip ctxEqual for now
         const ctxEqual = areContextsValueEqual(previousContext, this.socket.context);
         let diff: Parts = {};
 
         // only calc diff if contexts have changed
-        if (!ctxEqual || event === "lv:clear-flash") {
-          // get old render tree and new render tree for diffing
-          const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
-          let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+        // if (!ctxEqual || event === "lv:clear-flash") {
+        // get old render tree and new render tree for diffing
+        // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+        let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
-          // wrap in root template if there is one
-          view = await this.maybeWrapInRootTemplate(view);
-
-          diff = deepDiff(oldView.partsTree(), view.partsTree());
-        }
+        // wrap in root template if there is one
+        view = await this.maybeWrapInRootTemplate(view);
+        diff = view.partsTree();
+        // diff = deepDiff(oldView.partsTree(), view.partsTree());
+        // }
 
         diff = this.maybeAddPageTitleToParts(diff);
         diff = this.maybeAddEventsToParts(diff);

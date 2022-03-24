@@ -1,6 +1,6 @@
 {
   "name": "liveviewjs",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "LiveViewJS brings the power of LiveView to Typescript and Javascript developers and applications.",
   "targets": {
     "client": {
