@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "esnext",
     "esModuleInterop": true,
     "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
@@ -12,6 +12,7 @@
     "strict": true,
     "skipLibCheck": true,
     "target": "es2019",
+    "moduleResolution": "node",
     "lib": ["es2019", "esnext.asynciterable", "DOM"],
     "types": ["node", "jest"],
     "outDir": "./dist",
