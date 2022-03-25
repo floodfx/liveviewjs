@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import { sign } from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import { LiveView, PageTitleDefaults } from ".";
 import {
@@ -90,9 +90,9 @@ export const configLiveViewHandler = <T extends { csrfToken: string }>(
         page_title_suffix: pageTitleDefaults?.suffix,
         csrf_meta_tag: req.session.csrfToken,
         liveViewId,
-        session: jwt.sign(session, signingSecret),
+        session: sign(session, signingSecret),
         // TODO support static assets https://github.com/floodfx/liveviewjs/issues/42
-        statics: jwt.sign(JSON.stringify(view.statics), signingSecret),
+        statics: sign(JSON.stringify(view.statics), signingSecret),
         inner_content: view.toString(),
       });
     },
