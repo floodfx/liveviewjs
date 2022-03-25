@@ -1,4 +1,3 @@
-import { URLSearchParams } from "url";
 import { LiveViewContext } from "../component";
 /**
  * Main interface to update state, interact, manage, message, and otherwise
