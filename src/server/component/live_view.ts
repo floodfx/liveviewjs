@@ -1,4 +1,5 @@
 import { LiveComponent, LiveViewTemplate } from ".";
+import { SessionData } from "../session";
 import { LiveViewSocket } from "../socket/live_socket";
 import { HttpLiveComponentSocket, LiveComponentContext } from "./live_component";
 

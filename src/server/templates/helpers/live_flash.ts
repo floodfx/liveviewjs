@@ -1,5 +1,5 @@
-import { html, HtmlSafeString } from "..";
 import { Flash } from "../../component/flash";
+import { html, HtmlSafeString } from "../htmlSafeString";
 
 export const live_flash = (flash: Flash | undefined, flashKey: string): HtmlSafeString => {
   if (!flash) {

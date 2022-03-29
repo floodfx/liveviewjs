@@ -1,5 +1,5 @@
-import { html, safe } from "..";
 import { LiveViewChangeset } from "../..";
+import { html, safe } from "../htmlSafeString";
 
 interface InputOptions {
   placeholder?: string;

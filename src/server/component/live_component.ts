@@ -1,4 +1,3 @@
-import { WebSocket } from "ws";
 import { LiveViewTemplate } from ".";
 
 /**
@@ -40,10 +39,6 @@ export interface LiveComponentSocket<Context extends LiveComponentContext> {
    * Read-only, current state of the `LiveComponent`
    */
   context: Context;
-  /**
-   * The actual websocket connection (if connected)
-   */
-  ws?: WebSocket;
   /**
    * helper method to send messages to the parent `LiveView` - requires the parent
    * `LiveView` to implement `handleInfo`.

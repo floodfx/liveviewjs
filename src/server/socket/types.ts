@@ -10,7 +10,7 @@ export enum PhxSocketProtocolNames {
 
 export type PhxIncomingMessage<Payload> = [
   joinRef: string | null, // number
-  messageRef: string, // number
+  messageRef: string | null, // number
   topic: "phoenix" | string,
   event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
   payload: Payload

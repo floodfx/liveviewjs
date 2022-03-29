@@ -9,6 +9,10 @@
       "distDir": "dist/client"
     }
   },
+  "exports": {
+    "require": "./build/liveview.js",
+    "import": "./build/liveview.mjs"
+  },
   "main": "dist/server/index.js",
   "types": "dist/server/index.d.ts",
   "files": [
@@ -87,6 +91,8 @@
     "parcel": "^2.2.1",
     "prettier": "^2.5.1",
     "rollup": "^2.70.1",
+    "rollup-plugin-dts": "^4.2.0",
+    "rollup-plugin-typescript2": "^0.31.2",
     "supertest": "^6.2.2",
     "superwstest": "^2.0.0",
     "ts-jest": "^27.1.3",

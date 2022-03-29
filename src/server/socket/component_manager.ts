@@ -1,12 +1,17 @@
-import { SessionData } from "express-session";
-import { fromJS } from "immutable";
-import jwt from "jsonwebtoken";
-import { WebSocket } from "ws";
-import { HtmlSafeString, LiveComponent, LiveViewMeta, LiveViewTemplate, Parts } from "..";
-import { LiveView } from "../";
-import { LiveComponentContext, LiveViewContext, WsLiveComponentSocket } from "../component";
+import { SerDe } from "../adaptor";
+import {
+  LiveComponent,
+  LiveComponentContext,
+  LiveView,
+  LiveViewContext,
+  LiveViewMeta,
+  LiveViewTemplate,
+  WsLiveComponentSocket,
+} from "../component";
 import { Flash } from "../component/flash";
-import { PubSub } from "../pubsub/SingleProcessPubSub";
+import { PubSub } from "../pubsub";
+import { SessionData } from "../session";
+import { HtmlSafeString, Parts } from "../templates";
 import { deepDiff } from "../templates/diff";
 import { WsLiveViewSocket } from "./live_socket";
 import { PhxMessage } from "./message_router";
@@ -27,6 +32,7 @@ import {
   PhxOutgoingMessage,
 } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
+import { WsAdaptor } from "./wsAdaptor";
 
 /**
  * Data kept for each `LiveComponent` instance.
@@ -71,13 +77,15 @@ interface StatefulLiveComponentData<Context extends LiveComponentContext> {
 export class LiveViewComponentManager {
   private connectionId: string;
   private joinId: string;
-  private ws: WebSocket;
+
+  private wsAdaptor: WsAdaptor;
   private subscriptionIds: Record<string, Promise<string>> = {};
 
   private liveView: LiveView<LiveViewContext, unknown>;
-  private signingSecret: string;
   private intervals: NodeJS.Timeout[] = [];
   private session: SessionData;
+  private pubSub: PubSub;
+  private serDe: SerDe;
 
   private csrfToken?: string;
 
@@ -92,20 +100,22 @@ export class LiveViewComponentManager {
 
   constructor(
     component: LiveView<LiveViewContext, unknown>,
-    signingSecret: string,
     connectionId: string,
-    ws: WebSocket,
+    wsAdaptor: WsAdaptor,
+    serDe: SerDe,
+    pubSub: PubSub,
     liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString
   ) {
     this.liveView = component;
-    this.signingSecret = signingSecret;
     this.connectionId = connectionId;
-    this.ws = ws;
+    this.wsAdaptor = wsAdaptor;
+    this.serDe = serDe;
+    this.pubSub = pubSub;
     this.liveViewRootTemplate = liveViewRootTemplate;
 
     // subscribe to events on connectionId which should just be
     // heartbeat messages
-    const subId = PubSub.subscribe(connectionId, (data) => this.handleSubscriptions(data as PhxMessage));
+    const subId = this.pubSub.subscribe<PhxMessage>(connectionId, (data: PhxMessage) => this.handleSubscriptions(data));
     // save subscription id for unsubscribing
     this.subscriptionIds[connectionId] = subId;
   }
@@ -125,13 +135,13 @@ export class LiveViewComponentManager {
     this.csrfToken = payloadParams._csrf_token;
 
     try {
-      this.session = jwt.verify(payloadSession, this.signingSecret) as SessionData;
+      this.session = await this.serDe.deserialize<SessionData>(payloadSession);
       this.session.flash = new Flash(Object.entries(this.session.flash || {}));
 
       // compare sesison csrfToken with csrfToken from payload
-      if (this.session.csrfToken !== this.csrfToken) {
+      if (this.session._csrf_token !== this.csrfToken) {
         // if session csrfToken does not match payload csrfToken, reject join
-        console.error("Rejecting join due to mismatched csrfTokens", this.session.csrfToken, this.csrfToken);
+        console.error("Rejecting join due to mismatched csrfTokens", this.session._csrf_token, this.csrfToken);
         return;
       }
     } catch (e) {
@@ -142,7 +152,7 @@ export class LiveViewComponentManager {
     this.joinId = topic;
     // subscribe to events on the socketId which includes
     // events, live_patch, and phx_leave messages
-    const subId = PubSub.subscribe(this.joinId, (data) => this.handleSubscriptions(data as PhxMessage));
+    const subId = this.pubSub.subscribe<PhxMessage>(this.joinId, (data: PhxMessage) => this.handleSubscriptions(data));
     // again save subscription id for unsubscribing
     this.subscriptionIds[this.joinId] = subId;
 
@@ -179,7 +189,7 @@ export class LiveViewComponentManager {
   }
 
   public async handleSubscriptions(phxMessage: PhxMessage) {
-    // console.log("handleSubscriptions", this.connectionId, this.socketId, phxMessage);
+    // console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
     const { type } = phxMessage;
     if (type === "heartbeat") {
       this.onHeartbeat(phxMessage.message);
@@ -308,7 +318,7 @@ export class LiveViewComponentManager {
         }
 
         // skip ctxEqual for now
-        const ctxEqual = areContextsValueEqual(previousContext, this.socket.context);
+        // const ctxEqual = areConte xtsValueEqual(previousContext, this.socket.context);
         let diff: Parts = {};
 
         // only calc diff if contexts have changed
@@ -394,14 +404,18 @@ export class LiveViewComponentManager {
   }
 
   public async shutdown() {
-    // unsubscribe from PubSubs
-    Object.entries(this.subscriptionIds).forEach(async ([topic, subscriptionId]) => {
-      const subId = await subscriptionId;
-      await PubSub.unsubscribe(topic, subId);
-    });
+    try {
+      // unsubscribe from PubSubs
+      Object.entries(this.subscriptionIds).forEach(async ([topic, subscriptionId]) => {
+        const subId = await subscriptionId;
+        await this.pubSub.unsubscribe(topic, subId);
+      });
 
-    // clear intervals
-    this.intervals.forEach(clearInterval);
+      // clear intervals
+      this.intervals.forEach(clearInterval);
+    } catch (e) {
+      // ignore errors
+    }
   }
 
   private async onPushPatch(path: string, params?: Record<string, string | number>, replaceHistory: boolean = false) {
@@ -471,7 +485,7 @@ export class LiveViewComponentManager {
       // @ts-ignore - already checked if handleInfo is defined
       this.liveView.handleInfo(event, this.socket);
 
-      const ctxEqual = areContextsValueEqual(previousContext, this.socket.context);
+      const ctxEqual = false; //areContextsValueEqual(previousContext, this.socket.context);
       let diff: Parts = {};
       // only calc diff if contexts have changed
       if (!ctxEqual) {
@@ -541,17 +555,14 @@ export class LiveViewComponentManager {
     return parts;
   }
 
-  private handleError(reply: PhxOutgoingMessage<any>, err?: Error) {
-    if (err) {
-      this.shutdown();
-      console.error(
-        `socket readystate:${this.ws.readyState}. Shutting down topic:${reply[2]}. For component:${this.liveView}. Error: ${err}`
-      );
-    }
-  }
-
   private sendPhxReply(reply: PhxOutgoingMessage<any>) {
-    this.ws.send(JSON.stringify(reply), { binary: false }, (err?: Error) => this.handleError(reply, err));
+    this.wsAdaptor.send(JSON.stringify(reply), (err) => {
+      if (err) {
+        this.shutdown();
+        console.error(`Shutting down topic:${reply[2]}. For component:${this.liveView}. Error: ${err}`);
+      }
+    });
+    // this.ws.send(JSON.stringify(reply), { binary: false }, (err?: Error) => this.handleError(reply, err));
   }
 
   /**
@@ -732,7 +743,7 @@ export class LiveViewComponentManager {
       (fn, intervalMillis) => this.repeat(fn, intervalMillis),
       (event) => this.sendInternal(event),
       (topic: string) => {
-        const subId = PubSub.subscribe(topic, (event) => this.sendInternal(event));
+        const subId = this.pubSub.subscribe<unknown>(topic, (event: unknown) => this.sendInternal(event));
         this.subscriptionIds[topic] = subId;
       }
     );
@@ -756,12 +767,12 @@ export function isEventHandler(component: LiveView<LiveViewContext, unknown>) {
   return "handleEvent" in component;
 }
 
-export function areContextsValueEqual(context1: LiveComponentContext, context2: LiveComponentContext): boolean {
-  if (!!context1 && !!context2) {
-    const c1 = fromJS(context1);
-    const c2 = fromJS(context2);
-    return c1.equals(c2);
-  } else {
-    return false;
-  }
-}
+// export function areContextsValueEqual(context1: LiveComponentContext, context2: LiveComponentContext): boolean {
+//   if (!!context1 && !!context2) {
+//     const c1 = fromJS(context1);
+//     const c2 = fromJS(context2);
+//     return c1.equals(c2);
+//   } else {
+//     return false;
+//   }
+// }

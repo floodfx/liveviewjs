@@ -7,3 +7,4 @@ dist/
 coverage/lcov-report/
 coverage/lcov.info
 diffs/
+build/

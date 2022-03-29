@@ -1,4 +1,4 @@
-import { html, safe } from "..";
+import { html, safe } from "../htmlSafeString";
 
 interface SubmitOptions {
   phx_disable_with: string;

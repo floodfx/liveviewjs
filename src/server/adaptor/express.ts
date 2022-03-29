@@ -1,7 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import { handleHttpLiveView, RequestAdaptor, SessionData } from ".";
+import jwt from "jsonwebtoken";
+import { nanoid } from "nanoid";
+import { handleHttpLiveView, RequestAdaptor } from ".";
 import { LiveViewRouter, LiveViewTemplate } from "../component";
-import { PageTitleDefaults } from "../live_view_server";
+import { SessionData } from "../session";
+import { PageTitleDefaults } from "../templates/helpers/page_title";
+import { SerDe } from "./http";
 
 export const configLiveViewHandler = (
   getRouter: () => LiveViewRouter,
@@ -16,7 +20,7 @@ export const configLiveViewHandler = (
 ): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adaptor = new ExpressRequestAdaptor(req, res);
+      const adaptor = new ExpressRequestAdaptor(req, res, signingSecret);
       const { getRequestPath } = adaptor;
 
       // look up component for route
@@ -29,6 +33,8 @@ export const configLiveViewHandler = (
       }
 
       const rootViewHtml = await handleHttpLiveView(
+        nanoid,
+        nanoid,
         liveview,
         adaptor,
         rootTemplateRenderer,
@@ -53,14 +59,31 @@ export const configLiveViewHandler = (
   };
 };
 
+export class NodeJwtSerDe implements SerDe {
+  private secretOrPrivateKey: string;
+  constructor(secretOrPrivateKey: string) {
+    this.secretOrPrivateKey = secretOrPrivateKey;
+  }
+  deserialize<T extends { [key: string]: any }>(data: string): Promise<T> {
+    return Promise.resolve(jwt.verify(data, this.secretOrPrivateKey) as T);
+  }
+
+  serialize<T extends { [key: string]: any }>(data: T): Promise<string> {
+    return Promise.resolve(jwt.sign(data as unknown as object, this.secretOrPrivateKey));
+  }
+}
+
 class ExpressRequestAdaptor implements RequestAdaptor {
   redirect: string | undefined;
-  req: Request;
-  res: Response;
-  constructor(req: Request, res: Response) {
+  private req: Request;
+  private res: Response;
+  private signingSecret: string;
+  constructor(req: Request, res: Response, signingSecret: string) {
     this.req = req;
     this.res = res;
+    this.signingSecret = signingSecret;
   }
+  getSerDe: () => SerDe;
 
   getSessionData(): SessionData {
     return this.req.session;
@@ -76,5 +99,8 @@ class ExpressRequestAdaptor implements RequestAdaptor {
   }
   onRedirect(to: string) {
     this.redirect = to;
+  }
+  getSerializer(): SerDe {
+    return new NodeJwtSerDe(this.signingSecret);
   }
 }
