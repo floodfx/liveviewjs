@@ -1,4 +1,4 @@
-import { html, HtmlSafeString, safe } from "..";
+import { html, HtmlSafeString, safe } from "../htmlSafeString";
 
 interface LiveViewPatchHelperOptions {
   to: {

@@ -1,5 +1,5 @@
-import { SessionData } from "express-session";
 import { LiveView, LiveViewMeta, LiveViewMountParams, LiveViewTemplate, StringPropertyValues } from ".";
+import { SessionData } from "../session";
 import { LiveViewSocket } from "../socket/live_socket";
 import { LiveViewContext } from "./live_view";
 

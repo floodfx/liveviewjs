@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "zod": "https://deno.land/x/zod@v3.14.2/mod.ts",
+    "crypto": "https://deno.land/std@0.128.0/node/crypto.ts"
+  }
+}

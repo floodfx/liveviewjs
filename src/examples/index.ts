@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import { SessionData } from "express-session";
 import path from "path";
-import { html, HtmlSafeString, LiveViewServer } from "../server";
+import { html, HtmlSafeString, SessionData } from "../server";
 import { LiveViewRouter } from "../server/component/types";
+import { LiveViewServer } from "../server/live_view_server";
 import { live_flash } from "../server/templates/helpers/live_flash";
 import { AsyncFetchLiveViewComponent } from "./asyncfetch/component";
 import { AutocompleteLiveViewComponent } from "./autocomplete/component";

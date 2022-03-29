@@ -1,8 +1,7 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { newChangesetFactory } from "../../server/component/changeset";
-import { LiveViewChangeset } from "../../server/component/types";
-import { PubSub } from "../../server/pubsub/SingleProcessPubSub";
+import { LiveViewChangeset, newChangesetFactory } from "../../server";
+import { SingleProcessPubSub } from "../../server/pubsub/SingleProcessPubSub";
 
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/;
 
@@ -54,8 +53,9 @@ export const updateVolunteer = (
   return result;
 };
 
+const pubSub = new SingleProcessPubSub();
 function broadcast(event: VolunteerMutationEvent) {
-  PubSub.broadcast("volunteer", event);
+  pubSub.broadcast("volunteer", event);
 }
 
 export type VolunteerMutationEvent =

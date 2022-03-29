@@ -1,11 +1,12 @@
 import express, { ErrorRequestHandler, RequestHandler } from "express";
-import session, { MemoryStore, SessionData } from "express-session";
+import session, { MemoryStore } from "express-session";
 import { Server } from "http";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import path from "path";
 import WebSocket from "ws";
 import { LiveView, LiveViewRouter, live_title_tag } from ".";
+import { NodeJwtSerDe } from "./adaptor/express";
 import {
   HttpLiveComponentSocket,
   LiveComponent,
@@ -14,10 +15,14 @@ import {
   LiveViewTemplate,
 } from "./component";
 import { Flash } from "./component/flash";
+import { PubSub, SingleProcessPubSub } from "./pubsub";
+import { SessionData } from "./session";
 import { HttpLiveViewSocket } from "./socket/live_socket";
 import { MessageRouter } from "./socket/message_router";
+import { WsAdaptor } from "./socket/wsAdaptor";
 import { html, HtmlSafeString, safe } from "./templates";
 import { live_flash } from "./templates/helpers/live_flash";
+import { PageTitleDefaults } from "./templates/helpers/page_title";
 
 // extend / define session interface
 declare module "express-session" {
@@ -25,12 +30,6 @@ declare module "express-session" {
     csrfToken: string;
     flash: Flash;
   }
-}
-
-export interface PageTitleDefaults {
-  prefix?: string;
-  suffix?: string;
-  title: string;
 }
 
 export interface LiveViewServerOptions {
@@ -42,10 +41,21 @@ export interface LiveViewServerOptions {
   pageTitleDefaults?: PageTitleDefaults;
   middleware?: (RequestHandler | ErrorRequestHandler)[];
   liveViewRootTemplate?: (session: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
+  pubSub?: PubSub;
   signingSecret: string;
 }
 
 const MODULE_VIEWS_PATH = path.join(__dirname, "web", "views");
+
+class ExpressWsAdaptor implements WsAdaptor {
+  private ws: WebSocket;
+  constructor(ws: WebSocket) {
+    this.ws = ws;
+  }
+  send(message: string, errorHandler?: (err: any) => void): void {
+    this.ws.send(message, errorHandler);
+  }
+}
 
 export class LiveViewServer {
   private port: number = 4444;
@@ -60,6 +70,7 @@ export class LiveViewServer {
   private _isStarted = false;
   private pageTitleDefaults?: PageTitleDefaults;
   private middleware: (RequestHandler | ErrorRequestHandler)[] = [];
+  private pubSub: PubSub;
   private liveViewRootTemplate?: (session: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
 
   readonly httpServer: Server;
@@ -73,6 +84,7 @@ export class LiveViewServer {
     this.viewsPath = options.viewsPath ? [options.viewsPath, MODULE_VIEWS_PATH] : [MODULE_VIEWS_PATH];
     this.sessionStore = options.sessionStore ?? this.sessionStore;
     this.middleware = options.middleware ?? this.middleware;
+    this.pubSub = options.pubSub ?? new SingleProcessPubSub();
     this.signingSecret = options.signingSecret;
     this.httpServer = new Server();
     this.socketServer = new WebSocket.Server({
@@ -80,7 +92,11 @@ export class LiveViewServer {
     });
     this.pageTitleDefaults = options.pageTitleDefaults;
     this.liveViewRootTemplate = options.liveViewRootTemplate;
-    this.messageRouter = new MessageRouter(this.liveViewRootTemplate);
+    this.messageRouter = new MessageRouter(
+      new NodeJwtSerDe(this.signingSecret),
+      this.pubSub,
+      this.liveViewRootTemplate
+    );
     this.expressApp = this.buildExpressApp();
   }
 
@@ -116,7 +132,14 @@ export class LiveViewServer {
       const connectionId = nanoid();
       // handle ws messages
       socket.on("message", async (message) => {
-        await this.messageRouter.onMessage(socket, message, this._router, connectionId, this.signingSecret);
+        const wsAdaptor = new ExpressWsAdaptor(socket);
+        await this.messageRouter.onMessage(
+          wsAdaptor,
+          message.toString(),
+          this._router,
+          connectionId,
+          this.signingSecret
+        );
       });
       socket.on("close", async (code) => {
         await this.messageRouter.onClose(code, connectionId);

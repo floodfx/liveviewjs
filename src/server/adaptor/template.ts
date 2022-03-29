@@ -1,8 +1,21 @@
-const rootTemplateRenderer = (
+import { LiveViewTemplate } from "../component";
+import { html } from "../templates";
+import { live_title_tag } from "../templates/helpers";
+import { PageTitleDefaults } from "../templates/helpers/page_title";
+
+/**
+ * Use "// app.use(configLiveViewHandler(() => this._router, defaultRootTemplateRenderer, this.signingSecret, this.pageTitleDefaults));"
+ * @param pageTitleDefault
+ * @param csrfToken
+ * @param inner_content
+ * @returns
+ */
+
+export function defaultRootTemplateRenderer(
   pageTitleDefault: PageTitleDefaults,
   csrfToken: string,
-  inner_content: HtmlSafeString
-) => {
+  innerContent: LiveViewTemplate
+): LiveViewTemplate {
   const pageTitle = pageTitleDefault?.title ?? "";
   const pageTitlePrefix = pageTitleDefault?.prefix ?? "";
   const pageTitleSuffix = pageTitleDefault?.suffix ?? "";
@@ -21,10 +34,8 @@ const rootTemplateRenderer = (
       </head>
 
       <body>
-        ${inner_content}
+        ${innerContent}
       </body>
     </html>
   `;
-};
-
-app.use(configLiveViewHandler(() => this._router, rootTemplateRenderer, this.signingSecret, this.pageTitleDefaults));
+}

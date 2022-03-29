@@ -1,19 +1,19 @@
-import crypto from "crypto";
-import EventEmitter from "events";
-import { Publisher, Subscriber, SubscriberFunction } from "./PubSub";
+import {
+  Publisher,
+  Subscriber,
+  SubscriberFunction,
+} from "./build/liveview.mjs";
+import { EventEmitter, crypto } from "./deps.ts"
 
-/**
- * A PubSub implementation that uses the Node.js EventEmitter as a backend.
- *
- * Should only be used in single process environments like local development
- * or a single instance.  In a multi-process environment, use RedisPubSub.
- */
-const eventEmitter = new EventEmitter(); // use this singleton for all pubSub events
+const eventEmitter = new EventEmitter();
 
 export class SingleProcessPubSub<T> implements Subscriber, Publisher {
   private subscribers: Record<string, SubscriberFunction<any>> = {};
 
-  public async subscribe<T>(topic: string, subscriber: SubscriberFunction<T>): Promise<string> {
+  public async subscribe<T>(
+    topic: string,
+    subscriber: SubscriberFunction<T>,
+  ): Promise<string> {
     await eventEmitter.on(topic, subscriber);
     // store connection id for unsubscribe and return for caller
     const subId = crypto.randomBytes(10).toString("hex");

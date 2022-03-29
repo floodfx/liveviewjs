@@ -1,7 +1,8 @@
-import { SessionData } from "express-session";
-import WebSocket from "ws";
+// import WebSocket from "ws";
 import { LiveViewRouter } from "..";
-import { PubSub } from "../pubsub/SingleProcessPubSub";
+import { SerDe } from "../adaptor";
+import { PubSub } from "../pubsub/PubSub";
+import { SessionData } from "../session";
 import { HtmlSafeString } from "../templates";
 import { LiveViewComponentManager } from "./component_manager";
 import {
@@ -17,6 +18,7 @@ import {
   PhxKeyUpPayload,
   PhxLivePatchIncoming,
 } from "./types";
+import { WsAdaptor } from "./wsAdaptor";
 
 export type PhxMessage =
   // incoming from client
@@ -39,42 +41,53 @@ export type PhxMessage =
 
 export class MessageRouter {
   private router: LiveViewRouter;
+  private serDe: SerDe;
+  private pubSub: PubSub;
   private liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
 
-  constructor(liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString) {
+  constructor(
+    serDe: SerDe,
+    pubSub: PubSub,
+    liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString
+  ) {
+    this.serDe = serDe;
+    this.pubSub = pubSub;
     this.liveViewRootTemplate = liveViewRootTemplate;
   }
 
   public async onMessage(
-    ws: WebSocket,
-    message: WebSocket.RawData,
+    wsAdaptor: WsAdaptor,
+    messageString: string,
     router: LiveViewRouter,
     connectionId: string,
     signingSecret: string
   ) {
     // parse string to JSON
-    const rawPhxMessage: PhxIncomingMessage<unknown> = JSON.parse(message.toString());
+    const rawPhxMessage: PhxIncomingMessage<unknown> = JSON.parse(messageString);
 
     // rawPhxMessage must be an array with 5 elements
     if (typeof rawPhxMessage === "object" && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
       const [joinRef, messageRef, topic, event, payload] = rawPhxMessage;
-
+      let message = rawPhxMessage;
       try {
         switch (event) {
           case "phx_join":
             // handle phx_join seperate from other events so we can create a new
             // component manager and send the join message to it
-            await this.onPhxJoin(ws, rawPhxMessage as PhxJoinIncoming, router, signingSecret, connectionId);
+            await this.onPhxJoin(wsAdaptor, rawPhxMessage as PhxJoinIncoming, router, signingSecret, connectionId);
             break;
           case "heartbeat":
             // send heartbeat to component manager via connectionId broadcast
-            await PubSub.broadcast(connectionId, { type: event, message: rawPhxMessage });
+            await this.pubSub.broadcast(connectionId, {
+              type: event,
+              message: rawPhxMessage as PhxHeartbeatIncoming,
+            });
             break;
           case "event":
           case "live_patch":
           case "phx_leave":
             // other events we can send via topic broadcast
-            await PubSub.broadcast(topic, { type: event, message: rawPhxMessage });
+            await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage as PhxIncomingMessage<any> });
             break;
           default:
             throw new Error(`unexpected protocol event ${rawPhxMessage}`);
@@ -91,11 +104,14 @@ export class MessageRouter {
   public async onClose(code: number, connectionId: string) {
     // when client closes connection send phx_leave message
     // to component manager via connectionId broadcast
-    await PubSub.broadcast(connectionId, { type: "phx_leave", message: [null, null, "phoenix", "phx_leave", {}] });
+    await this.pubSub.broadcast(connectionId, {
+      type: "phx_leave",
+      message: [null, null, "phoenix", "phx_leave", {}],
+    });
   }
 
   private async onPhxJoin(
-    ws: WebSocket,
+    wsAdaptor: WsAdaptor,
     message: PhxJoinIncoming,
     router: LiveViewRouter,
     signingSecret: string,
@@ -116,9 +132,10 @@ export class MessageRouter {
 
     const componentManager = new LiveViewComponentManager(
       component,
-      signingSecret,
       connectionId,
-      ws,
+      wsAdaptor,
+      this.serDe,
+      this.pubSub,
       this.liveViewRootTemplate
     );
     await componentManager.handleJoin(message);

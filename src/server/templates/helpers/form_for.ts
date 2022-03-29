@@ -1,4 +1,4 @@
-import { html, safe } from "..";
+import { html, safe } from "../htmlSafeString";
 
 interface FormForOptions {
   phx_submit?: string;
