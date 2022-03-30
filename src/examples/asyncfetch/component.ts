@@ -1,4 +1,3 @@
-import { SessionData } from "express-session";
 import {
   BaseLiveView,
   html,
@@ -9,6 +8,7 @@ import {
   LiveViewTemplate,
   live_patch,
   safe,
+  SessionData,
 } from "../../server";
 import { fetchXkcd, isValidXkcd, randomXkcdNum, XkcdData } from "./data";
 

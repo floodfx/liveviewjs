@@ -1,10 +1,10 @@
-import { SessionData } from "express-session";
 import {
   BaseLiveView,
   LiveViewContext,
   LiveViewExternalEventListener,
   LiveViewMountParams,
   LiveViewSocket,
+  SessionData,
 } from "../server";
 import { html } from "../server/templates";
 import { numberToCurrency } from "./utils";

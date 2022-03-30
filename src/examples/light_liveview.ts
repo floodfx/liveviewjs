@@ -1,13 +1,13 @@
-import { SessionData } from "express-session";
 import {
+  BaseLiveView,
+  html,
   LiveView,
   LiveViewContext,
   LiveViewExternalEventListener,
   LiveViewMountParams,
   LiveViewSocket,
+  SessionData,
 } from "../server";
-import { BaseLiveView } from "../server/component/base_live_view";
-import { html } from "../server/templates";
 
 export interface LightContext extends LiveViewContext {
   brightness: number;

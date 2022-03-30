@@ -1,4 +1,3 @@
-import { SessionData } from "express-session";
 import {
   BaseLiveView,
   html,
@@ -10,6 +9,7 @@ import {
   LiveViewSocket,
   live_patch,
   options_for_select,
+  SessionData,
   StringPropertyValues,
 } from "../../server";
 import { almostExpired, Donation, donations, listItems } from "./data";

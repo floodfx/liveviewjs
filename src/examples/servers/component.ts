@@ -1,4 +1,3 @@
-import { SessionData } from "express-session";
 import {
   BaseLiveView,
   html,
@@ -7,6 +6,7 @@ import {
   LiveViewSocket,
   LiveViewTemplate,
   live_patch,
+  SessionData,
 } from "../../server";
 import { listServers, Server } from "./data";
 

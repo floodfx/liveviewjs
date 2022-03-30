@@ -1,4 +1,3 @@
-import { SessionData } from "express-session";
 import {
   BaseLiveView,
   error_tag,
@@ -10,6 +9,7 @@ import {
   LiveViewInternalEventListener,
   LiveViewMountParams,
   LiveViewSocket,
+  SessionData,
   StringPropertyValues,
   submit,
   telephone_input,
