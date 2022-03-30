@@ -8,8 +8,7 @@ import type {
 } from "./build/liveview.mjs";
 import { handleHttpLiveView } from "./build/liveview.mjs";
 import { DenoJwtSerDe } from "./serDe.ts";
-import { RouterContext } from "https://deno.land/x/oak/mod.ts";
-import { nanoid } from "./deps.ts";
+import { RouterContext, nanoid } from "./deps.ts";
 
 interface ParamsDictionary {
   [key: string]: string;
