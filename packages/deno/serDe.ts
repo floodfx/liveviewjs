@@ -1,11 +1,32 @@
 import { create, verify } from "./deps.ts";
 import { SerDe } from "./build/liveview.mjs";
+export * as crypto from "https://deno.land/std@0.128.0/node/crypto.ts";
 
-const key = await crypto.subtle.generateKey(
-  { name: "HMAC", hash: "SHA-512" },
-  true,
-  ["sign", "verify"],
-);
+// Attempt to reuse the crypto key otherwise restarting server will
+// result in session data passed from http to ws that will fail deserialization
+const algo: HmacKeyGenParams = { name: "HMAC", hash: "SHA-512" };
+const keyUsages:KeyUsage[] = ["sign", "verify"];
+let key: CryptoKey;
+try {
+  try {
+    // try to load key from local file
+    const data = Deno.readFileSync("./key.json");
+    const jsonWebKey: JsonWebKey = JSON.parse(new TextDecoder().decode(data));
+    key = await crypto.subtle.importKey("jwk", jsonWebKey, algo, true, keyUsages);
+  } catch (_e) {
+    // if key.json doesn't exist, generate a new key and save it to key.json
+    key = await crypto.subtle.generateKey(
+      algo,
+      true,
+      keyUsages,
+    );
+    const jsonWebKey = await crypto.subtle.exportKey("jwk", key);
+    Deno.writeFileSync("./key.json", new TextEncoder().encode(JSON.stringify(jsonWebKey)));
+  }
+} catch (e) {
+  console.error(e)
+  throw new Error("Unable to load or generate key", e);
+}
 
 export class DenoJwtSerDe implements SerDe {
   async serialize<T extends { [key: string]: any }>(
