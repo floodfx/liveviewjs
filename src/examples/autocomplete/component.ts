@@ -1,4 +1,3 @@
-import { SessionData } from "express-session";
 import {
   BaseLiveView,
   html,
@@ -7,6 +6,7 @@ import {
   LiveViewInternalEventListener,
   LiveViewMountParams,
   LiveViewSocket,
+  SessionData,
 } from "../../server";
 import { searchByCity, searchByZip, Store } from "../live-search/data";
 import { suggest } from "./data";
