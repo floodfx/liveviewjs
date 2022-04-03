@@ -22,7 +22,7 @@ jobs:
       - run: npm install
       #- run: npm test
       # run rollup and save dist updates back to repo
-      - run: npm rollup
+      - run: npm run rollup
       # commit back changes to dist
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
