@@ -7,10 +7,18 @@ import type {
   SessionData,
 } from "./deps.ts";
 import { Context, nanoid, handleHttpLiveView } from "./deps.ts";
-import { DenoJwtSerDe } from "./serDe.ts";
+import { DenoJwtSerDe } from "./jwtSerDe.ts";
 
-export const configLiveViewHandler = (
-  getRouter: () => LiveViewRouter,
+/**
+ * Middleware for Oak that determines if a request is for a LiveView
+ * and if so, handles the request.  If not, it calls the next middleware.
+ * @param getRouter a function to access the LiveViewRouter which is used to match the request path against
+ * @param rootTemplateRenderer a function that embeds the LiveView HTML into to and forms a complete HTML page
+ * @param pageTitleDefaults (optional) a PageTitleDefaults object that is fed into the rootTemplateRenderer
+ * @param liveViewTemplateRenderer (optional) another renderer that can sit between the root template and the rendered LiveView
+ */
+export const connectLiveViewJS = (
+  router: LiveViewRouter,
   rootTemplateRenderer: (
     pageTitleDefault: PageTitleDefaults,
     csrfToken: string,
@@ -33,15 +41,16 @@ export const configLiveViewHandler = (
       const adaptor = new DenoRequestAdaptor(ctx);
       const { getRequestPath } = adaptor;
 
-      // look up component for route
-      const liveview = getRouter()[getRequestPath()];
+      // look up LiveView for route
+      const liveview = router[getRequestPath()];
       if (!liveview) {
-        // no component found for route so call next() to
+        // no LiveView found for route so call next() to
         // let a possible downstream route handle the request
         await next();
         return;
       }
 
+      // defer to liveviewjs to handle the request
       const rootViewHtml = await handleHttpLiveView(
         nanoid,
         nanoid,
@@ -52,13 +61,13 @@ export const configLiveViewHandler = (
         liveViewTemplateRenderer,
       );
 
-      // handle redirect
+      // check if LiveView calls for a redirect and if so, do it
       if (adaptor.redirect) {
         ctx.response.redirect(adaptor.redirect);
         return;
       }
 
-      // render html
+      // otherwise render the LiveView HTML
       ctx.response.body = rootViewHtml ? rootViewHtml.toString() : "";
       ctx.response.type = "text/html";
       await next();
