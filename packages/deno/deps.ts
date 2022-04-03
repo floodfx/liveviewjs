@@ -22,5 +22,5 @@ export {
   send,
 } from "https://deno.land/x/oak@v10.5.1/mod.ts";
 
-export { EventEmitter } from "https://deno.land/std@0.128.0/node/events.ts";
-export * as crypto from "https://deno.land/std@0.128.0/node/crypto.ts";
+// export { EventEmitter } from "https://deno.land/std@0.128.0/node/events.ts";
+// export * as crypto from "https://deno.land/std@0.128.0/node/crypto.ts";

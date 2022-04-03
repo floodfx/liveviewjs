@@ -2,11 +2,11 @@ import type {
   LiveViewRouter,
   LiveViewTemplate,
   PageTitleDefaults,
-  RequestAdaptor,
+  HttpRequestAdaptor,
   SerDe,
   SessionData,
-} from "./build/liveview.mjs";
-import { handleHttpLiveView } from "./build/liveview.mjs";
+} from "./liveviewjs.ts";
+import { handleHttpLiveView } from "./liveviewjs.ts";
 import { DenoJwtSerDe } from "./serDe.ts";
 import { Context, nanoid } from "./deps.ts";
 
@@ -17,7 +17,6 @@ export const configLiveViewHandler = (
     csrfToken: string,
     content: LiveViewTemplate,
   ) => LiveViewTemplate,
-  signingSecret: string,
   pageTitleDefaults?: PageTitleDefaults,
   liveViewTemplateRenderer?: (
     session: SessionData,
@@ -50,7 +49,6 @@ export const configLiveViewHandler = (
         liveview,
         adaptor,
         rootTemplateRenderer,
-        signingSecret,
         pageTitleDefaults,
         liveViewTemplateRenderer,
       );
@@ -71,7 +69,7 @@ export const configLiveViewHandler = (
   };
 };
 
-class DenoRequestAdaptor implements RequestAdaptor {
+class DenoRequestAdaptor implements HttpRequestAdaptor {
   public redirect: string | undefined;
   private ctx: Context<Record<string, any>, Record<string, any>>;
   constructor(ctx: Context<Record<string, any>, Record<string, any>>) {
