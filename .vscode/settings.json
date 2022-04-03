@@ -14,5 +14,6 @@
     // "**/node_modules": true,
     "env*": true
   },
-  "css.customData": [".vscode/css_custom_data.json"]
+  "css.customData": [".vscode/css_custom_data.json"],
+  "editor.formatOnSave": true
 }
