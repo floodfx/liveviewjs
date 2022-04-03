@@ -8,7 +8,7 @@ export default [
   {
     input: './src/nodeRollupEntry.ts',
     output: {
-      file: './build/liveview-examples.js',
+      file: './build/liveviewjs-examples.js',
       format: 'cjs'
     },
     plugins: [
@@ -25,14 +25,14 @@ export default [
   {
     input: './src/nodeRollupEntry.ts',
     output: {
-      file: './build/liveview-examples.mjs',
+      file: './build/liveviewjs-examples.mjs',
       format: 'esm',
     },
     plugins: [
       {
         banner() {
           // add typescript types to the javascript bundle
-          return '/// <reference types="./liveview-examples.d.ts" />';
+          return '/// <reference types="./liveviewjs-examples.d.ts" />';
         }
       },
       resolve(),
@@ -46,7 +46,7 @@ export default [
   {
     input: './build/rollup/nodeRollupEntry.d.ts',
     output: {
-      file: './build/liveview-examples.d.ts',
+      file: './build/liveviewjs-examples.d.ts',
       format: 'esm',
     },
     plugins: [dts()],

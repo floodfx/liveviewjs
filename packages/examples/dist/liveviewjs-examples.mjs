@@ -1,5 +1,5 @@
 
-/// <reference types="./liveview-examples.d.ts" />
+/// <reference types="./liveviewjs-examples.d.ts" />
 import crypto from 'crypto';
 import EventEmitter from 'events';
 
