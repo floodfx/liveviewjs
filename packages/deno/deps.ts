@@ -25,7 +25,7 @@ export {
 
 // liveviewjs exports
 export {
-  WsMessageRouter, SingleProcessPubSub, handleHttpLiveView, html, live_title_tag
+  WsMessageRouter, SingleProcessPubSub, handleHttpLiveView, html, safe, live_title_tag, live_flash
 } from "liveviewjs"; // see import_map.json
 
 export type {

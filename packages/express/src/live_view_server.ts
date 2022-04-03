@@ -20,7 +20,7 @@ import {
   PageTitleDefaults,
 } from "liveviewjs";
 
-import { rootTemplateRenderer } from "./rootTemplateRenderer";
+import { rootTemplateRenderer } from "./templateRenderers";
 
 // extend / define session interface
 declare module "express-session" {

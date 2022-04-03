@@ -1,7 +1,7 @@
 import { Application, nanoid, Router, send, LiveViewRouter, WsMessageRouter, SingleProcessPubSub } from "./deps.ts";
 
 import { configLiveViewHandler } from "./liveViewAppAdaptor.ts";
-import { rootTemplateRenderer } from "./liveViewRootTemplate.ts";
+import { rootTemplateRenderer, liveViewRootRenderer } from "./liveViewRenderers.ts";
 import { DenoJwtSerDe } from "./serDe.ts";
 import { DenoWsAdaptor } from "./wsAdaptor.ts";
 
@@ -10,7 +10,10 @@ import { LightLiveViewComponent } from "https://deno.land/x/liveviewjs@0.3.0-rc.
 const app = new Application();
 const router = new Router();
 
-const messageRouter = new WsMessageRouter(new DenoJwtSerDe(), new SingleProcessPubSub());
+const messageRouter = new WsMessageRouter(
+  new DenoJwtSerDe(),
+  new SingleProcessPubSub(),
+  liveViewRootRenderer);
 const liveRouter: LiveViewRouter = {
   "/light": new LightLiveViewComponent(),
 };
@@ -38,11 +41,10 @@ router.get("/live/websocket", async (ctx) => {
       wsAdaptor,
       ev.data,
       liveRouter,
-      id,
+      id
     );
   };
   ws.onclose = async (ev) => {
-    // console.log("onclose", id);
     await messageRouter.onClose(ev.code, id);
   };
 });
@@ -50,6 +52,8 @@ router.get("/live/websocket", async (ctx) => {
 app.use(configLiveViewHandler(
   () => liveRouter,
   rootTemplateRenderer,
+  {title: "Deno Demo", suffix: " · LiveViewJS"},
+  liveViewRootRenderer
 ));
 
 app.use(router.routes());

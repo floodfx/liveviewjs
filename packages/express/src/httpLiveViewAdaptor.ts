@@ -86,24 +86,23 @@ class ExpressRequestAdaptor implements HttpRequestAdaptor {
     this.res = res;
     this.signingSecret = signingSecret;
   }
-  getSerDe: () => SerDe;
 
-  getSessionData(): SessionData {
+  getSessionData = (): SessionData => {
     return this.req.session;
-  }
-  getRequestParameters(): { [key: string]: any } {
+  };
+  getRequestParameters = (): { [key: string]: any } => {
     return this.req.query;
-  }
-  getRequestUrl(): string {
+  };
+  getRequestUrl = (): string => {
     return this.req.url;
-  }
-  getRequestPath(): string {
+  };
+  getRequestPath = (): string => {
     return this.req.path;
-  }
-  onRedirect(to: string) {
+  };
+  onRedirect = (to: string) => {
     this.redirect = to;
-  }
-  getSerializer(): SerDe {
+  };
+  getSerDe = (): SerDe => {
     return new NodeSessionSerDe(this.signingSecret);
-  }
+  };
 }

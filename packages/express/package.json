@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "run": "npm run clean; npm run client:build; npm run server:build; nodemon -e js -w dist build/index.js",
+    "start": "npm run clean; npm run client:build; npm run server:build; nodemon -e js -w dist build/index.js",
     "server:build": "tsc",
     "server:watch": "tsc --watch",
     "client:build": "npm run check; parcel build",
