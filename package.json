@@ -33,7 +33,8 @@
     "check": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "jest --expand",
-    "prepublish": "npm run clean; npm run rollup; npm run client-build; npm run copy-build-to-dist",
+    "dist": "npm run clean; npm run rollup; npm run client-build; npm run copy-build-to-dist",
+    "prepublish": "npm run dist",
     "format": "prettier --write '**/*.{ts,js,json,html,css}'",
     "rollup": "rollup -c"
   },
