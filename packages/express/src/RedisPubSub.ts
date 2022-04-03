@@ -1,7 +1,7 @@
 import { RedisClientOptions, RedisClientType } from "@node-redis/client";
 import crypto from "crypto";
 import { createClient } from "redis";
-import { Publisher, Subscriber, SubscriberFunction } from "./PubSub";
+import { Publisher, Subscriber, SubscriberFunction } from "liveviewjs";
 
 /**
  * A PubSub implementation that uses Redis as a backend.
