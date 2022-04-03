@@ -1,18 +1,9 @@
-import express, { NextFunction, Request, Response, Application } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import session, { MemoryStore } from "express-session";
-import path from "path";
-import {
-  html,
-  HtmlSafeString,
-  SessionData,
-  LiveViewRouter,
-  live_title_tag,
-  live_flash,
-  WsMessageRouter,
-  SingleProcessPubSub,
-} from "liveviewjs";
-import { routeDetails } from "./routeDetails";
-import { LiveViewServer } from "./live_view_server";
+import WebSocket from "ws";
+import { Server } from "http";
+import { nanoid } from "nanoid";
+import { LiveViewRouter, WsMessageRouter, SingleProcessPubSub } from "liveviewjs";
 import {
   AutocompleteLiveViewComponent,
   DecarbonizeLiveView,
@@ -25,25 +16,17 @@ import {
   SortLiveViewComponent,
   VolunteerComponent,
 } from "@liveviewjs/examples";
+import { liveViewRootRenderer, rootTemplateRenderer } from "./liveViewRenderers";
+import { connectLiveViewJS } from "./httpLiveViewMiddleware";
+import { NodeWsAdaptor } from "./wsLiveViewAdaptor";
+import { NodeJwtSerDe } from "./jwtSerDe";
 
-import { liveViewRootRenderer, rootTemplateRenderer } from "./templateRenderers";
-import { configLiveViewHandler, NodeSessionSerDe } from "./httpLiveViewAdaptor";
-import { Server } from "http";
-import WebSocket from "ws";
-import { nanoid } from "nanoid";
-import { NodeWsAdaptor } from "./wsLiveViewAdatpr";
+// you'd want to set this to some secure, random string in production
+const signingSecret = "MY_VERY_SECRET_KEY";
 
-// extend / define session interface
-declare module "express-session" {
-  interface SessionData {
-    _csrf_token: string;
-  }
-}
-
+// map request paths to LiveViews
 const router: LiveViewRouter = {
   "/light": new LightLiveViewComponent(),
-  // sub paths also work
-  "/foo/light": new LightLiveViewComponent(),
   "/license": new LicenseLiveViewComponent(),
   "/sales-dashboard": new SalesDashboardLiveViewComponent(),
   "/search": new SearchLiveViewComponent(),
@@ -52,17 +35,13 @@ const router: LiveViewRouter = {
   "/sort": new SortLiveViewComponent(),
   "/servers": new ServersLiveViewComponent(),
   "/volunteers": new VolunteerComponent(),
-  // "/asyncfetch": new AsyncFetchLiveViewComponent(),
   "/decarbonize": new DecarbonizeLiveView(),
 };
 
-const signingSecret = "MY_VERY_SECRET_KEY";
+// configure your express app
 const app = express();
 
-// serve compiled liveviewjs client
-app.use(express.static(path.join(__dirname, "..", "build", "client")));
-
-// setup session
+// setup express-session middleware
 app.use(
   session({
     secret: signingSecret,
@@ -78,20 +57,16 @@ app.use(
   })
 );
 
-// add basic request logger middleware
+// basic middleware to log requests
 app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`${req.method} ${req.url} - ${new Date().toISOString()}`);
   next();
 });
 
-// register live_title_tag helper
-app.locals.live_title_tag = live_title_tag;
-app.locals.live_flash = live_flash;
-
-// handle all views and look up components by path
+// setup the LiveViewJS middleware
 app.use(
-  configLiveViewHandler(
-    () => router,
+  connectLiveViewJS(
+    router,
     rootTemplateRenderer,
     signingSecret,
     { title: "Express Demo", suffix: " · LiveViewJS" },
@@ -99,50 +74,31 @@ app.use(
   )
 );
 
-app.get("/", (req, res) => {
-  // this one renders the index of the examples
-  res.render("index.html.ejs", {
-    routes: routeDetails,
-  });
-});
-
-// simple example of non-LiveView route not at root
-app.get("/foo", (req, res) => {
-  res.send("Foo!");
-});
-
-// add error handler after all routes
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err);
-  // show something nice to the user...
-  res.status(500).send("<h1>Uh Oh.  We had a problem loading your page</h1><div>We are working on it.</div>");
-});
-
 // configure express to handle both http and websocket requests
+const httpServer = new Server();
+const wsServer = new WebSocket.Server({
+  server: httpServer,
+});
+
+// send http requests to the express app
+httpServer.on("request", app);
+
+// initialize the LiveViewJS websocket message router
 const messageRouter = new WsMessageRouter(
-  new NodeSessionSerDe(signingSecret),
+  new NodeJwtSerDe(signingSecret),
   new SingleProcessPubSub(),
   liveViewRootRenderer
 );
 
-const httpServer = new Server();
-const socketServer = new WebSocket.Server({
-  server: httpServer,
-});
-
-// handle https requests
-httpServer.on("request", app);
-
-// handle websocket requests
-socketServer.on("connection", (socket) => {
-  console.log("connected to ws");
+// send websocket requests to the LiveViewJS message router
+wsServer.on("connection", (ws) => {
   const connectionId = nanoid();
-  // handle ws messages
-  socket.on("message", async (message) => {
-    const wsAdaptor = new NodeWsAdaptor(socket);
-    await messageRouter.onMessage(wsAdaptor, message.toString(), router, connectionId);
+  ws.on("message", async (message) => {
+    // pass websocket messages to LiveViewJS
+    await messageRouter.onMessage(new NodeWsAdaptor(ws), message.toString(), router, connectionId);
   });
-  socket.on("close", async (code) => {
+  ws.on("close", async (code) => {
+    // pass websocket close events to LiveViewJS
     await messageRouter.onClose(code, connectionId);
   });
 });
@@ -150,5 +106,5 @@ socketServer.on("connection", (socket) => {
 // listen for requests
 const port = process.env.PORT || 4444;
 httpServer.listen(port, () => {
-  console.log(`LiveViewJS Express is listening on port ${port} !`);
+  console.log(`LiveViewJS Express is listening on port ${port}!`);
 });
