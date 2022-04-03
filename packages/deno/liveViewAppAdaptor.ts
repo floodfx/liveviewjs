@@ -5,10 +5,9 @@ import type {
   HttpRequestAdaptor,
   SerDe,
   SessionData,
-} from "./liveviewjs.ts";
-import { handleHttpLiveView } from "./liveviewjs.ts";
+} from "./deps.ts";
+import { Context, nanoid, handleHttpLiveView } from "./deps.ts";
 import { DenoJwtSerDe } from "./serDe.ts";
-import { Context, nanoid } from "./deps.ts";
 
 export const configLiveViewHandler = (
   getRouter: () => LiveViewRouter,

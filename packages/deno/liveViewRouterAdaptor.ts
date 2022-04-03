@@ -5,10 +5,9 @@ import type {
   HttpRequestAdaptor,
   SerDe,
   SessionData,
-} from "./liveviewjs.ts";
-import { handleHttpLiveView } from "./liveviewjs.ts";
+} from "./deps.ts";
+import { nanoid, handleHttpLiveView, RouterContext } from "./deps.ts";
 import { DenoJwtSerDe } from "./serDe.ts";
-import { RouterContext, nanoid } from "./deps.ts";
 
 interface ParamsDictionary {
   [key: string]: string;
@@ -21,7 +20,6 @@ export const configLiveViewHandler = (
     csrfToken: string,
     content: LiveViewTemplate,
   ) => LiveViewTemplate,
-  signingSecret: string,
   pageTitleDefaults?: PageTitleDefaults,
   liveViewTemplateRenderer?: (
     session: SessionData,

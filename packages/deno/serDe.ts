@@ -1,5 +1,4 @@
-import { create, verify } from "./deps.ts";
-import { SerDe } from "./liveviewjs.ts";
+import { create, verify, SerDe } from "./deps.ts";
 export * as crypto from "https://deno.land/std@0.128.0/node/crypto.ts";
 
 // Attempt to reuse the crypto key otherwise restarting server will
