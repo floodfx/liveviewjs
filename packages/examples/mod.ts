@@ -1,1 +1,1 @@
-export * from "./dist/liveview-examples.mjs";
+export * from "./dist/liveviewjs-examples.mjs";

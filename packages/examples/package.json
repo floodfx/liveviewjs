@@ -1,21 +1,21 @@
 {
-  "name": "liveviewjs-examples",
+  "name": "@liveviewjs/examples",
   "version": "0.0.1",
   "description": "Example LiveViews showing how LiveViewJS used by Express and Deno server examples",
   "exports": {
-    "require": "./dist/liveview-examples.js",
-    "import": "./dist/liveview-examples.mjs"
+    "require": "./dist/liveviewjs-examples.js",
+    "import": "./dist/liveviewjs-examples.mjs"
   },
-  "main": "dist/liveview-examples.js",
-  "types": "dist/liveview-examples.d.ts",
+  "main": "dist/liveviewjs-examples.js",
+  "types": "dist/liveviewjs-examples.d.ts",
   "files": [
-    "dist/liveview-examples.js",
-    "dist/liveview-examples.d.ts",
-    "dist/liveview-examples.mjs"
+    "dist/liveviewjs-examples.js",
+    "dist/liveviewjs-examples.d.ts",
+    "dist/liveviewjs-examples.mjs"
   ],
   "scripts": {
     "rollup": "rollup -c",
-    "copy-build-to-dist": "mkdir -p dist; cp build/liveview-examples.* dist",
+    "copy-build-to-dist": "mkdir -p dist; cp build/liveviewjs-examples.* dist",
     "dist": "npm run clean; npm run rollup; npm run copy-build-to-dist",
     "prepublish": "npm run dist",
     "build": "tsc",
@@ -31,7 +31,7 @@
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "MIT",
   "dependencies": {
-    "liveviewjs": "file:../../liveviewjs-0.3.0-rc.1.tgz",
+    "liveviewjs": "^0.3.0-rc.2",
     "nanoid": "^3.2.0",
     "node-fetch": "^2.6.7",
     "zod": "^3.14.3"
