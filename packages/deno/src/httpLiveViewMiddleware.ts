@@ -1,12 +1,12 @@
 import type {
+  HttpRequestAdaptor,
   LiveViewRouter,
   LiveViewTemplate,
   PageTitleDefaults,
-  HttpRequestAdaptor,
   SerDe,
   SessionData,
 } from "./deps.ts";
-import { Context, nanoid, handleHttpLiveView } from "./deps.ts";
+import { Context, handleHttpLiveView, nanoid } from "./deps.ts";
 import { DenoJwtSerDe } from "./jwtSerDe.ts";
 
 /**
