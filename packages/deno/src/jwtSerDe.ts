@@ -1,4 +1,4 @@
-import { create, verify, SerDe, crypto } from "./deps.ts";
+import { create, verify, SerDe, SessionData } from "./deps.ts";
 
 // Attempt to reuse the crypto key otherwise restarting server will
 // result in session data passed from http to ws that will fail deserialization
@@ -27,14 +27,14 @@ try {
 }
 
 export class DenoJwtSerDe implements SerDe {
-  async serialize<T extends { [key: string]: any }>(
+  async serialize<T extends SessionData>(
     payload: T,
   ): Promise<string> {
     const ser = await create({ alg: "HS512", type: "JWT" }, payload, key);
     return ser.toString();
   }
 
-  async deserialize<T extends { [key: string]: any }>(
+  async deserialize<T extends SessionData>(
     token: string,
   ): Promise<T> {
     const des = await verify(token, key) as T;

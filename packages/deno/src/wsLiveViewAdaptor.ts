@@ -1,5 +1,10 @@
 import type { WsAdaptor } from "./deps.ts";
 
+/**
+ * Deno specific adaptor to enabled the WsMessageRouter to send messages back
+ * to the client via WebSockets.  This is very simple because all the logic resides
+ * in the LiveViewJS WsMessageRouter.
+ */
 export class DenoWsAdaptor implements WsAdaptor {
   private ws: WebSocket;
   constructor(ws: WebSocket) {
@@ -11,6 +16,8 @@ export class DenoWsAdaptor implements WsAdaptor {
     } catch (e) {
       if (errorHandler) {
         errorHandler(e);
+      } else {
+        console.error(e);
       }
     }
   }
