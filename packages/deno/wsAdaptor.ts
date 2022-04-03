@@ -1,4 +1,4 @@
-import type { WsAdaptor } from "./liveviewjs.ts";
+import type { WsAdaptor } from "./deps.ts";
 
 export class DenoWsAdaptor implements WsAdaptor {
   private ws: WebSocket;

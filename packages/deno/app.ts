@@ -1,10 +1,8 @@
-import { Application, nanoid, Router, send } from "./deps.ts";
-import { LiveViewRouter, WsMessageRouter, SingleProcessPubSub } from "./liveviewjs.ts";
+import { Application, nanoid, Router, send, LiveViewRouter, WsMessageRouter, SingleProcessPubSub } from "./deps.ts";
 
 import { configLiveViewHandler } from "./liveViewAppAdaptor.ts";
 import { rootTemplateRenderer } from "./liveViewRootTemplate.ts";
 import { DenoJwtSerDe } from "./serDe.ts";
-// import { SingleProcessPubSub } from "./pubSub.ts";
 import { DenoWsAdaptor } from "./wsAdaptor.ts";
 
 import { LightLiveViewComponent } from "./liveviewjs-examples/liveview-examples.mjs";

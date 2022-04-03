@@ -1,5 +1,5 @@
-import type { LiveViewTemplate, PageTitleDefaults } from "./liveviewjs.ts";
-import { html, live_title_tag } from "./liveviewjs.ts";
+import type { LiveViewTemplate, PageTitleDefaults } from "./deps.ts";
+import { html, live_title_tag } from "./deps.ts";
 
 export const rootTemplateRenderer = (
   pageTitleDefault: PageTitleDefaults,

@@ -1,8 +1,8 @@
-import {
-  Publisher,
-  Subscriber,
-  SubscriberFunction,
-} from "./liveviewjs.ts";
+// import {
+//   Publisher,
+//   Subscriber,
+//   SubscriberFunction,
+// } from "./deps.ts";
 
 // const broadcastChannel = new BroadcastChannel();
 
