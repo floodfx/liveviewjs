@@ -12,7 +12,7 @@ import {
 import { Flash } from "../component/flash";
 import { PubSub } from "../pubsub";
 import { SessionData } from "../session";
-import { HtmlSafeString, Parts } from "../templates";
+import { HtmlSafeString, Parts, safe } from "../templates";
 import { deepDiff } from "../templates/diff";
 import { WsLiveViewSocket } from "./live_socket";
 import {
@@ -96,7 +96,7 @@ export class LiveViewManager {
   private pageTitleChanged: boolean = false;
 
   private socket: WsLiveViewSocket<LiveViewContext>;
-  private liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
+  private liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate;
 
   constructor(
     component: LiveView<LiveViewContext, unknown>,
@@ -104,7 +104,7 @@ export class LiveViewManager {
     wsAdaptor: WsAdaptor,
     serDe: SerDe,
     pubSub: PubSub,
-    liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString
+    liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate
   ) {
     this.liveView = component;
     this.connectionId = connectionId;
@@ -526,7 +526,7 @@ export class LiveViewManager {
 
   private async maybeWrapInRootTemplate(view: HtmlSafeString) {
     if (this.liveViewRootTemplate) {
-      return await this.liveViewRootTemplate(this.session, view);
+      return await this.liveViewRootTemplate(this.session, safe(view));
     }
     return view;
   }
