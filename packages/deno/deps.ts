@@ -5,15 +5,16 @@ export type { serve } from "https://deno.land/std@0.128.0/http/server.ts";
 export { create, verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 export type { Payload } from "https://deno.land/x/djwt@v2.4/mod.ts";
 
-// nanoid
-export { nanoid } from "https://deno.land/x/nanoid/mod.ts";
+// crypto
+export { crypto } from "https://deno.land/std@0.128.0/crypto/mod.ts";
 
-// view engine support
-export { renderFile } from "https://deno.land/x/dejs/mod.ts";
+// nanoid
+export { nanoid } from "https://deno.land/x/nanoid@v3.0.0/mod.ts";
 
 // static files support for oak
 export * as staticFiles from "https://deno.land/x/static_files@1.1.6/mod.ts";
 
+// oak exports
 export type { RouterContext } from "https://deno.land/x/oak@v10.5.1/mod.ts";
 export {
   Application,
@@ -22,9 +23,10 @@ export {
   send,
 } from "https://deno.land/x/oak@v10.5.1/mod.ts";
 
+// liveviewjs exports
 export {
   WsMessageRouter, SingleProcessPubSub, handleHttpLiveView, html, live_title_tag
-} from "https://deno.land/x/liveviewjs@0.3.0-rc.1/mod.ts"
+} from "liveviewjs"; // see import_map.json
 
 export type {
   LiveViewRouter,
@@ -34,4 +36,4 @@ export type {
   SerDe,
   SessionData,
   WsAdaptor
-} from "https://deno.land/x/liveviewjs@0.3.0-rc.1/mod.ts";
+} from "liveviewjs"; // see import_map.json

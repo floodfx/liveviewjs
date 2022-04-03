@@ -5,7 +5,7 @@ import { rootTemplateRenderer } from "./liveViewRootTemplate.ts";
 import { DenoJwtSerDe } from "./serDe.ts";
 import { DenoWsAdaptor } from "./wsAdaptor.ts";
 
-import { LightLiveViewComponent } from "./liveviewjs-examples/liveview-examples.mjs";
+import { LightLiveViewComponent } from "https://deno.land/x/liveviewjs@0.3.0-rc.2/packages/examples/mod.ts";
 
 const app = new Application();
 const router = new Router();

@@ -1,5 +1,4 @@
-import { create, verify, SerDe } from "./deps.ts";
-export * as crypto from "https://deno.land/std@0.128.0/node/crypto.ts";
+import { create, verify, SerDe, crypto } from "./deps.ts";
 
 // Attempt to reuse the crypto key otherwise restarting server will
 // result in session data passed from http to ws that will fail deserialization
