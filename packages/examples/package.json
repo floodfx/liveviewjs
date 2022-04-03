@@ -3,19 +3,21 @@
   "version": "0.0.1",
   "description": "Example LiveViews showing how LiveViewJS used by Express and Deno server examples",
   "exports": {
-    "require": "./build/liveview-examples.js",
-    "import": "./build/liveview-examples.mjs"
+    "require": "./dist/liveview-examples.js",
+    "import": "./dist/liveview-examples.mjs"
   },
-  "main": "build/liveview-examples.js",
-  "types": "build/liveview-examples.d.ts",
+  "main": "dist/liveview-examples.js",
+  "types": "dist/liveview-examples.d.ts",
   "files": [
-    "build/liveview-examples.js",
-    "build/liveview-examples.d.ts",
-    "build/liveview-examples.mjs"
+    "dist/liveview-examples.js",
+    "dist/liveview-examples.d.ts",
+    "dist/liveview-examples.mjs"
   ],
   "scripts": {
     "rollup": "rollup -c",
-    "examples": "npm run clean; npm run build",
+    "copy-build-to-dist": "mkdir -p dist; cp build/liveview-examples.* dist",
+    "dist": "npm run clean; npm run rollup; npm run copy-build-to-dist",
+    "prepublish": "npm run dist",
     "build": "tsc",
     "clean": "rm -rf build"
   },
