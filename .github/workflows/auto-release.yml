@@ -9,15 +9,26 @@ jobs:
     name: AutoRelease
     runs-on: ubuntu-latest
     steps:
+      # checkout the code
       - name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      # setup node version
       - uses: actions/setup-node@v3.0.0
         with:
           node-version: 17
+      # install dependencies and test
       - run: npm install
-      - run: npm test
+      #- run: npm test
+      # run rollup and save dist updates back to repo
+      - run: npm rollup
+      # commit back changes to dist
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "automatically committing rollup output to dist"
+          file_pattern: dist/*
+      # publish to npm if version is different
       - uses: JS-DevTools/npm-publish@v1
         with:
           token: ${{ secrets.NPM_PUBLISH_TOKEN }}

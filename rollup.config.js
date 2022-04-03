@@ -5,7 +5,6 @@ import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 
 export default [
-  // build for commonjs format
   {
     input: './src/index.ts',
     output: {
@@ -19,9 +18,8 @@ export default [
         declaration: true,
       }),
       commonjs(),
-    ]
+    ],
   },
-  // build for esm module formalt
   {
     input: './src/index.ts',
     output: {
@@ -40,9 +38,9 @@ export default [
         declarationDir: "./rollup",
         declaration: true,
       }),
+      commonjs(),
     ]
   },
-  // consolidate d.ts files into a single file
   {
     input: './build/rollup/server/index.d.ts',
     output: {
