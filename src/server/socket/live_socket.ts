@@ -163,10 +163,7 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
  * Used to render Http requests for `LiveView`s.  Only support setting the context via
  * `assign` and reading the context via `context`.
  */
-export class HttpLiveViewSocket<Context extends LiveViewContext>
-  extends BaseLiveViewSocket<Context>
-  implements LiveViewSocket<Context>
-{
+export class HttpLiveViewSocket<Context extends LiveViewContext> extends BaseLiveViewSocket<Context> {
   readonly id: string;
   readonly connected: boolean = false;
 
@@ -201,10 +198,7 @@ export class HttpLiveViewSocket<Context extends LiveViewContext>
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
  */
-export class WsLiveViewSocket<Context extends LiveViewContext>
-  extends BaseLiveViewSocket<Context>
-  implements LiveViewSocket<Context>
-{
+export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveViewSocket<Context> {
   readonly id: string;
   readonly connected: boolean = true;
 

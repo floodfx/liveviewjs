@@ -1,67 +1,28 @@
-// import WebSocket from "ws";
 import { LiveViewRouter } from "..";
 import { SerDe } from "../adaptor";
+import { WsAdaptor } from "../adaptor/websocket";
+import { LiveViewTemplate } from "../component";
 import { PubSub } from "../pubsub/PubSub";
 import { SessionData } from "../session";
-import { HtmlSafeString } from "../templates";
-import { LiveViewComponentManager } from "./component_manager";
-import {
-  PhxBlurPayload,
-  PhxClickPayload,
-  PhxFocusPayload,
-  PhxFormPayload,
-  PhxHeartbeatIncoming,
-  PhxHookPayload,
-  PhxIncomingMessage,
-  PhxJoinIncoming,
-  PhxKeyDownPayload,
-  PhxKeyUpPayload,
-  PhxLivePatchIncoming,
-} from "./types";
-import { WsAdaptor } from "./wsAdaptor";
+import { LiveViewManager } from "./liveViewManager";
+import { PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming } from "./types";
 
-export type PhxMessage =
-  // incoming from client
-  | { type: "phx_join"; message: PhxJoinIncoming }
-  | { type: "heartbeat"; message: PhxHeartbeatIncoming }
-  | {
-      type: "event";
-      message: PhxIncomingMessage<
-        | PhxClickPayload
-        | PhxFormPayload
-        | PhxKeyDownPayload
-        | PhxKeyUpPayload
-        | PhxFocusPayload
-        | PhxBlurPayload
-        | PhxHookPayload
-      >;
-    }
-  | { type: "live_patch"; message: PhxLivePatchIncoming }
-  | { type: "phx_leave"; message: PhxIncomingMessage<{}> };
-
-export class MessageRouter {
-  private router: LiveViewRouter;
+export class WsMessageRouter {
   private serDe: SerDe;
   private pubSub: PubSub;
-  private liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString;
+  private liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate;
 
   constructor(
     serDe: SerDe,
     pubSub: PubSub,
-    liveViewRootTemplate?: (sessionData: SessionData, inner_content: HtmlSafeString) => HtmlSafeString
+    liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate
   ) {
     this.serDe = serDe;
     this.pubSub = pubSub;
     this.liveViewRootTemplate = liveViewRootTemplate;
   }
 
-  public async onMessage(
-    wsAdaptor: WsAdaptor,
-    messageString: string,
-    router: LiveViewRouter,
-    connectionId: string,
-    signingSecret: string
-  ) {
+  public async onMessage(wsAdaptor: WsAdaptor, messageString: string, router: LiveViewRouter, connectionId: string) {
     // parse string to JSON
     const rawPhxMessage: PhxIncomingMessage<unknown> = JSON.parse(messageString);
 
@@ -74,7 +35,7 @@ export class MessageRouter {
           case "phx_join":
             // handle phx_join seperate from other events so we can create a new
             // component manager and send the join message to it
-            await this.onPhxJoin(wsAdaptor, rawPhxMessage as PhxJoinIncoming, router, signingSecret, connectionId);
+            await this.onPhxJoin(wsAdaptor, rawPhxMessage as PhxJoinIncoming, router, connectionId);
             break;
           case "heartbeat":
             // send heartbeat to component manager via connectionId broadcast
@@ -93,11 +54,11 @@ export class MessageRouter {
             throw new Error(`unexpected protocol event ${rawPhxMessage}`);
         }
       } catch (e) {
-        throw e;
+        console.error(`error handling phx message ${message}`, e);
       }
     } else {
-      // unknown message type
-      throw new Error(`unknown message type ${rawPhxMessage}`);
+      // message format is incorrect so say something
+      console.error(`error unknown message type for connectionId "${connectionId}". `, rawPhxMessage);
     }
   }
 
@@ -114,7 +75,6 @@ export class MessageRouter {
     wsAdaptor: WsAdaptor,
     message: PhxJoinIncoming,
     router: LiveViewRouter,
-    signingSecret: string,
     connectionId: string
   ) {
     // use url to route join request to component
@@ -130,7 +90,7 @@ export class MessageRouter {
       throw Error(`no component found for ${url}`);
     }
 
-    const componentManager = new LiveViewComponentManager(
+    const liveViewManager = new LiveViewManager(
       component,
       connectionId,
       wsAdaptor,
@@ -138,6 +98,6 @@ export class MessageRouter {
       this.pubSub,
       this.liveViewRootTemplate
     );
-    await componentManager.handleJoin(message);
+    await liveViewManager.handleJoin(message);
   }
 }

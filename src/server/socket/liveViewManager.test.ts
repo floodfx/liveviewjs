@@ -19,7 +19,7 @@ import {
 } from "..";
 import { LiveViewContext } from "../component";
 import { PubSub } from "../pubsub/SingleProcessPubSub";
-import { areContextsValueEqual, isEventHandler, isInfoHandler, LiveViewComponentManager } from "./component_manager";
+import { areContextsValueEqual, isEventHandler, isInfoHandler } from "./liveViewManager";
 import {
   PhxBlurPayload,
   PhxClickPayload,
@@ -36,8 +36,8 @@ import {
 } from "./types";
 
 describe("test component manager", () => {
-  let cmLiveView: LiveViewComponentManager;
-  let cmLiveViewAndLiveComponent: LiveViewComponentManager;
+  let cmLiveView: LiveViewManager;
+  let cmLiveViewAndLiveComponent: LiveViewManager;
   let liveViewConnectionId: string;
   let liveViewAndLiveComponentConnectionId: string;
   let ws: WebSocket;
@@ -45,13 +45,8 @@ describe("test component manager", () => {
     liveViewConnectionId = nanoid();
     liveViewAndLiveComponentConnectionId = nanoid();
     ws = mock<WebSocket>();
-    cmLiveView = new LiveViewComponentManager(
-      new TestLiveViewComponent(),
-      "my signing secret",
-      liveViewConnectionId,
-      ws
-    );
-    cmLiveViewAndLiveComponent = new LiveViewComponentManager(
+    cmLiveView = new LiveViewManager(new TestLiveViewComponent(), "my signing secret", liveViewConnectionId, ws);
+    cmLiveViewAndLiveComponent = new LiveViewManager(
       new TestLiveViewAndLiveComponent(),
       "my signing secret",
       liveViewAndLiveComponentConnectionId,
@@ -217,7 +212,7 @@ describe("test component manager", () => {
 
   it("onEvent valid click event but not eventHandler", async () => {
     const c = new NotEventHandlerNorInfoHandlerLiveViewComponent();
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws);
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
       "6",
@@ -425,7 +420,7 @@ describe("test component manager", () => {
 
   it("sendInternal with handleInfo", async () => {
     const sic = new SendInternalTestLiveViewComponent();
-    const cm = new LiveViewComponentManager(sic, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(sic, "my signing secret", liveViewConnectionId, ws);
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
       "6",
@@ -444,7 +439,7 @@ describe("test component manager", () => {
 
   it("sendInternal with no handleInfo", async () => {
     const sic = new SendInternalNoHandleInfoLiveViewComponent();
-    const cm = new LiveViewComponentManager(sic, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(sic, "my signing secret", liveViewConnectionId, ws);
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
       "6",
@@ -480,7 +475,7 @@ describe("test component manager", () => {
         }
       }
     );
-    const cm = new LiveViewComponentManager(tc, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(tc, "my signing secret", liveViewConnectionId, ws);
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
@@ -498,7 +493,7 @@ describe("test component manager", () => {
 
   it("a component that sets page title", async () => {
     const c = new SetsPageTitleComponent();
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws);
     const spyMaybeAddPageTitleToParts = jest.spyOn(cm as any, "maybeAddPageTitleToParts");
 
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
@@ -511,7 +506,7 @@ describe("test component manager", () => {
     jest.useFakeTimers();
     const c = new Repeat50msTestLiveViewComponent();
     const spyHandleInfo = jest.spyOn(c as any, "handleInfo");
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws);
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
     setTimeout(async () => {
@@ -524,7 +519,7 @@ describe("test component manager", () => {
 
   it("component that subscribes and received message", async () => {
     const c = new SubscribeTestLiveViewComponent();
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws);
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
     await PubSub.broadcast("testTopic", { test: "test" });
@@ -534,7 +529,7 @@ describe("test component manager", () => {
 
   it("component that pushPatches", async () => {
     const c = new PushPatchingTestComponent();
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws);
     const spyCm = jest.spyOn(cm as any, "onPushPatch");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -558,7 +553,7 @@ describe("test component manager", () => {
 
   it("component that pushRedirects", async () => {
     const c = new PushRedirectingTestComponent();
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws);
     const spyCm = jest.spyOn(cm as any, "onPushRedirect");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -582,7 +577,7 @@ describe("test component manager", () => {
 
   it("component that pushEvents", async () => {
     const c = new PushEventTestComponent();
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws);
     const spyCm = jest.spyOn(cm as any, "onPushEvent");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -604,7 +599,7 @@ describe("test component manager", () => {
 
   it("component that putFlash", async () => {
     const c = new PutFlashComponent();
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws);
     const spyPutFlash = jest.spyOn(cm as any, "putFlash");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -627,7 +622,7 @@ describe("test component manager", () => {
   it("default live view meta", async () => {
     const c = new PushPatchingTestComponent();
     const spyHandleParams = jest.spyOn(c as any, "handleParams");
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws);
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -651,7 +646,7 @@ describe("test component manager", () => {
     const c = new TestLiveViewComponent();
     const liveViewRootTemplate = (session: SessionData, inner_content: HtmlSafeString) =>
       html`<div>${session.csrfToken} ${inner_content}</div>`;
-    const cm = new LiveViewComponentManager(c, "my signing secret", liveViewConnectionId, ws, liveViewRootTemplate);
+    const cm = new LiveViewManager(c, "my signing secret", liveViewConnectionId, ws, liveViewRootTemplate);
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
     // use inline shapshot to see liveViewRootTemplate rendered
     expect(ws.send).toMatchInlineSnapshot(`
