@@ -1,5 +1,5 @@
-import type { LiveViewTemplate, PageTitleDefaults } from "./deps.ts";
-import { html, live_title_tag } from "./deps.ts";
+import type { LiveViewTemplate, PageTitleDefaults, SessionData } from "./deps.ts";
+import { html, live_title_tag, live_flash, safe } from "./deps.ts";
 
 export const rootTemplateRenderer = (
   pageTitleDefault: PageTitleDefaults,
@@ -29,8 +29,25 @@ export const rootTemplateRenderer = (
       </head>
 
       <body>
-        ${innerContent}
+        ${safe(innerContent)}
       </body>
     </html>
   `;
 };
+
+
+export function liveViewRootRenderer(session: SessionData, innerContent: LiveViewTemplate) {
+  return html`
+    <main role="main" class="container">
+      <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info">
+        ${live_flash(session.flash, "info")}
+      </p>
+
+      <p class="alert alert-danger" role="alert" phx-click="lv:clear-flash" phx-value-key="error">
+        ${live_flash(session.flash, "error")}
+      </p>
+
+      ${safe(innerContent)}
+    </main>
+  `;
+}
