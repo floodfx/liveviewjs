@@ -14,7 +14,7 @@ import {
   SingleProcessPubSub,
   PubSub,
   SessionData,
-  MessageRouter,
+  WsMessageRouter,
   HtmlSafeString,
   live_flash,
   PageTitleDefaults,
@@ -53,7 +53,7 @@ export class LiveViewServer {
   private signingSecret: string;
   private sessionStore: session.Store = new MemoryStore();
   private _router: LiveViewRouter = {};
-  private messageRouter: MessageRouter;
+  private messageRouter: WsMessageRouter;
   private _isStarted = false;
   private pageTitleDefaults?: PageTitleDefaults;
   private middleware: (RequestHandler | ErrorRequestHandler)[] = [];
@@ -79,7 +79,7 @@ export class LiveViewServer {
     });
     this.pageTitleDefaults = options.pageTitleDefaults;
     this.liveViewRootTemplate = options.liveViewRootTemplate;
-    this.messageRouter = new MessageRouter(
+    this.messageRouter = new WsMessageRouter(
       new NodeSessionSerDe(this.signingSecret),
       this.pubSub,
       this.liveViewRootTemplate
@@ -120,13 +120,7 @@ export class LiveViewServer {
       // handle ws messages
       socket.on("message", async (message) => {
         const wsAdaptor = new NodeWsAdaptor(socket);
-        await this.messageRouter.onMessage(
-          wsAdaptor,
-          message.toString(),
-          this._router,
-          connectionId,
-          this.signingSecret
-        );
+        await this.messageRouter.onMessage(wsAdaptor, message.toString(), this._router, connectionId);
       });
       socket.on("close", async (code) => {
         await this.messageRouter.onClose(code, connectionId);

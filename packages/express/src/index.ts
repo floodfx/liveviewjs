@@ -16,7 +16,7 @@ import {
   ServersLiveViewComponent,
   SortLiveViewComponent,
   VolunteerComponent,
-} from "liveviewjs-examples";
+} from "@liveviewjs/examples";
 
 const lvServer = new LiveViewServer({
   signingSecret: "MY_VERY_SECRET_KEY",
