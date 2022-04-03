@@ -5,6 +5,7 @@ import { Publisher, Subscriber, SubscriberFunction } from "liveviewjs";
 
 /**
  * A PubSub implementation that uses Redis as a backend.
+ * e.g. new RedisPubSub({ url: process.env.REDIS_URL || "redis://localhost:6379" })
  *
  * See: https://github.com/redis/node-redis#pubsub
  */
@@ -48,5 +49,3 @@ export class RedisPubSub implements Subscriber, Publisher {
     delete this.subscribers[subscriberId];
   }
 }
-
-// export const PubSub = new RedisPubSub({ url: process.env.REDIS_URL || "redis://localhost:6379" });
