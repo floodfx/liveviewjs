@@ -1,5 +1,9 @@
-import type { LiveViewTemplate, PageTitleDefaults, SessionData } from "./deps.ts";
-import { html, live_title_tag, live_flash, safe } from "./deps.ts";
+import type {
+  LiveViewTemplate,
+  PageTitleDefaults,
+  SessionData,
+} from "./deps.ts";
+import { html, live_flash, live_title_tag, safe } from "./deps.ts";
 
 /**
  * Render function for the "root" of the LiveView.  Expected that this function will
@@ -27,11 +31,11 @@ export const rootTemplateRenderer = (
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="csrf-token" content="${csrfToken}" />
         ${
-          live_title_tag(pageTitle, {
-            prefix: pageTitlePrefix,
-            suffix: pageTitleSuffix,
-          })
-        }
+    live_title_tag(pageTitle, {
+      prefix: pageTitlePrefix,
+      suffix: pageTitleSuffix,
+    })
+  }
         <script defer type="text/javascript" src="https://cdn.deno.land/liveviewjs/versions/0.3.0-rc.2/raw/dist/client/liveview.js"></script>
         <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css" />
@@ -50,7 +54,10 @@ export const rootTemplateRenderer = (
  * @param liveViewContent the content rendered by the LiveView
  * @returns a LiveViewTemplate to be embedded in the root template
  */
-export function liveViewRootRenderer(session: SessionData, innerContent: LiveViewTemplate) {
+export function liveViewRootRenderer(
+  session: SessionData,
+  innerContent: LiveViewTemplate,
+) {
   return html`
     <main role="main" class="container">
       <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info">

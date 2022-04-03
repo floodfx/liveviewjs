@@ -1,17 +1,27 @@
-import { Application, nanoid, Router, LiveViewRouter, WsMessageRouter, SingleProcessPubSub } from "./deps.ts";
+import {
+  Application,
+  LiveViewRouter,
+  nanoid,
+  Router,
+  SingleProcessPubSub,
+  WsMessageRouter,
+} from "./deps.ts";
 import {
   AutocompleteLiveViewComponent,
   DecarbonizeLiveView,
   LicenseLiveViewComponent,
   LightLiveViewComponent,
-  SearchLiveViewComponent,
   PaginateLiveViewComponent,
   SalesDashboardLiveViewComponent,
+  SearchLiveViewComponent,
   ServersLiveViewComponent,
   SortLiveViewComponent,
-  VolunteerComponent
+  VolunteerComponent,
 } from "./deps.ts";
-import { rootTemplateRenderer, liveViewRootRenderer } from "./liveViewRenderers.ts";
+import {
+  liveViewRootRenderer,
+  rootTemplateRenderer,
+} from "./liveViewRenderers.ts";
 import { connectLiveViewJS } from "./httpLiveViewMiddleware.ts";
 import { DenoWsAdaptor } from "./wsLiveViewAdaptor.ts";
 import { DenoJwtSerDe } from "./jwtSerDe.ts";
@@ -36,7 +46,9 @@ const router = new Router();
 
 // middleware to log requests
 app.use(async (ctx, next) => {
-  console.log(`${ctx.request.method} ${ctx.request.url} - ${new Date().toISOString()}`);
+  console.log(
+    `${ctx.request.method} ${ctx.request.url} - ${new Date().toISOString()}`,
+  );
   await next();
 });
 
@@ -44,15 +56,15 @@ app.use(async (ctx, next) => {
 app.use(connectLiveViewJS(
   liveViewRouter,
   rootTemplateRenderer,
-  {title: "Deno Demo", suffix: " · LiveViewJS"},
-  liveViewRootRenderer
+  { title: "Deno Demo", suffix: " · LiveViewJS" },
+  liveViewRootRenderer,
 ));
 
 // initialize the LiveViewJS websocket message router
 const wsMessageRouter = new WsMessageRouter(
   new DenoJwtSerDe(),
   new SingleProcessPubSub(),
-  liveViewRootRenderer
+  liveViewRootRenderer,
 );
 
 // in Deno, websocket requests come in over http and get "upgraded" to web socket requests
@@ -66,7 +78,7 @@ router.get("/live/websocket", async (ctx) => {
       new DenoWsAdaptor(ws),
       ev.data,
       liveViewRouter,
-      connectionId
+      connectionId,
     );
   };
   ws.onclose = async (ev) => {
@@ -81,5 +93,5 @@ app.use(router.allowedMethods());
 
 // listen for requests
 const port = Number(Deno.env.get("PORT")) || 9001;
-console.log(`LiveViewJS Express is listening on port ${port}!`)
+console.log(`LiveViewJS Express is listening on port ${port}!`);
 await app.listen({ port });
