@@ -1,6 +1,6 @@
 {
   "name": "liveviewjs",
-  "version": "0.2.6",
+  "version": "0.3.0-rc.1",
   "description": "LiveViewJS brings the power of LiveView to Typescript and Javascript developers and applications.",
   "targets": {
     "client": {
@@ -10,40 +10,39 @@
     }
   },
   "exports": {
-    "require": "./build/liveview.js",
-    "import": "./build/liveview.mjs"
+    "require": "./dist/liveview.js",
+    "import": "./dist/liveview.mjs"
   },
-  "main": "dist/server/index.js",
-  "types": "dist/server/index.d.ts",
+  "main": "dist/liveview.js",
+  "types": "dist/liveview.d.ts",
   "files": [
-    "dist/server/**/*.js",
-    "dist/server/**/*.d.ts",
-    "dist/server/**/*.ejs",
+    "dist/liveview.js",
+    "dist/liveview.d.ts",
+    "dist/liveview.mjs",
     "dist/client/**/*.js",
-    "dist/client/**/*.js.map"
+    "dist/client/**/*.js.map",
+    "dist/client/**/*.ts"
   ],
   "scripts": {
-    "examples": "npm run prepublish; npm run copy-examples-views; nodemon -e js -w dist dist/examples/index.js",
-    "copy-examples-views": "mkdir -p dist/examples/views; cp src/examples/views/* dist/examples/views",
     "build": "tsc",
     "watch": "tsc --watch",
-    "copy-root-view": "mkdir -p dist/server/web/views;cp src/server/web/views/root.html.ejs dist/server/web/views/root.html.ejs",
     "client-build": "npm run check; parcel build; npm run copy-client-ts",
     "client-watch": "parcel watch",
-    "copy-client-ts": "cp src/client/liveview.ts dist/client/liveview.ts",
+    "copy-client-ts": "mkdir -p dist/client; cp src/client/liveview.ts dist/client/liveview.ts",
+    "copy-build-to-dist": "mkdir -p dist/client; cp build/liveview.js dist; cp build/liveview.mjs dist; cp build/liveview.d.ts dist",
     "check": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "jest --expand",
-    "prepublish": "npm run clean; npm run test; npm run build; npm run copy-root-view; npm run client-build",
-    "format": "prettier --write '**/*.{ts,js,json,html,css}'"
+    "prepublish": "npm run clean; npm run rollup; npm run client-build; npm run copy-build-to-dist",
+    "format": "prettier --write '**/*.{ts,js,json,html,css}'",
+    "rollup": "rollup -c"
   },
   "keywords": [
     "liveviewjs",
     "liveview",
     "phoenix",
     "typescript",
-    "javascript",
-    "framework"
+    "javascript"
   ],
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "MIT",
@@ -64,7 +63,7 @@
     "phoenix_live_view": "^0.17.6",
     "redis": "^4.0.4",
     "ws": "^8.4.2",
-    "zod": "^3.11.6"
+    "zod": "^3.14.3"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.0.2",
@@ -83,7 +82,6 @@
     "@types/phoenix_live_view": "^0.15.1",
     "@types/supertest": "^2.0.11",
     "@types/ws": "^8.2.2",
-    "chart.js": "^3.7.1",
     "eslint": "^8.5.0",
     "jest": "^27.4.7",
     "jest-mock-extended": "^2.0.4",

@@ -15,9 +15,9 @@
     "moduleResolution": "node",
     "lib": ["es2019", "esnext.asynciterable", "DOM"],
     "types": ["node", "jest"],
-    "outDir": "./dist",
+    "outDir": "./build/tsc",
     "baseUrl": "."
   },
-  "include": ["src/server/**/*", "src/examples/**/*"],
-  "exclude": ["dist", "node_modules", "**/*.test.ts"]
+  "include": ["src/index.ts", "src/server/**/*"],
+  "exclude": ["build", "dist", "node_modules", "**/*.test.ts", "packages"]
 }
