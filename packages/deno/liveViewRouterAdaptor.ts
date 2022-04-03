@@ -2,11 +2,11 @@ import type {
   LiveViewRouter,
   LiveViewTemplate,
   PageTitleDefaults,
-  RequestAdaptor,
+  HttpRequestAdaptor,
   SerDe,
   SessionData,
-} from "./build/liveview.mjs";
-import { handleHttpLiveView } from "./build/liveview.mjs";
+} from "./liveviewjs.ts";
+import { handleHttpLiveView } from "./liveviewjs.ts";
 import { DenoJwtSerDe } from "./serDe.ts";
 import { RouterContext, nanoid } from "./deps.ts";
 
@@ -54,7 +54,6 @@ export const configLiveViewHandler = (
         liveview,
         adaptor,
         rootTemplateRenderer,
-        signingSecret,
         pageTitleDefaults,
         liveViewTemplateRenderer,
       );
@@ -75,7 +74,7 @@ export const configLiveViewHandler = (
   };
 };
 
-class DenoRequestAdaptor implements RequestAdaptor {
+class DenoRequestAdaptor implements HttpRequestAdaptor {
   redirect: string | undefined;
   ctx: RouterContext<string, ParamsDictionary, Record<string, any>>;
   constructor(

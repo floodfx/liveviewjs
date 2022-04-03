@@ -1,11 +1,13 @@
-import type {
+import {
+  BaseLiveView,
+  html,
+  LiveView,
   LiveViewContext,
   LiveViewExternalEventListener,
   LiveViewMountParams,
   LiveViewSocket,
   SessionData,
-} from "../build/liveview.mjs";
-import { BaseLiveView, html } from "../build/liveview.mjs";
+} from "liveviewjs";
 
 export interface LightContext extends LiveViewContext {
   brightness: number;
@@ -13,15 +15,11 @@ export interface LightContext extends LiveViewContext {
 
 export type LightEvent = "on" | "off" | "up" | "down" | "key_update";
 
-export type Params = { key: string };
-
-export class LightLiveViewComponent extends BaseLiveView<LightContext, Params>
-  implements LiveViewExternalEventListener<LightContext, LightEvent, Params> {
-  mount(
-    _params: LiveViewMountParams,
-    _session: Partial<SessionData>,
-    socket: LiveViewSocket<LightContext>,
-  ) {
+export class LightLiveViewComponent
+  extends BaseLiveView<LightContext, never>
+  implements LiveView<LightContext, never>, LiveViewExternalEventListener<LightContext, LightEvent, { key: string }>
+{
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LightContext>) {
     socket.pageTitle("Front Porch Light");
     socket.assign({ brightness: 10 });
   }
@@ -51,11 +49,7 @@ export class LightLiveViewComponent extends BaseLiveView<LightContext, Params>
     `;
   }
 
-  handleEvent(
-    event: LightEvent,
-    params: Params,
-    socket: LiveViewSocket<LightContext>,
-  ) {
+  handleEvent(event: LightEvent, params: { key: string }, socket: LiveViewSocket<LightContext>) {
     const { brightness } = socket.context;
     // map key_update to arrow keys
     const lightEvent = event === "key_update" ? params.key : event;

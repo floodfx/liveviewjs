@@ -1,19 +1,18 @@
 import { Application, nanoid, Router, send } from "./deps.ts";
-import { LiveViewRouter, MessageRouter } from "./build/liveview.mjs";
+import { LiveViewRouter, WsMessageRouter, SingleProcessPubSub } from "./liveviewjs.ts";
 
 import { configLiveViewHandler } from "./liveViewAppAdaptor.ts";
 import { rootTemplateRenderer } from "./liveViewRootTemplate.ts";
 import { DenoJwtSerDe } from "./serDe.ts";
-import { SingleProcessPubSub } from "./pubSub.ts";
+// import { SingleProcessPubSub } from "./pubSub.ts";
 import { DenoWsAdaptor } from "./wsAdaptor.ts";
 
-import { LightLiveViewComponent } from "./liveviews/light_liveview.ts";
+import { LightLiveViewComponent } from "./liveviewjs-examples/liveview-examples.mjs";
 
 const app = new Application();
 const router = new Router();
 
-const messageRouter = new MessageRouter(new DenoJwtSerDe(), new SingleProcessPubSub());
-const signingSecret = "my secret";
+const messageRouter = new WsMessageRouter(new DenoJwtSerDe(), new SingleProcessPubSub());
 const liveRouter: LiveViewRouter = {
   "/light": new LightLiveViewComponent(),
 };
@@ -42,7 +41,6 @@ router.get("/live/websocket", async (ctx) => {
       ev.data,
       liveRouter,
       id,
-      signingSecret,
     );
   };
   ws.onclose = async (ev) => {
@@ -54,7 +52,6 @@ router.get("/live/websocket", async (ctx) => {
 app.use(configLiveViewHandler(
   () => liveRouter,
   rootTemplateRenderer,
-  "signingSecret",
 ));
 
 app.use(router.routes());

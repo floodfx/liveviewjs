@@ -1,0 +1,65 @@
+{
+  "name": "liveviewjs-express-example",
+  "version": "0.0.1",
+  "description": "Example project showing how LiveViewJS integrates with Express",
+  "targets": {
+    "client": {
+      "source": "src/client/liveview.ts",
+      "context": "browser",
+      "distDir": "build/client"
+    }
+  },
+  "scripts": {
+    "examples": "npm run clean; npm run client:build; npm run server:build; nodemon -e js -w dist build/index.js",
+    "server:build": "tsc",
+    "server:watch": "tsc --watch",
+    "client:build": "npm run check; parcel build",
+    "client:watch": "parcel watch",
+    "check": "tsc --noEmit",
+    "clean": "rm -rf build"
+  },
+  "keywords": [
+    "liveviewjs",
+    "liveview",
+    "phoenix",
+    "typescript",
+    "javascript",
+    "express"
+  ],
+  "author": "Donnie Flood <donnie@floodfx.com>",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.19.1",
+    "express": "^4.17.2",
+    "express-session": "^1.17.2",
+    "http-errors": "^2.0.0",
+    "jsonwebtoken": "^8.5.1",
+    "liveviewjs": "file:../../liveviewjs-0.3.0-rc.1.tgz",
+    "liveviewjs-examples": "file:../examples/liveviewjs-examples-0.0.1.tgz",
+    "nanoid": "^3.2.0",
+    "node-fetch": "^2.6.7",
+    "nprogress": "^0.2.0",
+    "phoenix": "^1.6.6",
+    "phoenix_html": "^3.2.0",
+    "phoenix_live_view": "^0.17.6",
+    "ws": "^8.4.2",
+    "zod": "^3.11.6"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.19.2",
+    "@types/express": "^4.17.13",
+    "@types/express-session": "^1.17.4",
+    "@types/http-errors": "^1.8.1",
+    "@types/jsonwebtoken": "^8.5.8",
+    "@types/node": "^17.0.10",
+    "@types/node-fetch": "^2.6.0",
+    "@types/nprogress": "^0.2.0",
+    "@types/phoenix": "^1.5.4",
+    "@types/phoenix_live_view": "^0.15.1",
+    "@types/ws": "^8.2.2",
+    "nodemon": "^2.0.15",
+    "parcel": "^2.2.1",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.4"
+  }
+}
