@@ -1,4 +1,5 @@
 import { SerDe } from "../adaptor";
+import { WsAdaptor } from "../adaptor/websocket";
 import {
   LiveComponent,
   LiveComponentContext,
@@ -14,7 +15,6 @@ import { SessionData } from "../session";
 import { HtmlSafeString, Parts } from "../templates";
 import { deepDiff } from "../templates/diff";
 import { WsLiveViewSocket } from "./live_socket";
-import { PhxMessage } from "./message_router";
 import {
   PhxBlurPayload,
   PhxClickPayload,
@@ -28,11 +28,11 @@ import {
   PhxKeyDownPayload,
   PhxKeyUpPayload,
   PhxLivePatchIncoming,
+  PhxMessage,
   PhxOutgoingLivePatchPush,
   PhxOutgoingMessage,
 } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
-import { WsAdaptor } from "./wsAdaptor";
 
 /**
  * Data kept for each `LiveComponent` instance.
@@ -74,7 +74,7 @@ interface StatefulLiveComponentData<Context extends LiveComponentContext> {
  * `MessageRouter` is responsible for routing messages to the appropriate `LiveViewComponentManager`
  * based on the topic on the incoming socket messages.
  */
-export class LiveViewComponentManager {
+export class LiveViewManager {
   private connectionId: string;
   private joinId: string;
 
@@ -116,7 +116,7 @@ export class LiveViewComponentManager {
     // subscribe to events on connectionId which should just be
     // heartbeat messages
     const subId = this.pubSub.subscribe<PhxMessage>(connectionId, (data: PhxMessage) => this.handleSubscriptions(data));
-    // save subscription id for unsubscribing
+    // save subscription id for unsubscribing on shutdown
     this.subscriptionIds[connectionId] = subId;
   }
 
@@ -399,11 +399,7 @@ export class LiveViewComponentManager {
     await this.shutdown();
   }
 
-  public repeat(fn: () => void, intervalMillis: number) {
-    this.intervals.push(setInterval(fn, intervalMillis));
-  }
-
-  public async shutdown() {
+  private async shutdown() {
     try {
       // unsubscribe from PubSubs
       Object.entries(this.subscriptionIds).forEach(async ([topic, subscriptionId]) => {
@@ -416,6 +412,10 @@ export class LiveViewComponentManager {
     } catch (e) {
       // ignore errors
     }
+  }
+
+  private repeat(fn: () => void, intervalMillis: number) {
+    this.intervals.push(setInterval(fn, intervalMillis));
   }
 
   private async onPushPatch(path: string, params?: Record<string, string | number>, replaceHistory: boolean = false) {

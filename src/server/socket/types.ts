@@ -102,3 +102,22 @@ export type PhxBlurPayload = PhxEventPayload<"blur", { value: string }>;
 // initiated by calling this.pushEvent("edit"...) in client hook in liveview.js
 // {type: "hook", event: "edit", value: {id: "abc"}}
 export type PhxHookPayload = PhxEventPayload<"hook", Record<string, string>>;
+
+export type PhxMessage =
+  // incoming from client
+  | { type: "phx_join"; message: PhxJoinIncoming }
+  | { type: "heartbeat"; message: PhxHeartbeatIncoming }
+  | {
+      type: "event";
+      message: PhxIncomingMessage<
+        | PhxClickPayload
+        | PhxFormPayload
+        | PhxKeyDownPayload
+        | PhxKeyUpPayload
+        | PhxFocusPayload
+        | PhxBlurPayload
+        | PhxHookPayload
+      >;
+    }
+  | { type: "live_patch"; message: PhxLivePatchIncoming }
+  | { type: "phx_leave"; message: PhxIncomingMessage<{}> };

@@ -5,7 +5,6 @@ import { WebSocket } from "ws";
 import { BaseLiveView, LiveViewExternalEventListener, LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "..";
 import { LiveViewContext, StringPropertyValues } from "../component";
 import { html } from "../templates";
-import { MessageRouter } from "./message_router";
 import {
   PhxClickPayload,
   PhxFlash,
@@ -14,10 +13,11 @@ import {
   PhxJoinIncoming,
   PhxLivePatchIncoming,
 } from "./types";
+import { WsMessageRouter } from "./wsMessageRouter";
 
 describe("test message router", () => {
   it("onMessage unknown message throws unknown message type error", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     try {
       await mr.onMessage(ws, Buffer.from(JSON.stringify([])), router, "1234", "my signing string");
@@ -28,7 +28,7 @@ describe("test message router", () => {
   });
 
   it("onMessage valid phx_join with url", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" });
     await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string");
@@ -36,7 +36,7 @@ describe("test message router", () => {
   });
 
   it("onMessage valid phx_join with redirect", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phx_join = newPhxJoin("my csrf token", "my signing string", { redirect: "http://localhost:4444/test" });
     await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string");
@@ -44,7 +44,7 @@ describe("test message router", () => {
   });
 
   it("onMessage phx_join missing url or redirect", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phx_join = newPhxJoin("my csrf token", "my signing string", {});
     try {
@@ -56,7 +56,7 @@ describe("test message router", () => {
   });
 
   it("onMessage phx_join unrouted url", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/noroute" });
     try {
@@ -68,7 +68,7 @@ describe("test message router", () => {
   });
 
   it("onMessage valid heartbeat", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" });
     await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string");
@@ -80,7 +80,7 @@ describe("test message router", () => {
   });
 
   it("onMessage valid click event", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" });
     await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string");
@@ -102,7 +102,7 @@ describe("test message router", () => {
   });
 
   it("onMessage no join before click event so no socket send", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
@@ -120,7 +120,7 @@ describe("test message router", () => {
   });
 
   it("onMessage no join before live patch event so no socket send", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phxLivePatch: PhxLivePatchIncoming = [
       "4",
@@ -136,7 +136,7 @@ describe("test message router", () => {
   });
 
   it("onMessage valid live patch event", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" });
     await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string");
@@ -156,7 +156,7 @@ describe("test message router", () => {
   });
 
   it("onMessage valid leave event", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" });
     await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string");
@@ -169,7 +169,7 @@ describe("test message router", () => {
   });
 
   it("onMessage unknown leave event", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     // live patch requires a join first
     const phxLeave: PhxIncomingMessage<{}> = ["4", "8", "lv:phx-AAAAAAAA", "phx_leave", {}];
@@ -179,7 +179,7 @@ describe("test message router", () => {
   });
 
   it("onMessage unknown message throws error", async () => {
-    const mr = new MessageRouter();
+    const mr = new WsMessageRouter();
     const ws = mock<WebSocket>();
     // live patch requires a join first
     const phxUnknown = ["4", "8", "lv:phx-AAAAAAAA", "blahblah", {}];
@@ -192,7 +192,7 @@ describe("test message router", () => {
   });
 
   // it("shutdown unhealth component managers", async () => {
-  //   const mr = new MessageRouter()
+  //   const mr = new WsMessageRouter()
   //   const ws = mock<WebSocket>()
   //   const phx_join = newPhxJoin("my csrf token", "my signing string", { url: "http://localhost:4444/test" })
   //   await mr.onMessage(ws, Buffer.from(JSON.stringify(phx_join)), router, "1234", "my signing string")
