@@ -1,28 +1,66 @@
 import { updatedDiff } from "deep-object-diff";
 import { SomeZodObject } from "zod";
 
-// Validation errors for a type T should
-// be keyed by the field name
+/**
+ * Validation errors keyed by properties of T
+ */
 export type LiveViewChangesetErrors<T> = {
   [Property in keyof T]?: string;
 };
 
-// Changeset represents the state of a form
-// as it is validated and submitted by the user
+/**
+ * A changeset represents the transition from one state of a data model to an updated
+ * state and captures the changes, any validation errors that the changes may have had,
+ * whether the changes are valid, and the data represented by the changeset.  Changesets are
+ * useful for modeling data in HTML forms through their validation and submission.
+ */
 export interface LiveViewChangeset<T> {
-  action?: string; //
-  changes: Partial<T>; // diff between initial and updated
-  errors?: LiveViewChangesetErrors<T>; // validation errors by field name of T
-  data: T | Partial<T>; // merged data
-  valid: boolean; // true if no validation errors
+  /**
+   * Optional string representing the action occuring on the changeset. If the action is not
+   * present on a changeset, the validation rules are NOT applied.  This is useful for "empty"
+   * changesets used to model an empty form.
+   */
+  action?: string;
+  /**
+   * The properties of T that have changed between the initial state and the updated state.
+   */
+  changes: Partial<T>;
+  /**
+   * The validation errors keyed by the field names of T.
+   */
+  errors?: LiveViewChangesetErrors<T>;
+  /**
+   * The merged data between the initial state and the updated state.
+   */
+  data: T | Partial<T>;
+  /**
+   * Whether the changeset is valid.  A changeset is valid if there are no validation errors.  Note again,
+   * an undefined action means no validation rules will be applied and thus there will be no validation
+   * errors in that case and the changeset will be considered valid.
+   */
+  valid: boolean;
 }
 
+/**
+ * A factory for creating a changeset for a given existing data model, updated data model, and optional action.
+ */
 export type LiveViewChangesetFactory<T> = (
   existing: Partial<T>,
   newAttrs: Partial<T>,
   action?: string
 ) => LiveViewChangeset<T>;
 
+/**
+ * Generates a LiveViewChangesetFactory for the type T and the provided zod schema.  The provided schema
+ * and type must have the same properties and generally the type is infered from the schema using zod's
+ * infer.
+ * e.g.
+ *   const mySchema = zod.object({ name: zod.string() });
+ *   type myType = z.infer<typeof mySchema>;
+ *   const myFactory = newChangesetFactory<myType>(mySchema);
+ * @param schema the zod schema to use for validation
+ * @returns a LiveViewChangesetFactory for the provided schema and type
+ */
 export const newChangesetFactory = <T>(schema: SomeZodObject): LiveViewChangesetFactory<T> => {
   return (existing: Partial<T>, newAttrs: Partial<T>, action?: string): LiveViewChangeset<T> => {
     const merged = { ...existing, ...newAttrs };
