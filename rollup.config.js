@@ -6,13 +6,16 @@ import commonjs from "@rollup/plugin-commonjs";
 
 export default [
   {
+    external: ["zod"],
     input: './src/index.ts',
     output: {
       file: './build/liveview.js',
       format: 'cjs'
     },
     plugins: [
-      resolve(),
+      resolve({
+        preferBuiltins: true,
+      }),
       typescript({ tsconfig: './tsconfig.json',
         declarationDir: "./rollup",
         declaration: true,
@@ -21,6 +24,7 @@ export default [
     ],
   },
   {
+    external: ["zod"],
     input: './src/index.ts',
     output: {
       file: './build/liveview.mjs',
@@ -33,7 +37,9 @@ export default [
           return '/// <reference types="./liveview.d.ts" />';
         }
       },
-      resolve(),
+      resolve({
+        preferBuiltins: true,
+      }),
       typescript({ tsconfig: './tsconfig.json',
         declarationDir: "./rollup",
         declaration: true,
@@ -42,6 +48,7 @@ export default [
     ]
   },
   {
+    external: ["zod"],
     input: './build/rollup/server/index.d.ts',
     output: {
       file: './build/liveview.d.ts',

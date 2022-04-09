@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import EventEmitter from "events";
-import { Publisher, Subscriber, SubscriberFunction } from "./PubSub";
+import { Publisher, Subscriber, SubscriberFunction } from "./pubSub";
 
 /**
  * A PubSub implementation that uses the Node.js EventEmitter as a backend.

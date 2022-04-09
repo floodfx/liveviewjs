@@ -1,4 +1,4 @@
-import { Flash } from "../../component/flash";
+import { Flash } from "../../live/flash";
 import { html, HtmlSafeString } from "../htmlSafeString";
 
 export const live_flash = (flash: Flash | undefined, flashKey: string): HtmlSafeString => {

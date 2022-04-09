@@ -1,7 +1,6 @@
 import { BaseLiveComponent, LiveViewTemplate } from ".";
 import { html } from "..";
-import { HttpLiveComponentSocket, LiveComponentSocket, WsLiveComponentSocket } from "./live_component";
-import { LiveViewContext } from "./live_view";
+import { HttpLiveComponentSocket, LiveComponentSocket, WsLiveComponentSocket } from "./liveComponent";
 
 describe("test BaseLiveComponent", () => {
   it("mount returns context", () => {
@@ -34,7 +33,7 @@ describe("test BaseLiveComponent", () => {
     const socket = new HttpLiveComponentSocket<TestLVContext>("foo", { foo: "bar" });
     component.mount(socket);
     await component.update(socket);
-    await component.handleEvent("event", { foo: "baz" }, socket);
+    await component.handleEvent({ type: "event", foo: "baz" }, socket);
     expect(socket.context.foo).toEqual("bar");
     const view = await component.render(socket.context);
     expect(view.toString()).toEqual("<div>bar</div>");
@@ -78,7 +77,7 @@ describe("test BaseLiveComponent", () => {
     const socket = new WsLiveComponentSocket<TestLVContext>("foo", { foo: "bar" }, sendCallback, pushCallback);
     component.mount(socket);
     await component.update(socket);
-    await component.handleEvent("event", { foo: "baz" }, socket);
+    await component.handleEvent({ type: "event", foo: "baz" }, socket);
     expect(socket.context.foo).toEqual("bar");
     const view = await component.render(socket.context);
     expect(view.toString()).toEqual("<div>bar</div>");
@@ -100,7 +99,7 @@ describe("test BaseLiveComponent", () => {
   });
 });
 
-interface TestLVContext extends LiveViewContext {
+interface TestLVContext {
   foo: string;
 }
 
@@ -110,14 +109,14 @@ class TestLiveComponent extends BaseLiveComponent<TestLVContext> {
   }
 }
 
-interface TestLVPushAndSendContext extends LiveViewContext {
+interface TestLVPushAndSendContext {
   foo: string;
 }
 
 class TestLVPushAndSendComponent extends BaseLiveComponent<TestLVPushAndSendContext> {
   mount(socket: LiveComponentSocket<TestLVPushAndSendContext>): void {
-    socket.pushEvent("event", { data: "blah" });
-    socket.send("my_event");
+    socket.pushEvent({ type: "event", data: "blah" });
+    socket.send({ type: "my_event" });
   }
 
   render(ctx: TestLVPushAndSendContext): LiveViewTemplate {

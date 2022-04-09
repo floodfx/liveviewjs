@@ -1,11 +1,5 @@
 import { LiveViewTemplate } from ".";
-
-/**
- * Contexts can only be objects with string keys.
- */
-export interface LiveComponentContext {
-  [key: string]: unknown;
-}
+import { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveEvent } from "./liveView";
 
 export interface LiveComponentMeta {
   /**
@@ -24,7 +18,7 @@ export interface LiveComponentMeta {
  * state of the component.  Also provides a method for sending messages
  * internally to the parent `LiveView`.
  */
-export interface LiveComponentSocket<Context extends LiveComponentContext> {
+export interface LiveComponentSocket<TContext extends LiveContext = AnyLiveContext> {
   /**
    * The id of the parent `LiveView`
    */
@@ -38,84 +32,89 @@ export interface LiveComponentSocket<Context extends LiveComponentContext> {
   /**
    * Read-only, current state of the `LiveComponent`
    */
-  context: Context;
+  context: TContext;
   /**
-   * helper method to send messages to the parent `LiveView` - requires the parent
-   * `LiveView` to implement `handleInfo`.
+   * helper method to send messages to the parent `LiveView` via the `handleInfo`
    */
-  send: (event: unknown) => void;
+  send(info: AnyLiveInfo): void;
   /**
    * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
    */
-  assign: (context: Partial<Context>) => void;
+  assign(context: Partial<TContext>): void;
   /**
    * helper method to send events to Hooks on the parent `LiveView`
    */
-  pushEvent: (event: string, params: Record<string, any>) => void;
+  pushEvent(pushEvent: AnyLivePushEvent): void;
 }
 
-abstract class BaseLiveComponentSocket<Context extends LiveComponentContext> implements LiveComponentSocket<Context> {
+abstract class BaseLiveComponentSocket<TContext extends LiveContext = AnyLiveContext>
+  implements LiveComponentSocket<TContext>
+{
   readonly id: string;
-  private _context: Context;
+  private _context: TContext;
 
-  constructor(id: string, context: Context) {
+  constructor(id: string, context: TContext) {
     this.id = id;
     this._context = context;
   }
 
-  get context(): Context {
-    return this._context || {};
+  get context(): TContext {
+    return this._context || ({} as TContext);
   }
 
-  assign(context: Partial<Context>) {
+  assign(context: Partial<TContext>) {
     this._context = {
       ...this.context,
       ...context,
     };
   }
 
-  send(event: unknown) {
+  send(info: AnyLiveInfo) {
     // no-op
   }
 
-  pushEvent(event: string, params: Record<string, any>) {
+  pushEvent(pushEvent: AnyLivePushEvent) {
     // no-op
   }
 
   abstract connected: boolean;
 }
 
-export class HttpLiveComponentSocket<Context extends LiveComponentContext> extends BaseLiveComponentSocket<Context> {
+export class HttpLiveComponentSocket<
+  TContext extends LiveContext = AnyLiveContext
+> extends BaseLiveComponentSocket<TContext> {
   readonly connected: boolean = false;
 
-  constructor(id: string, context: Context) {
+  constructor(id: string, context: TContext) {
     super(id, context);
   }
 }
 
-export class WsLiveComponentSocket<Context extends LiveComponentContext> extends BaseLiveComponentSocket<Context> {
+export class WsLiveComponentSocket<
+  TContext extends LiveContext = AnyLiveContext
+> extends BaseLiveComponentSocket<TContext> {
   readonly connected: boolean = true;
 
-  private sendCallback: (event: unknown) => void;
-  private pushEventCallback: (event: string, params: Record<string, any>) => void;
+  private sendCallback: (info: AnyLiveInfo) => void;
+  private pushEventCallback: (pushEvent: AnyLivePushEvent) => void;
 
   constructor(
     id: string,
-    context: Context,
-    sendCallback: (event: unknown) => void,
-    pushEventCallback: (event: string, params: Record<string, any>) => void
+    context: TContext,
+    sendCallback: (info: AnyLiveInfo) => void,
+    pushEventCallback: (pushEvent: AnyLivePushEvent) => void
   ) {
     super(id, context);
     this.sendCallback = sendCallback;
     this.pushEventCallback = pushEventCallback;
   }
 
-  send(event: unknown) {
-    this.sendCallback(event);
+  send(info: AnyLiveInfo) {
+    this.sendCallback(info);
   }
 
-  pushEvent(event: string, params: Record<string, any>): void {
-    this.pushEventCallback(event, params);
+  pushEvent(pushEvent: AnyLivePushEvent): void {
+    this.pushEventCallback(pushEvent);
   }
 }
 
@@ -135,7 +134,10 @@ export class WsLiveComponentSocket<Context extends LiveComponentContext> extends
  * To make a `LiveComponent` stateful, you must pass an `id` to the `live_component` helper in the
  * `LiveView` template.
  */
-export interface LiveComponent<Context extends LiveComponentContext> {
+export interface LiveComponent<
+  TContext extends LiveContext = AnyLiveContext,
+  TEvents extends LiveEvent = AnyLiveEvent
+> {
   /**
    * `preload` is useful when multiple `LiveComponent`s of the same type are loaded
    * within the same `LiveView` and you want to preload data for all of them in batch.
@@ -151,7 +153,7 @@ export interface LiveComponent<Context extends LiveComponentContext> {
    *
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  mount(socket: LiveComponentSocket<Context>): void | Promise<void>;
+  mount(socket: LiveComponentSocket<TContext>): void | Promise<void>;
 
   /**
    * Allows the `LiveComponent` to update its stateful context.  This is called
@@ -166,7 +168,7 @@ export interface LiveComponent<Context extends LiveComponentContext> {
    * @param context the current state for this `LiveComponent`
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  update(socket: LiveComponentSocket<Context>): void | Promise<void>;
+  update(socket: LiveComponentSocket<TContext>): void | Promise<void>;
 
   /**
    * Renders the `LiveComponent` by returning a `LiveViewTemplate`.  Each time a
@@ -174,19 +176,14 @@ export interface LiveComponent<Context extends LiveComponentContext> {
    * @param context the current state for this `LiveComponent`
    * @param meta a `LiveComponentMeta` with additional meta data for this `LiveComponent`
    */
-  render(context: Context, meta: LiveComponentMeta): LiveViewTemplate;
+  render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 
   /**
-   *
-   * @param event the event name coming from the `LiveComponent`
-   * @param params a list of string-to-string key/value pairs related to the event
+   * Handles events from the `LiveView` initiated by the end-user
+   * @param event a `LiveEvent` received from client
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  handleEvent(
-    event: string,
-    params: Record<string, string>,
-    socket: LiveComponentSocket<Context>
-  ): void | Promise<void>;
+  handleEvent(event: TEvents, socket: LiveComponentSocket<TContext>): void | Promise<void>;
 }
 
 /**
@@ -197,22 +194,26 @@ export interface LiveComponent<Context extends LiveComponentContext> {
  * a stateful `LiveComponent` you most likely want to implement at least `mount` and
  * perhaps `update` as well.  See `LiveComponent` for more details.
  */
-export abstract class BaseLiveComponent<Context extends LiveComponentContext> implements LiveComponent<Context> {
+export abstract class BaseLiveComponent<
+  TContext extends LiveContext = AnyLiveContext,
+  TEvents extends LiveEvent = AnyLiveEvent
+> implements LiveComponent<TContext, TEvents>
+{
   // preload(contextsList: Context[]): Partial<Context>[] {
   //   return contextsList;
   // }
 
-  mount(socket: LiveComponentSocket<Context>) {
+  mount(socket: LiveComponentSocket<TContext>) {
     // no-op
   }
 
-  update(socket: LiveComponentSocket<Context>) {
+  update(socket: LiveComponentSocket<TContext>) {
     // no-op
   }
 
-  handleEvent(event: string, params: Record<string, string>, socket: LiveComponentSocket<Context>) {
+  handleEvent(event: TEvents, socket: LiveComponentSocket<TContext>) {
     // no-op
   }
 
-  abstract render(context: Context, meta: LiveComponentMeta): LiveViewTemplate;
+  abstract render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
