@@ -1,4 +1,14 @@
 import { escapehtml, join } from "..";
+import {
+  AnyLiveContext,
+  AnyLiveEvent,
+  BaseLiveComponent,
+  BaseLiveView,
+  LiveComponent,
+  LiveComponentMeta,
+  LiveViewMeta,
+  LiveViewTemplate,
+} from "../live";
 import { html, HtmlSafeString, safe } from "./index";
 
 describe("test escapeHtml", () => {
@@ -217,7 +227,39 @@ describe("test escapeHtml", () => {
       s: ["<div>", "</div>"],
     });
   });
+
+  it("live component parts renders", async () => {
+    const lv = new TestLiveView();
+    const res = await lv.render(
+      {},
+      {
+        csrfToken: "",
+        live_component: async (
+          liveComponent: LiveComponent<AnyLiveContext, AnyLiveEvent>,
+          params?: Partial<AnyLiveContext & { id: number }>
+        ) => {
+          return new HtmlSafeString(["1"], [], true);
+        },
+      }
+    );
+    expect(res.partsTree()).toEqual({
+      0: 1, // LiveComponents result in a single number
+      s: ["", ""],
+    });
+  });
 });
+
+class TestLiveComponent extends BaseLiveComponent {
+  render(context: AnyLiveContext, meta: LiveComponentMeta): LiveViewTemplate {
+    return html`<div>LiveComponent</div>`;
+  }
+}
+
+class TestLiveView extends BaseLiveView {
+  async render(context: AnyLiveContext, meta: LiveViewMeta): Promise<LiveViewTemplate> {
+    return html`${await meta.live_component(new TestLiveComponent(), { id: 1 })}`;
+  }
+}
 
 interface Store {
   name: string;

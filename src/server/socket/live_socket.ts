@@ -1,4 +1,5 @@
-import { LiveViewContext } from "../component";
+import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext } from "../live";
+
 /**
  * Main interface to update state, interact, manage, message, and otherwise
  * manage the lifecycle of a `LiveView`.
@@ -8,7 +9,7 @@ import { LiveViewContext } from "../component";
  * context (via `context`) as well as various methods update the `LiveView` including
  * `assign` which updates the `LiveView`'s context (i.e. state).
  */
-export interface LiveViewSocket<Context extends LiveViewContext> {
+export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
   /**
    * The id of the `LiveView` (same as the `phx_join` id)
    */
@@ -21,12 +22,12 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
   /**
    * The current state of the `LiveView`
    */
-  context: Context;
+  context: TContext;
   /**
    * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
    * @param context you can pass a partial of the current context to update
    */
-  assign(context: Partial<Context>): void;
+  assign(context: Partial<TContext>): void;
   /**
    * Marks any set properties as temporary and will be reset to the given
    * value after the next render cycle.  Typically used to ensure large but
@@ -34,7 +35,7 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
    *
    * @param context a partial of the context that should be temporary and the value to reset it to
    */
-  tempAssign(context: Partial<Context>): void;
+  tempAssign(context: Partial<TContext>): void;
   /**
    * Updates the `<title>` tag of the `LiveView` page.  Requires using the
    * `live_title` helper in rendering the page.
@@ -50,7 +51,7 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
    * @param event the name of the event to push to the client
    * @param params the data to pass to the client
    */
-  pushEvent(event: string, params: Record<string, any>): void;
+  pushEvent(pushEvent: AnyLivePushEvent): void;
   /**
    * Updates the browser's URL with the given path and query parameters.
    *
@@ -90,7 +91,7 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
    *
    * @param event the event to send to `handleInfo`
    */
-  send(event: unknown): void;
+  send(info: AnyLiveInfo): void;
   /**
    * Subscribes to the given topic using pub/sub.  Any events published to the topic
    * will be received by the `LiveView` instance via `handleEvent`.
@@ -100,27 +101,25 @@ export interface LiveViewSocket<Context extends LiveViewContext> {
   subscribe(topic: string): void;
 }
 
-export interface PartialLiveViewSocket<Context extends LiveViewContext> extends LiveViewSocket<Context> {}
-
-abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements LiveViewSocket<Context> {
+abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext> implements LiveViewSocket<TContext> {
   abstract connected: boolean;
   abstract id: string;
 
-  private _context: Context;
-  private _tempContext: Partial<Context> = {}; // values to reset the context to post render cycle
+  private _context: TContext;
+  private _tempContext: Partial<TContext> = {}; // values to reset the context to post render cycle
 
-  get context(): Context {
-    return this._context || ({} as Context);
+  get context(): TContext {
+    return this._context || ({} as TContext);
   }
 
-  assign(context: Partial<Context>) {
+  assign(context: Partial<TContext>) {
     this._context = {
       ...this.context,
       ...context,
     };
   }
 
-  tempAssign(tempContext: Partial<Context>) {
+  tempAssign(tempContext: Partial<TContext>) {
     this._tempContext = {
       ...this._tempContext,
       ...tempContext,
@@ -130,7 +129,7 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
   pageTitle(newPageTitle: string) {
     // no-op
   }
-  pushEvent(event: string, params: Record<string, any>) {
+  pushEvent(pushEvent: AnyLivePushEvent) {
     // no-op
   }
   pushPatch(path: string, params?: Record<string, string | number>, replaceHistory?: boolean) {
@@ -145,7 +144,7 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
   repeat(fn: () => void, intervalMillis: number) {
     // no-op
   }
-  send(event: unknown) {
+  send(info: AnyLiveInfo) {
     // no-op
   }
   subscribe(topic: string) {
@@ -163,7 +162,7 @@ abstract class BaseLiveViewSocket<Context extends LiveViewContext> implements Li
  * Used to render Http requests for `LiveView`s.  Only support setting the context via
  * `assign` and reading the context via `context`.
  */
-export class HttpLiveViewSocket<Context extends LiveViewContext> extends BaseLiveViewSocket<Context> {
+export class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
   readonly id: string;
   readonly connected: boolean = false;
 
@@ -198,7 +197,7 @@ export class HttpLiveViewSocket<Context extends LiveViewContext> extends BaseLiv
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
  */
-export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveViewSocket<Context> {
+export class WsLiveViewSocket extends BaseLiveViewSocket {
   readonly id: string;
   readonly connected: boolean = true;
 
@@ -207,7 +206,7 @@ export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveV
 
   // callbacks to the ComponentManager
   private pageTitleCallback: (newPageTitle: string) => void;
-  private pushEventCallback: (event: string, params: Record<string, any>) => void;
+  private pushEventCallback: (pushEvent: AnyLivePushEvent) => void;
   private pushPatchCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void;
   private pushRedirectCallback: (
     path: string,
@@ -216,18 +215,18 @@ export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveV
   ) => void;
   private putFlashCallback: (key: string, value: string) => void;
   private repeatCallback: (fn: () => void, intervalMillis: number) => void;
-  private sendCallback: (event: unknown) => void;
+  private sendCallback: (info: AnyLiveInfo) => void;
   private subscribeCallback: (topic: string) => void;
 
   constructor(
     id: string,
     pageTitleCallback: (newPageTitle: string) => void,
-    pushEventCallback: (event: string, params: Record<string, any>) => void,
+    pushEventCallback: (pushEvent: AnyLivePushEvent) => void,
     pushPatchCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void,
     pushRedirectCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void,
     putFlashCallback: (key: string, value: string) => void,
     repeatCallback: (fn: () => void, intervalMillis: number) => void,
-    sendCallback: (event: unknown) => void,
+    sendCallback: (info: AnyLiveInfo) => void,
     subscribeCallback: (topic: string) => void
   ) {
     super();
@@ -247,8 +246,8 @@ export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveV
   pageTitle(newPageTitle: string) {
     this.pageTitleCallback(newPageTitle);
   }
-  pushEvent(event: string, params: Record<string, any>) {
-    this.pushEventCallback(event, params);
+  pushEvent(pushEvent: AnyLivePushEvent) {
+    this.pushEventCallback(pushEvent);
   }
   pushPatch(path: string, params?: Record<string, string | number>, replaceHistory: boolean = false) {
     this.pushPatchCallback(path, params, replaceHistory);
@@ -259,8 +258,8 @@ export class WsLiveViewSocket<Context extends LiveViewContext> extends BaseLiveV
   repeat(fn: () => void, intervalMillis: number) {
     this.repeatCallback(fn, intervalMillis);
   }
-  send(event: unknown) {
-    this.sendCallback(event);
+  send(info: AnyLiveInfo) {
+    this.sendCallback(info);
   }
   subscribe(topic: string) {
     this.subscribeCallback(topic);

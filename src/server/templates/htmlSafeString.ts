@@ -16,8 +16,6 @@ const ENTITIES: {
   "=": "&#x3D;",
 };
 
-const inspect = Symbol.for("nodejs.util.inspect.custom");
-
 const ENT_REGEX = new RegExp(Object.keys(ENTITIES).join("|"), "g");
 
 export function join(array: (string | HtmlSafeString)[], separator: string | HtmlSafeString = "") {
@@ -29,6 +27,9 @@ export function join(array: (string | HtmlSafeString)[], separator: string | Htm
 }
 
 export function safe(value: unknown) {
+  if (value instanceof HtmlSafeString) {
+    return value;
+  }
   return new HtmlSafeString([String(value)], []);
 }
 

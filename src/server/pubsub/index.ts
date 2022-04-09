@@ -1,2 +1,2 @@
-export * from "./PubSub";
-export * from "./SingleProcessPubSub";
+export * from "./pubSub";
+export * from "./singleProcessPubSub";

@@ -1,8 +1,8 @@
 import { LiveViewRouter } from "..";
 import { SerDe } from "../adaptor";
 import { WsAdaptor } from "../adaptor/websocket";
-import { LiveViewTemplate } from "../component";
-import { PubSub } from "../pubsub/PubSub";
+import { LiveViewTemplate } from "../live";
+import { PubSub } from "../pubsub/pubSub";
 import { SessionData } from "../session";
 import { LiveViewManager } from "./liveViewManager";
 import { PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming } from "./types";

@@ -1,11 +1,4 @@
-import {
-  HttpLiveComponentSocket,
-  LiveComponent,
-  LiveComponentContext,
-  LiveView,
-  LiveViewContext,
-  LiveViewTemplate,
-} from "../component";
+import { AnyLiveContext, HttpLiveComponentSocket, LiveComponent, LiveView, LiveViewTemplate } from "../live";
 import { SessionData } from "../session";
 import { HttpLiveViewSocket } from "../socket/live_socket";
 import { html, safe } from "../templates";
@@ -44,13 +37,9 @@ export interface HttpRequestAdaptor {
    */
   getSessionData: () => SessionData;
   /**
-   * Extract request parameters (aka query string parameters) from the HTTP request.
-   */
-  getRequestParameters: () => { [key: string]: any };
-  /**
    * Expose the HTTP request URL
    */
-  getRequestUrl: () => string;
+  getRequestUrl: () => URL;
   /**
    * Expose the path of the HTTP request URL
    */
@@ -81,7 +70,7 @@ export interface HttpRequestAdaptor {
 export const handleHttpLiveView = async (
   idGenerator: IdGenerator,
   csrfGenerator: CsrfGenerator,
-  liveView: LiveView<LiveViewContext, unknown>,
+  liveView: LiveView,
   adaptor: HttpRequestAdaptor,
   rootTemplateRenderer: (
     pageTitleDefault: PageTitleDefaults,
@@ -91,7 +80,7 @@ export const handleHttpLiveView = async (
   pageTitleDefaults?: PageTitleDefaults,
   liveViewTemplateRenderer?: (session: SessionData, liveViewContent: LiveViewTemplate) => LiveViewTemplate
 ) => {
-  const { getSessionData, getRequestParameters, getRequestUrl, onRedirect } = adaptor;
+  const { getSessionData, getRequestUrl, onRedirect } = adaptor;
   // new LiveViewId for each request
   const liveViewId = idGenerator();
 
@@ -102,7 +91,7 @@ export const handleHttpLiveView = async (
   }
 
   // prepare a http socket for the `LiveView` render lifecycle: mount => handleParams => render
-  const liveViewSocket = new HttpLiveViewSocket<LiveViewContext>(liveViewId);
+  const liveViewSocket = new HttpLiveViewSocket<AnyLiveContext>(liveViewId);
 
   // execute the `LiveView`'s `mount` function, passing in the data from the HTTP request
   await liveView.mount({ _csrf_token: sessionData._csrf_token, _mounts: -1 }, { ...sessionData }, liveViewSocket);
@@ -115,7 +104,8 @@ export const handleHttpLiveView = async (
   }
 
   // execute the `LiveView`'s `handleParams` function, passing in the data from the HTTP request
-  await liveView.handleParams(getRequestParameters(), getRequestUrl(), liveViewSocket);
+  const url = getRequestUrl();
+  await liveView.handleParams(url, liveViewSocket);
 
   // check for redirects in `handleParams`
   if (liveViewSocket.redirect) {
@@ -129,18 +119,15 @@ export const handleHttpLiveView = async (
   const view = await liveView.render(liveViewSocket.context, {
     csrfToken: sessionData.csrfToken,
     async live_component(
-      liveComponent: LiveComponent<LiveComponentContext>,
-      params?: Partial<LiveComponentContext & { id: string | number }>
+      liveComponent: LiveComponent,
+      params?: Partial<unknown & { id: string | number }>
     ): Promise<LiveViewTemplate> {
       // params may be empty
       params = params ?? {};
       delete params.id; // remove id before passing to socket
 
       // prepare a http socket for the `LiveComponent` render lifecycle: mount => update => render
-      const lcSocket = new HttpLiveComponentSocket<LiveComponentContext>(
-        liveViewId,
-        params as unknown as LiveComponentContext
-      );
+      const lcSocket = new HttpLiveComponentSocket(liveViewId, params);
 
       // pass params provided in `LiveView.render` to the `LiveComponent` socket
       lcSocket.assign(params);

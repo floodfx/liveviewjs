@@ -11,9 +11,16 @@
   "files.exclude": {
     "**/.git": true,
     "**/.DS_Store": true,
-    // "**/node_modules": true,
     "env*": true
   },
   "css.customData": [".vscode/css_custom_data.json"],
-  "editor.formatOnSave": true
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true,
+      "source.fixAll": true
+    }
+  }
 }

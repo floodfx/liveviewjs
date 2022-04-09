@@ -1,8 +1,7 @@
-import { SessionData } from "express-session";
 import { BaseLiveView, LiveViewMountParams, LiveViewTemplate } from ".";
 import { html } from "..";
+import { SessionData } from "../session";
 import { HttpLiveViewSocket, LiveViewSocket } from "../socket/live_socket";
-import { LiveViewContext } from "./live_view";
 
 describe("test basic component", () => {
   it("mount returns context", () => {
@@ -16,7 +15,7 @@ describe("test basic component", () => {
     const component = new LiveViewComponent();
     const socket = new HttpLiveViewSocket<Ctx>("id");
     component.mount({ _csrf_token: "foo", _mounts: -1 }, {}, socket);
-    await component.handleParams({ foo: "baz" }, "", socket);
+    await component.handleParams(new URL("http://example.com/?foo=baz"), socket);
     expect(socket.context.foo).toEqual("bar");
   });
 
@@ -24,17 +23,17 @@ describe("test basic component", () => {
     const component = new LiveViewComponent();
     const socket = new HttpLiveViewSocket<Ctx>("id");
     component.mount({ _csrf_token: "foo", _mounts: -1 }, {}, socket);
-    await component.handleParams({ foo: "baz" }, "", socket);
+    await component.handleParams(new URL("http://example.com/?foo=baz"), socket);
     const view = await component.render(socket.context);
     expect(view.toString()).toEqual("<div>bar</div>");
   });
 });
 
-interface Ctx extends LiveViewContext {
+interface Ctx {
   foo: string;
 }
 
-class LiveViewComponent extends BaseLiveView<Ctx, {}> {
+class LiveViewComponent extends BaseLiveView<Ctx> {
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Ctx>) {
     socket.assign({ foo: "bar" });
   }

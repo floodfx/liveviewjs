@@ -1,8 +1,8 @@
 import { HtmlSafeString } from "../templates";
-import { LiveView, LiveViewContext } from "./live_view";
+import { LiveView } from "./liveView";
 
 export interface LiveViewTemplate extends HtmlSafeString {}
 
 export interface LiveViewRouter {
-  [key: string]: LiveView<LiveViewContext, unknown>;
+  [key: string]: LiveView;
 }
