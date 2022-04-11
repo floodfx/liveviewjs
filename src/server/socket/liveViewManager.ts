@@ -127,7 +127,7 @@ export class LiveViewManager {
     this.liveViewRootTemplate = liveViewRootTemplate;
 
     // subscribe to events for a given connectionId which should only be heartbeat messages
-    const subId = this.pubSub.subscribe<PhxMessage>(connectionId, this.handleSubscriptions);
+    const subId = this.pubSub.subscribe<PhxMessage>(connectionId, this.handleSubscriptions.bind(this));
     // save subscription id for unsubscribing on shutdown
     this.subscriptionIds[connectionId] = subId;
   }
@@ -170,7 +170,7 @@ export class LiveViewManager {
       // otherwise set the joinId as the phx topic
       this.joinId = topic;
       // subscribe to events on the joinId which includes events, live_patch, and phx_leave messages
-      const subId = this.pubSub.subscribe<PhxMessage>(this.joinId, this.handleSubscriptions);
+      const subId = this.pubSub.subscribe<PhxMessage>(this.joinId, this.handleSubscriptions.bind(this));
       // again save subscription id for unsubscribing
       this.subscriptionIds[this.joinId] = subId;
 
@@ -213,7 +213,7 @@ export class LiveViewManager {
    * @param phxMessage
    */
   public async handleSubscriptions(phxMessage: PhxMessage) {
-    // console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
+    console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
     try {
       const { type } = phxMessage;
       switch (type) {
