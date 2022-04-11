@@ -5,7 +5,7 @@ import { LiveViewTemplate } from "../live";
 import { PubSub } from "../pubsub/pubSub";
 import { SessionData } from "../session";
 import { LiveViewManager } from "./liveViewManager";
-import { PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming } from "./types";
+import { PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxProtocol } from "./types";
 
 export class WsMessageRouter {
   private serDe: SerDe;
@@ -78,7 +78,7 @@ export class WsMessageRouter {
     connectionId: string
   ) {
     // use url to route join request to component
-    const [joinRef, messageRef, topic, event, payload] = message;
+    const payload = message[PhxProtocol.payload];
     const { url: urlString, redirect: redirectString } = payload;
     const joinUrl = urlString || redirectString;
     if (!joinUrl) {
