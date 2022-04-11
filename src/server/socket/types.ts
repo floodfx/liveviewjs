@@ -1,6 +1,6 @@
 import { LiveViewMountParams } from "..";
 
-export enum PhxSocketProtocolNames {
+export enum PhxProtocol {
   joinRef = 0,
   messageRef,
   topic,

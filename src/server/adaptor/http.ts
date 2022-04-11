@@ -1,6 +1,6 @@
 import { AnyLiveContext, HttpLiveComponentSocket, LiveComponent, LiveView, LiveViewTemplate } from "../live";
 import { SessionData } from "../session";
-import { HttpLiveViewSocket } from "../socket/live_socket";
+import { HttpLiveViewSocket } from "../socket/liveSocket";
 import { html, safe } from "../templates";
 import { PageTitleDefaults } from "../templates/helpers/page_title";
 

@@ -1,3 +1,3 @@
 export * from "./liveViewManager";
-export * from "./live_socket";
+export * from "./liveSocket";
 export * from "./wsMessageRouter";
