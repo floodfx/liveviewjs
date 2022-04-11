@@ -10,11 +10,11 @@ import { Publisher, Subscriber, SubscriberFunction } from "./pubSub";
  */
 const eventEmitter = new EventEmitter(); // use this singleton for all pubSub events
 
-export class SingleProcessPubSub<T> implements Subscriber, Publisher {
+export class SingleProcessPubSub implements Subscriber, Publisher {
   private subscribers: Record<string, SubscriberFunction<any>> = {};
 
   public async subscribe<T>(topic: string, subscriber: SubscriberFunction<T>): Promise<string> {
-    await eventEmitter.on(topic, subscriber);
+    await eventEmitter.addListener(topic, subscriber);
     // store connection id for unsubscribe and return for caller
     const subId = crypto.randomBytes(10).toString("hex");
     this.subscribers[subId] = subscriber;
@@ -28,7 +28,7 @@ export class SingleProcessPubSub<T> implements Subscriber, Publisher {
   public async unsubscribe(topic: string, subscriberId: string) {
     // get subscriber function from id
     const subscriber = this.subscribers[subscriberId];
-    await eventEmitter.off(topic, subscriber);
+    await eventEmitter.removeListener(topic, subscriber);
     // remove subscriber from subscribers
     delete this.subscribers[subscriberId];
   }

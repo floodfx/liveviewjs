@@ -60,7 +60,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
    * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
    */
   // pushPatch(path: string, params: Record<string, string | number>): void;
-  pushPatch(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
+  pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
 
   /**
    * Shutdowns the current `LiveView` and load another `LiveView` in its place without reloading the
@@ -71,7 +71,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
    * @param params the query params to update the path with
    * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
    */
-  pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
+  pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
   /**
    * Add flash to the socket for a given key and value.
    * @param key
@@ -132,10 +132,10 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext>
   pushEvent(pushEvent: AnyLivePushEvent) {
     // no-op
   }
-  pushPatch(path: string, params?: Record<string, string | number>, replaceHistory?: boolean) {
+  pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean) {
     // no-op
   }
-  pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean) {
+  pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean) {
     // no-op
   }
   putFlash(key: string, value: string) {
@@ -176,17 +176,8 @@ export class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
     return this._redirect;
   }
 
-  pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void {
-    let stringParams: string | undefined;
-    const urlParams = new URLSearchParams();
-    if (params && Object.keys(params).length > 0) {
-      for (const [key, value] of Object.entries(params)) {
-        urlParams.set(key, String(value));
-      }
-      stringParams = urlParams.toString();
-    }
-
-    const to = stringParams ? `${path}?${stringParams}` : path;
+  pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void {
+    const to = params ? `${path}?${params}` : path;
     this._redirect = {
       to,
       replace: replaceHistory || false,
@@ -207,12 +198,8 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
   // callbacks to the ComponentManager
   private pageTitleCallback: (newPageTitle: string) => void;
   private pushEventCallback: (pushEvent: AnyLivePushEvent) => void;
-  private pushPatchCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void;
-  private pushRedirectCallback: (
-    path: string,
-    params?: Record<string, string | number>,
-    replaceHistory?: boolean
-  ) => void;
+  private pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void;
+  private pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void;
   private putFlashCallback: (key: string, value: string) => void;
   private repeatCallback: (fn: () => void, intervalMillis: number) => void;
   private sendCallback: (info: AnyLiveInfo) => void;
@@ -222,8 +209,8 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
     id: string,
     pageTitleCallback: (newPageTitle: string) => void,
     pushEventCallback: (pushEvent: AnyLivePushEvent) => void,
-    pushPatchCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void,
-    pushRedirectCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void,
+    pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void,
+    pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void,
     putFlashCallback: (key: string, value: string) => void,
     repeatCallback: (fn: () => void, intervalMillis: number) => void,
     sendCallback: (info: AnyLiveInfo) => void,
@@ -249,10 +236,10 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
   pushEvent(pushEvent: AnyLivePushEvent) {
     this.pushEventCallback(pushEvent);
   }
-  pushPatch(path: string, params?: Record<string, string | number>, replaceHistory: boolean = false) {
+  pushPatch(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
     this.pushPatchCallback(path, params, replaceHistory);
   }
-  pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory: boolean = false) {
+  pushRedirect(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
     this.pushRedirectCallback(path, params, replaceHistory);
   }
   repeat(fn: () => void, intervalMillis: number) {

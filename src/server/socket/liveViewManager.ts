@@ -1,9 +1,12 @@
 import { SerDe } from "../adaptor";
 import { WsAdaptor } from "../adaptor/websocket";
 import {
+  AnyLiveContext,
   AnyLiveEvent,
+  AnyLiveInfo,
   AnyLivePushEvent,
   LiveComponent,
+  LiveContext,
   LiveView,
   LiveViewMeta,
   LiveViewTemplate,
@@ -14,7 +17,7 @@ import { PubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { HtmlSafeString, Parts, safe } from "../templates";
 import { deepDiff } from "../templates/diff";
-import { WsLiveViewSocket } from "./live_socket";
+import { WsLiveViewSocket } from "./liveSocket";
 import {
   PhxBlurPayload,
   PhxClickPayload,
@@ -31,8 +34,18 @@ import {
   PhxMessage,
   PhxOutgoingLivePatchPush,
   PhxOutgoingMessage,
+  PhxProtocol,
 } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
+
+/**
+ * Add structuredClone type until makes it to latest @types/node
+ * See: https://github.com/DefinitelyTyped/DefinitelyTyped/pull/59434/files
+ */
+declare function structuredClone<T>(
+  value: T,
+  transfer?: { transfer: ReadonlyArray<import("worker_threads").TransferListItem> }
+): T;
 
 /**
  * Data kept for each `LiveComponent` instance.
@@ -91,7 +104,6 @@ export class LiveViewManager {
   private csrfToken?: string;
 
   private _events: AnyLivePushEvent[] = [];
-  private eventAdded: boolean = false;
 
   private _pageTitle: string | undefined;
   private pageTitleChanged: boolean = false;
@@ -114,21 +126,30 @@ export class LiveViewManager {
     this.pubSub = pubSub;
     this.liveViewRootTemplate = liveViewRootTemplate;
 
-    // subscribe to events on connectionId which should just be
-    // heartbeat messages
-    const subId = this.pubSub.subscribe<PhxMessage>(connectionId, (data: PhxMessage) => this.handleSubscriptions(data));
+    // subscribe to events for a given connectionId which should only be heartbeat messages
+    const subId = this.pubSub.subscribe<PhxMessage>(connectionId, this.handleSubscriptions);
     // save subscription id for unsubscribing on shutdown
     this.subscriptionIds[connectionId] = subId;
   }
 
+  /**
+   * The `phx_join` event is the initial connection between the client and the server and initializes the
+   * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
+   * future client interactions.
+   * @param message a `PhxJoinIncoming` message
+   */
   async handleJoin(message: PhxJoinIncoming) {
     try {
-      const [joinRef, messageRef, topic, event, payload] = message;
-      const { url: urlString, redirect: redirectString } = payload;
-      const joinUrl = urlString || redirectString;
-      // checked one of these was defined in MessageRouter
-      const url = new URL(joinUrl!);
+      const payload = message[PhxProtocol.payload];
+      const topic = message[PhxProtocol.topic];
 
+      // figure out if we are using url or redirect for join URL
+      const { url: urlString, redirect: redirectString } = payload;
+      if (urlString === undefined && redirectString === undefined) {
+        throw new Error("Join message must have either a url or redirect property");
+      }
+      // checked one of these was defined in MessageRouter
+      const url = new URL((urlString || redirectString)!);
       // save base for possible pushPatch base for URL
       this.urlBase = `${url.protocol}//${url.host}`;
 
@@ -137,89 +158,94 @@ export class LiveViewManager {
       // set component manager csfr token
       this.csrfToken = payloadParams._csrf_token;
 
-      try {
-        this.session = await this.serDe.deserialize<SessionData>(payloadSession);
-        this.session.flash = new Flash(Object.entries(this.session.flash || {}));
-
-        // compare sesison csrfToken with csrfToken from payload
-        if (this.session._csrf_token !== this.csrfToken) {
-          // if session csrfToken does not match payload csrfToken, reject join
-          console.error("Rejecting join due to mismatched csrfTokens", this.session._csrf_token, this.csrfToken);
-          return;
-        }
-      } catch (e) {
-        console.error("Error decoding session", e);
+      // attempt to deserialize session
+      this.session = await this.serDe.deserialize<SessionData>(payloadSession);
+      this.session.flash = new Flash(Object.entries(this.session.flash || {}));
+      // if session csrfToken does not match payload csrfToken, reject join
+      if (this.session._csrf_token !== this.csrfToken) {
+        console.error("Rejecting join due to mismatched csrfTokens", this.session._csrf_token, this.csrfToken);
         return;
       }
 
+      // otherwise set the joinId as the phx topic
       this.joinId = topic;
-      // subscribe to events on the socketId which includes
-      // events, live_patch, and phx_leave messages
-      const subId = this.pubSub.subscribe<PhxMessage>(this.joinId, (data: PhxMessage) =>
-        this.handleSubscriptions(data)
-      );
+      // subscribe to events on the joinId which includes events, live_patch, and phx_leave messages
+      const subId = this.pubSub.subscribe<PhxMessage>(this.joinId, this.handleSubscriptions);
       // again save subscription id for unsubscribing
       this.subscriptionIds[this.joinId] = subId;
 
-      // create the liveViewSocket now
+      // run initial lifecycle steps for the liveview: mount => handleParams
       this.socket = this.newLiveViewSocket();
-
-      // initial lifecycle steps mount => handleParams => render
       await this.liveView.mount(payloadParams, this.session, this.socket);
       await this.liveView.handleParams(url, this.socket);
+
+      // now the socket context had a chance to be updated, we run the render steps
+      // step 1: render the `LiveView`
       let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
-
-      // wrap in root template if there is one
+      // step 2: if provided, wrap the rendered `LiveView` inside the root template
       view = await this.maybeWrapInRootTemplate(view);
-
-      // add `LiveComponent` to the render tree
+      // step 3: add any `LiveComponent` renderings to the parts tree
       let rendered = this.maybeAddLiveComponentsToParts(view.partsTree());
-
-      // change the page title if it has been set
+      // step 4: if set, add the page title to the parts tree
       rendered = this.maybeAddPageTitleToParts(rendered);
+      // step 5: if added, add events to the parts tree
       rendered = this.maybeAddEventsToParts(rendered);
 
-      // send full view parts (statics & dynaimcs back)
+      // reply to the join message with the rendered parts tree
       const replyPayload = {
         response: {
           rendered,
         },
         status: "ok",
       };
-
       this.sendPhxReply(newPhxReply(message, replyPayload));
 
-      // remove temp data
+      // remove temp data from the context
       this.socket.updateContextWithTempAssigns();
     } catch (e) {
       console.error("Error handling join", e);
     }
   }
 
+  /**
+   * Every event other than `phx_join` that is received over the connected WebSocket are passed into this
+   * method and then dispatched the appropriate handler based on the message type.
+   * @param phxMessage
+   */
   public async handleSubscriptions(phxMessage: PhxMessage) {
     // console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
-    const { type } = phxMessage;
-    if (type === "heartbeat") {
-      this.onHeartbeat(phxMessage.message);
-    } else if (type === "event") {
-      await this.onEvent(phxMessage.message);
-    } else if (type === "live_patch") {
-      await this.onLivePatch(phxMessage.message);
-    } else if (type === "phx_leave") {
-      this.onPhxLeave(phxMessage.message);
-    } else {
-      console.error(
-        "Unknown message type",
-        type,
-        phxMessage,
-        " on connectionId:",
-        this.connectionId,
-        " socketId:",
-        this.joinId
-      );
+    try {
+      const { type } = phxMessage;
+      switch (type) {
+        case "heartbeat":
+          this.onHeartbeat(phxMessage.message);
+          break;
+        case "event":
+          await this.onEvent(phxMessage.message);
+          break;
+        case "live_patch":
+          await this.onLivePatch(phxMessage.message);
+          break;
+        case "phx_leave":
+          await this.onPhxLeave(phxMessage.message);
+          break;
+        default:
+          console.error(
+            `Unknown message type:"${type}", message:"${JSON.stringify(phxMessage)}" on connectionId:"${
+              this.connectionId
+            }" and joinId:"${this.joinId}"`
+          );
+      }
+    } catch (e) {
+      console.error("Error handling subscription", e);
     }
   }
 
+  /**
+   * Any message of type `event` is passed into this method and then handled based on the payload details of
+   * the message including: click, form, key, blur/focus, and hook events.
+   * @param message a `PhxEventIncoming` message with a different payload depending on the event type
+   */
   public async onEvent(
     message: PhxIncomingMessage<
       | PhxClickPayload
@@ -231,125 +257,179 @@ export class LiveViewManager {
       | PhxHookPayload
     >
   ) {
-    const [joinRef, messageRef, topic, _, payload] = message;
-    const { type, event, cid } = payload;
+    try {
+      const payload = message[PhxProtocol.payload];
+      const { type, event, cid } = payload;
 
-    // click and form events have different value in their payload
-    // TODO - handle uploads
-    let value: Record<string, string>;
-    switch (type) {
-      case "click":
-      case "keyup":
-      case "keydown":
-      case "blur":
-      case "focus":
-      case "hook":
-        value = payload.value;
-        break;
-      case "form":
-        // @ts-ignore - URLSearchParams has an entries method but not typed
-        value = Object.fromEntries(new URLSearchParams(payload.value));
-        // TODO - check value for _csrf_token here from phx_submit and validate against session csrf?
-        // TODO - check for _target variable from phx_change here and remove it from value?
-        break;
-      default:
-        console.error("Unknown event type", type);
-        return;
-    }
-    const anEvent: AnyLiveEvent = {
-      type: event,
-      ...value,
-    };
-
-    // determine if event is for `LiveComponent`
-    if (cid !== undefined) {
-      // console.log("LiveComponent event", type, cid, event, value);
-      // find stateful component data by cid
-      const statefulComponent = Object.values(this.statefulLiveComponents).find((c) => c.cid === cid);
-      if (statefulComponent) {
-        const { componentClass, context: oldContext, parts: oldParts, compoundId } = statefulComponent;
-        // call event handler on stateful component instance
-        const liveComponent = this.statefuleLiveComponentInstances[componentClass];
-        if (liveComponent) {
-          // socker for this live component instance
-          // @ts-ignore
-          const lcSocket = this.newLiveComponentSocket(structuredClone(oldContext));
-
-          // run handleEvent and render then update context for cid
-          await liveComponent.handleEvent(anEvent, lcSocket);
-
-          // TODO optimization - if contexts are the same, don't re-render
-          const newView = await liveComponent.render(lcSocket.context, { myself: cid });
-
-          //
-          const newParts = deepDiff(oldParts, newView.partsTree());
-          const changed = Object.keys(newParts).length > 0;
-          // store state for subsequent loads
-          this.statefulLiveComponents[compoundId] = {
-            ...statefulComponent,
-            context: lcSocket.context,
-            parts: newView.partsTree(),
-            changed,
-          };
-
-          let diff: Parts = {
-            c: {
-              // use cid to identify component to update
-              [`${cid}`]: newParts,
-            },
-          };
-
-          diff = this.maybeAddEventsToParts(diff);
-
-          // send message to re-render
-          const replyPayload = {
-            response: {
-              diff,
-            },
-            status: "ok",
-          };
-
-          this.sendPhxReply(newPhxReply(message, replyPayload));
-        } else {
-          // not sure how we'd get here but just in case - ignore test coverage though
-          /* istanbul ignore next */
-          console.error("Could not find stateful component instance for", componentClass);
-        }
-      } else {
-        console.error("Could not find stateful component for", cid);
+      // TODO - handle uploads
+      let value: Record<string, string>;
+      switch (type) {
+        case "click":
+        case "keyup":
+        case "keydown":
+        case "blur":
+        case "focus":
+        case "hook":
+          value = payload.value;
+          break;
+        case "form":
+          // parse payload into form data
+          value = Object.fromEntries(new URLSearchParams(payload.value));
+          // ensure _csrf_token is set and same as session csrf token
+          if (value.hasOwnProperty("_csrf_token")) {
+            if (value._csrf_token !== this.csrfToken) {
+              console.error(
+                `Rejecting form submission due to mismatched csrfTokens. expected:"${this.csrfToken}", got:"${value._csrf_token}"`
+              );
+              return;
+            }
+          } else {
+            console.error(`Rejecting form event due to missing _csrf_token value`);
+            return;
+          }
+          // TODO - check for _target variable from phx_change here and remove it from value?
+          break;
+        default:
+          console.error("Unknown event type", type);
+          return;
       }
+
+      // package the event into a `LiveEvent` type
+      const eventObj: AnyLiveEvent = {
+        type: event,
+        ...value,
+      };
+
+      // if the payload has a cid, then this event's target is a `LiveComponent`
+      if (cid !== undefined) {
+        // handleLiveComponentEvent()
+        // console.log("LiveComponent event", type, cid, event, value);
+        // find stateful component data by cid
+        const statefulComponent = Object.values(this.statefulLiveComponents).find((c) => c.cid === cid);
+        if (statefulComponent) {
+          const { componentClass, context: oldContext, parts: oldParts, compoundId } = statefulComponent;
+          // call event handler on stateful component instance
+          const liveComponent = this.statefuleLiveComponentInstances[componentClass];
+          if (liveComponent) {
+            // socker for this live component instance
+            const lcSocket = this.newLiveComponentSocket(structuredClone(oldContext) as LiveContext);
+
+            // run handleEvent and render then update context for cid
+            await liveComponent.handleEvent(eventObj, lcSocket);
+
+            // TODO optimization - if contexts are the same, don't re-render
+            const newView = await liveComponent.render(lcSocket.context, { myself: cid });
+
+            //
+            const newParts = deepDiff(oldParts, newView.partsTree());
+            const changed = Object.keys(newParts).length > 0;
+            // store state for subsequent loads
+            this.statefulLiveComponents[compoundId] = {
+              ...statefulComponent,
+              context: lcSocket.context,
+              parts: newView.partsTree(),
+              changed,
+            };
+
+            let diff: Parts = {
+              c: {
+                // use cid to identify component to update
+                [`${cid}`]: newParts,
+              },
+            };
+
+            diff = this.maybeAddEventsToParts(diff);
+
+            // send message to re-render
+            const replyPayload = {
+              response: {
+                diff,
+              },
+              status: "ok",
+            };
+
+            this.sendPhxReply(newPhxReply(message, replyPayload));
+          } else {
+            // not sure how we'd get here but just in case - ignore test coverage though
+            /* istanbul ignore next */
+            console.error("Could not find stateful component instance for", componentClass);
+            return;
+          }
+        } else {
+          console.error("Could not find stateful component for", cid);
+          return;
+        }
+      }
+      // event is not for LiveComponent rather it is for LiveView
+      else {
+        // console.log("LiveView event", type, event, value);
+        // copy previous context
+        const previousContext = structuredClone(this.socket.context);
+
+        // check again because event could be a lv:clear-flash
+        await this.liveView.handleEvent(eventObj, this.socket);
+
+        // skip ctxEqual for now
+        // const ctxEqual = areConte xtsValueEqual(previousContext, this.socket.context);
+        let diff: Parts = {};
+
+        // only calc diff if contexts have changed
+        // if (!ctxEqual || event === "lv:clear-flash") {
+        // get old render tree and new render tree for diffing
+        // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+        let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+
+        // wrap in root template if there is one
+        view = await this.maybeWrapInRootTemplate(view);
+        diff = view.partsTree();
+        // diff = deepDiff(oldView.partsTree(), view.partsTree());
+        // }
+
+        diff = this.maybeAddPageTitleToParts(diff);
+        diff = this.maybeAddEventsToParts(diff);
+
+        const replyPayload = {
+          response: {
+            diff,
+          },
+          status: "ok",
+        };
+
+        this.sendPhxReply(newPhxReply(message, replyPayload));
+
+        // remove temp data
+        this.socket.updateContextWithTempAssigns();
+      }
+    } catch (e) {
+      console.error("Error handling event", e);
     }
-    // event is not for LiveComponent rather it is for LiveView
-    else {
-      // console.log("LiveView event", type, event, value);
-      // copy previous context
-      // @ts-ignore
+  }
+
+  /**
+   * Handle's `live_patch` message from clients which denote change to the `LiveView`'s path parameters
+   * and kicks off a re-render after calling `handleParams`.
+   * @param message a `PhxLivePatchIncoming` message
+   */
+  public async onLivePatch(message: PhxLivePatchIncoming) {
+    try {
+      const payload = message[PhxProtocol.payload];
+
+      const { url: urlString } = payload;
+      const url = new URL(urlString);
+
       const previousContext = structuredClone(this.socket.context);
+      await this.liveView.handleParams(url, this.socket);
 
-      // check again because event could be a lv:clear-flash
-      // if (isEventHandler(this.liveView)) {
-      // @ts-ignore - already checked if handleEvent is defined
-      // await this.liveView.handleEvent(event, value, this.socket);
-      // }
-      await this.liveView.handleEvent(anEvent, this.socket);
-
-      // skip ctxEqual for now
-      // const ctxEqual = areConte xtsValueEqual(previousContext, this.socket.context);
-      let diff: Parts = {};
-
-      // only calc diff if contexts have changed
-      // if (!ctxEqual || event === "lv:clear-flash") {
       // get old render tree and new render tree for diffing
-      // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+      // const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
       let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
       // wrap in root template if there is one
       view = await this.maybeWrapInRootTemplate(view);
-      diff = view.partsTree();
-      // diff = deepDiff(oldView.partsTree(), view.partsTree());
-      // }
 
-      diff = this.maybeAddPageTitleToParts(diff);
+      // TODO - why is the diff causing live_patch to fail??
+      // const diff = deepDiff(oldView.partsTree(), view.partsTree());
+      let diff = this.maybeAddPageTitleToParts(view.partsTree(false));
       diff = this.maybeAddEventsToParts(diff);
 
       const replyPayload = {
@@ -363,52 +443,32 @@ export class LiveViewManager {
 
       // remove temp data
       this.socket.updateContextWithTempAssigns();
+    } catch (e) {
+      console.error("Error handling live_patch", e);
     }
   }
 
-  public async onLivePatch(message: PhxLivePatchIncoming) {
-    const [joinRef, messageRef, topic, event, payload] = message;
-
-    const { url: urlString } = payload;
-    const url = new URL(urlString);
-
-    const previousContext = this.socket.context;
-    await this.liveView.handleParams(url, this.socket);
-
-    // get old render tree and new render tree for diffing
-    // const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
-    let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
-
-    // wrap in root template if there is one
-    view = await this.maybeWrapInRootTemplate(view);
-
-    // TODO - why is the diff causing live_patch to fail??
-    // const diff = deepDiff(oldView.partsTree(), view.partsTree());
-    let diff = this.maybeAddPageTitleToParts(view.partsTree(false));
-    diff = this.maybeAddEventsToParts(diff);
-
-    const replyPayload = {
-      response: {
-        diff,
-      },
-      status: "ok",
-    };
-
-    this.sendPhxReply(newPhxReply(message, replyPayload));
-
-    // remove temp data
-    this.socket.updateContextWithTempAssigns();
-  }
-
+  /**
+   * Responds to `heartbeat` message from clients by sending a `heartbeat` message back.
+   * @param message
+   */
   public onHeartbeat(message: PhxHeartbeatIncoming) {
     // TODO - monitor lastHeartbeat and shutdown if it's been too long?
     this.sendPhxReply(newHeartbeatReply(message));
   }
 
+  /**
+   * Handles `phx_leave` messages from clients which are sent when the client is leaves the `LiveView`
+   * that is currently being rendered by navigating to a different `LiveView` or closing the browser.
+   * @param message
+   */
   public async onPhxLeave(message: PhxIncomingMessage<{}>) {
     await this.shutdown();
   }
 
+  /**
+   * Clean up any resources used by the `LiveView` and `LiveComponent` instances.
+   */
   private async shutdown() {
     try {
       // unsubscribe from PubSubs
@@ -428,70 +488,89 @@ export class LiveViewManager {
     this.intervals.push(setInterval(fn, intervalMillis));
   }
 
-  private async onPushPatch(path: string, params?: Record<string, string | number>, replaceHistory: boolean = false) {
+  /**
+   * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
+   * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to update the browser's
+   * path and query string params.
+   * @param path the path to patch
+   * @param params the URLSearchParams to that will drive the new path query string params
+   * @param replaceHistory whether to replace the current browser history entry or not
+   */
+  private async onPushPatch(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
     this.onPushNavigation("live_patch", path, params, replaceHistory);
   }
 
-  private async onPushRedirect(
-    path: string,
-    params?: Record<string, string | number>,
-    replaceHistory: boolean = false
-  ) {
+  /**
+   * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
+   * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to redirect the browser to a
+   * new path and query string params.
+   * @param path the path to redirect to
+   * @param params the URLSearchParams to that will be added to the redirect
+   * @param replaceHistory whether to replace the current browser history entry or not
+   */
+  private async onPushRedirect(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
     this.onPushNavigation("live_redirect", path, params, replaceHistory);
   }
 
+  /**
+   * Common logic that handles both `live_patch` and `live_redirect` messages from clients.
+   * @param navEvent the type of navigation event to handle: either `live_patch` or `live_redirect`
+   * @param path the path to patch or to be redirected to
+   * @param params the URLSearchParams to that will be added to the path
+   * @param replaceHistory whether to replace the current browser history entry or not
+   */
   private async onPushNavigation(
     navEvent: "live_redirect" | "live_patch",
     path: string,
-    params?: Record<string, string | number>,
+    params?: URLSearchParams,
     replaceHistory: boolean = false
   ) {
-    // make params into query string
-    let stringParams: string | undefined;
-    const urlParams = new URLSearchParams();
-    if (params && Object.keys(params).length > 0) {
-      for (const [key, value] of Object.entries(params)) {
-        urlParams.set(key, String(value));
-      }
-      stringParams = urlParams.toString();
+    try {
+      // construct the outgoing message
+      const to = params ? `${path}?${params}` : path;
+      const kind = replaceHistory ? "replace" : "push";
+      const message: PhxOutgoingLivePatchPush = [
+        null, // no join reference
+        null, // no message reference
+        this.joinId,
+        navEvent,
+        { kind, to },
+      ];
+
+      // to is relative so need to provide the urlBase determined on initial join
+      const url = new URL(to, this.urlBase);
+
+      // let the `LiveView` udpate its context based on the new url
+      await this.liveView.handleParams(url, this.socket);
+
+      // send the message
+      this.sendPhxReply(message);
+
+      // remove temp data
+      this.socket.updateContextWithTempAssigns();
+    } catch (e) {
+      console.error(`Error handling ${navEvent}`, e);
     }
-
-    const to = stringParams ? `${path}?${stringParams}` : path;
-    const kind = replaceHistory ? "replace" : "push";
-    const message: PhxOutgoingLivePatchPush = [
-      null, // no join reference
-      null, // no message reference
-      this.joinId,
-      navEvent,
-      { kind, to },
-    ];
-
-    // to is relative so need to provide the urlBase determined on initial join
-    const url = new URL(to, this.urlBase);
-    await this.liveView.handleParams(url, this.socket);
-
-    this.sendPhxReply(message);
-
-    // remove temp data
-    this.socket.updateContextWithTempAssigns();
   }
 
+  /**
+   * Queues `AnyLivePushEvent` messages to be sent to the client on the subsequent `sendPhxReply` call.
+   * @param pushEvent
+   */
   private async onPushEvent(pushEvent: AnyLivePushEvent) {
-    // queue event for sending
+    // queue event
     this._events.push(pushEvent);
-    this.eventAdded = true;
   }
 
-  private putFlash(key: string, value: string) {
-    this.session.flash.set(key, value);
-  }
-
-  private async sendInternal(event: any): Promise<void> {
+  /**
+   * Handles sending `LiveInfo` events back to the `LiveView`'s `handleInfo` method.
+   * @param info the `LiveInfo` event to dispatch to the `LiveView`
+   */
+  private async sendInternal(info: AnyLiveInfo): Promise<void> {
     // console.log("sendInternal", event, this.socketId);
 
     const previousContext = this.socket.context;
-    // @ts-ignore - already checked if handleInfo is defined
-    this.liveView.handleInfo(event, this.socket);
+    this.liveView.handleInfo(info, this.socket);
 
     const ctxEqual = false; //areContextsValueEqual(previousContext, this.socket.context);
     let diff: Parts = {};
@@ -532,6 +611,10 @@ export class LiveViewManager {
     }
   }
 
+  private putFlash(key: string, value: string) {
+    this.session.flash.set(key, value);
+  }
+
   private async maybeWrapInRootTemplate(view: HtmlSafeString) {
     if (this.liveViewRootTemplate) {
       return await this.liveViewRootTemplate(this.session, safe(view));
@@ -551,15 +634,14 @@ export class LiveViewManager {
   }
 
   private maybeAddEventsToParts(parts: Parts) {
-    if (this.eventAdded) {
-      this.eventAdded = false; // reset
-      const e = [
-        ...this._events.map((event) => {
-          const { type, ...values } = event;
-          return [type, values];
-        }),
-      ];
+    if (this._events.length > 0) {
+      const events = structuredClone(this._events);
       this._events = []; // reset
+      // map events to tuples of [type, values]
+      const e = events.map((event) => {
+        const { type, ...values } = event;
+        return [type, values];
+      });
       return {
         ...parts,
         e,
@@ -575,7 +657,6 @@ export class LiveViewManager {
         console.error(`Shutting down topic:${reply[2]}. For component:${this.liveView}. Error: ${err}`);
       }
     });
-    // this.ws.send(JSON.stringify(reply), { binary: false }, (err?: Error) => this.handleError(reply, err));
   }
 
   /**
@@ -594,9 +675,9 @@ export class LiveViewManager {
    * @param liveComponent
    * @param params
    */
-  private async liveComponentProcessor<Context>(
-    liveComponent: LiveComponent<Context>,
-    params: Partial<Context & { id?: number | string }> = {} as Context
+  private async liveComponentProcessor<TContext>(
+    liveComponent: LiveComponent<TContext>,
+    params: Partial<TContext & { id?: number | string }> = {} as TContext
   ): Promise<LiveViewTemplate> {
     // console.log("liveComponentProcessor", liveComponent, params);
     // TODO - determine how to collect all the live components of the same type
@@ -615,7 +696,7 @@ export class LiveViewManager {
     }
 
     // setup variables
-    let context: Partial<Context> = { ...params };
+    let context = structuredClone(params);
     let newView: LiveViewTemplate;
 
     // determine if component is stateful or stateless
@@ -639,7 +720,7 @@ export class LiveViewManager {
         myself = Object.keys(this.statefulLiveComponents).length + 1;
 
         // setup socket
-        const lcSocket = this.newLiveComponentSocket({ ...context } as Context);
+        const lcSocket = this.newLiveComponentSocket(structuredClone(context) as TContext);
 
         // first load lifecycle mount => update => render
         await liveComponent.mount(lcSocket);
@@ -663,8 +744,7 @@ export class LiveViewManager {
         myself = cid;
 
         // setup socket
-        // @ts-ignore
-        const lcSocket = this.newLiveComponentSocket<Context>(structuredClone(oldContext) as Context);
+        const lcSocket = this.newLiveComponentSocket(structuredClone(oldContext) as TContext);
 
         // subsequent loads lifecycle update => render (no mount)
         await liveComponent.update(lcSocket);
@@ -693,7 +773,7 @@ export class LiveViewManager {
       // 4. render
 
       // setup socket
-      const lcSocket = this.newLiveComponentSocket<Context>({ ...context } as Context);
+      const lcSocket = this.newLiveComponentSocket(structuredClone(context) as TContext);
 
       // skipping preload for now... see comment above
       // first load lifecycle mount => update => render
@@ -757,7 +837,9 @@ export class LiveViewManager {
       (fn, intervalMillis) => this.repeat(fn, intervalMillis),
       (info) => this.sendInternal(info),
       (topic: string) => {
-        const subId = this.pubSub.subscribe<unknown>(topic, (event: unknown) => this.sendInternal(event));
+        const subId = this.pubSub.subscribe<AnyLiveInfo>(topic, (info: AnyLiveInfo) => {
+          this.sendInternal(info);
+        });
         this.subscriptionIds[topic] = subId;
       }
     );
@@ -772,13 +854,3 @@ export class LiveViewManager {
     );
   }
 }
-
-// export function areContextsValueEqual(context1: LiveComponentContext, context2: LiveComponentContext): boolean {
-//   if (!!context1 && !!context2) {
-//     const c1 = fromJS(context1);
-//     const c2 = fromJS(context2);
-//     return c1.equals(c2);
-//   } else {
-//     return false;
-//   }
-// }

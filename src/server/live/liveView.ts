@@ -1,6 +1,6 @@
 import { LiveComponent, LiveViewTemplate } from ".";
 import { SessionData } from "../session";
-import { LiveViewSocket } from "../socket/live_socket";
+import { LiveViewSocket } from "../socket/liveSocket";
 
 export interface LiveContext {
   [key: string]: any;
