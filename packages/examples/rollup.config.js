@@ -5,6 +5,7 @@ import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 
 export default [
+  // build the common js rollup
   {
     external: ['liveviewjs', "zod"],
     input: './src/nodeRollupEntry.ts',
@@ -23,6 +24,7 @@ export default [
       }),
     ],
   },
+  // build the esm rollup
   {
     external: ['liveviewjs', "zod"],
     input: './src/nodeRollupEntry.ts',
@@ -45,6 +47,7 @@ export default [
       commonjs(),
     ]
   },
+  // bundle all the *.d.ts typescript definitions into a single d.ts file
   {
     external: ['liveviewjs', "zod"],
     input: './build/rollup/nodeRollupEntry.d.ts',

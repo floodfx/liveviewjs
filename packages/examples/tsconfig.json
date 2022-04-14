@@ -19,5 +19,5 @@
     "baseUrl": "."
   },
   "include": ["./src/**/*.ts"],
-  "exclude": ["build", "node_modules", "./**/*.test.ts", "denoRollupEntry.ts", "./asyncFetch/**/*.ts"],
+  "exclude": ["build", "node_modules", "./**/*.test.ts", "denoRollupEntry.ts", "src/browser/index.ts"]
 }
