@@ -1,30 +1,23 @@
-import {
-  BaseLiveView,
-  html,
-  LiveView,
-  LiveViewContext,
-  LiveViewExternalEventListener,
-  LiveViewMountParams,
-  LiveViewSocket,
-  SessionData,
-} from "liveviewjs";
+import { BaseLiveView, html, LiveViewMountParams, LiveViewSocket, SessionData } from "liveviewjs";
 
-export interface LightContext extends LiveViewContext {
+export interface Context {
   brightness: number;
 }
 
-export type LightEvent = "on" | "off" | "up" | "down" | "key_update";
+export type Events =
+  | { type: "on" }
+  | { type: "off" }
+  | { type: "up" }
+  | { type: "down" }
+  | { type: "key_update"; key: string };
 
-export class LightLiveViewComponent
-  extends BaseLiveView<LightContext, never>
-  implements LiveView<LightContext, never>, LiveViewExternalEventListener<LightContext, LightEvent, { key: string }>
-{
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<LightContext>) {
+export class LightLiveView extends BaseLiveView<Context, Events> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     socket.pageTitle("Front Porch Light");
     socket.assign({ brightness: 10 });
   }
 
-  render(context: LightContext) {
+  render(context: Context) {
     const { brightness } = context;
     return html`
       <div id="light">
@@ -49,11 +42,15 @@ export class LightLiveViewComponent
     `;
   }
 
-  handleEvent(event: LightEvent, params: { key: string }, socket: LiveViewSocket<LightContext>) {
+  handleEvent(event: Events, socket: LiveViewSocket<Context>) {
     const { brightness } = socket.context;
-    // map key_update to arrow keys
-    const lightEvent = event === "key_update" ? params.key : event;
-    switch (lightEvent) {
+
+    let key: string = event.type;
+    // if event was a key event, use the key name as the event
+    if (event.type === "key_update") {
+      key = event.key;
+    }
+    switch (key) {
       case "off":
       case "ArrowLeft":
         socket.assign({ brightness: 0 });

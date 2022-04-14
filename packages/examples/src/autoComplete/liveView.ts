@@ -1,17 +1,8 @@
-import {
-  BaseLiveView,
-  html,
-  LiveViewContext,
-  LiveViewExternalEventListener,
-  LiveViewInternalEventListener,
-  LiveViewMountParams,
-  LiveViewSocket,
-  SessionData,
-} from "liveviewjs";
+import { BaseLiveView, html, LiveViewMountParams, LiveViewSocket, SessionData } from "liveviewjs";
 import { searchByCity, searchByZip, Store } from "../liveSearch/data";
 import { suggest } from "./data";
 
-export interface AutocompleteContext extends LiveViewContext {
+interface Context {
   zip: string;
   city: string;
   stores: Store[];
@@ -19,15 +10,15 @@ export interface AutocompleteContext extends LiveViewContext {
   loading: boolean;
 }
 
-export class AutocompleteLiveViewComponent
-  extends BaseLiveView<AutocompleteContext, unknown>
-  implements
-    LiveViewExternalEventListener<AutocompleteContext, "zip-search", Pick<AutocompleteContext, "zip">>,
-    LiveViewExternalEventListener<AutocompleteContext, "suggest-city", Pick<AutocompleteContext, "city">>,
-    LiveViewInternalEventListener<AutocompleteContext, { type: "run_zip_search"; zip: string }>,
-    LiveViewInternalEventListener<AutocompleteContext, { type: "run_city_search"; city: string }>
-{
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<AutocompleteContext>) {
+type Events =
+  | { type: "zip-search"; zip: string }
+  | { type: "city-search"; city: string }
+  | { type: "suggest-city"; city: string };
+
+type Infos = { type: "run_zip_search"; zip: string } | { type: "run_city_search"; city: string };
+
+export class AutocompleteLiveView extends BaseLiveView<Context, Events, Infos> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     const zip = "";
     const city = "";
     const stores: Store[] = [];
@@ -61,7 +52,7 @@ export class AutocompleteLiveViewComponent
     return html` <div class="loader">Loading...</div> `;
   }
 
-  render(context: AutocompleteContext) {
+  render(context: Context) {
     return html`
       <h1>Find a Store</h1>
       <div id="search">
@@ -107,47 +98,34 @@ export class AutocompleteLiveViewComponent
     `;
   }
 
-  handleEvent(
-    event: "zip-search" | "suggest-city",
-    params: { zip: string } | { city: string },
-    socket: LiveViewSocket<AutocompleteContext>
-  ) {
+  handleEvent(event: Events, socket: LiveViewSocket<Context>) {
     // console.log("event:", event, params, socket);
-    if (event === "zip-search") {
-      // @ts-ignore TODO better params types for different events
-      const { zip } = params;
-      // wait a second to send the message
-      setTimeout(() => {
+    let city: string;
+    switch (event.type) {
+      case "zip-search":
+        const { zip } = event;
         socket.send({ type: "run_zip_search", zip });
-      }, 1000);
-      socket.assign({ zip, loading: true, stores: [], matches: [] });
-    } else if (event === "suggest-city") {
-      // @ts-ignore TODO better params types for different events
-      const { city } = params;
-      const matches = suggest(city);
-      socket.assign({ city, loading: false, matches });
-    } else if (event === "city-search") {
-      // @ts-ignore TODO better params types for different events
-      const { city } = params;
-      // wait a second to send the message
-      setTimeout(() => {
+        socket.assign({ zip, loading: true, stores: [], matches: [] });
+        break;
+      case "city-search":
+        city = event.city;
         socket.send({ type: "run_city_search", city });
-      }, 1000);
-      socket.assign({ city, loading: true, matches: [], stores: [] });
+        socket.assign({ city, loading: true, matches: [], stores: [] });
+        break;
+      case "suggest-city":
+        city = event.city;
+        const matches = suggest(city);
+        socket.assign({ city, loading: false, matches });
+        break;
     }
-    // else {
-    //   return { zip: "", city: "", stores: [], matches: [], loading: false };
-    // }
   }
 
-  handleInfo(
-    event: { type: "run_zip_search"; zip: string } | { type: "run_city_search"; city: string },
-    socket: LiveViewSocket<AutocompleteContext>
-  ) {
+  handleInfo(info: Infos, socket: LiveViewSocket<Context>) {
+    const { type } = info;
     let stores: Store[] = [];
-    switch (event.type) {
+    switch (type) {
       case "run_zip_search":
-        const { zip } = event;
+        const { zip } = info;
         stores = searchByZip(zip);
         socket.assign({
           zip,
@@ -156,20 +134,13 @@ export class AutocompleteLiveViewComponent
         });
         break;
       case "run_city_search":
-        const { city } = event;
+        const { city } = info;
         stores = searchByCity(city);
         socket.assign({
           city,
           stores,
           loading: false,
         });
-      // return {
-      //   zip: "",
-      //   city,
-      //   stores,
-      //   matches: [],
-      //   loading: false
-      // }
     }
   }
 }
