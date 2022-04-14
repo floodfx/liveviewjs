@@ -3,14 +3,11 @@ import {
   html,
   HtmlSafeString,
   join,
-  LiveViewContext,
-  LiveViewExternalEventListener,
   LiveViewMountParams,
   LiveViewSocket,
   live_patch,
   options_for_select,
   SessionData,
-  StringPropertyValues,
 } from "liveviewjs";
 import { almostExpired, Donation, listItems } from "./data";
 
@@ -19,16 +16,15 @@ interface Options {
   perPage: number;
 }
 
-export interface PaginateContext extends LiveViewContext {
+interface Context {
   options: Options;
   donations: Donation[];
 }
 
-export class PaginateLiveViewComponent
-  extends BaseLiveView<PaginateContext, Options>
-  implements LiveViewExternalEventListener<PaginateContext, "select-per-page", Pick<Options, "perPage">>
-{
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PaginateContext>) {
+type Events = { type: "select-per-page"; perPage: string };
+
+export class PaginateLiveView extends BaseLiveView<Context, Events> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     const options = { page: 1, perPage: 10 };
     const { page, perPage } = options;
     const donations = listItems(page, perPage);
@@ -38,9 +34,9 @@ export class PaginateLiveViewComponent
     });
   }
 
-  handleParams(params: StringPropertyValues<Options>, url: string, socket: LiveViewSocket<PaginateContext>) {
-    const page = Number(params.page || 1);
-    const perPage = Number(params.perPage || 10);
+  handleParams(url: URL, socket: LiveViewSocket<Context>) {
+    const page = Number(url.searchParams.get("page") || 1);
+    const perPage = Number(url.searchParams.get("perPage") || 10);
     const donations = listItems(page, perPage);
     socket.assign({
       options: { page, perPage },
@@ -48,7 +44,7 @@ export class PaginateLiveViewComponent
     });
   }
 
-  render(context: PaginateContext) {
+  render(context: Context) {
     const {
       options: { perPage, page },
       donations,
@@ -90,13 +86,9 @@ export class PaginateLiveViewComponent
     `;
   }
 
-  handleEvent(
-    event: "select-per-page",
-    params: StringPropertyValues<Pick<Options, "perPage">>,
-    socket: LiveViewSocket<PaginateContext>
-  ) {
+  handleEvent(event: Events, socket: LiveViewSocket<Context>) {
     const page = socket.context.options.page;
-    const perPage = Number(params.perPage || 10);
+    const perPage = Number(event.perPage || 10);
 
     socket.pushPatch("/paginate", { page: String(page), perPage: String(perPage) });
 

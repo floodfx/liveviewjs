@@ -6,6 +6,7 @@ import commonjs from "@rollup/plugin-commonjs";
 
 export default [
   {
+    external: ['liveviewjs', "zod"],
     input: './src/nodeRollupEntry.ts',
     output: {
       file: './build/liveviewjs-examples.js',
@@ -23,6 +24,7 @@ export default [
     ],
   },
   {
+    external: ['liveviewjs', "zod"],
     input: './src/nodeRollupEntry.ts',
     output: {
       file: './build/liveviewjs-examples.mjs',
@@ -44,6 +46,7 @@ export default [
     ]
   },
   {
+    external: ['liveviewjs', "zod"],
     input: './build/rollup/nodeRollupEntry.d.ts',
     output: {
       file: './build/liveviewjs-examples.d.ts',

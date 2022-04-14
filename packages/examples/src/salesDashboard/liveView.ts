@@ -1,9 +1,6 @@
 import {
   BaseLiveView,
   html,
-  LiveViewContext,
-  LiveViewExternalEventListener,
-  LiveViewInternalEventListener,
   LiveViewMountParams,
   LiveViewSocket,
   SessionData,
@@ -19,28 +16,29 @@ const randomSalesAmount = random(100, 1000);
 const randomNewOrders = random(5, 20);
 const randomSatisfaction = random(95, 100);
 
-export interface SalesDashboardContext extends LiveViewContext {
+interface Context {
   newOrders: number;
   salesAmount: number;
   satisfaction: number;
 }
 
-export class SalesDashboardLiveViewComponent
-  extends BaseLiveView<SalesDashboardContext, unknown>
-  implements
-    LiveViewExternalEventListener<SalesDashboardContext, "refresh", any>,
-    LiveViewInternalEventListener<SalesDashboardContext, "tick">
-{
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SalesDashboardContext>) {
+type Events =
+  | { type: "refresh" }
+
+type Info =
+  | { type: "tick" }
+
+export class SalesDashboardLiveView extends BaseLiveView<Context, Events, Info> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     if (socket.connected) {
       socket.repeat(() => {
-        socket.send("tick");
+        socket.send({type: "tick"});
       }, 1000);
     }
     socket.assign(generateSalesDashboardContext());
   }
 
-  render(context: SalesDashboardContext) {
+  render(context: Context) {
     return html`
       <h1>Sales Dashboard</h1>
       <div id="dashboard">
@@ -63,16 +61,16 @@ export class SalesDashboardLiveViewComponent
     `;
   }
 
-  handleEvent(event: "refresh", params: any, socket: any) {
+  handleEvent(event: Events, socket: LiveViewSocket<Context>) {
     socket.assign(generateSalesDashboardContext());
   }
 
-  handleInfo(event: "tick", socket: LiveViewSocket<SalesDashboardContext>) {
+  handleInfo(info: Info, socket: LiveViewSocket<Context>) {
     socket.assign(generateSalesDashboardContext());
   }
 }
 
-function generateSalesDashboardContext(): SalesDashboardContext {
+function generateSalesDashboardContext(): Context {
   return {
     newOrders: randomNewOrders(),
     salesAmount: randomSalesAmount(),

@@ -1,7 +1,6 @@
 import {
   BaseLiveView,
   html,
-  LiveViewContext,
   LiveViewMountParams,
   LiveViewSocket,
   LiveViewTemplate,
@@ -10,15 +9,15 @@ import {
 } from "liveviewjs";
 import { listServers, Server } from "./data";
 
-// Example of Phoenix "Live Navigation"
-
-export interface ServersContext extends LiveViewContext {
+interface Context {
   servers: Server[];
   selectedServer: Server;
 }
 
-export class ServersLiveViewComponent extends BaseLiveView<ServersContext, { id: string }> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<ServersContext>) {
+type Events = { type: "select"; id: string };
+
+export class ServersLiveView extends BaseLiveView<Context, Events> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     const servers = listServers();
     const selectedServer = servers[0];
 
@@ -28,9 +27,10 @@ export class ServersLiveViewComponent extends BaseLiveView<ServersContext, { id:
     });
   }
 
-  handleParams(params: { id: string }, url: string, socket: LiveViewSocket<ServersContext>) {
+  handleParams(url: URL, socket: LiveViewSocket<Context>) {
     const servers = listServers();
-    const selectedServer = servers.find((server) => server.id === params.id) || servers[0];
+    const serverId = url.searchParams.get("id");
+    const selectedServer = servers.find((server) => server.id === serverId) || servers[0];
     socket.pageTitle(selectedServer.name);
     socket.assign({
       servers,
@@ -38,7 +38,7 @@ export class ServersLiveViewComponent extends BaseLiveView<ServersContext, { id:
     });
   }
 
-  render(context: ServersContext): LiveViewTemplate {
+  render(context: Context): LiveViewTemplate {
     const { servers, selectedServer } = context;
     return html`
       <h1>Servers</h1>

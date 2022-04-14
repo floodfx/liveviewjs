@@ -71,12 +71,12 @@ export const donations: Donation[] = items.map((item, id) => {
 
 export const listItems = (paginateOptions: PaginateOptions, sortOptions: SortOptions) => {
   const { page, perPage } = paginateOptions;
-  const { sort_by, sortOrder } = sortOptions;
+  const { sortby, sortOrder } = sortOptions;
   const sorted = donations.sort((a, b) => {
-    if (a[sort_by] < b[sort_by]) {
+    if (a[sortby] < b[sortby]) {
       return sortOrder === "asc" ? -1 : 1;
     }
-    if (a[sort_by] > b[sort_by]) {
+    if (a[sortby] > b[sortby]) {
       return sortOrder === "asc" ? 1 : -1;
     }
     return 0;

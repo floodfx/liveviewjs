@@ -3,14 +3,11 @@ import {
   html,
   HtmlSafeString,
   join,
-  LiveViewContext,
-  LiveViewExternalEventListener,
   LiveViewMountParams,
   LiveViewSocket,
   live_patch,
   options_for_select,
   SessionData,
-  StringPropertyValues,
 } from "liveviewjs";
 import { almostExpired, Donation, donations, listItems } from "./data";
 
@@ -20,32 +17,25 @@ export interface PaginateOptions {
 }
 
 export interface SortOptions {
-  sort_by: keyof Donation;
+  sortby: keyof Donation;
   sortOrder: "asc" | "desc";
 }
 
-export interface SortContext extends LiveViewContext {
+interface Context {
   options: PaginateOptions & SortOptions;
   donations: Donation[];
 }
 
-export class SortLiveViewComponent
-  extends BaseLiveView<SortContext, PaginateOptions & SortOptions>
-  implements
-    LiveViewExternalEventListener<SortContext, "select-per-page", Pick<PaginateOptions & SortOptions, "perPage">>,
-    LiveViewExternalEventListener<
-      SortContext,
-      "change-sort",
-      Pick<PaginateOptions & SortOptions, "sort_by" | "sortOrder">
-    >
-{
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SortContext>) {
+type Events = { type: "select-per-page"; perPage: string } | { type: "change-sort"; sortby: string; sortOrder: string };
+
+export class SortLiveView extends BaseLiveView<Context, Events> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     const paginateOptions: PaginateOptions = {
       page: 1,
       perPage: 10,
     };
     const sortOptions: SortOptions = {
-      sort_by: "item",
+      sortby: "item",
       sortOrder: "asc",
     };
     socket.assign({
@@ -54,25 +44,23 @@ export class SortLiveViewComponent
     });
   }
 
-  handleParams(
-    params: StringPropertyValues<PaginateOptions & SortOptions>,
-    url: string,
-    socket: LiveViewSocket<SortContext>
-  ) {
-    const page = Number(params.page || 1);
-    const perPage = Number(params.perPage || 10);
-    const validSortBy = Object.keys(donations[0]).includes(params.sort_by);
-    const sort_by = validSortBy ? (params.sort_by as keyof Donation) : "item";
-    const sortOrder = params.sortOrder === "desc" ? "desc" : "asc";
+  handleParams(url: URL, socket: LiveViewSocket<Context>) {
+    const page = Number(url.searchParams.get("page") || 1);
+    const perPage = Number(url.searchParams.get("perPage") || 10);
+
+    let sortby = (url.searchParams.get("sortby") || "item") as keyof Donation;
+    const validSortby = Object.keys(donations[0]).includes(sortby);
+    sortby = validSortby ? sortby : "item";
+    const sortOrder = url.searchParams.get("sortOrder") === "desc" ? "desc" : "asc";
     socket.assign({
-      options: { page, perPage, sort_by, sortOrder },
-      donations: listItems({ page, perPage }, { sort_by, sortOrder }),
+      options: { page, perPage, sortby, sortOrder },
+      donations: listItems({ page, perPage }, { sortby, sortOrder }),
     });
   }
 
-  render(context: SortContext) {
+  render(context: Context) {
     const {
-      options: { perPage, page, sortOrder, sort_by },
+      options: { perPage, page, sortOrder, sortby },
       donations,
     } = context;
     return html`
@@ -92,14 +80,14 @@ export class SortLiveViewComponent
           <table>
             <thead>
               <tr>
-                <th class="item" phx-click="change-sort" phx-value-sort_by="id">
-                  ${this.sort_emoji(sort_by, "id", sortOrder)}Item
+                <th class="item" phx-click="change-sort" phx-value-sortby="id">
+                  ${this.sort_emoji(sortby, "id", sortOrder)}Item
                 </th>
-                <th phx-click="change-sort" phx-value-sort_by="quantity">
-                  ${this.sort_emoji(sort_by, "quantity", sortOrder)}Quantity
+                <th phx-click="change-sort" phx-value-sortby="quantity">
+                  ${this.sort_emoji(sortby, "quantity", sortOrder)}Quantity
                 </th>
-                <th phx-click="change-sort" phx-value-sort_by="days_until_expires">
-                  ${this.sort_emoji(sort_by, "days_until_expires", sortOrder)}Days Until Expires
+                <th phx-click="change-sort" phx-value-sortby="days_until_expires">
+                  ${this.sort_emoji(sortby, "days_until_expires", sortOrder)}Days Until Expires
                 </th>
               </tr>
             </thead>
@@ -109,9 +97,9 @@ export class SortLiveViewComponent
           </table>
           <div class="footer">
             <div class="pagination">
-              ${page > 1 ? this.paginationLink("Previous", page - 1, perPage, sort_by, sortOrder, "previous") : ""}
-              ${this.pageLinks(page, perPage, sort_by, sortOrder)}
-              ${this.paginationLink("Next", page + 1, perPage, sort_by, sortOrder, "next")}
+              ${page > 1 ? this.paginationLink("Previous", page - 1, perPage, sortby, sortOrder, "previous") : ""}
+              ${this.pageLinks(page, perPage, sortby, sortOrder)}
+              ${this.paginationLink("Next", page + 1, perPage, sortby, sortOrder, "next")}
             </div>
           </div>
         </div>
@@ -119,47 +107,41 @@ export class SortLiveViewComponent
     `;
   }
 
-  handleEvent(
-    event: "select-per-page" | "change-sort",
-    params: StringPropertyValues<Pick<PaginateOptions & SortOptions, "perPage" | "sort_by" | "sortOrder">>,
-    socket: LiveViewSocket<SortContext>
-  ) {
-    const page = socket.context.options.page;
-    let perPage = socket.context.options.perPage;
-    let sort_by = socket.context.options.sort_by;
-    let sortOrder = socket.context.options.sortOrder;
+  handleEvent(event: Events, socket: LiveViewSocket<Context>) {
+    const { options } = socket.context;
+    let { page, perPage, sortby, sortOrder } = options;
 
-    if (event === "select-per-page") {
-      perPage = Number(params.perPage || socket.context.options.perPage);
+    switch (event.type) {
+      case "select-per-page":
+        perPage = Number(event.perPage || perPage);
+        break;
+      case "change-sort":
+        if (event.sortby === sortby) {
+          sortOrder = sortOrder === "asc" ? "desc" : "asc";
+        } else {
+          sortby = event.sortby as keyof Donation;
+          sortOrder = "asc";
+        }
+        break;
     }
 
-    if (event === "change-sort") {
-      const incoming_sort_by = params.sort_by as keyof Donation;
-      // if already sorted by this column, reverse the order
-      if (sort_by === incoming_sort_by) {
-        sortOrder = sortOrder === "asc" ? "desc" : "asc";
-      } else {
-        sort_by = incoming_sort_by;
-      }
-    }
-
-    socket.pushPatch("/sort", { page: String(page), perPage: String(perPage), sortOrder, sort_by });
+    socket.pushPatch("/sort", { page, perPage, sortOrder, sortby });
 
     socket.assign({
-      options: { page, perPage, sort_by, sortOrder },
-      donations: listItems({ page, perPage }, { sort_by, sortOrder }),
+      options: { page, perPage, sortby, sortOrder },
+      donations: listItems({ page, perPage }, { sortby, sortOrder }),
     });
   }
 
-  sort_emoji(sort_by: keyof Donation, sort_by_value: string, sortOrder: "asc" | "desc") {
-    return sort_by === sort_by_value ? (sortOrder === "asc" ? "👇" : "☝️") : "";
+  sort_emoji(sortby: keyof Donation, sortby_value: string, sortOrder: "asc" | "desc") {
+    return sortby === sortby_value ? (sortOrder === "asc" ? "👇" : "☝️") : "";
   }
 
-  pageLinks(page: number, perPage: number, sort_by: keyof Donation, sortOrder: "asc" | "desc") {
+  pageLinks(page: number, perPage: number, sortby: keyof Donation, sortOrder: "asc" | "desc") {
     let links: HtmlSafeString[] = [];
     for (var p = page - 2; p <= page + 2; p++) {
       if (p > 0) {
-        links.push(this.paginationLink(String(p), p, perPage, sort_by, sortOrder, p === page ? "active" : ""));
+        links.push(this.paginationLink(String(p), p, perPage, sortby, sortOrder, p === page ? "active" : ""));
       }
     }
     return join(links, "");
@@ -169,7 +151,7 @@ export class SortLiveViewComponent
     text: string,
     pageNum: number,
     perPageNum: number,
-    sort_by: keyof Donation,
+    sortby: keyof Donation,
     sortOrder: "asc" | "desc",
     className: string
   ) {
@@ -178,7 +160,7 @@ export class SortLiveViewComponent
     return live_patch(html`<button>${text}</button>`, {
       to: {
         path: "/sort",
-        params: { page, perPage, sort_by, sortOrder },
+        params: { page, perPage, sortby, sortOrder },
       },
       className,
     });

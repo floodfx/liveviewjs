@@ -4,13 +4,10 @@ import {
   form_for,
   html,
   LiveViewChangeset,
-  LiveViewContext,
-  LiveViewExternalEventListener,
-  LiveViewInternalEventListener,
+  LiveViewMeta,
   LiveViewMountParams,
   LiveViewSocket,
   SessionData,
-  StringPropertyValues,
   submit,
   telephone_input,
   text_input,
@@ -25,20 +22,18 @@ import {
   VolunteerMutationEvent,
 } from "./data";
 
-export interface VolunteerContext extends LiveViewContext {
+interface Context {
   volunteers: Volunteer[];
   changeset: LiveViewChangeset<Volunteer>;
 }
 
-type VolunteerEvents = "save" | "validate" | "toggle-status";
+type Events =
+  | { type: "save"; name: string; phone: string }
+  | { type: "validate"; name: string; phone: string }
+  | { type: "toggle-status"; id: string };
 
-export class VolunteerComponent
-  extends BaseLiveView<VolunteerContext, unknown>
-  implements
-    LiveViewExternalEventListener<VolunteerContext, VolunteerEvents, Volunteer>,
-    LiveViewInternalEventListener<VolunteerContext, VolunteerMutationEvent>
-{
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<VolunteerContext>) {
+export class VolunteersLiveView extends BaseLiveView<Context, Events, VolunteerMutationEvent> {
+  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     if (socket.connected) {
       // listen for changes to volunteer data
       socket.subscribe("volunteer");
@@ -54,8 +49,9 @@ export class VolunteerComponent
     socket.tempAssign({ volunteers: [] });
   }
 
-  render(context: VolunteerContext) {
+  render(context: Context, meta: LiveViewMeta) {
     const { changeset, volunteers } = context;
+    const { csrfToken } = meta;
     return html`
     <h1>Volunteer Check-In</h1>
     <div id="checkin">
@@ -102,43 +98,36 @@ export class VolunteerComponent
     `;
   }
 
-  handleEvent(
-    event: VolunteerEvents,
-    params: StringPropertyValues<Pick<Volunteer, "name" | "phone" | "id">>,
-    socket: LiveViewSocket<VolunteerContext>
-  ) {
-    if (event === "toggle-status") {
-      // lookup volunteer by id
-      const volunteer = getVolunteer(params.id);
-      // toggle checked_out status (ignoring changeset for now)
-      updateVolunteer(volunteer!, { checked_out: !volunteer!.checked_out });
-      socket.assign({
-        volunteers: listVolunteers(),
-        changeset: changeset({}, {}),
-      });
-    } else if (event === "validate") {
-      const validateChangeset = changeset({}, params);
-      // set an action or else the changeset will be ignored
-      // and form errors will not be shown
-      validateChangeset.action = "validate";
-      socket.assign({
-        changeset: validateChangeset,
-      });
-    } else {
-      const volunteer: Partial<Volunteer> = {
-        name: params.name,
-        phone: params.phone,
-      };
-      // attempt to create the volunteer from the form data
-      const createChangeset = createVolunteer(volunteer);
-      socket.assign({
-        volunteers: createChangeset.valid ? [createChangeset.data as Volunteer] : [], // no volunteers to prepend
-        changeset: createChangeset.valid ? changeset({}, {}) : createChangeset, // errors for form
-      });
+  handleEvent(event: Events, socket: LiveViewSocket<Context>) {
+    switch (event.type) {
+      case "validate":
+        socket.assign({
+          changeset: changeset({}, event, "validate"),
+        });
+        break;
+      case "save":
+        const { name, phone } = event;
+        // attempt to create the volunteer from the form data
+        const createChangeset = createVolunteer({ name, phone });
+        socket.assign({
+          volunteers: createChangeset.valid ? [createChangeset.data as Volunteer] : [], // no volunteers to prepend
+          changeset: createChangeset.valid ? changeset({}, {}) : createChangeset, // errors for form
+        });
+        break;
+      case "toggle-status":
+        // lookup volunteer by id
+        const volunteer = getVolunteer(event.id);
+        // toggle checked_out status (ignoring changeset for now)
+        updateVolunteer(volunteer!, { checked_out: !volunteer!.checked_out });
+        socket.assign({
+          volunteers: listVolunteers(),
+          changeset: changeset({}, {}),
+        });
+        break;
     }
   }
 
-  handleInfo(event: VolunteerMutationEvent, socket: LiveViewSocket<VolunteerContext>) {
+  handleInfo(event: VolunteerMutationEvent, socket: LiveViewSocket<Context>) {
     // console.log("received", event, socket.id);
     const { volunteer } = event;
     socket.assign({

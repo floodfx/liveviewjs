@@ -2,7 +2,7 @@ import {
   BaseLiveView,
   html,
   HtmlSafeString,
-  LiveViewContext,
+  LiveViewMeta,
   LiveViewMountParams,
   LiveViewSocket,
   LiveViewTemplate,
@@ -12,13 +12,13 @@ import {
 } from "liveviewjs";
 import { fetchXkcd, isValidXkcd, randomXkcdNum, XkcdData } from "./data";
 
-interface Context extends LiveViewContext {
+interface Context {
   comic: XkcdData;
   num?: number;
 }
 
 //  navigate through Xkcd comics using async/await
-export class AsyncFetchLiveViewComponent extends BaseLiveView<Context, { num: number }> {
+export class AsyncFetchLiveView extends BaseLiveView<Context> {
   async mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>) {
     // get today's comic from xkcd
     const comic = await fetchXkcd();
@@ -28,18 +28,18 @@ export class AsyncFetchLiveViewComponent extends BaseLiveView<Context, { num: nu
     });
   }
 
-  async handleParams(params: { num: string }, url: string, socket: LiveViewSocket<Context>) {
-    const n = Number(params.num);
+  async handleParams(url: URL, socket: LiveViewSocket<Context>) {
     // num should be between 1 and 2580
-    const num = Number(params.num) === NaN ? undefined : Math.max(1, Math.min(2580, Number(params.num)));
-    const comic = await fetchXkcd(num);
+    const num = Number(url.searchParams.get("num"));
+    const which = num === NaN ? undefined : Math.max(1, Math.min(2580, num));
+    const comic = await fetchXkcd(which);
     socket.assign({
       comic,
       num,
     });
   }
 
-  render(context: Context): LiveViewTemplate {
+  render(context: Context, meta: LiveViewMeta): LiveViewTemplate {
     const { comic, num } = context;
     return html`
       <h1>Xkcd</h1>
