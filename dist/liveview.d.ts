@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { SomeZodObject } from 'zod';
 
 /**
@@ -71,7 +72,7 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      * @param params the query params to update the path with
      * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
      */
-    pushPatch(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
+    pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
     /**
      * Shutdowns the current `LiveView` and load another `LiveView` in its place without reloading the
      * whole page (i.e. making a full HTTP request).  Can be used to remount the current `LiveView` if
@@ -81,7 +82,7 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      * @param params the query params to update the path with
      * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
      */
-    pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
+    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
     /**
      * Add flash to the socket for a given key and value.
      * @param key
@@ -120,8 +121,8 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
     tempAssign(tempContext: Partial<TContext>): void;
     pageTitle(newPageTitle: string): void;
     pushEvent(pushEvent: AnyLivePushEvent): void;
-    pushPatch(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
-    pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
+    pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
+    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
     putFlash(key: string, value: string): void;
     repeat(fn: () => void, intervalMillis: number): void;
     send(info: AnyLiveInfo): void;
@@ -141,7 +142,7 @@ declare class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
         to: string;
         replace: boolean;
     } | undefined;
-    pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
+    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
 }
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
@@ -162,12 +163,12 @@ declare class WsLiveViewSocket extends BaseLiveViewSocket {
     private repeatCallback;
     private sendCallback;
     private subscribeCallback;
-    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: Record<string, string | number>, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendCallback: (info: AnyLiveInfo) => void, subscribeCallback: (topic: string) => void);
+    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendCallback: (info: AnyLiveInfo) => void, subscribeCallback: (topic: string) => void);
     putFlash(key: string, value: string): void;
     pageTitle(newPageTitle: string): void;
     pushEvent(pushEvent: AnyLivePushEvent): void;
-    pushPatch(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
-    pushRedirect(path: string, params?: Record<string, string | number>, replaceHistory?: boolean): void;
+    pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
+    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
     repeat(fn: () => void, intervalMillis: number): void;
     send(info: AnyLiveInfo): void;
     subscribe(topic: string): void;
@@ -436,7 +437,7 @@ declare type Parts = {
 };
 declare class HtmlSafeString {
     readonly statics: readonly string[];
-    readonly _dynamics: readonly unknown[];
+    readonly dynamics: readonly unknown[];
     readonly isLiveComponent: boolean;
     constructor(statics: readonly string[], dynamics: readonly unknown[], isLiveComponent?: boolean);
     partsTree(includeStatics?: boolean): Parts;
@@ -634,17 +635,22 @@ declare type LiveViewChangesetFactory<T> = (existing: Partial<T>, newAttrs: Part
 declare const newChangesetFactory: <T>(schema: SomeZodObject) => LiveViewChangesetFactory<T>;
 
 declare type SubscriberFunction<T> = (data: T) => void;
+declare type SubscriberId = string;
 interface Subscriber {
-    subscribe<T>(topic: string, subscriber: SubscriberFunction<T>): Promise<string>;
-    unsubscribe(topic: string, subscriberId: string): Promise<void>;
+    subscribe<T extends {
+        type: string;
+    }>(topic: string, subscriber: SubscriberFunction<T>): Promise<SubscriberId>;
+    unsubscribe(topic: string, subscriberId: SubscriberId): Promise<void>;
 }
 interface Publisher {
-    broadcast<T>(topic: string, data: T): Promise<void>;
+    broadcast<T extends {
+        type: string;
+    }>(topic: string, data: T): Promise<void>;
 }
 interface PubSub extends Subscriber, Publisher {
 }
 
-declare class SingleProcessPubSub<T> implements Subscriber, Publisher {
+declare class SingleProcessPubSub implements Subscriber, Publisher {
     private subscribers;
     subscribe<T>(topic: string, subscriber: SubscriberFunction<T>): Promise<string>;
     broadcast<T>(topic: string, data: T): Promise<void>;
@@ -743,27 +749,90 @@ declare class LiveViewManager {
     private serDe;
     private csrfToken?;
     private _events;
-    private eventAdded;
     private _pageTitle;
     private pageTitleChanged;
     private socket;
     private liveViewRootTemplate?;
     constructor(component: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate);
+    /**
+     * The `phx_join` event is the initial connection between the client and the server and initializes the
+     * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
+     * future client interactions.
+     * @param message a `PhxJoinIncoming` message
+     */
     handleJoin(message: PhxJoinIncoming): Promise<void>;
+    /**
+     * Every event other than `phx_join` that is received over the connected WebSocket are passed into this
+     * method and then dispatched the appropriate handler based on the message type.
+     * @param phxMessage
+     */
     handleSubscriptions(phxMessage: PhxMessage): Promise<void>;
+    /**
+     * Any message of type `event` is passed into this method and then handled based on the payload details of
+     * the message including: click, form, key, blur/focus, and hook events.
+     * @param message a `PhxEventIncoming` message with a different payload depending on the event type
+     */
     onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>): Promise<void>;
+    /**
+     * Handle's `live_patch` message from clients which denote change to the `LiveView`'s path parameters
+     * and kicks off a re-render after calling `handleParams`.
+     * @param message a `PhxLivePatchIncoming` message
+     */
     onLivePatch(message: PhxLivePatchIncoming): Promise<void>;
+    /**
+     * Responds to `heartbeat` message from clients by sending a `heartbeat` message back.
+     * @param message
+     */
     onHeartbeat(message: PhxHeartbeatIncoming): void;
+    /**
+     * Handles `phx_leave` messages from clients which are sent when the client is leaves the `LiveView`
+     * that is currently being rendered by navigating to a different `LiveView` or closing the browser.
+     * @param message
+     */
     onPhxLeave(message: PhxIncomingMessage<{}>): Promise<void>;
+    /**
+     * Clean up any resources used by the `LiveView` and `LiveComponent` instances.
+     */
     private shutdown;
     private repeat;
+    /**
+     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
+     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to update the browser's
+     * path and query string params.
+     * @param path the path to patch
+     * @param params the URLSearchParams to that will drive the new path query string params
+     * @param replaceHistory whether to replace the current browser history entry or not
+     */
     private onPushPatch;
+    /**
+     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
+     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to redirect the browser to a
+     * new path and query string params.
+     * @param path the path to redirect to
+     * @param params the URLSearchParams to that will be added to the redirect
+     * @param replaceHistory whether to replace the current browser history entry or not
+     */
     private onPushRedirect;
+    /**
+     * Common logic that handles both `live_patch` and `live_redirect` messages from clients.
+     * @param navEvent the type of navigation event to handle: either `live_patch` or `live_redirect`
+     * @param path the path to patch or to be redirected to
+     * @param params the URLSearchParams to that will be added to the path
+     * @param replaceHistory whether to replace the current browser history entry or not
+     */
     private onPushNavigation;
+    /**
+     * Queues `AnyLivePushEvent` messages to be sent to the client on the subsequent `sendPhxReply` call.
+     * @param pushEvent
+     */
     private onPushEvent;
-    private putFlash;
+    /**
+     * Handles sending `LiveInfo` events back to the `LiveView`'s `handleInfo` method.
+     * @param info the `LiveInfo` event to dispatch to the `LiveView`
+     */
     private sendInternal;
     private set pageTitle(value);
+    private putFlash;
     private maybeWrapInRootTemplate;
     private maybeAddPageTitleToParts;
     private maybeAddEventsToParts;
@@ -799,4 +868,4 @@ declare class WsMessageRouter {
     private onPhxJoin;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SingleProcessPubSub, Subscriber, SubscriberFunction, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_flash, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_flash, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
