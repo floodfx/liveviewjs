@@ -280,8 +280,8 @@ interface LiveViewMeta {
  * Abstract `LiveView` class that is easy to extend for any `LiveView`
  */
 declare abstract class BaseLiveView<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo> implements LiveView<TContext, TEvents, TInfos> {
-    handleEvent(event: TEvents, socket: LiveViewSocket<TContext>): void | Promise<void>;
-    handleInfo(info: TInfos, socket: LiveViewSocket<TContext>): void | Promise<void>;
+    handleEvent(event: TEvents, socket: LiveViewSocket<TContext>): void;
+    handleInfo(info: TInfos, socket: LiveViewSocket<TContext>): void;
     mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TContext>): void;
     handleParams(url: URL, socket: LiveViewSocket<TContext>): void;
     abstract render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
@@ -451,7 +451,7 @@ interface FormForOptions {
     method?: "get" | "post";
     id?: string;
 }
-declare const form_for: <T>(action: string, options?: FormForOptions | undefined) => HtmlSafeString;
+declare const form_for: <T>(action: string, csrfToken: string, options?: FormForOptions | undefined) => HtmlSafeString;
 
 interface InputOptions {
     placeholder?: string;
@@ -468,12 +468,6 @@ interface ErrorTagOptions {
     className?: string;
 }
 declare const error_tag: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: ErrorTagOptions | undefined) => HtmlSafeString;
-
-declare class Flash extends Map<string, string> {
-    getFlash(key: string): string | undefined;
-}
-
-declare const live_flash: (flash: Flash | undefined, flashKey: string) => HtmlSafeString;
 
 interface LiveViewPatchHelperOptions {
     to: {
@@ -512,16 +506,18 @@ interface LiveViewRouter {
 }
 
 /**
+ * Type that defines a function that returns a string value used for protecting requests against
+ * Cross-site Request Forgery (CSRF) attacks.  Good concrete implementations are: crypto.randomBytes, uuidv4.
+ */
+declare type CsrfGenerator = () => string;
+
+/**
  * Type that defines a function that returns a string ID used to identify a unique http request
  * and/or websocket connection.  Should generate unique IDs for each request and connection.  Good
  * concrete implementations are: nanoid, shortid, uuidv4 (though these are long).
  */
 declare type IdGenerator = () => string;
-/**
- * Type that defines a function that returns a string value used for protecting requests against
- * Cross-site Request Forgery (CSRF) attacks.  Good concrete implementations are: crypto.randomBytes, uuidv4.
- */
-declare type CsrfGenerator = () => string;
+
 /**
  * A class that knows how to serialize (Ser) and deserialize (De) session data.  This is used to pass
  * session data from the initial http request to the websocket connection.  You should use a strategy that
@@ -531,6 +527,7 @@ interface SerDe {
     serialize<T>(data: T): Promise<string>;
     deserialize<T>(data: string): Promise<T>;
 }
+
 /**
  * An interface that represents how to extract required data from an HTTP server request (such as Express, Koa, etc in the
  * Node ecosystem or Oak on the Deno ecosystem) for handling a LiveView http request.
@@ -868,4 +865,4 @@ declare class WsMessageRouter {
     private onPhxJoin;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_flash, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
