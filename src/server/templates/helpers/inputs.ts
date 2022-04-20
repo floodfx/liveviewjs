@@ -33,7 +33,7 @@ interface ErrorTagOptions {
 
 export const error_tag = <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: ErrorTagOptions) => {
   const error = changeset.errors ? changeset.errors[key] : undefined;
-  if (changeset.action && error) {
+  if (!changeset.valid && error) {
     const className = options?.className ?? "invalid-feedback";
     return html`<span class="${className}" phx-feedback-for="${key}">${error}</span>`;
   }

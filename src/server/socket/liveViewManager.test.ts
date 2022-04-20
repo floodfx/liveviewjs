@@ -47,7 +47,10 @@ describe("test component manager", () => {
       liveViewConnectionId,
       ws,
       new JsonSerDe(),
-      new SingleProcessPubSub()
+      new SingleProcessPubSub(),
+      (sessionData, innerContent) => {
+        return html`<div>${innerContent}</div>`;
+      }
     );
     cmLiveViewAndLiveComponent = new LiveViewManager(
       new TestLiveViewAndLiveComponent(),
@@ -95,6 +98,15 @@ describe("test component manager", () => {
     cmLiveView.handleJoin(
       newPhxJoin("my csrf token", "my signing secret", {
         url: "http://localhost:4444/test",
+        signingSecretOverride: "my other signing secret",
+      })
+    );
+    expect(ws.send).toHaveBeenCalledTimes(0);
+  });
+
+  it("fails join without valid redirect or url", () => {
+    cmLiveView.handleJoin(
+      newPhxJoin("my csrf token", "my signing secret", {
         signingSecretOverride: "my other signing secret",
       })
     );
@@ -245,6 +257,28 @@ describe("test component manager", () => {
     await cmLiveView.handleSubscriptions({ type: "event", message: phx_form });
     await cmLiveView.onEvent(phx_form);
     expect(ws.send).toHaveBeenCalledTimes(3);
+  });
+
+  it("onEvent valid form event rejects mismatching csrf", async () => {
+    const phx_form: PhxIncomingMessage<PhxFormPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        type: "form",
+        event: "eventName",
+        // @ts-ignore
+        value: { value: "eventValue", _csrf_token: "wrong" },
+        uploads: {},
+      },
+    ];
+    await cmLiveView.handleJoin(
+      newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" })
+    );
+    // this call is rejected because mismatching csrf so send not called after join
+    await cmLiveView.handleSubscriptions({ type: "event", message: phx_form });
+    expect(ws.send).toHaveBeenCalledTimes(1);
   });
 
   it("onEvent valid keyup event", async () => {

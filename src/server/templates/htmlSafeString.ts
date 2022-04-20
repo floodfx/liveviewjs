@@ -59,19 +59,19 @@ export type Parts = { [key: string]: unknown };
 
 export class HtmlSafeString {
   readonly statics: readonly string[];
-  readonly _dynamics: readonly unknown[];
+  readonly dynamics: readonly unknown[];
   readonly isLiveComponent: boolean = false;
   // readonly children: readonly HtmlSafeString[]
 
   constructor(statics: readonly string[], dynamics: readonly unknown[], isLiveComponent: boolean = false) {
     this.statics = statics;
-    this._dynamics = dynamics;
+    this.dynamics = dynamics;
     this.isLiveComponent = isLiveComponent;
   }
 
   partsTree(includeStatics: boolean = true): Parts {
     // statics.length should always equal dynamics.length + 1
-    if (this._dynamics.length === 0) {
+    if (this.dynamics.length === 0) {
       if (this.statics.length !== 1) {
         throw new Error("Expected exactly one static string for HtmlSafeString" + this);
       }
@@ -87,7 +87,7 @@ export class HtmlSafeString {
     }
 
     // otherwise walk the dynamics and build the parts tree
-    const parts = this._dynamics.reduce((acc: Parts, cur: unknown, index: number) => {
+    const parts = this.dynamics.reduce((acc: Parts, cur: unknown, index: number) => {
       if (cur instanceof HtmlSafeString) {
         // handle isLiveComponent case
         if (cur.isLiveComponent) {
@@ -136,6 +136,7 @@ export class HtmlSafeString {
         };
       }
     }, {} as Parts);
+
     // appends the statics to the parts tree
     if (includeStatics) {
       parts["s"] = this.statics;
@@ -145,7 +146,7 @@ export class HtmlSafeString {
 
   toString(): string {
     return this.statics.reduce((result, s, i) => {
-      const d = this._dynamics[i - 1];
+      const d = this.dynamics[i - 1];
       return result + escapehtml(d) + s;
     });
   }

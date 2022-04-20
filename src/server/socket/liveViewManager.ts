@@ -39,15 +39,6 @@ import {
 import { newHeartbeatReply, newPhxReply } from "./util";
 
 /**
- * Add structuredClone type until makes it to latest @types/node
- * See: https://github.com/DefinitelyTyped/DefinitelyTyped/pull/59434/files
- */
-declare function structuredClone<T>(
-  value: T,
-  transfer?: { transfer: ReadonlyArray<import("worker_threads").TransferListItem> }
-): T;
-
-/**
  * Data kept for each `LiveComponent` instance.
  */
 interface StatefulLiveComponentData<Context> {
@@ -213,7 +204,7 @@ export class LiveViewManager {
    * @param phxMessage
    */
   public async handleSubscriptions(phxMessage: PhxMessage) {
-    console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
+    // console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
     try {
       const { type } = phxMessage;
       switch (type) {
@@ -237,6 +228,7 @@ export class LiveViewManager {
           );
       }
     } catch (e) {
+      /* istanbul ignore next */
       console.error("Error handling subscription", e);
     }
   }
@@ -275,7 +267,7 @@ export class LiveViewManager {
         case "form":
           // parse payload into form data
           value = Object.fromEntries(new URLSearchParams(payload.value));
-          // ensure _csrf_token is set and same as session csrf token
+          // if _csrf_token is set, ensure it is the same as session csrf token
           if (value.hasOwnProperty("_csrf_token")) {
             if (value._csrf_token !== this.csrfToken) {
               console.error(
@@ -284,8 +276,7 @@ export class LiveViewManager {
               return;
             }
           } else {
-            console.error(`Rejecting form event due to missing _csrf_token value`);
-            return;
+            console.warn(`form event missing _csrf_token value`);
           }
           // TODO - check for _target variable from phx_change here and remove it from value?
           break;
@@ -353,6 +344,7 @@ export class LiveViewManager {
             // not sure how we'd get here but just in case - ignore test coverage though
             /* istanbul ignore next */
             console.error("Could not find stateful component instance for", componentClass);
+            /* istanbul ignore next */
             return;
           }
         } else {
@@ -401,6 +393,7 @@ export class LiveViewManager {
         this.socket.updateContextWithTempAssigns();
       }
     } catch (e) {
+      /* istanbul ignore next */
       console.error("Error handling event", e);
     }
   }
@@ -444,6 +437,7 @@ export class LiveViewManager {
       // remove temp data
       this.socket.updateContextWithTempAssigns();
     } catch (e) {
+      /* istanbul ignore next */
       console.error("Error handling live_patch", e);
     }
   }
@@ -549,6 +543,7 @@ export class LiveViewManager {
       // remove temp data
       this.socket.updateContextWithTempAssigns();
     } catch (e) {
+      /* istanbul ignore next */
       console.error(`Error handling ${navEvent}`, e);
     }
   }
@@ -567,40 +562,43 @@ export class LiveViewManager {
    * @param info the `LiveInfo` event to dispatch to the `LiveView`
    */
   private async sendInternal(info: AnyLiveInfo): Promise<void> {
-    // console.log("sendInternal", event, this.socketId);
+    try {
+      // console.log("sendInternal", event, this.socketId);
 
-    const previousContext = this.socket.context;
-    this.liveView.handleInfo(info, this.socket);
+      const previousContext = this.socket.context;
+      this.liveView.handleInfo(info, this.socket);
 
-    const ctxEqual = false; //areContextsValueEqual(previousContext, this.socket.context);
-    let diff: Parts = {};
-    // only calc diff if contexts have changed
-    if (!ctxEqual) {
-      // get old render tree and new render tree for diffing
-      const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
-      let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+      const ctxEqual = false; //areContextsValueEqual(previousContext, this.socket.context);
+      let diff: Parts = {};
+      // only calc diff if contexts have changed
+      if (!ctxEqual) {
+        // get old render tree and new render tree for diffing
+        const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+        let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
-      // wrap in root template if there is one
-      view = await this.maybeWrapInRootTemplate(view);
+        // wrap in root template if there is one
+        view = await this.maybeWrapInRootTemplate(view);
 
-      diff = deepDiff(oldView.partsTree(), view.partsTree());
+        diff = deepDiff(oldView.partsTree(), view.partsTree());
 
-      diff = this.maybeAddPageTitleToParts(diff);
-      diff = this.maybeAddEventsToParts(diff);
+        diff = this.maybeAddPageTitleToParts(diff);
+        diff = this.maybeAddEventsToParts(diff);
 
-      const reply: PhxDiffReply = [
-        null, // no join reference
-        null, // no message reference
-        this.joinId,
-        "diff",
-        diff,
-      ];
-      this.sendPhxReply(reply);
+        const reply: PhxDiffReply = [
+          null, // no join reference
+          null, // no message reference
+          this.joinId,
+          "diff",
+          diff,
+        ];
+        this.sendPhxReply(reply);
 
-      // remove temp data
-      this.socket.updateContextWithTempAssigns();
-    } else {
-      console.error("received internal event but no handleInfo in component", this.liveView);
+        // remove temp data
+        this.socket.updateContextWithTempAssigns();
+      }
+    } catch (e) {
+      /* istanbul ignore next */
+      console.error(`Error sending internal info`, e);
     }
   }
 

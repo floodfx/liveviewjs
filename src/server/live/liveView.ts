@@ -136,11 +136,13 @@ export abstract class BaseLiveView<
   TInfos extends LiveInfo = AnyLiveInfo
 > implements LiveView<TContext, TEvents, TInfos>
 {
-  handleEvent(event: TEvents, socket: LiveViewSocket<TContext>): void | Promise<void> {
+  handleEvent(event: TEvents, socket: LiveViewSocket<TContext>) {
+    // istanbul ignore next
     console.warn(`onEvent not implemented for ${this.constructor.name} but event received: ${event}`);
   }
 
-  handleInfo(info: TInfos, socket: LiveViewSocket<TContext>): void | Promise<void> {
+  handleInfo(info: TInfos, socket: LiveViewSocket<TContext>) {
+    // istanbul ignore next
     console.warn(`onInfo not implemented for ${this.constructor.name} but info received: ${info}`);
   }
 

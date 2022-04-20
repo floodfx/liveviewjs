@@ -13,14 +13,17 @@ import {
   PhxIncomingMessage,
   PhxJoinIncoming,
   PhxLivePatchIncoming,
+  PhxMessage,
 } from "./types";
 import { WsMessageRouter } from "./wsMessageRouter";
 
 describe("test message router", () => {
   let mr: WsMessageRouter;
   let ws: WsAdaptor;
+  let pubSub: SingleProcessPubSub;
   beforeEach(() => {
-    mr = new WsMessageRouter(new JsonSerDe(), new SingleProcessPubSub());
+    pubSub = new SingleProcessPubSub();
+    mr = new WsMessageRouter(new JsonSerDe(), pubSub);
     ws = mock<WsAdaptor>();
   });
 
@@ -141,32 +144,50 @@ describe("test message router", () => {
   });
 
   it("onMessage valid leave event", async () => {
+    // join
     const phx_join = newPhxJoin("my csrf token", { url: "http://localhost:4444/test" });
     await mr.onMessage(ws, JSON.stringify(phx_join), router, "1234");
     expect(ws.send).toHaveBeenCalledTimes(1);
-    // live patch requires a join first
+
+    // leave
     const phxLeave: PhxIncomingMessage<{}> = ["4", "8", "lv:phx-AAAAAAAA", "phx_leave", {}];
     await mr.onMessage(ws, JSON.stringify(phxLeave), router, "1234");
-    // no socket send expected
+    // phx_leave doesn't send a response
     expect(ws.send).toHaveBeenCalledTimes(1);
   });
 
-  it("onMessage unknown leave event", async () => {
+  it("onMessage unknown leave event", (done) => {
     // live patch requires a join first
     const phxLeave: PhxIncomingMessage<{}> = ["4", "8", "lv:phx-AAAAAAAA", "phx_leave", {}];
-    await mr.onMessage(ws, JSON.stringify(phxLeave), router, "1234");
-    // no socket send expected
-    expect(ws.send).toHaveBeenCalledTimes(0);
+    pubSub.subscribe("lv:phx-AAAAAAAA", (msg: PhxMessage) => {
+      fail("should not have received message");
+    });
+    mr.onMessage(ws, JSON.stringify(phxLeave), router, "1234");
+    setTimeout(() => {
+      expect(ws.send).toHaveBeenCalledTimes(0);
+      done();
+    }, 100);
   });
 
-  it("onMessage unknown message does not throw error", async () => {
+  it("onMessage unknown message does not throw error", (done) => {
     // live patch requires a join first
     const phxUnknown = ["4", "8", "lv:phx-AAAAAAAA", "blahblah", {}];
-    try {
-      await mr.onMessage(ws, JSON.stringify(phxUnknown), router, "1234");
-    } catch (e: any) {
-      fail("should not throw");
-    }
+    pubSub.subscribe("lv:phx-AAAAAAAA", (msg: PhxMessage) => {
+      fail("should not have received message");
+    });
+    mr.onMessage(ws, JSON.stringify(phxUnknown), router, "1234");
+    setTimeout(() => {
+      expect(ws.send).toHaveBeenCalledTimes(0);
+      done();
+    }, 100);
+  });
+
+  it("onClose sends phx-leave", (done) => {
+    pubSub.subscribe("id", (msg: PhxMessage) => {
+      expect(msg.type).toEqual("phx_leave");
+      done();
+    });
+    mr.onClose(0, "id");
   });
 });
 

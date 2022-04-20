@@ -1,0 +1,55 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`test http adaptor adapts to http live views 1`] = `
+"<main>
+    <div
+      data-phx-main=\\"true\\"
+      data-phx-session=\\"{&quot;flash&quot;:{&quot;type&quot;:&quot;test&quot;,&quot;message&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
+      data-phx-static=\\"\\"
+      id=\\"phx-id\\">
+      
+      <div>
+        Test Live View
+        
+      </div>
+    
+    </div>
+  </main>"
+`;
+
+exports[`test http adaptor rendering view inside another template 1`] = `
+"<main>
+    <div
+      data-phx-main=\\"true\\"
+      data-phx-session=\\"{&quot;flash&quot;:{&quot;type&quot;:&quot;test&quot;,&quot;message&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
+      data-phx-static=\\"\\"
+      id=\\"phx-id\\">
+       <div class=\\"container\\">
+          <p class=\\"flash\\">test: test message</p>
+          
+      <div>
+        Test Live View
+        <div><div>Test Live Component: 1</div></div>
+      </div>
+    
+        </div>
+    </div>
+  </main>"
+`;
+
+exports[`test http adaptor shows live component 1`] = `
+"<main>
+    <div
+      data-phx-main=\\"true\\"
+      data-phx-session=\\"{&quot;flash&quot;:{&quot;type&quot;:&quot;test&quot;,&quot;message&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
+      data-phx-static=\\"\\"
+      id=\\"phx-id\\">
+      
+      <div>
+        Test Live View
+        <div><div>Test Live Component: 1</div></div>
+      </div>
+    
+    </div>
+  </main>"
+`;

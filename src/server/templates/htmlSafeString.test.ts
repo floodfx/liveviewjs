@@ -247,6 +247,11 @@ describe("test escapeHtml", () => {
       s: ["", ""],
     });
   });
+
+  it("optimizes single item statics with no dynamics into a string", () => {
+    const result = html`a${"b"}`;
+    expect(result.partsTree()).toEqual({ 0: "b", s: ["a", ""] });
+  });
 });
 
 class TestLiveComponent extends BaseLiveComponent {
