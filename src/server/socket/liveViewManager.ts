@@ -12,7 +12,6 @@ import {
   LiveViewTemplate,
   WsLiveComponentSocket,
 } from "../live";
-import { Flash } from "../live/flash";
 import { PubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { HtmlSafeString, Parts, safe } from "../templates";
@@ -151,7 +150,6 @@ export class LiveViewManager {
 
       // attempt to deserialize session
       this.session = await this.serDe.deserialize<SessionData>(payloadSession);
-      this.session.flash = new Flash(Object.entries(this.session.flash || {}));
       // if session csrfToken does not match payload csrfToken, reject join
       if (this.session._csrf_token !== this.csrfToken) {
         console.error("Rejecting join due to mismatched csrfTokens", this.session._csrf_token, this.csrfToken);
