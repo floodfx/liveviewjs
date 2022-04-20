@@ -76,9 +76,11 @@ class BaseLiveComponent {
  */
 class BaseLiveView {
     handleEvent(event, socket) {
+        // istanbul ignore next
         console.warn(`onEvent not implemented for ${this.constructor.name} but event received: ${event}`);
     }
     handleInfo(info, socket) {
+        // istanbul ignore next
         console.warn(`onInfo not implemented for ${this.constructor.name} but info received: ${info}`);
     }
     mount(params, session, socket) {
@@ -221,22 +223,53 @@ function deepDiff(oldParts, newParts) {
     let diff = {};
     // ok to use JSON stringify here since Parts is ordered
     if (JSON.stringify(oldParts) === JSON.stringify(newParts)) {
-        // same parts so no diff
+        // same parts so no diff thus return empty diff
         return diff;
+    }
+    // if lengths of newParts and oldParts are different, then
+    // the diff is all the new parts AND the new statics.  The reason is that
+    // statics and dynamics part counts are dependent on each other.  if there are N
+    // dynamics there are N+1 statics.
+    let keyCountsDiffer = false;
+    if (Object.keys(oldParts).length !== Object.keys(newParts).length) {
+        // // different lengths so diff is all new parts. i.e. new statics and new dynamics
+        // diff = structuredClone(newParts);
+        // return diff;
+        keyCountsDiffer = true;
     }
     // if JSON.strigifys are different then iterate through keys
     // TODO - should we check if key length is different?
     for (let i = 0; i < Object.keys(newParts).length; i++) {
         const key = Object.keys(newParts)[i];
-        // if key is 's' should always be a statics array
-        // if key is 'd' should always be an array of Parts[]
-        if (key === "s" || key === "d") {
+        // the final message to client can also contain keys of 't' and 'e'
+        // but these are added after the diff is calculated and represent
+        // the title and event parts of the phx reply message.  they will not
+        // be present in the Parts tree.
+        if (key === "s") {
+            // key of 's' should always be a statics array
+            const oldStatics = oldParts[key];
+            const newStatics = newParts[key];
+            if (oldStatics.length !== newStatics.length) {
+                // if length is different and if so keep new statics
+                diff[key] = newStatics;
+            }
+            else if (keyCountsDiffer) {
+                // if key counts are different for new and old parts keep the new statics
+                diff[key] = newStatics;
+            }
+            else if (diffArrays(oldStatics, newStatics)) {
+                // if length is the same but contents are different then keep new statics
+                diff[key] = newStatics;
+            }
+        }
+        else if (key === "d") {
+            // key of 'd' should always be an array of Parts
             if (diffArrays(oldParts[key], newParts[key])) {
                 diff[key] = newParts[key];
             }
         }
-        // if oldParts[key] is present is can only be a string or Parts object
         else if (oldParts[key]) {
+            // if oldParts[key] is present it can only be a string or Parts object
             // check if string and diff it
             if (typeof newParts[key] === "string" && typeof oldParts[key] === "string") {
                 if (newParts[key] !== oldParts[key]) {
@@ -263,8 +296,8 @@ function deepDiff(oldParts, newParts) {
                 diff[key] = newParts[key];
             }
         }
-        // newParts has new key so add keep that
         else {
+            // newParts has new key so add that diff
             diff[key] = newParts[key];
         }
     }
@@ -437,13 +470,16 @@ function html(statics, ...dynamics) {
 }
 
 // TODO insert hidden input for CSRF token?
-const form_for = (action, options) => {
+const form_for = (action, csrfToken, options) => {
     const method = options?.method ?? "post";
     const phx_submit = options?.phx_submit ? safe(` phx-submit="${options.phx_submit}"`) : "";
     const phx_change = options?.phx_change ? safe(` phx-change="${options.phx_change}"`) : "";
     const id = options?.id ? safe(` id="${options.id}"`) : "";
     // prettier-ignore
-    return html `<form${id} action="${action}" method="${method}"${phx_submit}${phx_change}>`;
+    return html `
+    <form${id} action="${action}" method="${method}"${phx_submit}${phx_change}>
+      <input type="hidden" name="_csrf_token" value="${csrfToken}" />
+  `;
 };
 
 const text_input = (changeset, key, options) => {
@@ -462,18 +498,11 @@ const telephone_input = (changeset, key, options) => {
 };
 const error_tag = (changeset, key, options) => {
     const error = changeset.errors ? changeset.errors[key] : undefined;
-    if (changeset.action && error) {
+    if (!changeset.valid && error) {
         const className = options?.className ?? "invalid-feedback";
         return html `<span class="${className}" phx-feedback-for="${key}">${error}</span>`;
     }
     return html ``;
-};
-
-const live_flash = (flash, flashKey) => {
-    if (!flash) {
-        return html ``;
-    }
-    return html `${flash.getFlash(flashKey) ?? ""}`;
 };
 
 function buildHref(options) {
@@ -594,7 +623,7 @@ const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor,
     const view = await liveView.render(liveViewSocket.context, {
         csrfToken: sessionData.csrfToken,
         async live_component(liveComponent, params) {
-            // params may be empty
+            // params may be empty if the `LiveComponent` doesn't have any params
             params = params ?? {};
             delete params.id; // remove id before passing to socket
             // prepare a http socket for the `LiveComponent` render lifecycle: mount => update => render
@@ -702,7 +731,7 @@ const newChangesetFactory = (schema) => {
             action,
             changes: updatedDiff(existing, merged),
             data: result.success ? result.data : merged,
-            valid: result.success,
+            valid: action !== undefined ? result.success : true,
             errors,
         };
     };
@@ -733,14 +762,6 @@ class SingleProcessPubSub {
         await eventEmitter.removeListener(topic, subscriber);
         // remove subscriber from subscribers
         delete this.subscribers[subscriberId];
-    }
-}
-
-class Flash extends Map {
-    getFlash(key) {
-        const value = this.get(key);
-        this.delete(key);
-        return value;
     }
 }
 
@@ -830,7 +851,6 @@ class LiveViewManager {
             this.csrfToken = payloadParams._csrf_token;
             // attempt to deserialize session
             this.session = await this.serDe.deserialize(payloadSession);
-            this.session.flash = new Flash(Object.entries(this.session.flash || {}));
             // if session csrfToken does not match payload csrfToken, reject join
             if (this.session._csrf_token !== this.csrfToken) {
                 console.error("Rejecting join due to mismatched csrfTokens", this.session._csrf_token, this.csrfToken);
@@ -878,7 +898,7 @@ class LiveViewManager {
      * @param phxMessage
      */
     async handleSubscriptions(phxMessage) {
-        console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
+        // console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
         try {
             const { type } = phxMessage;
             switch (type) {
@@ -899,6 +919,7 @@ class LiveViewManager {
             }
         }
         catch (e) {
+            /* istanbul ignore next */
             console.error("Error handling subscription", e);
         }
     }
@@ -925,7 +946,7 @@ class LiveViewManager {
                 case "form":
                     // parse payload into form data
                     value = Object.fromEntries(new URLSearchParams(payload.value));
-                    // ensure _csrf_token is set and same as session csrf token
+                    // if _csrf_token is set, ensure it is the same as session csrf token
                     if (value.hasOwnProperty("_csrf_token")) {
                         if (value._csrf_token !== this.csrfToken) {
                             console.error(`Rejecting form submission due to mismatched csrfTokens. expected:"${this.csrfToken}", got:"${value._csrf_token}"`);
@@ -933,8 +954,7 @@ class LiveViewManager {
                         }
                     }
                     else {
-                        console.error(`Rejecting form event due to missing _csrf_token value`);
-                        return;
+                        console.warn(`form event missing _csrf_token value`);
                     }
                     // TODO - check for _target variable from phx_change here and remove it from value?
                     break;
@@ -994,6 +1014,7 @@ class LiveViewManager {
                         // not sure how we'd get here but just in case - ignore test coverage though
                         /* istanbul ignore next */
                         console.error("Could not find stateful component instance for", componentClass);
+                        /* istanbul ignore next */
                         return;
                     }
                 }
@@ -1036,6 +1057,7 @@ class LiveViewManager {
             }
         }
         catch (e) {
+            /* istanbul ignore next */
             console.error("Error handling event", e);
         }
     }
@@ -1071,6 +1093,7 @@ class LiveViewManager {
             this.socket.updateContextWithTempAssigns();
         }
         catch (e) {
+            /* istanbul ignore next */
             console.error("Error handling live_patch", e);
         }
     }
@@ -1161,6 +1184,7 @@ class LiveViewManager {
             this.socket.updateContextWithTempAssigns();
         }
         catch (e) {
+            /* istanbul ignore next */
             console.error(`Error handling ${navEvent}`, e);
         }
     }
@@ -1177,30 +1201,37 @@ class LiveViewManager {
      * @param info the `LiveInfo` event to dispatch to the `LiveView`
      */
     async sendInternal(info) {
-        // console.log("sendInternal", event, this.socketId);
-        const previousContext = this.socket.context;
-        this.liveView.handleInfo(info, this.socket);
-        let diff = {};
-        // only calc diff if contexts have changed
-        {
-            // get old render tree and new render tree for diffing
-            const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
-            let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
-            // wrap in root template if there is one
-            view = await this.maybeWrapInRootTemplate(view);
-            diff = deepDiff(oldView.partsTree(), view.partsTree());
-            diff = this.maybeAddPageTitleToParts(diff);
-            diff = this.maybeAddEventsToParts(diff);
-            const reply = [
-                null,
-                null,
-                this.joinId,
-                "diff",
-                diff,
-            ];
-            this.sendPhxReply(reply);
-            // remove temp data
-            this.socket.updateContextWithTempAssigns();
+        try {
+            // console.log("sendInternal", event, this.socketId);
+            const previousContext = this.socket.context;
+            this.liveView.handleInfo(info, this.socket);
+            const ctxEqual = false; //areContextsValueEqual(previousContext, this.socket.context);
+            let diff = {};
+            // only calc diff if contexts have changed
+            if (!ctxEqual) {
+                // get old render tree and new render tree for diffing
+                const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+                let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+                // wrap in root template if there is one
+                view = await this.maybeWrapInRootTemplate(view);
+                diff = deepDiff(oldView.partsTree(), view.partsTree());
+                diff = this.maybeAddPageTitleToParts(diff);
+                diff = this.maybeAddEventsToParts(diff);
+                const reply = [
+                    null,
+                    null,
+                    this.joinId,
+                    "diff",
+                    diff,
+                ];
+                this.sendPhxReply(reply);
+                // remove temp data
+                this.socket.updateContextWithTempAssigns();
+            }
+        }
+        catch (e) {
+            /* istanbul ignore next */
+            console.error(`Error sending internal info`, e);
         }
     }
     set pageTitle(newTitle) {
@@ -1484,4 +1515,4 @@ class WsMessageRouter {
     }
 }
 
-export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_flash, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };

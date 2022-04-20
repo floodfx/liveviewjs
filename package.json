@@ -2,13 +2,6 @@
   "name": "liveviewjs",
   "version": "0.3.0-rc.2",
   "description": "LiveViewJS brings the power of LiveView to Typescript and Javascript developers and applications.",
-  "targets": {
-    "client": {
-      "source": "src/client/liveview.ts",
-      "context": "browser",
-      "distDir": "dist/client"
-    }
-  },
   "exports": {
     "require": "./dist/liveview.js",
     "import": "./dist/liveview.mjs"
@@ -18,22 +11,16 @@
   "files": [
     "dist/liveview.js",
     "dist/liveview.d.ts",
-    "dist/liveview.mjs",
-    "dist/client/**/*.js",
-    "dist/client/**/*.js.map",
-    "dist/client/**/*.ts"
+    "dist/liveview.mjs"
   ],
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "client-build": "npm run check; parcel build; npm run copy-client-ts",
-    "client-watch": "parcel watch",
-    "copy-client-ts": "mkdir -p dist/client; cp src/client/liveview.ts dist/client/liveview.ts",
     "copy-build-to-dist": "mkdir -p dist/client; cp build/liveview.js dist; cp build/liveview.mjs dist; cp build/liveview.d.ts dist",
     "check": "tsc --noEmit",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf build; rm -rf dist",
     "test": "jest --expand",
-    "dist": "npm run clean; npm run rollup; npm run client-build; npm run copy-build-to-dist",
+    "dist": "npm run clean; npm run rollup; npm run copy-build-to-dist",
     "prepublish": "npm run dist",
     "format": "prettier --write '**/*.{ts,js,json,html,css}'",
     "rollup": "rollup -c"
@@ -50,35 +37,25 @@
   "dependencies": {
     "deep-object-diff": "^1.1.7",
     "nanoid": "^3.2.0",
-    "nprogress": "^0.2.0",
-    "phoenix": "^1.6.6",
-    "phoenix_html": "^3.2.0",
-    "phoenix_live_view": "^0.17.6",
     "zod": "^3.14.3"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.0.2",
     "@rollup/plugin-node-resolve": "^13.1.3",
     "@rollup/plugin-typescript": "^8.3.1",
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^27.4.1",
     "@types/node": "^17.0.23",
-    "@types/nprogress": "^0.2.0",
-    "@types/phoenix": "^1.5.4",
-    "@types/phoenix_live_view": "^0.15.1",
     "@types/supertest": "^2.0.11",
-    "eslint": "^8.5.0",
-    "jest": "^27.4.7",
+    "jest": "^28.0.0-alpha.8",
     "jest-mock-extended": "^2.0.4",
-    "nodemon": "^2.0.15",
-    "parcel": "^2.2.1",
     "prettier": "^2.5.1",
     "rollup": "^2.70.1",
     "rollup-plugin-dts": "^4.2.0",
     "rollup-plugin-typescript2": "^0.31.2",
     "supertest": "^6.2.2",
     "superwstest": "^2.0.0",
-    "ts-jest": "^27.1.3",
-    "ts-node": "^10.4.0",
-    "typescript": "^4.5.4"
+    "ts-jest": "^27.1.4",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.3"
   }
 }
