@@ -3,29 +3,9 @@ import { SessionData } from "../session";
 import { HttpLiveViewSocket } from "../socket/liveSocket";
 import { html, safe } from "../templates";
 import { PageTitleDefaults } from "../templates/helpers/page_title";
-
-/**
- * Type that defines a function that returns a string ID used to identify a unique http request
- * and/or websocket connection.  Should generate unique IDs for each request and connection.  Good
- * concrete implementations are: nanoid, shortid, uuidv4 (though these are long).
- */
-export type IdGenerator = () => string;
-
-/**
- * Type that defines a function that returns a string value used for protecting requests against
- * Cross-site Request Forgery (CSRF) attacks.  Good concrete implementations are: crypto.randomBytes, uuidv4.
- */
-export type CsrfGenerator = () => string;
-
-/**
- * A class that knows how to serialize (Ser) and deserialize (De) session data.  This is used to pass
- * session data from the initial http request to the websocket connection.  You should use a strategy that
- * cannot be tampered with such as signed JWT tokens or other cryptographically safe serialization/deserializations.
- */
-export interface SerDe {
-  serialize<T>(data: T): Promise<string>;
-  deserialize<T>(data: string): Promise<T>;
-}
+import { CsrfGenerator } from "./csrfGen";
+import { IdGenerator } from "./idGen";
+import { SerDe } from "./serDe";
 
 /**
  * An interface that represents how to extract required data from an HTTP server request (such as Express, Koa, etc in the
@@ -122,7 +102,7 @@ export const handleHttpLiveView = async (
       liveComponent: LiveComponent,
       params?: Partial<unknown & { id: string | number }>
     ): Promise<LiveViewTemplate> {
-      // params may be empty
+      // params may be empty if the `LiveComponent` doesn't have any params
       params = params ?? {};
       delete params.id; // remove id before passing to socket
 

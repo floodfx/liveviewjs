@@ -1,7 +1,7 @@
 import { BaseLiveView, LiveViewMountParams, LiveViewTemplate } from ".";
 import { html } from "..";
 import { SessionData } from "../session";
-import { HttpLiveViewSocket, LiveViewSocket } from "../socket/live_socket";
+import { HttpLiveViewSocket, LiveViewSocket } from "../socket";
 
 describe("test basic component", () => {
   it("mount returns context", () => {

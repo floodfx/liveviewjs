@@ -1,4 +1,4 @@
-import { SerDe } from "./http";
+import { SerDe } from "./serDe";
 
 /**
  * A SerDe (serializer/deserializer) that uses JSON.stringify and JSON.parse.

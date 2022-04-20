@@ -1,4 +1,4 @@
-import { PhxClickPayload, PhxIncomingMessage, PhxSocketProtocolNames } from "./types";
+import { PhxClickPayload, PhxIncomingMessage, PhxProtocol } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
 
 describe("test utils", () => {
@@ -32,9 +32,9 @@ describe("test utils", () => {
     const reply = newPhxReply(incoming, replyPayload);
 
     expect(reply).toEqual([
-      incoming[PhxSocketProtocolNames.joinRef],
-      incoming[PhxSocketProtocolNames.messageRef],
-      incoming[PhxSocketProtocolNames.topic],
+      incoming[PhxProtocol.joinRef],
+      incoming[PhxProtocol.messageRef],
+      incoming[PhxProtocol.topic],
       "phx_reply",
       replyPayload,
     ]);

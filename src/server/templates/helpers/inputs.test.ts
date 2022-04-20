@@ -1,8 +1,7 @@
-import { LiveViewChangeset } from "../../component/types";
 import { text_input, telephone_input } from "./inputs";
-import { newChangesetFactory } from "../../component/changeset";
 import { z } from "zod";
 import { error_tag } from ".";
+import { newChangesetFactory } from "../../changeset";
 
 export const TestObjectSchema = z.object({
   foo: z.string(),
