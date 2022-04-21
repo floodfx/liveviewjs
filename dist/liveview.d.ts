@@ -577,6 +577,22 @@ interface WsAdaptor {
 }
 
 /**
+ * Adatpor that implements adding flash to the session data and removing flash from the session data.
+ */
+interface FlashAdaptor {
+    putFlash(session: SessionData, key: string, value: string): Promise<void>;
+    clearFlash(session: SessionData, key: string): Promise<void>;
+}
+
+/**
+ * Naive implementation of flash adaptor that just adds flash to the session data and removes flash from the session data.
+ */
+declare class SimpleFlashAdaptor implements FlashAdaptor {
+    putFlash(session: SessionData, key: string, value: string): Promise<void>;
+    clearFlash(session: SessionData, key: string): Promise<void>;
+}
+
+/**
  * Validation errors keyed by properties of T
  */
 declare type LiveViewChangesetErrors<T> = {
@@ -658,7 +674,7 @@ declare type PhxIncomingMessage<Payload> = [
     joinRef: string | null,
     messageRef: string | null,
     topic: "phoenix" | string,
-    event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
+    event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave" | "lv:clear-flash",
     payload: Payload
 ];
 declare type PhxFlash = {
@@ -678,10 +694,10 @@ declare type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
 declare type PhxLivePatchIncoming = PhxIncomingMessage<{
     url: string;
 }>;
-interface PhxEventPayload<Type extends string, Value> {
-    type: Type;
-    event: string;
-    value: Value;
+interface PhxEventPayload<TType extends string, TValue, TEvent extends string = string> {
+    type: TType;
+    event: TEvent;
+    value: TValue;
     cid?: number;
 }
 interface PhxEventUploads {
@@ -692,6 +708,9 @@ interface PhxEventUploads {
 declare type PhxClickPayload = PhxEventPayload<"click", {
     value: string;
 }>;
+declare type PhxLVClearFlashPayload = PhxEventPayload<"click", {
+    key: string;
+}, "lv:clear-flash">;
 declare type PhxFormPayload = PhxEventPayload<"form", {
     value: string;
 }> & PhxEventUploads;
@@ -744,13 +763,14 @@ declare class LiveViewManager {
     private session;
     private pubSub;
     private serDe;
+    private flashAdaptor;
     private csrfToken?;
     private _events;
     private _pageTitle;
     private pageTitleChanged;
     private socket;
     private liveViewRootTemplate?;
-    constructor(component: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate);
+    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate);
     /**
      * The `phx_join` event is the initial connection between the client and the server and initializes the
      * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
@@ -769,7 +789,7 @@ declare class LiveViewManager {
      * the message including: click, form, key, blur/focus, and hook events.
      * @param message a `PhxEventIncoming` message with a different payload depending on the event type
      */
-    onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload>): Promise<void>;
+    onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload | PhxLVClearFlashPayload>): Promise<void>;
     /**
      * Handle's `live_patch` message from clients which denote change to the `LiveView`'s path parameters
      * and kicks off a re-render after calling `handleParams`.
@@ -830,6 +850,7 @@ declare class LiveViewManager {
     private sendInternal;
     private set pageTitle(value);
     private putFlash;
+    private clearFlash;
     private maybeWrapInRootTemplate;
     private maybeAddPageTitleToParts;
     private maybeAddEventsToParts;
@@ -858,11 +879,12 @@ declare class LiveViewManager {
 declare class WsMessageRouter {
     private serDe;
     private pubSub;
+    private flashAdaptor;
     private liveViewRootTemplate?;
-    constructor(serDe: SerDe, pubSub: PubSub, liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate);
+    constructor(serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate);
     onMessage(wsAdaptor: WsAdaptor, messageString: string, router: LiveViewRouter, connectionId: string): Promise<void>;
     onClose(code: number, connectionId: string): Promise<void>;
     private onPhxJoin;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SimpleFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };

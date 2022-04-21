@@ -77,11 +77,11 @@ class BaseLiveComponent {
 class BaseLiveView {
     handleEvent(event, socket) {
         // istanbul ignore next
-        console.warn(`onEvent not implemented for ${this.constructor.name} but event received: ${event}`);
+        console.warn(`onEvent not implemented for ${this.constructor.name} but event received: ${JSON.stringify(event)}`);
     }
     handleInfo(info, socket) {
         // istanbul ignore next
-        console.warn(`onInfo not implemented for ${this.constructor.name} but info received: ${info}`);
+        console.warn(`onInfo not implemented for ${this.constructor.name} but info received: ${JSON.stringify(info)}`);
     }
     mount(params, session, socket) {
         // no-op
@@ -669,6 +669,28 @@ const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor,
     return rootView.toString();
 };
 
+/**
+ * Naive implementation of flash adaptor that just adds flash to the session data and removes flash from the session data.
+ */
+class SimpleFlashAdaptor {
+    putFlash(session, key, value) {
+        if (!session.flash) {
+            // istanbul ignore next
+            session.flash = {};
+        }
+        session.flash[key] = value;
+        return Promise.resolve();
+    }
+    clearFlash(session, key) {
+        if (!session.flash) {
+            // istanbul ignore next
+            session.flash = {};
+        }
+        delete session.flash[key];
+        return Promise.resolve();
+    }
+}
+
 const isDate = d => d instanceof Date;
 const isEmpty = o => Object.keys(o).length === 0;
 const isObject = o => o != null && typeof o === 'object';
@@ -808,18 +830,20 @@ class LiveViewManager {
     session;
     pubSub;
     serDe;
+    flashAdaptor;
     csrfToken;
     _events = [];
     _pageTitle;
     pageTitleChanged = false;
     socket;
     liveViewRootTemplate;
-    constructor(component, connectionId, wsAdaptor, serDe, pubSub, liveViewRootTemplate) {
-        this.liveView = component;
+    constructor(liveView, connectionId, wsAdaptor, serDe, pubSub, flashAdaptor, liveViewRootTemplate) {
+        this.liveView = liveView;
         this.connectionId = connectionId;
         this.wsAdaptor = wsAdaptor;
         this.serDe = serDe;
         this.pubSub = pubSub;
+        this.flashAdaptor = flashAdaptor;
         this.liveViewRootTemplate = liveViewRootTemplate;
         // subscribe to events for a given connectionId which should only be heartbeat messages
         const subId = this.pubSub.subscribe(connectionId, this.handleSubscriptions.bind(this));
@@ -932,10 +956,19 @@ class LiveViewManager {
         try {
             const payload = message[PhxProtocol.payload];
             const { type, event, cid } = payload;
+            console.log("type", type);
             // TODO - handle uploads
-            let value;
+            let value = {};
             switch (type) {
                 case "click":
+                    // check if the click is a lv:clear-flash event
+                    if (event === "lv:clear-flash") {
+                        const clearFlashPayload = payload;
+                        const key = clearFlashPayload.value.key;
+                        this.clearFlash(key);
+                    }
+                    value = payload.value;
+                    break;
                 case "keyup":
                 case "keydown":
                 case "blur":
@@ -1028,14 +1061,22 @@ class LiveViewManager {
                 // console.log("LiveView event", type, event, value);
                 // copy previous context
                 const previousContext = structuredClone(this.socket.context);
-                // check again because event could be a lv:clear-flash
-                await this.liveView.handleEvent(eventObj, this.socket);
+                // do not call event handler for "lv:clear-flash" events
+                let forceRerender = false;
+                if (event !== "lv:clear-flash") {
+                    await this.liveView.handleEvent(eventObj, this.socket);
+                }
+                else {
+                    // ensure re-render happends even if context doesn't change
+                    forceRerender = true;
+                }
                 // skip ctxEqual for now
                 // const ctxEqual = areConte xtsValueEqual(previousContext, this.socket.context);
                 let diff = {};
                 // only calc diff if contexts have changed
                 // if (!ctxEqual || event === "lv:clear-flash") {
                 // get old render tree and new render tree for diffing
+                // TODO - check forceRerender here and skip diffing if not needed
                 // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
                 let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
                 // wrap in root template if there is one
@@ -1241,7 +1282,22 @@ class LiveViewManager {
         }
     }
     putFlash(key, value) {
-        this.session.flash.set(key, value);
+        try {
+            this.flashAdaptor.putFlash(this.session, key, value);
+        }
+        catch (e) {
+            /* istanbul ignore next */
+            console.error(`Error putting flash`, e);
+        }
+    }
+    clearFlash(key) {
+        try {
+            this.flashAdaptor.clearFlash(this.session, key);
+        }
+        catch (e) {
+            /* istanbul ignore next */
+            console.error(`Error clearing flash`, e);
+        }
     }
     async maybeWrapInRootTemplate(view) {
         if (this.liveViewRootTemplate) {
@@ -1443,10 +1499,12 @@ class LiveViewManager {
 class WsMessageRouter {
     serDe;
     pubSub;
+    flashAdaptor;
     liveViewRootTemplate;
-    constructor(serDe, pubSub, liveViewRootTemplate) {
+    constructor(serDe, pubSub, flashAdaptor, liveViewRootTemplate) {
         this.serDe = serDe;
         this.pubSub = pubSub;
+        this.flashAdaptor = flashAdaptor;
         this.liveViewRootTemplate = liveViewRootTemplate;
     }
     async onMessage(wsAdaptor, messageString, router, connectionId) {
@@ -1454,8 +1512,8 @@ class WsMessageRouter {
         const rawPhxMessage = JSON.parse(messageString);
         // rawPhxMessage must be an array with 5 elements
         if (typeof rawPhxMessage === "object" && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
-            const [joinRef, messageRef, topic, event, payload] = rawPhxMessage;
-            let message = rawPhxMessage;
+            const event = rawPhxMessage[PhxProtocol.event];
+            const topic = rawPhxMessage[PhxProtocol.topic];
             try {
                 switch (event) {
                     case "phx_join":
@@ -1481,7 +1539,7 @@ class WsMessageRouter {
                 }
             }
             catch (e) {
-                console.error(`error handling phx message ${message}`, e);
+                console.error(`error handling phx message ${rawPhxMessage}`, e);
             }
         }
         else {
@@ -1510,9 +1568,9 @@ class WsMessageRouter {
         if (!component) {
             throw Error(`no component found for ${url}`);
         }
-        const liveViewManager = new LiveViewManager(component, connectionId, wsAdaptor, this.serDe, this.pubSub, this.liveViewRootTemplate);
+        const liveViewManager = new LiveViewManager(component, connectionId, wsAdaptor, this.serDe, this.pubSub, this.flashAdaptor, this.liveViewRootTemplate);
         await liveViewManager.handleJoin(message);
     }
 }
 
-export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SimpleFlashAdaptor, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
