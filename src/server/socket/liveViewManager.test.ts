@@ -11,7 +11,7 @@ import {
   LiveViewSocket,
   LiveViewTemplate,
 } from "..";
-import { SingleProcessPubSub } from "../pubsub";
+import { PubSub, SingleProcessPubSub } from "../pubsub";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
 import { LiveViewManager } from "./liveViewManager";
 import {
@@ -27,18 +27,25 @@ import {
   PhxKeyDownPayload,
   PhxKeyUpPayload,
   PhxLivePatchIncoming,
+  PhxLVClearFlashPayload,
 } from "./types";
 import { AnyLiveContext, AnyLiveEvent, AnyLiveInfo } from "../live";
 import { SessionData } from "../session";
-import { WsAdaptor } from "../adaptor";
+import { FlashAdaptor, SerDe, SimpleFlashAdaptor, WsAdaptor } from "../adaptor";
 
 describe("test component manager", () => {
   let cmLiveView: LiveViewManager;
   let cmLiveViewAndLiveComponent: LiveViewManager;
   let liveViewConnectionId: string;
   let liveViewAndLiveComponentConnectionId: string;
+  let pubSub: PubSub;
+  let flashAdaptor: FlashAdaptor;
+  let serDe: SerDe;
   let ws: WsAdaptor;
   beforeEach(() => {
+    pubSub = new SingleProcessPubSub();
+    flashAdaptor = new SimpleFlashAdaptor();
+    serDe = new JsonSerDe();
     liveViewConnectionId = nanoid();
     liveViewAndLiveComponentConnectionId = nanoid();
     ws = mock<WsAdaptor>();
@@ -46,8 +53,9 @@ describe("test component manager", () => {
       new TestLiveViewComponent(),
       liveViewConnectionId,
       ws,
-      new JsonSerDe(),
-      new SingleProcessPubSub(),
+      serDe,
+      pubSub,
+      flashAdaptor,
       (sessionData, innerContent) => {
         return html`<div>${innerContent}</div>`;
       }
@@ -56,8 +64,9 @@ describe("test component manager", () => {
       new TestLiveViewAndLiveComponent(),
       liveViewAndLiveComponentConnectionId,
       ws,
-      new JsonSerDe(),
-      new SingleProcessPubSub()
+      serDe,
+      pubSub,
+      flashAdaptor
     );
   });
 
@@ -420,7 +429,14 @@ describe("test component manager", () => {
 
   it("sendInternal with handleInfo", async () => {
     const sic = new SendInternalTestLiveViewComponent();
-    const cm = new LiveViewManager(sic, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      sic,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor()
+    );
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
       "6",
@@ -445,7 +461,14 @@ describe("test component manager", () => {
         errorHandler(new Error("unknown error"));
       }
     });
-    const cm = new LiveViewManager(tc, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      tc,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor()
+    );
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
@@ -463,7 +486,14 @@ describe("test component manager", () => {
 
   it("a component that sets page title", async () => {
     const c = new SetsPageTitleComponent();
-    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      c,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor()
+    );
     const spyMaybeAddPageTitleToParts = jest.spyOn(cm as any, "maybeAddPageTitleToParts");
 
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
@@ -476,7 +506,14 @@ describe("test component manager", () => {
     jest.useFakeTimers();
     const c = new Repeat50msTestLiveViewComponent();
     const spyHandleInfo = jest.spyOn(c as any, "handleInfo");
-    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      c,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor()
+    );
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
     setTimeout(async () => {
@@ -490,7 +527,7 @@ describe("test component manager", () => {
   it("component that subscribes and received message", async () => {
     const c = new SubscribeTestLiveViewComponent();
     const pubSub = new SingleProcessPubSub();
-    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), pubSub);
+    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), pubSub, new SimpleFlashAdaptor());
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
     await pubSub.broadcast("testTopic", { test: "test" });
@@ -500,7 +537,14 @@ describe("test component manager", () => {
 
   it("component that pushPatches", async () => {
     const c = new PushPatchingTestComponent();
-    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      c,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor()
+    );
     const spyCm = jest.spyOn(cm as any, "onPushPatch");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -524,7 +568,14 @@ describe("test component manager", () => {
 
   it("component that pushRedirects", async () => {
     const c = new PushRedirectingTestComponent();
-    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      c,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor()
+    );
     const spyCm = jest.spyOn(cm as any, "onPushRedirect");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -548,7 +599,14 @@ describe("test component manager", () => {
 
   it("component that pushEvents", async () => {
     const c = new PushEventTestComponent();
-    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      c,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor()
+    );
     const spyCm = jest.spyOn(cm as any, "onPushEvent");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -568,11 +626,43 @@ describe("test component manager", () => {
     (cm as any).shutdown();
   });
 
-  it("component that putFlash", async () => {
+  it("component that puts and clears flash", async () => {
+    let lastMessage: string;
+    const wsa: WsAdaptor = {
+      send(msg: string) {
+        lastMessage = msg;
+      },
+    };
     const c = new PutFlashComponent();
-    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      c,
+      liveViewConnectionId,
+      wsa,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor(),
+      (session, innerContent) => {
+        const flash = session.flash;
+        let infoFlash = "";
+        if (flash) {
+          infoFlash = flash.info || "";
+        }
+        return html`
+          <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info">${infoFlash}</p>
+          <div>${innerContent}</div>
+        `;
+      }
+    );
     const spyPutFlash = jest.spyOn(cm as any, "putFlash");
+    const spyClearFlash = jest.spyOn(cm as any, "clearFlash");
+
+    // initial join
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
+    expect(spyPutFlash).toHaveBeenCalledTimes(0);
+    expect(spyClearFlash).toHaveBeenCalledTimes(0);
+    expect(lastMessage!).toMatchInlineSnapshot(
+      `"[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":\\"\\",\\"1\\":{\\"s\\":[\\"<div>test</div>\\"]},\\"s\\":[\\"\\\\n          <p class=\\\\\\"alert alert-info\\\\\\" role=\\\\\\"alert\\\\\\" phx-click=\\\\\\"lv:clear-flash\\\\\\" phx-value-key=\\\\\\"info\\\\\\">\\",\\"</p>\\\\n          <div>\\",\\"</div>\\\\n        \\"]}},\\"status\\":\\"ok\\"}]"`
+    );
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
@@ -587,13 +677,47 @@ describe("test component manager", () => {
     ];
     await cm.onEvent(phx_click);
     expect(spyPutFlash).toHaveBeenCalledTimes(1);
+    expect(spyClearFlash).toHaveBeenCalledTimes(0);
+    // has flash of "flash test"
+    expect(lastMessage!).toMatchInlineSnapshot(
+      `"[\\"4\\",\\"6\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{\\"0\\":\\"flash test\\",\\"1\\":{\\"s\\":[\\"<div>test</div>\\"]},\\"s\\":[\\"\\\\n          <p class=\\\\\\"alert alert-info\\\\\\" role=\\\\\\"alert\\\\\\" phx-click=\\\\\\"lv:clear-flash\\\\\\" phx-value-key=\\\\\\"info\\\\\\">\\",\\"</p>\\\\n          <div>\\",\\"</div>\\\\n        \\"]}},\\"status\\":\\"ok\\"}]"`
+    );
+
+    // clear flash by sending "lv:clear-flash" event
+    const phx_clear_flash: PhxIncomingMessage<PhxLVClearFlashPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        type: "click",
+        event: "lv:clear-flash",
+        value: { key: "info" },
+      },
+    ];
+
+    await cm.onEvent(phx_clear_flash);
+    expect(spyPutFlash).toHaveBeenCalledTimes(1);
+    expect(spyClearFlash).toHaveBeenCalledTimes(1);
+    // flash should be cleared again
+    expect(lastMessage!).toMatchInlineSnapshot(
+      `"[\\"4\\",\\"6\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{\\"0\\":\\"\\",\\"1\\":{\\"s\\":[\\"<div>test</div>\\"]},\\"s\\":[\\"\\\\n          <p class=\\\\\\"alert alert-info\\\\\\" role=\\\\\\"alert\\\\\\" phx-click=\\\\\\"lv:clear-flash\\\\\\" phx-value-key=\\\\\\"info\\\\\\">\\",\\"</p>\\\\n          <div>\\",\\"</div>\\\\n        \\"]}},\\"status\\":\\"ok\\"}]"`
+    );
+
     (cm as any).shutdown();
   });
 
   it("default live view meta", async () => {
     const c = new PushPatchingTestComponent();
     const spyHandleParams = jest.spyOn(c as any, "handleParams");
-    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      c,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor()
+    );
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -617,7 +741,14 @@ describe("test component manager", () => {
     const c = new TestLiveViewComponent();
     const liveViewRootTemplate = (session: SessionData, inner_content: HtmlSafeString) =>
       html`<div>${session.csrfToken} ${inner_content}</div>`;
-    const cm = new LiveViewManager(c, liveViewConnectionId, ws, new JsonSerDe(), new SingleProcessPubSub());
+    const cm = new LiveViewManager(
+      c,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SimpleFlashAdaptor()
+    );
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
     // use inline shapshot to see liveViewRootTemplate rendered
     expect(ws.send).toMatchInlineSnapshot(`

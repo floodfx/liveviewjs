@@ -18,6 +18,6 @@
     "outDir": "./build/tsc",
     "baseUrl": "."
   },
-  "include": ["src/index.ts", "src/server/**/*"],
-  "exclude": ["build", "dist", "node_modules", "**/*.test.ts", "packages"]
+  "include": ["src/index.ts", "src/server/**/*", "src/server/adaptor/.ts"],
+  "exclude": ["build", "dist", "node_modules", "packages"]
 }
