@@ -12,7 +12,7 @@ export type PhxIncomingMessage<Payload> = [
   joinRef: string | null, // number
   messageRef: string | null, // number
   topic: "phoenix" | string,
-  event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
+  event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave" | "lv:clear-flash",
   payload: Payload
 ];
 
@@ -66,10 +66,10 @@ export type PhxOutgoingLivePatchPush = PhxOutgoingMessage<PhxLiveNavPushPayload>
 
 export type PhxOutgoingLiveRedirectPush = PhxOutgoingMessage<PhxLiveNavPushPayload>;
 
-export interface PhxEventPayload<Type extends string, Value> {
-  type: Type;
-  event: string;
-  value: Value;
+export interface PhxEventPayload<TType extends string, TValue, TEvent extends string = string> {
+  type: TType;
+  event: TEvent;
+  value: TValue;
   cid?: number;
 }
 
@@ -79,6 +79,10 @@ export interface PhxEventUploads {
 
 //{type: "click", event: "down", value: {value: ""}}
 export type PhxClickPayload = PhxEventPayload<"click", { value: string }>;
+// lv:clear-flash is a special click event with hardcoded "event" value
+// internal message called to clear flash messages from the session
+// e.g. {"type":"click","event":"lv:clear-flash","value":{"key":"info"}}
+export type PhxLVClearFlashPayload = PhxEventPayload<"click", { key: string }, "lv:clear-flash">;
 
 //{"type":"form","event":"update","value":"seats=3&_target=seats","uploads":{}}
 export type PhxFormPayload = PhxEventPayload<"form", { value: string }> & PhxEventUploads;

@@ -1,9 +1,9 @@
 import { mock } from "jest-mock-extended";
 import { WebSocket } from "ws";
 import { BaseLiveView, LiveViewMountParams, LiveViewRouter, LiveViewSocket } from "..";
-import { WsAdaptor } from "../adaptor";
+import { FlashAdaptor, SimpleFlashAdaptor, WsAdaptor } from "../adaptor";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
-import { SingleProcessPubSub } from "../pubsub";
+import { PubSub, SingleProcessPubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { html } from "../templates";
 import {
@@ -20,10 +20,12 @@ import { WsMessageRouter } from "./wsMessageRouter";
 describe("test message router", () => {
   let mr: WsMessageRouter;
   let ws: WsAdaptor;
-  let pubSub: SingleProcessPubSub;
+  let pubSub: PubSub;
+  let flashAdaptor: FlashAdaptor;
   beforeEach(() => {
     pubSub = new SingleProcessPubSub();
-    mr = new WsMessageRouter(new JsonSerDe(), pubSub);
+    flashAdaptor = new SimpleFlashAdaptor();
+    mr = new WsMessageRouter(new JsonSerDe(), pubSub, flashAdaptor);
     ws = mock<WsAdaptor>();
   });
 

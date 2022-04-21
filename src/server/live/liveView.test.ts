@@ -8,7 +8,7 @@ import { LiveViewSocket, WsMessageRouter } from "../socket";
 import { SingleProcessPubSub } from "../pubsub";
 import { PhxJoinIncoming } from "../socket/types";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
-import { WsAdaptor } from "../adaptor";
+import { SimpleFlashAdaptor, WsAdaptor } from "../adaptor";
 
 describe("test LiveViewMeta", () => {
   it("test meta", async () => {
@@ -97,6 +97,7 @@ function newManager(callback: (message: string) => void): LiveViewManager {
     "id",
     new CallbackMessenger(callback),
     new JsonSerDe(),
-    new SingleProcessPubSub()
+    new SingleProcessPubSub(),
+    new SimpleFlashAdaptor()
   );
 }

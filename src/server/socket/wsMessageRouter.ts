@@ -1,5 +1,6 @@
 import { LiveViewRouter } from "..";
 import { SerDe } from "../adaptor";
+import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
 import { LiveViewTemplate } from "../live";
 import { PubSub } from "../pubsub/pubSub";
@@ -10,15 +11,18 @@ import { PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxProtocol 
 export class WsMessageRouter {
   private serDe: SerDe;
   private pubSub: PubSub;
+  private flashAdaptor: FlashAdaptor;
   private liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate;
 
   constructor(
     serDe: SerDe,
     pubSub: PubSub,
+    flashAdaptor: FlashAdaptor,
     liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate
   ) {
     this.serDe = serDe;
     this.pubSub = pubSub;
+    this.flashAdaptor = flashAdaptor;
     this.liveViewRootTemplate = liveViewRootTemplate;
   }
 
@@ -28,8 +32,8 @@ export class WsMessageRouter {
 
     // rawPhxMessage must be an array with 5 elements
     if (typeof rawPhxMessage === "object" && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
-      const [joinRef, messageRef, topic, event, payload] = rawPhxMessage;
-      let message = rawPhxMessage;
+      const event = rawPhxMessage[PhxProtocol.event];
+      const topic = rawPhxMessage[PhxProtocol.topic];
       try {
         switch (event) {
           case "phx_join":
@@ -54,7 +58,7 @@ export class WsMessageRouter {
             throw new Error(`unexpected protocol event ${rawPhxMessage}`);
         }
       } catch (e) {
-        console.error(`error handling phx message ${message}`, e);
+        console.error(`error handling phx message ${rawPhxMessage}`, e);
       }
     } else {
       // message format is incorrect so say something
@@ -96,6 +100,7 @@ export class WsMessageRouter {
       wsAdaptor,
       this.serDe,
       this.pubSub,
+      this.flashAdaptor,
       this.liveViewRootTemplate
     );
     await liveViewManager.handleJoin(message);

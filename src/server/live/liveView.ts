@@ -138,12 +138,12 @@ export abstract class BaseLiveView<
 {
   handleEvent(event: TEvents, socket: LiveViewSocket<TContext>) {
     // istanbul ignore next
-    console.warn(`onEvent not implemented for ${this.constructor.name} but event received: ${event}`);
+    console.warn(`onEvent not implemented for ${this.constructor.name} but event received: ${JSON.stringify(event)}`);
   }
 
   handleInfo(info: TInfos, socket: LiveViewSocket<TContext>) {
     // istanbul ignore next
-    console.warn(`onInfo not implemented for ${this.constructor.name} but info received: ${info}`);
+    console.warn(`onInfo not implemented for ${this.constructor.name} but info received: ${JSON.stringify(info)}`);
   }
 
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TContext>) {

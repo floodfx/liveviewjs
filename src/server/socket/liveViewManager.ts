@@ -1,4 +1,5 @@
 import { SerDe } from "../adaptor";
+import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
 import {
   AnyLiveContext,
@@ -30,6 +31,7 @@ import {
   PhxKeyDownPayload,
   PhxKeyUpPayload,
   PhxLivePatchIncoming,
+  PhxLVClearFlashPayload,
   PhxMessage,
   PhxOutgoingLivePatchPush,
   PhxOutgoingMessage,
@@ -90,6 +92,7 @@ export class LiveViewManager {
   private session: SessionData;
   private pubSub: PubSub;
   private serDe: SerDe;
+  private flashAdaptor: FlashAdaptor;
 
   private csrfToken?: string;
 
@@ -102,18 +105,20 @@ export class LiveViewManager {
   private liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate;
 
   constructor(
-    component: LiveView,
+    liveView: LiveView,
     connectionId: string,
     wsAdaptor: WsAdaptor,
     serDe: SerDe,
     pubSub: PubSub,
+    flashAdaptor: FlashAdaptor,
     liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate
   ) {
-    this.liveView = component;
+    this.liveView = liveView;
     this.connectionId = connectionId;
     this.wsAdaptor = wsAdaptor;
     this.serDe = serDe;
     this.pubSub = pubSub;
+    this.flashAdaptor = flashAdaptor;
     this.liveViewRootTemplate = liveViewRootTemplate;
 
     // subscribe to events for a given connectionId which should only be heartbeat messages
@@ -245,16 +250,26 @@ export class LiveViewManager {
       | PhxBlurPayload
       | PhxFocusPayload
       | PhxHookPayload
+      | PhxLVClearFlashPayload
     >
   ) {
     try {
       const payload = message[PhxProtocol.payload];
       const { type, event, cid } = payload;
+      console.log("type", type);
 
       // TODO - handle uploads
-      let value: Record<string, string>;
+      let value: Record<string, string> = {};
       switch (type) {
         case "click":
+          // check if the click is a lv:clear-flash event
+          if (event === "lv:clear-flash") {
+            const clearFlashPayload = payload as PhxLVClearFlashPayload;
+            const key = clearFlashPayload.value.key;
+            this.clearFlash(key);
+          }
+          value = payload.value;
+          break;
         case "keyup":
         case "keydown":
         case "blur":
@@ -356,8 +371,14 @@ export class LiveViewManager {
         // copy previous context
         const previousContext = structuredClone(this.socket.context);
 
-        // check again because event could be a lv:clear-flash
-        await this.liveView.handleEvent(eventObj, this.socket);
+        // do not call event handler for "lv:clear-flash" events
+        let forceRerender = false;
+        if (event !== "lv:clear-flash") {
+          await this.liveView.handleEvent(eventObj, this.socket);
+        } else {
+          // ensure re-render happends even if context doesn't change
+          forceRerender = true;
+        }
 
         // skip ctxEqual for now
         // const ctxEqual = areConte xtsValueEqual(previousContext, this.socket.context);
@@ -366,6 +387,7 @@ export class LiveViewManager {
         // only calc diff if contexts have changed
         // if (!ctxEqual || event === "lv:clear-flash") {
         // get old render tree and new render tree for diffing
+        // TODO - check forceRerender here and skip diffing if not needed
         // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
         let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
@@ -608,7 +630,21 @@ export class LiveViewManager {
   }
 
   private putFlash(key: string, value: string) {
-    this.session.flash.set(key, value);
+    try {
+      this.flashAdaptor.putFlash(this.session, key, value);
+    } catch (e) {
+      /* istanbul ignore next */
+      console.error(`Error putting flash`, e);
+    }
+  }
+
+  private clearFlash(key: string) {
+    try {
+      this.flashAdaptor.clearFlash(this.session, key);
+    } catch (e) {
+      /* istanbul ignore next */
+      console.error(`Error clearing flash`, e);
+    }
   }
 
   private async maybeWrapInRootTemplate(view: HtmlSafeString) {
