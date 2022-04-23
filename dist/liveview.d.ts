@@ -26,16 +26,16 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
     /**
      * The id of the `LiveView` (same as the `phx_join` id)
      */
-    id: string;
+    readonly id: string;
     /**
      * Whether the websocket is connected.
      * true if connected to a websocket, false for http request
      */
-    connected: boolean;
+    readonly connected: boolean;
     /**
      * The current state of the `LiveView`
      */
-    context: TContext;
+    readonly context: TContext;
     /**
      * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
      * @param context you can pass a partial of the current context to update
@@ -64,7 +64,7 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      * @param event the name of the event to push to the client
      * @param params the data to pass to the client
      */
-    pushEvent(pushEvent: AnyLivePushEvent): void;
+    pushEvent(pushEvent: AnyLivePushEvent): void | Promise<void>;
     /**
      * Updates the browser's URL with the given path and query parameters.
      *
@@ -72,7 +72,7 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      * @param params the query params to update the path with
      * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
      */
-    pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
+    pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     /**
      * Shutdowns the current `LiveView` and load another `LiveView` in its place without reloading the
      * whole page (i.e. making a full HTTP request).  Can be used to remount the current `LiveView` if
@@ -82,13 +82,13 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      * @param params the query params to update the path with
      * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
      */
-    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
+    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     /**
      * Add flash to the socket for a given key and value.
      * @param key
      * @param value
      */
-    putFlash(key: string, value: string): void;
+    putFlash(key: string, value: string): Promise<void>;
     /**
      * Runs the given function on the given interval until this `LiveView` is
      * unloaded.
@@ -102,14 +102,14 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      *
      * @param event the event to send to `handleInfo`
      */
-    send(info: AnyLiveInfo): void;
+    send(info: AnyLiveInfo): Promise<void>;
     /**
      * Subscribes to the given topic using pub/sub.  Any events published to the topic
      * will be received by the `LiveView` instance via `handleEvent`.
      *
      * @param topic the topic to subscribe this `LiveView` to
      */
-    subscribe(topic: string): void;
+    subscribe(topic: string): Promise<void>;
 }
 declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext> implements LiveViewSocket<TContext> {
     abstract connected: boolean;
@@ -121,12 +121,12 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
     tempAssign(tempContext: Partial<TContext>): void;
     pageTitle(newPageTitle: string): void;
     pushEvent(pushEvent: AnyLivePushEvent): void;
-    pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
-    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
-    putFlash(key: string, value: string): void;
+    pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
+    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
+    putFlash(key: string, value: string): Promise<void>;
     repeat(fn: () => void, intervalMillis: number): void;
-    send(info: AnyLiveInfo): void;
-    subscribe(topic: string): void;
+    send(info: AnyLiveInfo): Promise<void>;
+    subscribe(topic: string): Promise<void>;
     updateContextWithTempAssigns(): void;
 }
 /**
@@ -142,7 +142,7 @@ declare class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
         to: string;
         replace: boolean;
     } | undefined;
-    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
+    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
 }
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
@@ -164,15 +164,88 @@ declare class WsLiveViewSocket extends BaseLiveViewSocket {
     private sendCallback;
     private subscribeCallback;
     constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendCallback: (info: AnyLiveInfo) => void, subscribeCallback: (topic: string) => void);
-    putFlash(key: string, value: string): void;
+    putFlash(key: string, value: string): Promise<void>;
     pageTitle(newPageTitle: string): void;
-    pushEvent(pushEvent: AnyLivePushEvent): void;
-    pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
-    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
+    pushEvent(pushEvent: AnyLivePushEvent): Promise<void>;
+    pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
+    pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     repeat(fn: () => void, intervalMillis: number): void;
-    send(info: AnyLiveInfo): void;
-    subscribe(topic: string): void;
+    send(info: AnyLiveInfo): Promise<void>;
+    subscribe(topic: string): Promise<void>;
 }
+
+declare function deepDiff(oldParts: Parts, newParts: Parts): Parts;
+declare function diffArrays(oldArray: unknown[], newArray: unknown[]): boolean;
+
+declare function join(array: (string | HtmlSafeString)[], separator?: string | HtmlSafeString): HtmlSafeString;
+declare function safe(value: unknown): HtmlSafeString;
+declare function escapehtml(unsafe: unknown): string;
+declare type Parts = {
+    [key: string]: unknown;
+};
+declare class HtmlSafeString {
+    readonly statics: readonly string[];
+    readonly dynamics: readonly unknown[];
+    readonly isLiveComponent: boolean;
+    constructor(statics: readonly string[], dynamics: readonly unknown[], isLiveComponent?: boolean);
+    partsTree(includeStatics?: boolean): Parts;
+    toString(): string;
+}
+declare function html(statics: TemplateStringsArray, ...dynamics: unknown[]): HtmlSafeString;
+
+interface FormForOptions {
+    phx_submit?: string;
+    phx_change?: string;
+    method?: "get" | "post";
+    id?: string;
+}
+declare const form_for: <T>(action: string, csrfToken: string, options?: FormForOptions | undefined) => HtmlSafeString;
+
+interface InputOptions {
+    placeholder?: string;
+    autocomplete?: "off" | "on";
+    phx_debounce?: number | "blur" | "focus";
+    type?: "text" | "tel";
+    className?: string;
+}
+declare const text_input: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: InputOptions | undefined) => HtmlSafeString;
+interface TelephoneInputOptions extends Omit<InputOptions, "type"> {
+}
+declare const telephone_input: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: TelephoneInputOptions | undefined) => HtmlSafeString;
+interface ErrorTagOptions {
+    className?: string;
+}
+declare const error_tag: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: ErrorTagOptions | undefined) => HtmlSafeString;
+
+interface LiveViewPatchHelperOptions {
+    to: {
+        path: string;
+        params?: Record<string, string>;
+    };
+    className?: string;
+}
+declare const live_patch: (anchorBody: HtmlSafeString | string, options: LiveViewPatchHelperOptions) => HtmlSafeString;
+
+interface LiveTitleTagOptions {
+    prefix?: string;
+    suffix?: string;
+}
+declare const live_title_tag: (title: string, options?: LiveTitleTagOptions | undefined) => HtmlSafeString;
+
+declare type Options = string[] | Record<string, string>;
+declare type Selected = string | string[];
+declare const options_for_select: (options: Options, selected?: Selected | undefined) => HtmlSafeString;
+
+interface PageTitleDefaults {
+    prefix?: string;
+    suffix?: string;
+    title: string;
+}
+
+interface SubmitOptions {
+    phx_disable_with: string;
+}
+declare const submit: (label: string, options?: SubmitOptions | undefined) => HtmlSafeString;
 
 interface LiveContext {
     [key: string]: any;
@@ -286,6 +359,20 @@ declare abstract class BaseLiveView<TContext extends LiveContext = AnyLiveContex
     handleParams(url: URL, socket: LiveViewSocket<TContext>): void;
     abstract render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
+/**
+ * LiveViewTemplate renderer that lays out the html elements for all of
+ * the `LiveView`.  It is required that this page sets the csrf meta tag using
+ * the passed in `csrfToken` and  required that it embeds the passed in `LiveViewTemplate`
+ * content.
+ */
+declare type LiveViewPageRenderer = (pageTitleDefault: PageTitleDefaults, csrfToken: string, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
+/**
+ * Define a renderer that can embed a rendered `LiveView` and is given access to the
+ * session data.  Often used to as a common container for `LiveView`s that adds "flash"
+ * messages and other common UI elements.  It is required that this renderer embeds the
+ * passed in `LiveViewTemplate` content.
+ */
+declare type LiveViewRootRenderer = (sessionData: SessionData, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
 
 interface LiveComponentMeta {
     /**
@@ -426,79 +513,6 @@ declare abstract class BaseLiveComponent<TContext extends LiveContext = AnyLiveC
     abstract render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 
-declare function deepDiff(oldParts: Parts, newParts: Parts): Parts;
-declare function diffArrays(oldArray: unknown[], newArray: unknown[]): boolean;
-
-declare function join(array: (string | HtmlSafeString)[], separator?: string | HtmlSafeString): HtmlSafeString;
-declare function safe(value: unknown): HtmlSafeString;
-declare function escapehtml(unsafe: unknown): string;
-declare type Parts = {
-    [key: string]: unknown;
-};
-declare class HtmlSafeString {
-    readonly statics: readonly string[];
-    readonly dynamics: readonly unknown[];
-    readonly isLiveComponent: boolean;
-    constructor(statics: readonly string[], dynamics: readonly unknown[], isLiveComponent?: boolean);
-    partsTree(includeStatics?: boolean): Parts;
-    toString(): string;
-}
-declare function html(statics: TemplateStringsArray, ...dynamics: unknown[]): HtmlSafeString;
-
-interface FormForOptions {
-    phx_submit?: string;
-    phx_change?: string;
-    method?: "get" | "post";
-    id?: string;
-}
-declare const form_for: <T>(action: string, csrfToken: string, options?: FormForOptions | undefined) => HtmlSafeString;
-
-interface InputOptions {
-    placeholder?: string;
-    autocomplete?: "off" | "on";
-    phx_debounce?: number | "blur" | "focus";
-    type?: "text" | "tel";
-    className?: string;
-}
-declare const text_input: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: InputOptions | undefined) => HtmlSafeString;
-interface TelephoneInputOptions extends Omit<InputOptions, "type"> {
-}
-declare const telephone_input: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: TelephoneInputOptions | undefined) => HtmlSafeString;
-interface ErrorTagOptions {
-    className?: string;
-}
-declare const error_tag: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: ErrorTagOptions | undefined) => HtmlSafeString;
-
-interface LiveViewPatchHelperOptions {
-    to: {
-        path: string;
-        params?: Record<string, string>;
-    };
-    className?: string;
-}
-declare const live_patch: (anchorBody: HtmlSafeString | string, options: LiveViewPatchHelperOptions) => HtmlSafeString;
-
-interface LiveTitleTagOptions {
-    prefix?: string;
-    suffix?: string;
-}
-declare const live_title_tag: (title: string, options?: LiveTitleTagOptions | undefined) => HtmlSafeString;
-
-declare type Options = string[] | Record<string, string>;
-declare type Selected = string | string[];
-declare const options_for_select: (options: Options, selected?: Selected | undefined) => HtmlSafeString;
-
-interface PageTitleDefaults {
-    prefix?: string;
-    suffix?: string;
-    title: string;
-}
-
-interface SubmitOptions {
-    phx_disable_with: string;
-}
-declare const submit: (label: string, options?: SubmitOptions | undefined) => HtmlSafeString;
-
 interface LiveViewTemplate extends HtmlSafeString {
 }
 interface LiveViewRouter {
@@ -567,7 +581,7 @@ interface HttpRequestAdaptor {
  * @param liveViewTemplateRenderer optional @{LiveViewTemplate} used for adding additional content to the LiveView (typically reused across all LiveViews)
  * @returns the HTML for the HTTP server to return to the client
  */
-declare const handleHttpLiveView: (idGenerator: IdGenerator, csrfGenerator: CsrfGenerator, liveView: LiveView, adaptor: HttpRequestAdaptor, rootTemplateRenderer: (pageTitleDefault: PageTitleDefaults, csrfToken: string, content: LiveViewTemplate) => LiveViewTemplate, pageTitleDefaults?: PageTitleDefaults | undefined, liveViewTemplateRenderer?: ((session: SessionData, liveViewContent: LiveViewTemplate) => LiveViewTemplate) | undefined) => Promise<string | undefined>;
+declare const handleHttpLiveView: (idGenerator: IdGenerator, csrfGenerator: CsrfGenerator, liveView: LiveView, adaptor: HttpRequestAdaptor, pageRenderer: LiveViewPageRenderer, pageTitleDefaults?: PageTitleDefaults | undefined, rootRenderer?: LiveViewRootRenderer | undefined) => Promise<string | undefined>;
 
 /**
  * Adaptor that enables sending websocket messages over a concrete websocket implementation.
@@ -580,14 +594,19 @@ interface WsAdaptor {
  * Adatpor that implements adding flash to the session data and removing flash from the session data.
  */
 interface FlashAdaptor {
+    peekFlash(session: SessionData, key: string): Promise<string | undefined>;
+    popFlash(session: SessionData, key: string): Promise<string | undefined>;
     putFlash(session: SessionData, key: string, value: string): Promise<void>;
     clearFlash(session: SessionData, key: string): Promise<void>;
 }
 
 /**
- * Naive implementation of flash adaptor that just adds flash to the session data and removes flash from the session data.
+ * Naive implementation of flash adaptor that uses "__flash" property on session data
+ * to implement flash.
  */
-declare class SimpleFlashAdaptor implements FlashAdaptor {
+declare class SessionFlashAdaptor implements FlashAdaptor {
+    peekFlash(session: SessionData, key: string): Promise<string | undefined>;
+    popFlash(session: SessionData, key: string): Promise<string | undefined>;
     putFlash(session: SessionData, key: string, value: string): Promise<void>;
     clearFlash(session: SessionData, key: string): Promise<void>;
 }
@@ -770,7 +789,7 @@ declare class LiveViewManager {
     private pageTitleChanged;
     private socket;
     private liveViewRootTemplate?;
-    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate);
+    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
     /**
      * The `phx_join` event is the initial connection between the client and the server and initializes the
      * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
@@ -881,10 +900,10 @@ declare class WsMessageRouter {
     private pubSub;
     private flashAdaptor;
     private liveViewRootTemplate?;
-    constructor(serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate);
+    constructor(serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
     onMessage(wsAdaptor: WsAdaptor, messageString: string, router: LiveViewRouter, connectionId: string): Promise<void>;
     onClose(code: number, connectionId: string): Promise<void>;
     private onPhxJoin;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SimpleFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };

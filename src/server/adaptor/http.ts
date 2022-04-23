@@ -1,4 +1,12 @@
-import { AnyLiveContext, HttpLiveComponentSocket, LiveComponent, LiveView, LiveViewTemplate } from "../live";
+import {
+  AnyLiveContext,
+  HttpLiveComponentSocket,
+  LiveComponent,
+  LiveView,
+  LiveViewPageRenderer,
+  LiveViewRootRenderer,
+  LiveViewTemplate,
+} from "../live";
 import { SessionData } from "../session";
 import { HttpLiveViewSocket } from "../socket/liveSocket";
 import { html, safe } from "../templates";
@@ -52,13 +60,9 @@ export const handleHttpLiveView = async (
   csrfGenerator: CsrfGenerator,
   liveView: LiveView,
   adaptor: HttpRequestAdaptor,
-  rootTemplateRenderer: (
-    pageTitleDefault: PageTitleDefaults,
-    csrfToken: string,
-    content: LiveViewTemplate
-  ) => LiveViewTemplate,
+  pageRenderer: LiveViewPageRenderer,
   pageTitleDefaults?: PageTitleDefaults,
-  liveViewTemplateRenderer?: (session: SessionData, liveViewContent: LiveViewTemplate) => LiveViewTemplate
+  rootRenderer?: LiveViewRootRenderer
 ) => {
   const { getSessionData, getRequestUrl, onRedirect } = adaptor;
   // new LiveViewId for each request
@@ -136,8 +140,8 @@ export const handleHttpLiveView = async (
   // optionally render the `LiveView` inside another template passing the session data
   // and the rendered `LiveView` to the template renderer
   let liveViewContent = safe(view);
-  if (liveViewTemplateRenderer) {
-    liveViewContent = liveViewTemplateRenderer({ ...sessionData }, safe(view));
+  if (rootRenderer) {
+    liveViewContent = await rootRenderer({ ...sessionData }, safe(view));
   }
 
   // wrap `LiveView` content inside the `phx-main` template along with the serialized
@@ -153,6 +157,6 @@ export const handleHttpLiveView = async (
   `;
 
   // finally render the `LiveView` root template passing any pageTitle data, the CSRF token,  and the rendered `LiveView`
-  const rootView = rootTemplateRenderer(pageTitleDefaults ?? { title: "" }, sessionData._csrf_token, rootContent);
+  const rootView = await pageRenderer(pageTitleDefaults ?? { title: "" }, sessionData._csrf_token, rootContent);
   return rootView.toString();
 };

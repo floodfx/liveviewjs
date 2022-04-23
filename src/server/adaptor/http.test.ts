@@ -14,6 +14,7 @@ import { CsrfGenerator } from "./csrfGen";
 import { handleHttpLiveView, HttpRequestAdaptor } from "./http";
 import { IdGenerator } from "./idGen";
 import { JsonSerDe } from "./jsonSerDe";
+import { SessionFlashAdaptor } from "./sessionFlashAdaptor";
 
 const idGen: IdGenerator = (id?: string) => id || "id";
 const csrfGen: CsrfGenerator = (csrf?: string) => csrf || "csrf";
@@ -100,11 +101,11 @@ describe("test http adaptor", () => {
         return html`<main>${content}</main>`;
       },
       { title: "Default Title" },
-      (session, content) => {
-        const { flash } = session;
-        const { type, message } = flash;
-        return html` <div class="container">
-          <p class="flash">${type}: ${message}</p>
+      async (session, content) => {
+        const flashAdaptor = new SessionFlashAdaptor();
+        const infoFlash = (await flashAdaptor.popFlash(session, "test")) || "";
+        return html`<div class="container">
+          <p class="flash">test: ${infoFlash}</p>
           ${content}
         </div>`;
       }
@@ -129,9 +130,10 @@ class TestHttpAdaptor implements HttpRequestAdaptor {
     return new JsonSerDe();
   };
   getSessionData = () => {
-    return {
-      flash: { type: "test", message: "test message" },
-    };
+    const session: SessionData = {};
+    const flashAdaptor = new SessionFlashAdaptor();
+    flashAdaptor.putFlash(session, "test", "test message");
+    return session;
   };
 }
 

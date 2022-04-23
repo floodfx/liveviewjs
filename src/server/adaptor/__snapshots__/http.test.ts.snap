@@ -4,7 +4,7 @@ exports[`test http adaptor adapts to http live views 1`] = `
 "<main>
     <div
       data-phx-main=\\"true\\"
-      data-phx-session=\\"{&quot;flash&quot;:{&quot;type&quot;:&quot;test&quot;,&quot;message&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
+      data-phx-session=\\"{&quot;__flash&quot;:{&quot;test&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
       data-phx-static=\\"\\"
       id=\\"phx-id\\">
       
@@ -21,10 +21,10 @@ exports[`test http adaptor rendering view inside another template 1`] = `
 "<main>
     <div
       data-phx-main=\\"true\\"
-      data-phx-session=\\"{&quot;flash&quot;:{&quot;type&quot;:&quot;test&quot;,&quot;message&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
+      data-phx-session=\\"{&quot;__flash&quot;:{&quot;test&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
       data-phx-static=\\"\\"
       id=\\"phx-id\\">
-       <div class=\\"container\\">
+      <div class=\\"container\\">
           <p class=\\"flash\\">test: test message</p>
           
       <div>
@@ -41,7 +41,7 @@ exports[`test http adaptor shows live component 1`] = `
 "<main>
     <div
       data-phx-main=\\"true\\"
-      data-phx-session=\\"{&quot;flash&quot;:{&quot;type&quot;:&quot;test&quot;,&quot;message&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
+      data-phx-session=\\"{&quot;__flash&quot;:{&quot;test&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
       data-phx-static=\\"\\"
       id=\\"phx-id\\">
       

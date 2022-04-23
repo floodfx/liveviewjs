@@ -1,6 +1,7 @@
 import { LiveComponent, LiveViewTemplate } from ".";
 import { SessionData } from "../session";
 import { LiveViewSocket } from "../socket/liveSocket";
+import { PageTitleDefaults } from "../templates";
 
 export interface LiveContext {
   [key: string]: any;
@@ -156,3 +157,26 @@ export abstract class BaseLiveView<
 
   abstract render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
+
+/**
+ * LiveViewTemplate renderer that lays out the html elements for all of
+ * the `LiveView`.  It is required that this page sets the csrf meta tag using
+ * the passed in `csrfToken` and  required that it embeds the passed in `LiveViewTemplate`
+ * content.
+ */
+export type LiveViewPageRenderer = (
+  pageTitleDefault: PageTitleDefaults,
+  csrfToken: string,
+  content: LiveViewTemplate
+) => LiveViewTemplate | Promise<LiveViewTemplate>;
+
+/**
+ * Define a renderer that can embed a rendered `LiveView` and is given access to the
+ * session data.  Often used to as a common container for `LiveView`s that adds "flash"
+ * messages and other common UI elements.  It is required that this renderer embeds the
+ * passed in `LiveViewTemplate` content.
+ */
+export type LiveViewRootRenderer = (
+  sessionData: SessionData,
+  content: LiveViewTemplate
+) => LiveViewTemplate | Promise<LiveViewTemplate>;
