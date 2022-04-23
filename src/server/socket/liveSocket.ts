@@ -13,16 +13,16 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
   /**
    * The id of the `LiveView` (same as the `phx_join` id)
    */
-  id: string;
+  readonly id: string;
   /**
    * Whether the websocket is connected.
    * true if connected to a websocket, false for http request
    */
-  connected: boolean;
+  readonly connected: boolean;
   /**
    * The current state of the `LiveView`
    */
-  context: TContext;
+  readonly context: TContext;
   /**
    * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
    * @param context you can pass a partial of the current context to update
@@ -51,7 +51,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
    * @param event the name of the event to push to the client
    * @param params the data to pass to the client
    */
-  pushEvent(pushEvent: AnyLivePushEvent): void;
+  pushEvent(pushEvent: AnyLivePushEvent): void | Promise<void>;
   /**
    * Updates the browser's URL with the given path and query parameters.
    *
@@ -60,7 +60,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
    * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
    */
   // pushPatch(path: string, params: Record<string, string | number>): void;
-  pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
+  pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
 
   /**
    * Shutdowns the current `LiveView` and load another `LiveView` in its place without reloading the
@@ -71,13 +71,13 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
    * @param params the query params to update the path with
    * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
    */
-  pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void;
+  pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
   /**
    * Add flash to the socket for a given key and value.
    * @param key
    * @param value
    */
-  putFlash(key: string, value: string): void;
+  putFlash(key: string, value: string): Promise<void>;
   /**
    * Runs the given function on the given interval until this `LiveView` is
    * unloaded.
@@ -91,14 +91,14 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
    *
    * @param event the event to send to `handleInfo`
    */
-  send(info: AnyLiveInfo): void;
+  send(info: AnyLiveInfo): Promise<void>;
   /**
    * Subscribes to the given topic using pub/sub.  Any events published to the topic
    * will be received by the `LiveView` instance via `handleEvent`.
    *
    * @param topic the topic to subscribe this `LiveView` to
    */
-  subscribe(topic: string): void;
+  subscribe(topic: string): Promise<void>;
 }
 
 abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext> implements LiveViewSocket<TContext> {
@@ -134,21 +134,31 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext>
   }
   pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean) {
     // no-op
+    // istanbul ignore next
+    return Promise.resolve();
   }
   pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean) {
     // no-op
+    // istanbul ignore next
+    return Promise.resolve();
   }
   putFlash(key: string, value: string) {
     // no-op
+    // istanbul ignore next
+    return Promise.resolve();
   }
   repeat(fn: () => void, intervalMillis: number) {
     // no-op
   }
   send(info: AnyLiveInfo) {
     // no-op
+    // istanbul ignore next
+    return Promise.resolve();
   }
   subscribe(topic: string) {
     // no-op
+    // istanbul ignore next
+    return Promise.resolve();
   }
 
   updateContextWithTempAssigns() {
@@ -176,12 +186,13 @@ export class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
     return this._redirect;
   }
 
-  pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): void {
+  pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean) {
     const to = params ? `${path}?${params}` : path;
     this._redirect = {
       to,
       replace: replaceHistory || false,
     };
+    return Promise.resolve();
   }
 }
 
@@ -227,28 +238,28 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
     this.sendCallback = sendCallback;
     this.subscribeCallback = subscribeCallback;
   }
-  putFlash(key: string, value: string): void {
-    this.putFlashCallback(key, value);
+  async putFlash(key: string, value: string) {
+    await this.putFlashCallback(key, value);
   }
   pageTitle(newPageTitle: string) {
     this.pageTitleCallback(newPageTitle);
   }
-  pushEvent(pushEvent: AnyLivePushEvent) {
-    this.pushEventCallback(pushEvent);
+  async pushEvent(pushEvent: AnyLivePushEvent) {
+    await this.pushEventCallback(pushEvent);
   }
-  pushPatch(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
-    this.pushPatchCallback(path, params, replaceHistory);
+  async pushPatch(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
+    await this.pushPatchCallback(path, params, replaceHistory);
   }
-  pushRedirect(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
-    this.pushRedirectCallback(path, params, replaceHistory);
+  async pushRedirect(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
+    await this.pushRedirectCallback(path, params, replaceHistory);
   }
   repeat(fn: () => void, intervalMillis: number) {
     this.repeatCallback(fn, intervalMillis);
   }
-  send(info: AnyLiveInfo) {
-    this.sendCallback(info);
+  async send(info: AnyLiveInfo) {
+    await this.sendCallback(info);
   }
-  subscribe(topic: string) {
-    this.subscribeCallback(topic);
+  async subscribe(topic: string) {
+    await this.subscribeCallback(topic);
   }
 }

@@ -2,7 +2,7 @@ import { LiveViewRouter } from "..";
 import { SerDe } from "../adaptor";
 import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
-import { LiveViewTemplate } from "../live";
+import { LiveViewRootRenderer, LiveViewTemplate } from "../live";
 import { PubSub } from "../pubsub/pubSub";
 import { SessionData } from "../session";
 import { LiveViewManager } from "./liveViewManager";
@@ -12,14 +12,9 @@ export class WsMessageRouter {
   private serDe: SerDe;
   private pubSub: PubSub;
   private flashAdaptor: FlashAdaptor;
-  private liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate;
+  private liveViewRootTemplate?: LiveViewRootRenderer;
 
-  constructor(
-    serDe: SerDe,
-    pubSub: PubSub,
-    flashAdaptor: FlashAdaptor,
-    liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate
-  ) {
+  constructor(serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: LiveViewRootRenderer) {
     this.serDe = serDe;
     this.pubSub = pubSub;
     this.flashAdaptor = flashAdaptor;

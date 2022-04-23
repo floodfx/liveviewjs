@@ -124,21 +124,31 @@ class BaseLiveViewSocket {
     }
     pushPatch(path, params, replaceHistory) {
         // no-op
+        // istanbul ignore next
+        return Promise.resolve();
     }
     pushRedirect(path, params, replaceHistory) {
         // no-op
+        // istanbul ignore next
+        return Promise.resolve();
     }
     putFlash(key, value) {
         // no-op
+        // istanbul ignore next
+        return Promise.resolve();
     }
     repeat(fn, intervalMillis) {
         // no-op
     }
     send(info) {
         // no-op
+        // istanbul ignore next
+        return Promise.resolve();
     }
     subscribe(topic) {
         // no-op
+        // istanbul ignore next
+        return Promise.resolve();
     }
     updateContextWithTempAssigns() {
         if (Object.keys(this._tempContext).length > 0) {
@@ -167,6 +177,7 @@ class HttpLiveViewSocket extends BaseLiveViewSocket {
             to,
             replace: replaceHistory || false,
         };
+        return Promise.resolve();
     }
 }
 /**
@@ -198,29 +209,29 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
         this.sendCallback = sendCallback;
         this.subscribeCallback = subscribeCallback;
     }
-    putFlash(key, value) {
-        this.putFlashCallback(key, value);
+    async putFlash(key, value) {
+        await this.putFlashCallback(key, value);
     }
     pageTitle(newPageTitle) {
         this.pageTitleCallback(newPageTitle);
     }
-    pushEvent(pushEvent) {
-        this.pushEventCallback(pushEvent);
+    async pushEvent(pushEvent) {
+        await this.pushEventCallback(pushEvent);
     }
-    pushPatch(path, params, replaceHistory = false) {
-        this.pushPatchCallback(path, params, replaceHistory);
+    async pushPatch(path, params, replaceHistory = false) {
+        await this.pushPatchCallback(path, params, replaceHistory);
     }
-    pushRedirect(path, params, replaceHistory = false) {
-        this.pushRedirectCallback(path, params, replaceHistory);
+    async pushRedirect(path, params, replaceHistory = false) {
+        await this.pushRedirectCallback(path, params, replaceHistory);
     }
     repeat(fn, intervalMillis) {
         this.repeatCallback(fn, intervalMillis);
     }
-    send(info) {
-        this.sendCallback(info);
+    async send(info) {
+        await this.sendCallback(info);
     }
-    subscribe(topic) {
-        this.subscribeCallback(topic);
+    async subscribe(topic) {
+        await this.subscribeCallback(topic);
     }
 }
 
@@ -597,7 +608,7 @@ const submit = (label, options) => {
  * @param liveViewTemplateRenderer optional @{LiveViewTemplate} used for adding additional content to the LiveView (typically reused across all LiveViews)
  * @returns the HTML for the HTTP server to return to the client
  */
-const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor, rootTemplateRenderer, pageTitleDefaults, liveViewTemplateRenderer) => {
+const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor, pageRenderer, pageTitleDefaults, rootRenderer) => {
     const { getSessionData, getRequestUrl, onRedirect } = adaptor;
     // new LiveViewId for each request
     const liveViewId = idGenerator();
@@ -657,8 +668,8 @@ const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor,
     // optionally render the `LiveView` inside another template passing the session data
     // and the rendered `LiveView` to the template renderer
     let liveViewContent = safe(view);
-    if (liveViewTemplateRenderer) {
-        liveViewContent = liveViewTemplateRenderer({ ...sessionData }, safe(view));
+    if (rootRenderer) {
+        liveViewContent = await rootRenderer({ ...sessionData }, safe(view));
     }
     // wrap `LiveView` content inside the `phx-main` template along with the serialized
     // session data and the generated live view ID for the websocket connection
@@ -672,28 +683,45 @@ const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor,
     </div>
   `;
     // finally render the `LiveView` root template passing any pageTitle data, the CSRF token,  and the rendered `LiveView`
-    const rootView = rootTemplateRenderer(pageTitleDefaults ?? { title: "" }, sessionData._csrf_token, rootContent);
+    const rootView = await pageRenderer(pageTitleDefaults ?? { title: "" }, sessionData._csrf_token, rootContent);
     return rootView.toString();
 };
 
 /**
- * Naive implementation of flash adaptor that just adds flash to the session data and removes flash from the session data.
+ * Naive implementation of flash adaptor that uses "__flash" property on session data
+ * to implement flash.
  */
-class SimpleFlashAdaptor {
-    putFlash(session, key, value) {
-        if (!session.flash) {
+class SessionFlashAdaptor {
+    peekFlash(session, key) {
+        if (!session.__flash) {
             // istanbul ignore next
-            session.flash = {};
+            session.__flash = {};
         }
-        session.flash[key] = value;
+        return Promise.resolve(session.__flash[key]);
+    }
+    popFlash(session, key) {
+        if (!session.__flash) {
+            // istanbul ignore next
+            session.__flash = {};
+        }
+        const value = session.__flash[key];
+        delete session.__flash[key];
+        return Promise.resolve(value);
+    }
+    putFlash(session, key, value) {
+        if (!session.__flash) {
+            // istanbul ignore next
+            session.__flash = {};
+        }
+        session.__flash[key] = value;
         return Promise.resolve();
     }
     clearFlash(session, key) {
-        if (!session.flash) {
+        if (!session.__flash) {
             // istanbul ignore next
-            session.flash = {};
+            session.__flash = {};
         }
-        delete session.flash[key];
+        delete session.__flash[key];
         return Promise.resolve();
     }
 }
@@ -963,7 +991,6 @@ class LiveViewManager {
         try {
             const payload = message[PhxProtocol.payload];
             const { type, event, cid } = payload;
-            console.log("type", type);
             // TODO - handle uploads
             let value = {};
             switch (type) {
@@ -1288,9 +1315,9 @@ class LiveViewManager {
             this.pageTitleChanged = true;
         }
     }
-    putFlash(key, value) {
+    async putFlash(key, value) {
         try {
-            this.flashAdaptor.putFlash(this.session, key, value);
+            await this.flashAdaptor.putFlash(this.session, key, value);
         }
         catch (e) {
             /* istanbul ignore next */
@@ -1491,7 +1518,7 @@ class LiveViewManager {
     newLiveViewSocket() {
         return new WsLiveViewSocket(this.joinId, (newTitle) => {
             this.pageTitle = newTitle;
-        }, (event) => this.onPushEvent(event), (path, params, replace) => this.onPushPatch(path, params, replace), (path, params, replace) => this.onPushRedirect(path, params, replace), (key, value) => this.putFlash(key, value), (fn, intervalMillis) => this.repeat(fn, intervalMillis), (info) => this.sendInternal(info), (topic) => {
+        }, async (event) => await this.onPushEvent(event), async (path, params, replace) => await this.onPushPatch(path, params, replace), async (path, params, replace) => await this.onPushRedirect(path, params, replace), async (key, value) => await this.putFlash(key, value), (fn, intervalMillis) => this.repeat(fn, intervalMillis), async (info) => await this.sendInternal(info), async (topic) => {
             const subId = this.pubSub.subscribe(topic, (info) => {
                 this.sendInternal(info);
             });
@@ -1586,7 +1613,7 @@ exports.HtmlSafeString = HtmlSafeString;
 exports.HttpLiveComponentSocket = HttpLiveComponentSocket;
 exports.HttpLiveViewSocket = HttpLiveViewSocket;
 exports.LiveViewManager = LiveViewManager;
-exports.SimpleFlashAdaptor = SimpleFlashAdaptor;
+exports.SessionFlashAdaptor = SessionFlashAdaptor;
 exports.SingleProcessPubSub = SingleProcessPubSub;
 exports.WsLiveComponentSocket = WsLiveComponentSocket;
 exports.WsLiveViewSocket = WsLiveViewSocket;

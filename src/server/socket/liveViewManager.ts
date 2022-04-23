@@ -10,6 +10,7 @@ import {
   LiveContext,
   LiveView,
   LiveViewMeta,
+  LiveViewRootRenderer,
   LiveViewTemplate,
   WsLiveComponentSocket,
 } from "../live";
@@ -102,7 +103,7 @@ export class LiveViewManager {
   private pageTitleChanged: boolean = false;
 
   private socket: WsLiveViewSocket;
-  private liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate;
+  private liveViewRootTemplate?: LiveViewRootRenderer;
 
   constructor(
     liveView: LiveView,
@@ -111,7 +112,7 @@ export class LiveViewManager {
     serDe: SerDe,
     pubSub: PubSub,
     flashAdaptor: FlashAdaptor,
-    liveViewRootTemplate?: (sessionData: SessionData, innerContent: LiveViewTemplate) => LiveViewTemplate
+    liveViewRootTemplate?: LiveViewRootRenderer
   ) {
     this.liveView = liveView;
     this.connectionId = connectionId;
@@ -256,8 +257,6 @@ export class LiveViewManager {
     try {
       const payload = message[PhxProtocol.payload];
       const { type, event, cid } = payload;
-      console.log("type", type);
-
       // TODO - handle uploads
       let value: Record<string, string> = {};
       switch (type) {
@@ -629,9 +628,9 @@ export class LiveViewManager {
     }
   }
 
-  private putFlash(key: string, value: string) {
+  private async putFlash(key: string, value: string) {
     try {
-      this.flashAdaptor.putFlash(this.session, key, value);
+      await this.flashAdaptor.putFlash(this.session, key, value);
     } catch (e) {
       /* istanbul ignore next */
       console.error(`Error putting flash`, e);
@@ -862,13 +861,13 @@ export class LiveViewManager {
       (newTitle: string) => {
         this.pageTitle = newTitle;
       },
-      (event) => this.onPushEvent(event),
-      (path, params, replace) => this.onPushPatch(path, params, replace),
-      (path, params, replace) => this.onPushRedirect(path, params, replace),
-      (key, value) => this.putFlash(key, value),
+      async (event) => await this.onPushEvent(event),
+      async (path, params, replace) => await this.onPushPatch(path, params, replace),
+      async (path, params, replace) => await this.onPushRedirect(path, params, replace),
+      async (key, value) => await this.putFlash(key, value),
       (fn, intervalMillis) => this.repeat(fn, intervalMillis),
-      (info) => this.sendInternal(info),
-      (topic: string) => {
+      async (info) => await this.sendInternal(info),
+      async (topic: string) => {
         const subId = this.pubSub.subscribe<AnyLiveInfo>(topic, (info: AnyLiveInfo) => {
           this.sendInternal(info);
         });
