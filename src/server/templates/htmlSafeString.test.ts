@@ -230,6 +230,7 @@ describe("test escapeHtml", () => {
 
   it("live component parts renders", async () => {
     const lv = new TestLiveView();
+    const url = new URL("http://example.com/foo");
     const res = await lv.render(
       {},
       {
@@ -240,6 +241,7 @@ describe("test escapeHtml", () => {
         ) => {
           return new HtmlSafeString(["1"], [], true);
         },
+        url,
       }
     );
     expect(res.partsTree()).toEqual({

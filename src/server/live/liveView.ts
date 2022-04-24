@@ -32,7 +32,7 @@ export interface AnyLivePushEvent extends LiveEvent {
 }
 
 /**
- * Paramter passed into the `mount` function of a LiveViewComponent.
+ * Paramter passed into the `mount` function of a LiveView.
  */
 export interface LiveViewMountParams {
   /**
@@ -40,7 +40,7 @@ export interface LiveViewMountParams {
    */
   ["_csrf_token"]: string;
   /**
-   * The number of mounts for this `LiveView` component.
+   * The number of mounts for this `LiveView`.
    */
   ["_mounts"]: number;
 }
@@ -97,7 +97,7 @@ export interface LiveView<
    * passed into this handler.
    * @param event the (string) event to handle
    * @param params any parameters associated with the event
-   * @param socket The `LiveViewSocket` for this `LiveView` component
+   * @param socket The `LiveViewSocket` for this `LiveView`
    */
   handleEvent(event: TEvents, socket: LiveViewSocket<TContext>): void | Promise<void>;
 
@@ -105,20 +105,25 @@ export interface LiveView<
    * Events initiated by the `LiveView` or `LiveComponent`s that are childern of this
    * `LiveView` are passed into this handler.
    * @param event The event to handle
-   * @param socket The `LiveViewSocket` for the `LiveView` component
+   * @param socket The `LiveViewSocket` for the `LiveView`
    */
   handleInfo(info: TInfos, socket: LiveViewSocket<TContext>): void | Promise<void>;
 }
 
 /**
- * Meta data and helpers for `LiveView` components.
+ * Meta data and helpers for `LiveView`s.
  */
 export interface LiveViewMeta {
   /**
    * The cross site request forgery token from the `LiveView` html page which
    * should be used to validate form submissions.
    */
-  csrfToken: string;
+  readonly csrfToken: string;
+
+  /**
+   * The current url for this `LiveView`
+   */
+  readonly url: URL;
   /**
    * A helper for loading `LiveComponent`s within a `LiveView`.
    */

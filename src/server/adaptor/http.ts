@@ -126,6 +126,7 @@ export const handleHttpLiveView = async (
       // return the view to the parent `LiveView` to be rendered
       return newView;
     },
+    url,
   });
 
   // now that we've rendered the `LiveView` and its `LiveComponent`s, we can serialize the session data

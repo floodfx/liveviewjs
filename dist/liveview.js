@@ -653,6 +653,7 @@ const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor,
             // return the view to the parent `LiveView` to be rendered
             return newView;
         },
+        url,
     });
     // now that we've rendered the `LiveView` and its `LiveComponent`s, we can serialize the session data
     // to be passed into the websocket connection
@@ -853,7 +854,7 @@ const newHeartbeatReply = (incoming) => {
 class LiveViewManager {
     connectionId;
     joinId;
-    urlBase;
+    url;
     wsAdaptor;
     subscriptionIds = {};
     liveView;
@@ -901,7 +902,7 @@ class LiveViewManager {
             // checked one of these was defined in MessageRouter
             const url = new URL((urlString || redirectString));
             // save base for possible pushPatch base for URL
-            this.urlBase = `${url.protocol}//${url.host}`;
+            this.url = url;
             // extract params, session and socket from payload
             const { params: payloadParams, session: payloadSession, static: payloadStatic } = payload;
             // set component manager csfr token
@@ -1257,9 +1258,9 @@ class LiveViewManager {
                 { kind, to },
             ];
             // to is relative so need to provide the urlBase determined on initial join
-            const url = new URL(to, this.urlBase);
+            this.url = new URL(to, this.url);
             // let the `LiveView` udpate its context based on the new url
-            await this.liveView.handleParams(url, this.socket);
+            await this.liveView.handleParams(this.url, this.socket);
             // send the message
             this.sendPhxReply(message);
             // maybe send any queued info messages
@@ -1540,6 +1541,7 @@ class LiveViewManager {
                 const render = await this.liveComponentProcessor(liveComponent, params);
                 return render;
             },
+            url: this.url,
         };
     }
     newLiveViewSocket() {
