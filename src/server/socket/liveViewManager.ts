@@ -83,7 +83,7 @@ interface StatefulLiveComponentData<Context> {
 export class LiveViewManager {
   private connectionId: string;
   private joinId: string;
-  private urlBase: string;
+  private url: URL;
 
   private wsAdaptor: WsAdaptor;
   private subscriptionIds: Record<string, Promise<string>> = {};
@@ -149,7 +149,7 @@ export class LiveViewManager {
       // checked one of these was defined in MessageRouter
       const url = new URL((urlString || redirectString)!);
       // save base for possible pushPatch base for URL
-      this.urlBase = `${url.protocol}//${url.host}`;
+      this.url = url;
 
       // extract params, session and socket from payload
       const { params: payloadParams, session: payloadSession, static: payloadStatic } = payload;
@@ -567,10 +567,10 @@ export class LiveViewManager {
       ];
 
       // to is relative so need to provide the urlBase determined on initial join
-      const url = new URL(to, this.urlBase);
+      this.url = new URL(to, this.url);
 
       // let the `LiveView` udpate its context based on the new url
-      await this.liveView.handleParams(url, this.socket);
+      await this.liveView.handleParams(this.url, this.socket);
 
       // send the message
       this.sendPhxReply(message);
@@ -891,6 +891,7 @@ export class LiveViewManager {
         const render = await this.liveComponentProcessor<Context>(liveComponent, params);
         return render;
       },
+      url: this.url,
     } as LiveViewMeta;
   }
 

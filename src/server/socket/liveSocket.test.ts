@@ -53,10 +53,11 @@ describe("test LiveViewSocket", () => {
 
   it("http render returns context view", async () => {
     const socket = new HttpLiveViewSocket<TestLVContext>("id");
+    const url = new URL("http://example.com/?foo=baz");
     component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
-    await component.handleParams(new URL("http://example.com/?foo=baz"), socket);
+    await component.handleParams(url, socket);
     expect(socket.context.foo).toEqual("bar");
-    const view = await component.render(socket.context, { csrfToken: "csrf", live_component: jest.fn() });
+    const view = await component.render(socket.context, { csrfToken: "csrf", live_component: jest.fn(), url });
     expect(view.toString()).toEqual("<div>bar</div>");
   });
 

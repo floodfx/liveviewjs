@@ -264,7 +264,7 @@ interface AnyLivePushEvent extends LiveEvent {
     [key: string]: any;
 }
 /**
- * Paramter passed into the `mount` function of a LiveViewComponent.
+ * Paramter passed into the `mount` function of a LiveView.
  */
 interface LiveViewMountParams {
     /**
@@ -272,7 +272,7 @@ interface LiveViewMountParams {
      */
     ["_csrf_token"]: string;
     /**
-     * The number of mounts for this `LiveView` component.
+     * The number of mounts for this `LiveView`.
      */
     ["_mounts"]: number;
 }
@@ -317,26 +317,30 @@ interface LiveView<TContext extends LiveContext = AnyLiveContext, TEvents extend
      * passed into this handler.
      * @param event the (string) event to handle
      * @param params any parameters associated with the event
-     * @param socket The `LiveViewSocket` for this `LiveView` component
+     * @param socket The `LiveViewSocket` for this `LiveView`
      */
     handleEvent(event: TEvents, socket: LiveViewSocket<TContext>): void | Promise<void>;
     /**
      * Events initiated by the `LiveView` or `LiveComponent`s that are childern of this
      * `LiveView` are passed into this handler.
      * @param event The event to handle
-     * @param socket The `LiveViewSocket` for the `LiveView` component
+     * @param socket The `LiveViewSocket` for the `LiveView`
      */
     handleInfo(info: TInfos, socket: LiveViewSocket<TContext>): void | Promise<void>;
 }
 /**
- * Meta data and helpers for `LiveView` components.
+ * Meta data and helpers for `LiveView`s.
  */
 interface LiveViewMeta {
     /**
      * The cross site request forgery token from the `LiveView` html page which
      * should be used to validate form submissions.
      */
-    csrfToken: string;
+    readonly csrfToken: string;
+    /**
+     * The current url for this `LiveView`
+     */
+    readonly url: URL;
     /**
      * A helper for loading `LiveComponent`s within a `LiveView`.
      */
@@ -769,7 +773,7 @@ declare type PhxMessage = {
 declare class LiveViewManager {
     private connectionId;
     private joinId;
-    private urlBase;
+    private url;
     private wsAdaptor;
     private subscriptionIds;
     private liveView;
