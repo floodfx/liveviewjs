@@ -133,10 +133,8 @@ class BaseLiveViewSocket {
     repeat(fn, intervalMillis) {
         // no-op
     }
-    send(info) {
+    sendInfo(info) {
         // no-op
-        // istanbul ignore next
-        return Promise.resolve();
     }
     subscribe(topic) {
         // no-op
@@ -179,8 +177,6 @@ class HttpLiveViewSocket extends BaseLiveViewSocket {
 class WsLiveViewSocket extends BaseLiveViewSocket {
     id;
     connected = true;
-    pushEventData;
-    pageTitleData;
     // callbacks to the ComponentManager
     pageTitleCallback;
     pushEventCallback;
@@ -188,9 +184,9 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     pushRedirectCallback;
     putFlashCallback;
     repeatCallback;
-    sendCallback;
+    sendInfoCallback;
     subscribeCallback;
-    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, repeatCallback, sendCallback, subscribeCallback) {
+    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, repeatCallback, sendInfoCallback, subscribeCallback) {
         super();
         this.id = id;
         this.pageTitleCallback = pageTitleCallback;
@@ -199,7 +195,7 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
         this.pushRedirectCallback = pushRedirectCallback;
         this.putFlashCallback = putFlashCallback;
         this.repeatCallback = repeatCallback;
-        this.sendCallback = sendCallback;
+        this.sendInfoCallback = sendInfoCallback;
         this.subscribeCallback = subscribeCallback;
     }
     async putFlash(key, value) {
@@ -208,8 +204,8 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     pageTitle(newPageTitle) {
         this.pageTitleCallback(newPageTitle);
     }
-    async pushEvent(pushEvent) {
-        await this.pushEventCallback(pushEvent);
+    pushEvent(pushEvent) {
+        this.pushEventCallback(pushEvent);
     }
     async pushPatch(path, params, replaceHistory = false) {
         await this.pushPatchCallback(path, params, replaceHistory);
@@ -220,8 +216,8 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     repeat(fn, intervalMillis) {
         this.repeatCallback(fn, intervalMillis);
     }
-    async send(info) {
-        await this.sendCallback(info);
+    sendInfo(info) {
+        this.sendInfoCallback(info);
     }
     async subscribe(topic) {
         await this.subscribeCallback(topic);
@@ -860,11 +856,13 @@ class LiveViewManager {
     serDe;
     flashAdaptor;
     csrfToken;
+    _infoQueue = [];
     _events = [];
     _pageTitle;
     pageTitleChanged = false;
     socket;
     liveViewRootTemplate;
+    hasWarnedAboutMissingCsrfToken = false;
     constructor(liveView, connectionId, wsAdaptor, serDe, pubSub, flashAdaptor, liveViewRootTemplate) {
         this.liveView = liveView;
         this.connectionId = connectionId;
@@ -937,6 +935,8 @@ class LiveViewManager {
                 status: "ok",
             };
             this.sendPhxReply(newPhxReply(message, replyPayload));
+            // maybe send any queued info messages
+            await this.maybeSendInfos();
             // remove temp data from the context
             this.socket.updateContextWithTempAssigns();
         }
@@ -1014,7 +1014,10 @@ class LiveViewManager {
                         }
                     }
                     else {
-                        console.warn(`form event missing _csrf_token value`);
+                        if (!this.hasWarnedAboutMissingCsrfToken) {
+                            console.warn(`Warning: form event data missing _csrf_token value. \nConsider passing it in via a hidden input named "_csrf_token".  \nYou can get the value from the LiveViewMeta object passed the render method. \nWe won't warn you again for this instance of the LiveView.`);
+                            this.hasWarnedAboutMissingCsrfToken = true;
+                        }
                     }
                     // TODO - check for _target variable from phx_change here and remove it from value?
                     break;
@@ -1120,6 +1123,8 @@ class LiveViewManager {
                     status: "ok",
                 };
                 this.sendPhxReply(newPhxReply(message, replyPayload));
+                // maybe send any queued info messages
+                await this.maybeSendInfos();
                 // remove temp data
                 this.socket.updateContextWithTempAssigns();
             }
@@ -1157,6 +1162,8 @@ class LiveViewManager {
                 status: "ok",
             };
             this.sendPhxReply(newPhxReply(message, replyPayload));
+            // maybe send any queued info messages
+            await this.maybeSendInfos();
             // remove temp data
             this.socket.updateContextWithTempAssigns();
         }
@@ -1248,6 +1255,8 @@ class LiveViewManager {
             await this.liveView.handleParams(url, this.socket);
             // send the message
             this.sendPhxReply(message);
+            // maybe send any queued info messages
+            await this.maybeSendInfos();
             // remove temp data
             this.socket.updateContextWithTempAssigns();
         }
@@ -1258,11 +1267,19 @@ class LiveViewManager {
     }
     /**
      * Queues `AnyLivePushEvent` messages to be sent to the client on the subsequent `sendPhxReply` call.
-     * @param pushEvent
+     * @param pushEvent the `AnyLivePushEvent` to queue
      */
-    async onPushEvent(pushEvent) {
+    onPushEvent(pushEvent) {
         // queue event
         this._events.push(pushEvent);
+    }
+    /**
+     * Queues `AnyLiveInfo` messages to be sent to the LiveView until after the current lifecycle
+     * @param info the AnyLiveInfo to queue
+     */
+    onSendInfo(info) {
+        // queue info
+        this._infoQueue.push(info);
     }
     /**
      * Handles sending `LiveInfo` events back to the `LiveView`'s `handleInfo` method.
@@ -1324,6 +1341,16 @@ class LiveViewManager {
         catch (e) {
             /* istanbul ignore next */
             console.error(`Error clearing flash`, e);
+        }
+    }
+    async maybeSendInfos() {
+        if (this._infoQueue.length > 0) {
+            const info = this._infoQueue.splice(0, 1)[0];
+            await this.sendInternal(info);
+            // recurse
+            if (this._infoQueue.length > 0) {
+                await this.maybeSendInfos();
+            }
         }
     }
     async maybeWrapInRootTemplate(view) {
@@ -1511,7 +1538,7 @@ class LiveViewManager {
     newLiveViewSocket() {
         return new WsLiveViewSocket(this.joinId, (newTitle) => {
             this.pageTitle = newTitle;
-        }, async (event) => await this.onPushEvent(event), async (path, params, replace) => await this.onPushPatch(path, params, replace), async (path, params, replace) => await this.onPushRedirect(path, params, replace), async (key, value) => await this.putFlash(key, value), (fn, intervalMillis) => this.repeat(fn, intervalMillis), async (info) => await this.sendInternal(info), async (topic) => {
+        }, (event) => this.onPushEvent(event), async (path, params, replace) => await this.onPushPatch(path, params, replace), async (path, params, replace) => await this.onPushRedirect(path, params, replace), async (key, value) => await this.putFlash(key, value), (fn, intervalMillis) => this.repeat(fn, intervalMillis), (info) => this.onSendInfo(info), async (topic) => {
             const subId = this.pubSub.subscribe(topic, (info) => {
                 this.sendInternal(info);
             });
@@ -1519,7 +1546,7 @@ class LiveViewManager {
         });
     }
     newLiveComponentSocket(context) {
-        return new WsLiveComponentSocket(this.joinId, context, (info) => this.sendInternal(info), (event) => this.onPushEvent(event));
+        return new WsLiveComponentSocket(this.joinId, context, (info) => this.onSendInfo(info), (event) => this.onPushEvent(event));
     }
 }
 
