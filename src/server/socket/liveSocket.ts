@@ -51,7 +51,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
    * @param event the name of the event to push to the client
    * @param params the data to pass to the client
    */
-  pushEvent(pushEvent: AnyLivePushEvent): void | Promise<void>;
+  pushEvent(pushEvent: AnyLivePushEvent): void;
   /**
    * Updates the browser's URL with the given path and query parameters.
    *
@@ -87,11 +87,11 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
    */
   repeat(fn: () => void, intervalMillis: number): void;
   /**
-   * Send an event internally to the server which initiates a `LiveView.handleInfo` invocation.
+   * Send info internally to the server which initiates a `LiveView.handleInfo` invocation.
    *
    * @param event the event to send to `handleInfo`
    */
-  send(info: AnyLiveInfo): Promise<void>;
+  sendInfo(info: AnyLiveInfo): void;
   /**
    * Subscribes to the given topic using pub/sub.  Any events published to the topic
    * will be received by the `LiveView` instance via `handleEvent`.
@@ -150,10 +150,8 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext>
   repeat(fn: () => void, intervalMillis: number) {
     // no-op
   }
-  send(info: AnyLiveInfo) {
+  sendInfo(info: AnyLiveInfo) {
     // no-op
-    // istanbul ignore next
-    return Promise.resolve();
   }
   subscribe(topic: string) {
     // no-op
@@ -203,9 +201,6 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
   readonly id: string;
   readonly connected: boolean = true;
 
-  pushEventData?: { event: string; params: Record<string, any> };
-  pageTitleData?: string;
-
   // callbacks to the ComponentManager
   private pageTitleCallback: (newPageTitle: string) => void;
   private pushEventCallback: (pushEvent: AnyLivePushEvent) => void;
@@ -213,7 +208,7 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
   private pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void;
   private putFlashCallback: (key: string, value: string) => void;
   private repeatCallback: (fn: () => void, intervalMillis: number) => void;
-  private sendCallback: (info: AnyLiveInfo) => void;
+  private sendInfoCallback: (info: AnyLiveInfo) => void;
   private subscribeCallback: (topic: string) => void;
 
   constructor(
@@ -224,7 +219,7 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
     pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void,
     putFlashCallback: (key: string, value: string) => void,
     repeatCallback: (fn: () => void, intervalMillis: number) => void,
-    sendCallback: (info: AnyLiveInfo) => void,
+    sendInfoCallback: (info: AnyLiveInfo) => void,
     subscribeCallback: (topic: string) => void
   ) {
     super();
@@ -235,7 +230,7 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
     this.pushRedirectCallback = pushRedirectCallback;
     this.putFlashCallback = putFlashCallback;
     this.repeatCallback = repeatCallback;
-    this.sendCallback = sendCallback;
+    this.sendInfoCallback = sendInfoCallback;
     this.subscribeCallback = subscribeCallback;
   }
   async putFlash(key: string, value: string) {
@@ -244,8 +239,8 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
   pageTitle(newPageTitle: string) {
     this.pageTitleCallback(newPageTitle);
   }
-  async pushEvent(pushEvent: AnyLivePushEvent) {
-    await this.pushEventCallback(pushEvent);
+  pushEvent(pushEvent: AnyLivePushEvent) {
+    this.pushEventCallback(pushEvent);
   }
   async pushPatch(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
     await this.pushPatchCallback(path, params, replaceHistory);
@@ -256,8 +251,8 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
   repeat(fn: () => void, intervalMillis: number) {
     this.repeatCallback(fn, intervalMillis);
   }
-  async send(info: AnyLiveInfo) {
-    await this.sendCallback(info);
+  sendInfo(info: AnyLiveInfo): void {
+    this.sendInfoCallback(info);
   }
   async subscribe(topic: string) {
     await this.subscribeCallback(topic);

@@ -803,7 +803,7 @@ class SendInternalTestLiveViewComponent extends BaseLiveView<SendInternalContext
   }
 
   handleEvent(event: AnyLiveEvent, socket: LiveViewSocket<SendInternalContext>) {
-    socket.send({ type: "internal" });
+    socket.sendInfo({ type: "internal" });
     socket.assign({
       handleEventCount: socket.context.handleEventCount + 1,
       handleInfoCount: socket.context.handleInfoCount,
@@ -830,7 +830,7 @@ type RepeatInfo = { type: "add" };
 class Repeat50msTestLiveViewComponent extends BaseLiveView<RepeatCtx, AnyLiveEvent, RepeatInfo> {
   mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<RepeatCtx>) {
     socket.repeat(() => {
-      socket.send({ type: "add" });
+      socket.sendInfo({ type: "add" });
     }, 50);
     socket.assign({ count: 0 });
   }

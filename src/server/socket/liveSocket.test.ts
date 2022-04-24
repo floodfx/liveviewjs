@@ -163,7 +163,7 @@ class TestLVPushAndSend extends BaseLiveView<TestLVPushAndSendContext> {
     socket.pushRedirect("/new/path", new URLSearchParams({ param: String(1) }), true);
     socket.putFlash("info", "Helpful message");
     socket.repeat(() => {}, 1000);
-    socket.send({ type: "my_event" });
+    socket.sendInfo({ type: "my_event" });
     socket.subscribe("topic");
   }
 

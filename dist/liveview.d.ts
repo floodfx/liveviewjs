@@ -64,7 +64,7 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      * @param event the name of the event to push to the client
      * @param params the data to pass to the client
      */
-    pushEvent(pushEvent: AnyLivePushEvent): void | Promise<void>;
+    pushEvent(pushEvent: AnyLivePushEvent): void;
     /**
      * Updates the browser's URL with the given path and query parameters.
      *
@@ -98,11 +98,11 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      */
     repeat(fn: () => void, intervalMillis: number): void;
     /**
-     * Send an event internally to the server which initiates a `LiveView.handleInfo` invocation.
+     * Send info internally to the server which initiates a `LiveView.handleInfo` invocation.
      *
      * @param event the event to send to `handleInfo`
      */
-    send(info: AnyLiveInfo): Promise<void>;
+    sendInfo(info: AnyLiveInfo): void;
     /**
      * Subscribes to the given topic using pub/sub.  Any events published to the topic
      * will be received by the `LiveView` instance via `handleEvent`.
@@ -125,7 +125,7 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
     pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     putFlash(key: string, value: string): Promise<void>;
     repeat(fn: () => void, intervalMillis: number): void;
-    send(info: AnyLiveInfo): Promise<void>;
+    sendInfo(info: AnyLiveInfo): void;
     subscribe(topic: string): Promise<void>;
     updateContextWithTempAssigns(): void;
 }
@@ -150,27 +150,22 @@ declare class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
 declare class WsLiveViewSocket extends BaseLiveViewSocket {
     readonly id: string;
     readonly connected: boolean;
-    pushEventData?: {
-        event: string;
-        params: Record<string, any>;
-    };
-    pageTitleData?: string;
     private pageTitleCallback;
     private pushEventCallback;
     private pushPatchCallback;
     private pushRedirectCallback;
     private putFlashCallback;
     private repeatCallback;
-    private sendCallback;
+    private sendInfoCallback;
     private subscribeCallback;
-    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendCallback: (info: AnyLiveInfo) => void, subscribeCallback: (topic: string) => void);
+    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: AnyLiveInfo) => void, subscribeCallback: (topic: string) => void);
     putFlash(key: string, value: string): Promise<void>;
     pageTitle(newPageTitle: string): void;
-    pushEvent(pushEvent: AnyLivePushEvent): Promise<void>;
+    pushEvent(pushEvent: AnyLivePushEvent): void;
     pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     repeat(fn: () => void, intervalMillis: number): void;
-    send(info: AnyLiveInfo): Promise<void>;
+    sendInfo(info: AnyLiveInfo): void;
     subscribe(topic: string): Promise<void>;
 }
 
@@ -784,11 +779,13 @@ declare class LiveViewManager {
     private serDe;
     private flashAdaptor;
     private csrfToken?;
+    private _infoQueue;
     private _events;
     private _pageTitle;
     private pageTitleChanged;
     private socket;
     private liveViewRootTemplate?;
+    private hasWarnedAboutMissingCsrfToken;
     constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
     /**
      * The `phx_join` event is the initial connection between the client and the server and initializes the
@@ -859,9 +856,14 @@ declare class LiveViewManager {
     private onPushNavigation;
     /**
      * Queues `AnyLivePushEvent` messages to be sent to the client on the subsequent `sendPhxReply` call.
-     * @param pushEvent
+     * @param pushEvent the `AnyLivePushEvent` to queue
      */
     private onPushEvent;
+    /**
+     * Queues `AnyLiveInfo` messages to be sent to the LiveView until after the current lifecycle
+     * @param info the AnyLiveInfo to queue
+     */
+    private onSendInfo;
     /**
      * Handles sending `LiveInfo` events back to the `LiveView`'s `handleInfo` method.
      * @param info the `LiveInfo` event to dispatch to the `LiveView`
@@ -870,6 +872,7 @@ declare class LiveViewManager {
     private set pageTitle(value);
     private putFlash;
     private clearFlash;
+    private maybeSendInfos;
     private maybeWrapInRootTemplate;
     private maybeAddPageTitleToParts;
     private maybeAddEventsToParts;
