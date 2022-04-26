@@ -1,4 +1,3 @@
-import { mock } from "jest-mock-extended";
 import { BaseLiveView, LiveViewMountParams, LiveViewRouter } from "..";
 import { FlashAdaptor, SessionFlashAdaptor, WsAdaptor } from "../adaptor";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
@@ -25,7 +24,9 @@ describe("test message router", () => {
     pubSub = new SingleProcessPubSub();
     flashAdaptor = new SessionFlashAdaptor();
     mr = new WsMessageRouter(new JsonSerDe(), pubSub, flashAdaptor);
-    ws = mock<WsAdaptor>();
+    ws = {
+      send: jest.fn(),
+    };
   });
 
   it("onMessage unknown message logs error", async () => {

@@ -1073,6 +1073,10 @@ class LiveViewManager {
                             status: "ok",
                         };
                         this.sendPhxReply(newPhxReply(message, replyPayload));
+                        // maybe send any queued info messages
+                        await this.maybeSendInfos();
+                        // remove temp data
+                        this.socket.updateContextWithTempAssigns();
                     }
                     else {
                         // not sure how we'd get here but just in case - ignore test coverage though
@@ -1206,8 +1210,19 @@ class LiveViewManager {
             // ignore errors
         }
     }
+    /**
+     * Repeats a function every `intervalMillis` milliseconds until `shutdown` is called.
+     * @param fn
+     * @param intervalMillis
+     */
     repeat(fn, intervalMillis) {
-        this.intervals.push(setInterval(fn, intervalMillis));
+        // wrap function in another function that sends any send infos
+        // TODO prob a race condition here but not sure what can really do about it
+        const fnPlusSendInfo = () => {
+            fn();
+            this.maybeSendInfos();
+        };
+        this.intervals.push(setInterval(fnPlusSendInfo, intervalMillis));
     }
     /**
      * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
@@ -1346,11 +1361,9 @@ class LiveViewManager {
     }
     async maybeSendInfos() {
         if (this._infoQueue.length > 0) {
-            const info = this._infoQueue.splice(0, 1)[0];
-            await this.sendInternal(info);
-            // recurse
-            if (this._infoQueue.length > 0) {
-                await this.maybeSendInfos();
+            const infos = this._infoQueue.splice(0, this._infoQueue.length);
+            for (const info of infos) {
+                await this.sendInternal(info);
             }
         }
     }
