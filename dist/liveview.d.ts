@@ -831,6 +831,11 @@ declare class LiveViewManager {
      * Clean up any resources used by the `LiveView` and `LiveComponent` instances.
      */
     private shutdown;
+    /**
+     * Repeats a function every `intervalMillis` milliseconds until `shutdown` is called.
+     * @param fn
+     * @param intervalMillis
+     */
     private repeat;
     /**
      * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
