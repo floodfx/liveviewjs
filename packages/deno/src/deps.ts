@@ -9,21 +9,17 @@ export type { Payload } from "https://deno.land/x/djwt@v2.4/mod.ts";
 export { nanoid } from "https://deno.land/x/nanoid@v3.0.0/mod.ts";
 
 // oak exports
-export {
-  Application,
-  Context,
-  Router,
-} from "https://deno.land/x/oak@v10.5.1/mod.ts";
+export { Application, Context, Router } from "https://deno.land/x/oak@v10.5.1/mod.ts";
 
 // liveviewjs exports
 export {
   handleHttpLiveView,
   html,
-  live_flash,
   live_title_tag,
   safe,
   SingleProcessPubSub,
   WsMessageRouter,
+  SessionFlashAdaptor,
 } from "liveviewjs"; // see import_map.json
 
 export type {
@@ -34,18 +30,28 @@ export type {
   SerDe,
   SessionData,
   WsAdaptor,
+  PubSub,
+  SubscriberFunction,
+  FlashAdaptor,
+  LiveViewServerAdaptor,
+  LiveViewRootRenderer,
+  LiveViewPageRenderer,
 } from "liveviewjs"; // see import_map.json
 
 // @liveviewjs/examples
 export {
-  AutocompleteLiveViewComponent,
+  AutocompleteLiveView,
   DecarbonizeLiveView,
-  LicenseLiveViewComponent,
-  LightLiveViewComponent,
-  PaginateLiveViewComponent,
-  SalesDashboardLiveViewComponent,
-  SearchLiveViewComponent,
-  ServersLiveViewComponent,
-  SortLiveViewComponent,
-  VolunteerComponent,
+  PrintsLiveView,
+  VolumeLiveView,
+  PaginateLiveView,
+  DashboardLiveView,
+  SearchLiveView,
+  ServersLiveView,
+  SortLiveView,
+  VolunteersLiveView,
+  CounterLiveView,
+  routeDetails,
 } from "@liveviewjs/examples"; // see import_map.json
+
+export type { RouteDetails } from "@liveviewjs/examples"; // see import_map.json

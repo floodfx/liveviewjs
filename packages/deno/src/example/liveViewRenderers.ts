@@ -2,8 +2,10 @@ import type {
   LiveViewTemplate,
   PageTitleDefaults,
   SessionData,
-} from "./deps.ts";
-import { html, live_flash, live_title_tag, safe } from "./deps.ts";
+  LiveViewPageRenderer,
+  LiveViewRootRenderer,
+} from "../deps.ts";
+import { html, live_title_tag, safe, SessionFlashAdaptor } from "../deps.ts";
 
 /**
  * Render function for the "root" of the LiveView.  Expected that this function will
@@ -14,14 +16,14 @@ import { html, live_flash, live_title_tag, safe } from "./deps.ts";
  * @param liveViewContent the content rendered by the LiveView
  * @returns a LiveViewTemplate that can be rendered by the LiveViewJS server
  */
-export const rootTemplateRenderer = (
-  pageTitleDefault: PageTitleDefaults,
+export const pageRenderer: LiveViewPageRenderer = (
+  pageTitleDefaults: PageTitleDefaults,
   csrfToken: string,
-  innerContent: LiveViewTemplate,
-) => {
-  const pageTitle = pageTitleDefault?.title ?? "";
-  const pageTitlePrefix = pageTitleDefault?.prefix ?? "";
-  const pageTitleSuffix = pageTitleDefault?.suffix ?? "";
+  liveViewContent: LiveViewTemplate
+): LiveViewTemplate => {
+  const pageTitle = pageTitleDefaults?.title ?? "";
+  const pageTitlePrefix = pageTitleDefaults?.prefix ?? "";
+  const pageTitleSuffix = pageTitleDefaults?.suffix ?? "";
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -30,19 +32,17 @@ export const rootTemplateRenderer = (
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="csrf-token" content="${csrfToken}" />
-        ${
-    live_title_tag(pageTitle, {
-      prefix: pageTitlePrefix,
-      suffix: pageTitleSuffix,
-    })
-  }
-        <script defer type="text/javascript" src="https://cdn.deno.land/liveviewjs/versions/0.3.0-rc.2/raw/dist/client/liveview.js"></script>
+        ${live_title_tag(pageTitle, { prefix: pageTitlePrefix, suffix: pageTitleSuffix })}
+        <script
+          defer
+          type="text/javascript"
+          src="https://cdn.deno.land/liveviewjs/versions/0.3.0-rc.2/raw/dist/client/liveview.js"></script>
         <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css" />
       </head>
-
       <body>
-        ${safe(innerContent)}
+        <p><a href="/">← Back</a><br /><br /></p>
+        ${safe(liveViewContent)}
       </body>
     </html>
   `;
@@ -54,21 +54,18 @@ export const rootTemplateRenderer = (
  * @param liveViewContent the content rendered by the LiveView
  * @returns a LiveViewTemplate to be embedded in the root template
  */
-export function liveViewRootRenderer(
+export const rootRenderer: LiveViewRootRenderer = async (
   session: SessionData,
-  innerContent: LiveViewTemplate,
-) {
+  liveViewContent: LiveViewTemplate
+): Promise<LiveViewTemplate> => {
+  const flashAdaptor = new SessionFlashAdaptor();
+  const infoFlash = (await flashAdaptor.popFlash(session, "info")) || "";
+  const errorFlash = (await flashAdaptor.popFlash(session, "error")) || "";
   return html`
     <main role="main" class="container">
-      <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info">
-        ${live_flash(session.flash, "info")}
-      </p>
-
-      <p class="alert alert-danger" role="alert" phx-click="lv:clear-flash" phx-value-key="error">
-        ${live_flash(session.flash, "error")}
-      </p>
-
-      ${safe(innerContent)}
+      ${infoFlash !== "" ? html`<blockquote><strong>ℹ Info</strong> ${infoFlash}</blockquote>` : ""}
+      ${errorFlash !== "" ? html`<blockquote><strong>⚠️ Error</strong> ${errorFlash}</blockquote>` : ""}
+      ${safe(liveViewContent)}
     </main>
   `;
-}
+};
