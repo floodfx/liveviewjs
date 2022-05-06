@@ -23,15 +23,15 @@ describe("test message router", () => {
   beforeEach(() => {
     pubSub = new SingleProcessPubSub();
     flashAdaptor = new SessionFlashAdaptor();
-    mr = new WsMessageRouter(new JsonSerDe(), pubSub, flashAdaptor);
     ws = {
       send: jest.fn(),
     };
+    mr = new WsMessageRouter(router, pubSub, flashAdaptor, new JsonSerDe());
   });
 
   it("onMessage unknown message logs error", async () => {
     try {
-      await mr.onMessage(ws, JSON.stringify([]), router, "1234");
+      await mr.onMessage("1234", JSON.stringify([]), ws);
     } catch (e: any) {
       fail("should not throw");
     }
@@ -39,20 +39,20 @@ describe("test message router", () => {
 
   it("onMessage valid phx_join with url", async () => {
     const phx_join = newPhxJoin("my csrf token", { url: "http://localhost:4444/test" });
-    await mr.onMessage(ws, JSON.stringify(phx_join), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phx_join), ws);
     expect(ws.send).toHaveBeenCalledTimes(1);
   });
 
   it("onMessage valid phx_join with redirect", async () => {
     const phx_join = newPhxJoin("my csrf token", { redirect: "http://localhost:4444/test" });
-    await mr.onMessage(ws, JSON.stringify(phx_join), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phx_join), ws);
     expect(ws.send).toHaveBeenCalledTimes(1);
   });
 
   it("onMessage phx_join missing url or redirect", async () => {
     const phx_join = newPhxJoin("my csrf token", {});
     try {
-      await mr.onMessage(ws, JSON.stringify(phx_join), router, "1234");
+      await mr.onMessage("1234", JSON.stringify(phx_join), ws);
     } catch (e: any) {
       fail("should not throw");
     }
@@ -61,7 +61,7 @@ describe("test message router", () => {
   it("onMessage phx_join unrouted url", async () => {
     const phx_join = newPhxJoin("my csrf token", { url: "http://localhost:4444/noroute" });
     try {
-      await mr.onMessage(ws, JSON.stringify(phx_join), router, "1234");
+      await mr.onMessage("1234", JSON.stringify(phx_join), ws);
     } catch (e: any) {
       fail("should not throw");
     }
@@ -69,17 +69,17 @@ describe("test message router", () => {
 
   it("onMessage valid heartbeat", async () => {
     const phx_join = newPhxJoin("my csrf token", { url: "http://localhost:4444/test" });
-    await mr.onMessage(ws, JSON.stringify(phx_join), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phx_join), ws);
     expect(ws.send).toHaveBeenCalledTimes(1);
     // heartbeat requires a join first
     const phx_hb: PhxHeartbeatIncoming = [null, "5", "phoenix", "heartbeat", {}];
-    await mr.onMessage(ws, JSON.stringify(phx_hb), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phx_hb), ws);
     expect(ws.send).toHaveBeenCalledTimes(2);
   });
 
   it("onMessage valid click event", async () => {
     const phx_join = newPhxJoin("my csrf token", { url: "http://localhost:4444/test" });
-    await mr.onMessage(ws, JSON.stringify(phx_join), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phx_join), ws);
     expect(ws.send).toHaveBeenCalledTimes(1);
     // click event requires a join first
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -93,7 +93,7 @@ describe("test message router", () => {
         value: { value: "eventValue" },
       },
     ];
-    await mr.onMessage(ws, JSON.stringify(phx_click), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phx_click), ws);
     expect(ws.send).toHaveBeenCalledTimes(2);
   });
 
@@ -109,7 +109,7 @@ describe("test message router", () => {
         value: { value: "eventValue" },
       },
     ];
-    await mr.onMessage(ws, JSON.stringify(phx_click), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phx_click), ws);
     expect(ws.send).toHaveBeenCalledTimes(0);
   });
 
@@ -123,13 +123,13 @@ describe("test message router", () => {
         url: "http://localhost:4444/test?id=1",
       },
     ];
-    await mr.onMessage(ws, JSON.stringify(phxLivePatch), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phxLivePatch), ws);
     expect(ws.send).toHaveBeenCalledTimes(0);
   });
 
   it("onMessage valid live patch event", async () => {
     const phx_join = newPhxJoin("my csrf token", { url: "http://localhost:4444/test" });
-    await mr.onMessage(ws, JSON.stringify(phx_join), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phx_join), ws);
     expect(ws.send).toHaveBeenCalledTimes(1);
     // live patch requires a join first
     const phxLivePatch: PhxLivePatchIncoming = [
@@ -141,19 +141,19 @@ describe("test message router", () => {
         url: "http://localhost:4444/test?id=1",
       },
     ];
-    await mr.onMessage(ws, JSON.stringify(phxLivePatch), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phxLivePatch), ws);
     expect(ws.send).toHaveBeenCalledTimes(2);
   });
 
   it("onMessage valid leave event", async () => {
     // join
     const phx_join = newPhxJoin("my csrf token", { url: "http://localhost:4444/test" });
-    await mr.onMessage(ws, JSON.stringify(phx_join), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phx_join), ws);
     expect(ws.send).toHaveBeenCalledTimes(1);
 
     // leave
     const phxLeave: PhxIncomingMessage<{}> = ["4", "8", "lv:phx-AAAAAAAA", "phx_leave", {}];
-    await mr.onMessage(ws, JSON.stringify(phxLeave), router, "1234");
+    await mr.onMessage("1234", JSON.stringify(phxLeave), ws);
     // phx_leave doesn't send a response
     expect(ws.send).toHaveBeenCalledTimes(1);
   });
@@ -164,7 +164,7 @@ describe("test message router", () => {
     pubSub.subscribe("lv:phx-AAAAAAAA", (msg: PhxMessage) => {
       fail("should not have received message");
     });
-    mr.onMessage(ws, JSON.stringify(phxLeave), router, "1234");
+    mr.onMessage("1234", JSON.stringify(phxLeave), ws);
     setTimeout(() => {
       expect(ws.send).toHaveBeenCalledTimes(0);
       done();
@@ -177,7 +177,7 @@ describe("test message router", () => {
     pubSub.subscribe("lv:phx-AAAAAAAA", (msg: PhxMessage) => {
       fail("should not have received message");
     });
-    mr.onMessage(ws, JSON.stringify(phxUnknown), router, "1234");
+    mr.onMessage("1234", JSON.stringify(phxUnknown), ws);
     setTimeout(() => {
       expect(ws.send).toHaveBeenCalledTimes(0);
       done();
@@ -189,7 +189,7 @@ describe("test message router", () => {
       expect(msg.type).toEqual("phx_leave");
       done();
     });
-    mr.onClose(0, "id");
+    mr.onClose("id");
   });
 });
 
