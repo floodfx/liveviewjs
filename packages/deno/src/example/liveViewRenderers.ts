@@ -36,7 +36,7 @@ export const pageRenderer: LiveViewPageRenderer = (
         <script
           defer
           type="text/javascript"
-          src="https://cdn.deno.land/liveviewjs/versions/0.3.0-rc.2/raw/dist/client/liveview.js"></script>
+          src="https://raw.githubusercontent.com/floodfx/liveviewjs/main/packages/examples/dist/liveviewjs-examples.browser.js"></script>
         <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css" />
       </head>
