@@ -18,7 +18,7 @@ import {
   CounterLiveView,
 } from "@liveviewjs/examples";
 import { pageRenderer, rootRenderer } from "./liveViewRenderers";
-import { NodeWsAdaptor } from "../node/wsLiveViewAdaptor";
+import { NodeWsAdaptor } from "../node/wsAdaptor";
 import { NodeJwtSerDe } from "../node/jwtSerDe";
 import { indexHandler } from "./indexHandler";
 import { NodeExpressLiveViewServer } from "../node/server";
