@@ -1,4 +1,4 @@
-import type { WsAdaptor } from "./deps.ts";
+import type { WsAdaptor } from "../deps.ts";
 
 /**
  * Deno specific adaptor to enabled the WsMessageRouter to send messages back
