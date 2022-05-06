@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1651801328787" clover="3.2.0">
-  <project timestamp="1651801328787" name="All files">
-    <metrics statements="636" coveredstatements="636" conditionals="216" coveredconditionals="203" methods="138" coveredmethods="127" elements="990" coveredelements="966" complexity="0" loc="636" ncloc="636" packages="8" files="28" classes="28"/>
+<coverage generated="1651811609997" clover="3.2.0">
+  <project timestamp="1651811609997" name="All files">
+    <metrics statements="635" coveredstatements="635" conditionals="216" coveredconditionals="203" methods="138" coveredmethods="127" elements="989" coveredelements="965" complexity="0" loc="635" ncloc="635" packages="8" files="28" classes="28"/>
     <package name="server">
-      <metrics statements="9" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
       <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/index.ts">
-        <metrics statements="9" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="7" type="stmt"/>
         <line num="2" count="7" type="stmt"/>
         <line num="3" count="7" type="stmt"/>
@@ -14,7 +14,6 @@
         <line num="6" count="7" type="stmt"/>
         <line num="7" count="7" type="stmt"/>
         <line num="8" count="7" type="stmt"/>
-        <line num="9" count="7" type="stmt"/>
       </file>
     </package>
     <package name="server.adaptor">
@@ -151,8 +150,8 @@
       <metrics statements="15" coveredstatements="15" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="3"/>
       <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/pubsub/index.ts">
         <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-        <line num="1" count="3" type="stmt"/>
-        <line num="2" count="3" type="stmt"/>
+        <line num="1" count="7" type="stmt"/>
+        <line num="2" count="7" type="stmt"/>
       </file>
       <file name="singleProcessPubSub.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/pubsub/singleProcessPubSub.ts">
         <metrics statements="13" coveredstatements="13" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="3"/>
