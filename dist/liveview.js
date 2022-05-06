@@ -1572,18 +1572,24 @@ class LiveViewManager {
     }
 }
 
+/**
+ * LiveViewJS Router for web socket messages.  Determines if a message is a `LiveView` message and routes it
+ * to the correct LiveView based on the meta data.
+ */
 class WsMessageRouter {
-    serDe;
+    router;
     pubSub;
     flashAdaptor;
+    serDe;
     liveViewRootTemplate;
-    constructor(serDe, pubSub, flashAdaptor, liveViewRootTemplate) {
-        this.serDe = serDe;
+    constructor(router, pubSub, flashAdaptor, serDe, liveViewRootTemplate) {
+        this.router = router;
         this.pubSub = pubSub;
         this.flashAdaptor = flashAdaptor;
+        this.serDe = serDe;
         this.liveViewRootTemplate = liveViewRootTemplate;
     }
-    async onMessage(wsAdaptor, messageString, router, connectionId) {
+    async onMessage(connectionId, messageString, wsAdaptor) {
         // parse string to JSON
         const rawPhxMessage = JSON.parse(messageString);
         // rawPhxMessage must be an array with 5 elements
@@ -1595,7 +1601,7 @@ class WsMessageRouter {
                     case "phx_join":
                         // handle phx_join seperate from other events so we can create a new
                         // component manager and send the join message to it
-                        await this.onPhxJoin(wsAdaptor, rawPhxMessage, router, connectionId);
+                        await this.onPhxJoin(connectionId, rawPhxMessage, wsAdaptor);
                         break;
                     case "heartbeat":
                         // send heartbeat to component manager via connectionId broadcast
@@ -1619,11 +1625,10 @@ class WsMessageRouter {
             }
         }
         else {
-            // message format is incorrect so say something
             console.error(`error unknown message type for connectionId "${connectionId}". `, rawPhxMessage);
         }
     }
-    async onClose(code, connectionId) {
+    async onClose(connectionId) {
         // when client closes connection send phx_leave message
         // to component manager via connectionId broadcast
         await this.pubSub.broadcast(connectionId, {
@@ -1631,7 +1636,7 @@ class WsMessageRouter {
             message: [null, null, "phoenix", "phx_leave", {}],
         });
     }
-    async onPhxJoin(wsAdaptor, message, router, connectionId) {
+    async onPhxJoin(connectionId, message, wsAdaptor) {
         // use url to route join request to component
         const payload = message[PhxProtocol.payload];
         const { url: urlString, redirect: redirectString } = payload;
@@ -1640,10 +1645,11 @@ class WsMessageRouter {
             throw Error(`no url or redirect in join message ${message}`);
         }
         const url = new URL(joinUrl);
-        const component = router[url.pathname];
+        const component = this.router[url.pathname];
         if (!component) {
             throw Error(`no component found for ${url}`);
         }
+        // create a LiveViewManager for this connection / LiveView
         const liveViewManager = new LiveViewManager(component, connectionId, wsAdaptor, this.serDe, this.pubSub, this.flashAdaptor, this.liveViewRootTemplate);
         await liveViewManager.handleJoin(message);
     }

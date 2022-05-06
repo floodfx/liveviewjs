@@ -692,7 +692,7 @@ declare type PhxIncomingMessage<Payload> = [
     joinRef: string | null,
     messageRef: string | null,
     topic: "phoenix" | string,
-    event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave" | "lv:clear-flash",
+    event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
     payload: Payload
 ];
 declare type PhxFlash = {
@@ -907,15 +907,25 @@ declare class LiveViewManager {
     private newLiveComponentSocket;
 }
 
+/**
+ * LiveViewJS Router for web socket messages.  Determines if a message is a `LiveView` message and routes it
+ * to the correct LiveView based on the meta data.
+ */
 declare class WsMessageRouter {
-    private serDe;
+    private router;
     private pubSub;
     private flashAdaptor;
+    private serDe;
     private liveViewRootTemplate?;
-    constructor(serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
-    onMessage(wsAdaptor: WsAdaptor, messageString: string, router: LiveViewRouter, connectionId: string): Promise<void>;
-    onClose(code: number, connectionId: string): Promise<void>;
+    constructor(router: LiveViewRouter, pubSub: PubSub, flashAdaptor: FlashAdaptor, serDe: SerDe, liveViewRootTemplate?: LiveViewRootRenderer);
+    onMessage(connectionId: string, messageString: string, wsAdaptor: WsAdaptor): Promise<void>;
+    onClose(connectionId: string): Promise<void>;
     private onPhxJoin;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+interface LiveViewServer<THttpMiddleware> {
+    httpMiddleware(): THttpMiddleware;
+    wsRouter(): WsMessageRouter;
+}
+
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServer, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
