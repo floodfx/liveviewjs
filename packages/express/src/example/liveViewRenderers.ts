@@ -1,4 +1,14 @@
-import { html, LiveViewTemplate, live_flash, live_title_tag, PageTitleDefaults, safe, SessionData } from "liveviewjs";
+import {
+  html,
+  LiveViewPageRenderer,
+  LiveViewRootRenderer,
+  LiveViewTemplate,
+  live_title_tag,
+  PageTitleDefaults,
+  safe,
+  SessionData,
+  SessionFlashAdaptor,
+} from "liveviewjs";
 
 /**
  * Render function for the "root" of the LiveView.  Expected that this function will
@@ -9,11 +19,11 @@ import { html, LiveViewTemplate, live_flash, live_title_tag, PageTitleDefaults, 
  * @param liveViewContent the content rendered by the LiveView
  * @returns a LiveViewTemplate that can be rendered by the LiveViewJS server
  */
-export function rootTemplateRenderer(
+export const pageRenderer: LiveViewPageRenderer = (
   pageTitleDefaults: PageTitleDefaults,
   csrfToken: string,
   liveViewContent: LiveViewTemplate
-): LiveViewTemplate {
+): LiveViewTemplate => {
   const pageTitle = pageTitleDefaults?.title ?? "";
   const pageTitlePrefix = pageTitleDefaults?.prefix ?? "";
   const pageTitleSuffix = pageTitleDefaults?.suffix ?? "";
@@ -34,11 +44,12 @@ export function rootTemplateRenderer(
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css" />
       </head>
       <body>
+        <p><a href="/">← Back</a><br /><br /></p>
         ${safe(liveViewContent)}
       </body>
     </html>
   `;
-}
+};
 
 /**
  * Render function used by all LiveViews for common elements, in this case, flash content.
@@ -46,18 +57,18 @@ export function rootTemplateRenderer(
  * @param liveViewContent the content rendered by the LiveView
  * @returns a LiveViewTemplate to be embedded in the root template
  */
-export function liveViewRootRenderer(session: SessionData, liveViewContent: LiveViewTemplate) {
+export const rootRenderer: LiveViewRootRenderer = async (
+  session: SessionData,
+  liveViewContent: LiveViewTemplate
+): Promise<LiveViewTemplate> => {
+  const flashAdaptor = new SessionFlashAdaptor();
+  const infoFlash = (await flashAdaptor.popFlash(session, "info")) || "";
+  const errorFlash = (await flashAdaptor.popFlash(session, "error")) || "";
   return html`
     <main role="main" class="container">
-      <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info">
-        ${live_flash(session.flash, "info")}
-      </p>
-
-      <p class="alert alert-danger" role="alert" phx-click="lv:clear-flash" phx-value-key="error">
-        ${live_flash(session.flash, "error")}
-      </p>
-
+      ${infoFlash !== "" ? html`<blockquote><strong>ℹ Info</strong> ${infoFlash}</blockquote>` : ""}
+      ${errorFlash !== "" ? html`<blockquote><strong>⚠️ Error</strong> ${errorFlash}</blockquote>` : ""}
       ${safe(liveViewContent)}
     </main>
   `;
-}
+};
