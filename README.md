@@ -1,5 +1,3 @@
-<img src="liveviewjs-eye.png" alt="liveviewjs logo" width="100"/>
-
 ## 👁 LiveViewJS
 
 *An anti-SPA, HTML-first, GSD-focused library for building LiveViews in NodeJS and Deno*
@@ -23,7 +21,7 @@ This paradigm was invented by the developers of the [Phoenix Framework](https://
 
 #### Standard "Hello World" Counter Example in LiveViewJS
 Below is the standard "hello world" counter implemented in LiveViewJS.
-```TypeScript
+```ts
 // define the shape of your LiveView's data
 interface Context {
   count: number;
