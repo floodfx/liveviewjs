@@ -56,7 +56,7 @@ export class VolunteersLiveView extends BaseLiveView<Context, Events, VolunteerM
     <h1>Volunteer Check-In</h1>
     <div id="checkin">
 
-      ${form_for<Volunteer>("#", {
+      ${form_for<Volunteer>("#", meta.csrfToken, {
         phx_submit: "save",
         phx_change: "validate",
       })}

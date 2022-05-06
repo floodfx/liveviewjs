@@ -3,6 +3,7 @@ import {
   html,
   HtmlSafeString,
   join,
+  LiveViewMeta,
   LiveViewMountParams,
   LiveViewSocket,
   live_patch,
@@ -58,7 +59,7 @@ export class SortLiveView extends BaseLiveView<Context, Events> {
     });
   }
 
-  render(context: Context) {
+  render(context: Context, meta: LiveViewMeta) {
     const {
       options: { perPage, page, sortOrder, sortby },
       donations,
@@ -125,7 +126,7 @@ export class SortLiveView extends BaseLiveView<Context, Events> {
         break;
     }
 
-    socket.pushPatch("/sort", { page, perPage, sortOrder, sortby });
+    socket.pushPatch("/sort", new URLSearchParams({ page: String(page), perPage: String(perPage), sortOrder, sortby }));
 
     socket.assign({
       options: { page, perPage, sortby, sortOrder },

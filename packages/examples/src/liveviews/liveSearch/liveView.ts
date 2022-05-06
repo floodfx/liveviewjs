@@ -1,4 +1,4 @@
-import { BaseLiveView, html, LiveViewMountParams, LiveViewSocket, SessionData } from "liveviewjs";
+import { BaseLiveView, html, LiveViewMeta, LiveViewMountParams, LiveViewSocket, SessionData } from "liveviewjs";
 import { searchByZip, Store } from "./data";
 
 interface Context {
@@ -44,28 +44,30 @@ export class SearchLiveView extends BaseLiveView<Context, Events, Infos> {
     return html` <div class="loader">Loading...</div> `;
   }
 
-  render(context: Context) {
+  render(context: Context, meta: LiveViewMeta) {
+    const { zip, stores, loading } = context;
     return html`
       <h1>Find a Store</h1>
       <div id="search">
         <form phx-submit="zip-search">
+          <input type="hidden" name="_csrf_token" value="${meta.csrfToken}" />
           <input
             type="text"
             name="zip"
-            value="${context.zip}"
+            value="${zip}"
             placeholder="Zip Code"
             autofocus
             autocomplete="off"
-            ${context.loading ? "readonly" : ""} />
+            ${loading ? "readonly" : ""} />
 
           <button type="submit">🔎</button>
         </form>
 
-        ${context.loading ? this.renderLoading() : ""}
+        ${loading ? this.renderLoading() : ""}
 
         <div class="stores">
           <ul>
-            ${context.stores.map((store) => this.renderStore(store))}
+            ${stores.map((store) => this.renderStore(store))}
           </ul>
         </div>
       </div>
@@ -75,7 +77,7 @@ export class SearchLiveView extends BaseLiveView<Context, Events, Infos> {
   handleEvent(event: Events, socket: LiveViewSocket<Context>) {
     const { zip } = event;
 
-    socket.send({ type: "run_zip_search", zip });
+    socket.sendInfo({ type: "run_zip_search", zip });
 
     socket.assign({ zip, stores: [], loading: true });
   }

@@ -90,7 +90,7 @@ export class PaginateLiveView extends BaseLiveView<Context, Events> {
     const page = socket.context.options.page;
     const perPage = Number(event.perPage || 10);
 
-    socket.pushPatch("/paginate", { page: String(page), perPage: String(perPage) });
+    socket.pushPatch("/paginate", new URLSearchParams({ page: String(page), perPage: String(perPage) }));
 
     socket.assign({
       options: { page, perPage },
