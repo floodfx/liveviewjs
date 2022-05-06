@@ -20,11 +20,11 @@
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "MIT",
   "dependencies": {
-    "@liveviewjs/examples": "file:../examples/liveviewjs-examples-0.0.1.tgz",
+    "@liveviewjs/examples": "^0.0.1",
     "express": "^4.17.2",
     "express-session": "^1.17.2",
     "jsonwebtoken": "^8.5.1",
-    "liveviewjs": "file:../../liveviewjs-0.3.0.tgz",
+    "liveviewjs": "^0.3.0",
     "nanoid": "^3.2.0",
     "redis": "^4.0.4",
     "ws": "^8.4.2"
