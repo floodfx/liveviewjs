@@ -1,6 +1,6 @@
 <img src="liveviewjs-eye.png" alt="liveviewjs logo" width="100"/>
 
-## LiveViewJS
+## 👁 LiveViewJS
 
 *An anti-SPA, HTML-first, GSD-focused library for building LiveViews in NodeJS and Deno*
 
@@ -101,7 +101,8 @@ LiveViewJS works on both NodeJS and Deno and can be added to your application on
 **Quick Integration Walkthrough**
 
 Quick start of adding LiveViewJS to your application:
- 1. Create one or more `LiveView`s (use `BaseLiveView` as your base class) - Feel free to use copy an [example](/packages/examples) or include from the `@liveviewjs/examples` package.
+
+ 1. Create one or more `LiveView`s (use `BaseLiveView` as your base class) - Feel free to use an [example](/packages/examples) or include from the `@liveviewjs/examples` package.
 ```ts
   export class MyLiveView extends BaseLiveView<MyContext, MyEvents> {...}
 ```
@@ -115,7 +116,9 @@ Quick start of adding LiveViewJS to your application:
 
  3. Define a `LiveViewPageRenderer` which defines the page layout in which your `LiveView`s will be rendered. Optionally, you can define a `LiveViewRootRenderer` which defines another level in which to render your `LiveView`s (often used for things like flash messages)
 ```ts
-// required
+// define the page layout in which your LiveViews will be rendered,
+// also loads the LiveView client javascript which facilitates the
+// communication between the client and the server
 export const pageRenderer: LiveViewPageRenderer = (
   pageTitleDefaults: PageTitleDefaults,
   csrfToken: string,
@@ -128,12 +131,12 @@ export const pageRenderer: LiveViewPageRenderer = (
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <!-- the `csrfToken` is required for security and will be provided to this function-->
+         <!-- the csrfToken is required for security and will be provided to this function -->
         <meta name="csrf-token" content="${csrfToken}" />
-        <!-- `live_title_tag` enables title updates from `LiveView`s -->
+        <!-- live_title_tag enables title updates from LiveViews -->
         ${live_title_tag(pageTitle, { prefix: pageTitlePrefix, suffix: pageTitleSuffix })}
         <!-- your browser/liveview javascript see: packages/browser-->
-        <script defer type="text/javascript" src="/browser-liveview.js"></script>
+        <script defer type="text/javascript" src="/client-liveview.js"></script>
         <!-- nprogress shows a tiny progress bar when requests are made between client/server -->
         <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
         <!-- your favorite css library -->
@@ -141,7 +144,7 @@ export const pageRenderer: LiveViewPageRenderer = (
       </head>
       <body>
         <!-- the to-be-rendered LiveView content -->
-        ${liveViewContent}
+        ${safe(liveViewContent)}
       </body>
     </html>`
 }
@@ -183,7 +186,7 @@ wsServer.on("connection", (ws) => {
   });
 });
 ```
-That's it!
+**That's it!!!** Start your server and start making requests to the LiveView routes!
 
 
 ### Feedback is a 🎁
