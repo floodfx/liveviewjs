@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Example project showing how LiveViewJS integrates with Express",
   "scripts": {
-    "start": "npm run dist; nodemon -e js -w dist build/index.js",
+    "start": "npm run dist; nodemon -e js -w dist build/example/index.js",
     "build": "tsc",
     "clean": "rm -rf build",
     "dist": "npm run clean; npm run build",
@@ -24,7 +24,7 @@
     "express": "^4.17.2",
     "express-session": "^1.17.2",
     "jsonwebtoken": "^8.5.1",
-    "liveviewjs": "^0.3.0-rc.2",
+    "liveviewjs": "file:../../liveviewjs-0.3.0.tgz",
     "nanoid": "^3.2.0",
     "redis": "^4.0.4",
     "ws": "^8.4.2"
