@@ -27,29 +27,50 @@ export class AutocompleteLiveView extends BaseLiveView<Context, Events, Infos> {
     socket.assign({ zip, city, stores, matches, loading });
   }
 
-  renderStoreStatus(store: Store) {
-    if (store.open) {
-      return html`<span class="open">🔓 Open</span>`;
-    } else {
-      return html`<span class="closed">🔐 Closed</span>`;
+  handleEvent(event: Events, socket: LiveViewSocket<Context>) {
+    // console.log("event:", event, params, socket);
+    let city: string;
+    switch (event.type) {
+      case "zip-search":
+        const { zip } = event;
+        socket.sendInfo({ type: "run_zip_search", zip });
+        socket.assign({ zip, loading: true, stores: [], matches: [] });
+        break;
+      case "city-search":
+        city = event.city;
+        socket.sendInfo({ type: "run_city_search", city });
+        socket.assign({ city, loading: true, matches: [], stores: [] });
+        break;
+      case "suggest-city":
+        city = event.city;
+        const matches = suggest(city);
+        socket.assign({ city, loading: false, matches });
+        break;
     }
   }
 
-  renderStore(store: Store) {
-    return html` <li>
-      <div class="first-line">
-        <div class="name">${store.name}</div>
-        <div class="status">${this.renderStoreStatus(store)}</div>
-        <div class="second-line">
-          <div class="street">📍 ${store.street}</div>
-          <div class="phone_number">📞 ${store.phone_number}</div>
-        </div>
-      </div>
-    </li>`;
-  }
-
-  renderLoading() {
-    return html` <div class="loader">Loading...</div> `;
+  handleInfo(info: Infos, socket: LiveViewSocket<Context>) {
+    const { type } = info;
+    let stores: Store[] = [];
+    switch (type) {
+      case "run_zip_search":
+        const { zip } = info;
+        stores = searchByZip(zip);
+        socket.assign({
+          zip,
+          stores,
+          loading: false,
+        });
+        break;
+      case "run_city_search":
+        const { city } = info;
+        stores = searchByCity(city);
+        socket.assign({
+          city,
+          stores,
+          loading: false,
+        });
+    }
   }
 
   render(context: Context) {
@@ -98,50 +119,29 @@ export class AutocompleteLiveView extends BaseLiveView<Context, Events, Infos> {
     `;
   }
 
-  handleEvent(event: Events, socket: LiveViewSocket<Context>) {
-    // console.log("event:", event, params, socket);
-    let city: string;
-    switch (event.type) {
-      case "zip-search":
-        const { zip } = event;
-        socket.send({ type: "run_zip_search", zip });
-        socket.assign({ zip, loading: true, stores: [], matches: [] });
-        break;
-      case "city-search":
-        city = event.city;
-        socket.send({ type: "run_city_search", city });
-        socket.assign({ city, loading: true, matches: [], stores: [] });
-        break;
-      case "suggest-city":
-        city = event.city;
-        const matches = suggest(city);
-        socket.assign({ city, loading: false, matches });
-        break;
+  renderStoreStatus(store: Store) {
+    if (store.open) {
+      return html`<span class="open">🔓 Open</span>`;
+    } else {
+      return html`<span class="closed">🔐 Closed</span>`;
     }
   }
 
-  handleInfo(info: Infos, socket: LiveViewSocket<Context>) {
-    const { type } = info;
-    let stores: Store[] = [];
-    switch (type) {
-      case "run_zip_search":
-        const { zip } = info;
-        stores = searchByZip(zip);
-        socket.assign({
-          zip,
-          stores,
-          loading: false,
-        });
-        break;
-      case "run_city_search":
-        const { city } = info;
-        stores = searchByCity(city);
-        socket.assign({
-          city,
-          stores,
-          loading: false,
-        });
-    }
+  renderStore(store: Store) {
+    return html` <li>
+      <div class="first-line">
+        <div class="name">${store.name}</div>
+        <div class="status">${this.renderStoreStatus(store)}</div>
+        <div class="second-line">
+          <div class="street">📍 ${store.street}</div>
+          <div class="phone_number">📞 ${store.phone_number}</div>
+        </div>
+      </div>
+    </li>`;
+  }
+
+  renderLoading() {
+    return html` <div class="loader">Loading...</div> `;
   }
 }
 

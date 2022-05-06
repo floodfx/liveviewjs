@@ -15,18 +15,17 @@ export interface XkcdData {
   title: string;
 }
 
-export function randomXkcdNum(): number {
-  return Math.floor(Math.random() * 2580) + 1;
+export function randomXkcdNum(max: number): number {
+  return Math.floor(Math.random() * max) + 1;
 }
 
-export function isValidXkcd(num: number) {
-  // as of 2022-02-14, the latest comic is #2580
-  return num >= 1 && num <= 2580;
+export function isValidXkcd(num: number, max: number) {
+  return num >= 1 && num <= max;
 }
 
-export async function fetchXkcd(num?: number): Promise<XkcdData> {
+export async function fetchXkcd(num?: number, max?: number): Promise<XkcdData> {
   let url = "https://xkcd.com/info.0.json";
-  if (num && isValidXkcd(num)) {
+  if (num && max && isValidXkcd(num, max)) {
     url = `https://xkcd.com/${num}/info.0.json`;
   }
   const response = await fetch(url);

@@ -7,21 +7,21 @@ export interface RouteDetails {
 
 export const routeDetails: RouteDetails[] = [
   {
-    label: "Light",
-    path: "/light",
-    summary: "Control the brightness of a porch light using buttons or keys.",
-    tags: ["phx-click", "phx-window-keydown", "phx-key"],
+    label: "Volume",
+    path: "/volume",
+    summary: "Control the volume using buttons or keys.",
+    tags: ["phx-click", "phx-window-keydown", "phx-key", "flash"],
   },
   {
-    label: "License",
-    path: "/license",
-    summary: "Use a range input to calculate the licensing costs based on number of seats.",
+    label: "Prints",
+    path: "/prints",
+    summary: "Use a range input to calculate price of printing a photo of a cat.",
     tags: ["phx-change"],
   },
   {
-    label: "Sales Dashboard",
-    path: "/sales-dashboard",
-    summary: "Real-time sales metrics dashboard updating every second.",
+    label: "Dashboard",
+    path: "/dashboard",
+    summary: "Real-time dashboard showing live order metrics updating every second.",
     tags: ["server-push"],
   },
   {
@@ -60,16 +60,22 @@ export const routeDetails: RouteDetails[] = [
     summary: "Simulate signing up for a volunteer event.",
     tags: ["phx-submit", "phx-change", "phx-update", "phx-feedback-for", "phx-debounce"],
   },
-  {
-    label: "AsyncFetch",
-    path: "/asyncfetch",
-    summary: "Example of using async fetch to fetch data from a server.  In this case, Xkcd comic data.",
-    tags: ["live-patch", "async/await"],
-  },
+  // {
+  //   label: "AsyncFetch",
+  //   path: "/asyncfetch",
+  //   summary: "Example of using async fetch to fetch data from a server.  In this case, Xkcd comic data.",
+  //   tags: ["live-patch", "async/await"],
+  // },
   {
     label: "Decarbonize Calculator",
     path: "/decarbonize",
     summary: "Example of LiveComponents within a LiveView",
     tags: ["live_component"],
+  },
+  {
+    label: "Counter",
+    path: "/counter",
+    summary: 'Standard "hello world" example.',
+    tags: ["phx-click"],
   },
 ];
