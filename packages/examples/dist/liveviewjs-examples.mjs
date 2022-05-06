@@ -1095,28 +1095,49 @@ class AutocompleteLiveView extends BaseLiveView {
         const loading = false;
         socket.assign({ zip, city, stores, matches, loading });
     }
-    renderStoreStatus(store) {
-        if (store.open) {
-            return html `<span class="open">🔓 Open</span>`;
-        }
-        else {
-            return html `<span class="closed">🔐 Closed</span>`;
+    handleEvent(event, socket) {
+        // console.log("event:", event, params, socket);
+        let city;
+        switch (event.type) {
+            case "zip-search":
+                const { zip } = event;
+                socket.sendInfo({ type: "run_zip_search", zip });
+                socket.assign({ zip, loading: true, stores: [], matches: [] });
+                break;
+            case "city-search":
+                city = event.city;
+                socket.sendInfo({ type: "run_city_search", city });
+                socket.assign({ city, loading: true, matches: [], stores: [] });
+                break;
+            case "suggest-city":
+                city = event.city;
+                const matches = suggest(city);
+                socket.assign({ city, loading: false, matches });
+                break;
         }
     }
-    renderStore(store) {
-        return html ` <li>
-      <div class="first-line">
-        <div class="name">${store.name}</div>
-        <div class="status">${this.renderStoreStatus(store)}</div>
-        <div class="second-line">
-          <div class="street">📍 ${store.street}</div>
-          <div class="phone_number">📞 ${store.phone_number}</div>
-        </div>
-      </div>
-    </li>`;
-    }
-    renderLoading() {
-        return html ` <div class="loader">Loading...</div> `;
+    handleInfo(info, socket) {
+        const { type } = info;
+        let stores = [];
+        switch (type) {
+            case "run_zip_search":
+                const { zip } = info;
+                stores = searchByZip(zip);
+                socket.assign({
+                    zip,
+                    stores,
+                    loading: false,
+                });
+                break;
+            case "run_city_search":
+                const { city } = info;
+                stores = searchByCity(city);
+                socket.assign({
+                    city,
+                    stores,
+                    loading: false,
+                });
+        }
     }
     render(context) {
         return html `
@@ -1163,49 +1184,28 @@ class AutocompleteLiveView extends BaseLiveView {
       </div>
     `;
     }
-    handleEvent(event, socket) {
-        // console.log("event:", event, params, socket);
-        let city;
-        switch (event.type) {
-            case "zip-search":
-                const { zip } = event;
-                socket.send({ type: "run_zip_search", zip });
-                socket.assign({ zip, loading: true, stores: [], matches: [] });
-                break;
-            case "city-search":
-                city = event.city;
-                socket.send({ type: "run_city_search", city });
-                socket.assign({ city, loading: true, matches: [], stores: [] });
-                break;
-            case "suggest-city":
-                city = event.city;
-                const matches = suggest(city);
-                socket.assign({ city, loading: false, matches });
-                break;
+    renderStoreStatus(store) {
+        if (store.open) {
+            return html `<span class="open">🔓 Open</span>`;
+        }
+        else {
+            return html `<span class="closed">🔐 Closed</span>`;
         }
     }
-    handleInfo(info, socket) {
-        const { type } = info;
-        let stores = [];
-        switch (type) {
-            case "run_zip_search":
-                const { zip } = info;
-                stores = searchByZip(zip);
-                socket.assign({
-                    zip,
-                    stores,
-                    loading: false,
-                });
-                break;
-            case "run_city_search":
-                const { city } = info;
-                stores = searchByCity(city);
-                socket.assign({
-                    city,
-                    stores,
-                    loading: false,
-                });
-        }
+    renderStore(store) {
+        return html ` <li>
+      <div class="first-line">
+        <div class="name">${store.name}</div>
+        <div class="status">${this.renderStoreStatus(store)}</div>
+        <div class="second-line">
+          <div class="street">📍 ${store.street}</div>
+          <div class="phone_number">📞 ${store.phone_number}</div>
+        </div>
+      </div>
+    </li>`;
+    }
+    renderLoading() {
+        return html ` <div class="loader">Loading...</div> `;
     }
 }
 
@@ -1387,105 +1387,130 @@ function numberToCurrency(amount) {
     return formatter.format(amount);
 }
 
-class LicenseLiveView extends BaseLiveView {
+const photoSizes = ["4x6", "5x7", "8x10", "10x13", "11x14"];
+class PrintsLiveView extends BaseLiveView {
     mount(params, session, socket) {
-        const seats = 2;
-        const amount = calculateLicenseAmount(seats);
-        socket.assign({ seats, amount });
+        const photoSizeIndex = 1;
+        const photoSize = photoSizeByIndex(photoSizeIndex);
+        const cost = calculateCost(photoSize);
+        socket.assign({ photoSize, photoSizeIndex, cost });
     }
-    render(context) {
+    render(context, meta) {
+        const { photoSize, photoSizeIndex, cost } = context;
+        // pull apart dimensions
+        const [width, _] = photoSize.split("x");
         return html `
-      <h1>Team License</h1>
-      <div id="license">
-        <div class="card">
-          <div class="content">
-            <div class="seats">
-              🪑
-              <span>
-                Your license is currently for
-                <strong>${context.seats}</strong> seats.
-              </span>
-            </div>
+      <h1>Photo Print Pricing</h1>
+      <div id="size_cost_control">
+        <h4>Size: ${photoSize}</h4>
+        <h4>Cost: ${numberToCurrency(cost)}</h4>
+        <p>Move the slider to see the cost of each print size</p>
+        <form phx-change="update">
+          <input type="hidden" name="_csrf_token" value="${meta.csrfToken}" />
+          <input type="range" min="0" max="4" name="photoSizeIndex" value="${photoSizeIndex}" />
+        </form>
 
-            <form phx-change="update">
-              <input type="range" min="1" max="10" name="seats" value="${context.seats}" />
-            </form>
-
-            <div class="amount">${numberToCurrency(context.amount)}</div>
-          </div>
-        </div>
+        <img
+          width="${Number(width) * 15 * 3}"
+          height="${Number(width) * 15 * 2}"
+          src="https://placekitten.com/2400/1200" />
       </div>
     `;
     }
     handleEvent(event, socket) {
-        const seats = Number(event.seats || 2);
-        const amount = calculateLicenseAmount(seats);
-        socket.assign({ seats, amount });
+        const { photoSizeIndex } = event;
+        const photoSize = photoSizeByIndex(Number(photoSizeIndex));
+        const cost = calculateCost(photoSize);
+        socket.assign({ photoSize, cost });
     }
 }
-function calculateLicenseAmount(seats) {
-    if (seats <= 5) {
-        return seats * 20;
+function photoSizeByIndex(index) {
+    if (index >= 0 && index < photoSizes.length) {
+        return photoSizes[index];
     }
-    else {
-        return 100 + (seats - 5) * 15;
+    return photoSizes[0];
+}
+function calculateCost(photSize) {
+    switch (photSize) {
+        case "4x6":
+            return 10;
+        case "5x7":
+            return 12;
+        case "8x10":
+            return 15;
+        case "10x13":
+            return 24;
+        case "11x14":
+            return 36;
     }
 }
 
-class LightLiveView extends BaseLiveView {
+class VolumeLiveView extends BaseLiveView {
     mount(params, session, socket) {
-        socket.pageTitle("Front Porch Light");
-        socket.assign({ brightness: 10 });
+        socket.pageTitle("🎧 Volume Control");
+        socket.assign({ volume: 10 });
     }
-    render(context) {
-        const { brightness } = context;
+    render(context, meta) {
+        const { volume } = context;
         return html `
       <div id="light">
-        <h1>Front Porch Light</h1>
+        <h1>🎧 Volume Control</h1>
         <div>
-          <div>${brightness}%</div>
+          <div>${volume}%</div>
           <progress
-            id="light_meter"
-            style="width: 300px; height: 2em; opacity: ${brightness / 100}"
-            value="${brightness}"
+            id="volume_control"
+            style="width: 300px; height: 2em; opacity: ${volume / 100}"
+            value="${volume}"
             max="100"></progress>
         </div>
 
-        <button phx-click="off" phx-window-keydown="key_update" phx-key="ArrowLeft">⬅️ Off</button>
+        <button phx-click="off" phx-window-keydown="key_update" phx-key="ArrowLeft">⬅️ Silence</button>
 
-        <button phx-click="down" phx-window-keydown="key_update" phx-key="ArrowDown">⬇️ Down</button>
+        <button phx-click="down" phx-window-keydown="key_update" phx-key="ArrowDown">⬇️ Turn Down</button>
 
-        <button phx-click="up" phx-window-keydown="key_update" phx-key="ArrowUp">⬆️ Up</button>
+        <button phx-click="up" phx-window-keydown="key_update" phx-key="ArrowUp">⬆️ Turn Up</button>
 
-        <button phx-click="on" phx-window-keydown="key_update" phx-key="ArrowRight">➡️ On</button>
+        <button phx-click="on" phx-window-keydown="key_update" phx-key="ArrowRight">➡️ Cranked</button>
+
+        <div>
+          <h5>Try using the keys too!</h5>
+        </div>
       </div>
     `;
     }
-    handleEvent(event, socket) {
-        const { brightness } = socket.context;
+    async handleEvent(event, socket) {
+        const { volume } = socket.context;
         let key = event.type;
         // if event was a key event, use the key name as the event
         if (event.type === "key_update") {
             key = event.key;
         }
+        let newVolume = volume;
         switch (key) {
             case "off":
             case "ArrowLeft":
-                socket.assign({ brightness: 0 });
+                newVolume = 0;
                 break;
             case "on":
             case "ArrowRight":
-                socket.assign({ brightness: 100 });
+                newVolume = 100;
                 break;
             case "up":
             case "ArrowUp":
-                socket.assign({ brightness: Math.min(brightness + 10, 100) });
+                newVolume = Math.min(volume + 10, 100);
                 break;
             case "down":
             case "ArrowDown":
-                socket.assign({ brightness: Math.max(brightness - 10, 0) });
+                newVolume = Math.max(volume - 10, 0);
                 break;
         }
+        if (newVolume === 100) {
+            await socket.putFlash("info", "Cranked full volume! 🤘");
+        }
+        else if (newVolume === 0) {
+            await socket.putFlash("error", "Silence! 🤫");
+        }
+        socket.assign({ volume: newVolume });
     }
 }
 
@@ -1519,28 +1544,30 @@ class SearchLiveView extends BaseLiveView {
     renderLoading() {
         return html ` <div class="loader">Loading...</div> `;
     }
-    render(context) {
+    render(context, meta) {
+        const { zip, stores, loading } = context;
         return html `
       <h1>Find a Store</h1>
       <div id="search">
         <form phx-submit="zip-search">
+          <input type="hidden" name="_csrf_token" value="${meta.csrfToken}" />
           <input
             type="text"
             name="zip"
-            value="${context.zip}"
+            value="${zip}"
             placeholder="Zip Code"
             autofocus
             autocomplete="off"
-            ${context.loading ? "readonly" : ""} />
+            ${loading ? "readonly" : ""} />
 
           <button type="submit">🔎</button>
         </form>
 
-        ${context.loading ? this.renderLoading() : ""}
+        ${loading ? this.renderLoading() : ""}
 
         <div class="stores">
           <ul>
-            ${context.stores.map((store) => this.renderStore(store))}
+            ${stores.map((store) => this.renderStore(store))}
           </ul>
         </div>
       </div>
@@ -1548,7 +1575,7 @@ class SearchLiveView extends BaseLiveView {
     }
     handleEvent(event, socket) {
         const { zip } = event;
-        socket.send({ type: "run_zip_search", zip });
+        socket.sendInfo({ type: "run_zip_search", zip });
         socket.assign({ zip, stores: [], loading: true });
     }
     handleInfo(info, socket) {
@@ -1683,7 +1710,7 @@ class PaginateLiveView extends BaseLiveView {
     handleEvent(event, socket) {
         const page = socket.context.options.page;
         const perPage = Number(event.perPage || 10);
-        socket.pushPatch("/paginate", { page: String(page), perPage: String(perPage) });
+        socket.pushPatch("/paginate", new URLSearchParams({ page: String(page), perPage: String(perPage) }));
         socket.assign({
             options: { page, perPage },
             donations: listItems$1(page, perPage),
@@ -1733,58 +1760,67 @@ class PaginateLiveView extends BaseLiveView {
     }
 }
 
+class DashboardLiveView extends BaseLiveView {
+    mount(params, session, socket) {
+        if (socket.connected) {
+            // socket will be connected after websocket connetion established
+            socket.repeat(() => {
+                socket.sendInfo({ type: "tick" });
+            }, 1000);
+        }
+        socket.assign(nextRandomData());
+    }
+    render(context) {
+        const { newOrders, salesAmount, rating } = context;
+        return html `
+      <h1>Sales Dashboard</h1>
+      <hr />
+      <span>🥡 New Orders</span>
+      <h2>${newOrders}</h2>
+      <hr />
+      <span>💰 Sales Amount</span>
+      <h2>${numberToCurrency(salesAmount)}</h2>
+      <hr />
+      <span>🌟 Rating</spa>
+      <h2>${ratingToStars(rating)}</h2>
+
+      <br />
+      <br />
+      <button phx-click="refresh">↻ Refresh</button>
+    `;
+    }
+    handleEvent(event, socket) {
+        socket.assign(nextRandomData());
+    }
+    handleInfo(info, socket) {
+        socket.assign(nextRandomData());
+    }
+}
+function ratingToStars(rating) {
+    const stars = [];
+    let i = 0;
+    for (; i < rating; i++) {
+        stars.push("⭐");
+    }
+    for (; i < 5; i++) {
+        stars.push("✩");
+    }
+    return stars.join("");
+}
+function nextRandomData() {
+    return {
+        newOrders: randomNewOrders(),
+        salesAmount: randomSalesAmount(),
+        rating: randomRating(),
+    };
+}
 // generate a random number between min and max
 const random = (min, max) => {
     return () => Math.floor(Math.random() * (max - min + 1)) + min;
 };
 const randomSalesAmount = random(100, 1000);
 const randomNewOrders = random(5, 20);
-const randomSatisfaction = random(95, 100);
-class SalesDashboardLiveView extends BaseLiveView {
-    mount(params, session, socket) {
-        if (socket.connected) {
-            socket.repeat(() => {
-                socket.send({ type: "tick" });
-            }, 1000);
-        }
-        socket.assign(generateSalesDashboardContext());
-    }
-    render(context) {
-        return html `
-      <h1>Sales Dashboard</h1>
-      <div id="dashboard">
-        <div class="stats">
-          <div class="stat">
-            <span class="value"> ${context.newOrders} </span>
-            <span class="name"> New Orders </span>
-          </div>
-          <div class="stat">
-            <span class="value"> ${numberToCurrency(context.salesAmount)} </span>
-            <span class="name"> Sales Amount </span>
-          </div>
-          <div class="stat">
-            <span class="value"> ${context.satisfaction} </span>
-            <span class="name"> Satisfaction </span>
-          </div>
-        </div>
-        <button phx-click="refresh">↻ Refresh</button>
-      </div>
-    `;
-    }
-    handleEvent(event, socket) {
-        socket.assign(generateSalesDashboardContext());
-    }
-    handleInfo(info, socket) {
-        socket.assign(generateSalesDashboardContext());
-    }
-}
-function generateSalesDashboardContext() {
-    return {
-        newOrders: randomNewOrders(),
-        salesAmount: randomSalesAmount(),
-        satisfaction: randomSatisfaction(),
-    };
-}
+const randomRating = random(1, 5);
 
 function listServers() {
     return servers;
@@ -2005,7 +2041,7 @@ class SortLiveView extends BaseLiveView {
             donations: listItems({ page, perPage }, { sortby, sortOrder }),
         });
     }
-    render(context) {
+    render(context, meta) {
         const { options: { perPage, page, sortOrder, sortby }, donations, } = context;
         return html `
       <h1>Food Bank Donations</h1>
@@ -2064,7 +2100,7 @@ class SortLiveView extends BaseLiveView {
                 }
                 break;
         }
-        socket.pushPatch("/sort", { page, perPage, sortOrder, sortby });
+        socket.pushPatch("/sort", new URLSearchParams({ page: String(page), perPage: String(perPage), sortOrder, sortby }));
         socket.assign({
             options: { page, perPage, sortby, sortOrder },
             donations: listItems({ page, perPage }, { sortby, sortOrder }),
@@ -2203,7 +2239,7 @@ class VolunteersLiveView extends BaseLiveView {
     <h1>Volunteer Check-In</h1>
     <div id="checkin">
 
-      ${form_for("#", {
+      ${form_for("#", meta.csrfToken, {
             phx_submit: "save",
             phx_change: "validate",
         })}
@@ -2281,4 +2317,106 @@ class VolunteersLiveView extends BaseLiveView {
     }
 }
 
-export { AutocompleteLiveView, CalculatorLiveComponent, DecarbonizeLiveView, LicenseLiveView, LightLiveView, PaginateLiveView, SalesDashboardLiveView, SearchLiveView, ServersLiveView, SortLiveView, VolunteersLiveView };
+class CounterLiveView extends BaseLiveView {
+    mount(params, session, socket) {
+        socket.assign({ count: 0 });
+    }
+    handleEvent(event, socket) {
+        const { count } = socket.context;
+        switch (event.type) {
+            case "increment":
+                socket.assign({ count: count + 1 });
+                break;
+            case "decrement":
+                socket.assign({ count: count - 1 });
+                break;
+        }
+    }
+    render(context, meta) {
+        const { count } = context;
+        return html `
+      <div>
+        <h1>Count is: ${count}</h1>
+        <button phx-click="decrement">-</button>
+        <button phx-click="increment">+</button>
+      </div>
+    `;
+    }
+}
+
+const routeDetails = [
+    {
+        label: "Volume",
+        path: "/volume",
+        summary: "Control the volume using buttons or keys.",
+        tags: ["phx-click", "phx-window-keydown", "phx-key", "flash"],
+    },
+    {
+        label: "Prints",
+        path: "/prints",
+        summary: "Use a range input to calculate price of printing a photo of a cat.",
+        tags: ["phx-change"],
+    },
+    {
+        label: "Dashboard",
+        path: "/dashboard",
+        summary: "Real-time dashboard showing live order metrics updating every second.",
+        tags: ["server-push"],
+    },
+    {
+        label: "Search",
+        path: "/search",
+        summary: "Search for businesses by zip code with live search results.",
+        tags: ["phx-submit", "sendSelf"],
+    },
+    {
+        label: "Autocomplete",
+        path: "/autocomplete",
+        summary: "Autocomplete by city prefix with live search results and debouncing.",
+        tags: ["phx-change", "phx-submit", "phx-debounce"],
+    },
+    {
+        label: "Pagination",
+        path: "/paginate",
+        summary: "Paginate a list of items with live navigation updating the list content and url params.",
+        tags: ["phx-change", "push-patch"],
+    },
+    {
+        label: "Sorting",
+        path: "/sort",
+        summary: "Expand on the pagination example to sort the list of items using live navigation.",
+        tags: ["phx-change", "phx-click", "push-patch"],
+    },
+    {
+        label: "Servers",
+        path: "/servers",
+        summary: "Navigate between servers using live navigation updating the url params along with the content.",
+        tags: ["live-patch"],
+    },
+    {
+        label: "Volunteers",
+        path: "/volunteers",
+        summary: "Simulate signing up for a volunteer event.",
+        tags: ["phx-submit", "phx-change", "phx-update", "phx-feedback-for", "phx-debounce"],
+    },
+    // {
+    //   label: "AsyncFetch",
+    //   path: "/asyncfetch",
+    //   summary: "Example of using async fetch to fetch data from a server.  In this case, Xkcd comic data.",
+    //   tags: ["live-patch", "async/await"],
+    // },
+    {
+        label: "Decarbonize Calculator",
+        path: "/decarbonize",
+        summary: "Example of LiveComponents within a LiveView",
+        tags: ["live_component"],
+    },
+    {
+        label: "Counter",
+        path: "/counter",
+        summary: 'Standard "hello world" example.',
+        tags: ["phx-click"],
+    },
+];
+
+export { AutocompleteLiveView, CalculatorLiveComponent, CounterLiveView, DashboardLiveView, DecarbonizeLiveView, PaginateLiveView, PrintsLiveView, SearchLiveView, ServersLiveView, SortLiveView, VolumeLiveView, VolunteersLiveView, routeDetails };
