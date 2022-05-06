@@ -2,7 +2,7 @@
 
 The project enables developers to use [LiveViewJS](http://liveviewjs.com) with Deno.
 
-This project contains both that enables developers to add LiveViewJS to your Deno + Oak application (see `src/deno`).  Additionally, it contains example code of a working Deno + Oak server with all the example LiveViews from the examples package (see `src/example`).
+This project contains code that enables developers to add LiveViewJS to your Deno + Oak application (see `src/deno`).  Additionally, it contains example code of a working Deno + Oak server with all the example LiveViews from the examples package (see `src/example`).
 
 ## To Use LiveViewJS in your Deno + Oak app
 
