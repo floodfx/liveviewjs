@@ -134,7 +134,7 @@ export const pageRenderer: LiveViewPageRenderer = (
         <!-- live_title_tag enables title updates from LiveViews -->
         ${live_title_tag(pageTitle, { prefix: pageTitlePrefix, suffix: pageTitleSuffix })}
         <!-- your browser/liveview javascript see: packages/browser-->
-        <script defer type="text/javascript" src="/client-liveview.js"></script>
+        <script defer type="text/javascript" src="https://cdn.deno.land/liveviewjs/versions/0.3.0/raw/packages/examples/dist/liveviewjs-examples.browser.js"></script>
         <!-- nprogress shows a tiny progress bar when requests are made between client/server -->
         <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
         <!-- your favorite css library -->
