@@ -1,4 +1,4 @@
-import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext } from "../live";
+import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveInfo } from "../live";
 
 /**
  * Main interface to update state, interact, manage, message, and otherwise
@@ -9,7 +9,7 @@ import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext } from "../l
  * context (via `context`) as well as various methods update the `LiveView` including
  * `assign` which updates the `LiveView`'s context (i.e. state).
  */
-export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
+export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos extends LiveInfo = AnyLiveInfo> {
   /**
    * The id of the `LiveView` (same as the `phx_join` id)
    */
@@ -91,7 +91,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
    *
    * @param event the event to send to `handleInfo`
    */
-  sendInfo(info: AnyLiveInfo): void;
+  sendInfo(info: TInfos): void;
   /**
    * Subscribes to the given topic using pub/sub.  Any events published to the topic
    * will be received by the `LiveView` instance via `handleEvent`.

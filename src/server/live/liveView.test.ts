@@ -107,6 +107,10 @@ function newManager(callback: (message: string) => void): LiveViewManager {
 const TestFuncLiveView = createLiveView({
   mount: (socket) => {
     socket.assign({ called: 0 });
+    socket.sendInfo({ type: "Tick" });
+  },
+  handleInfo: (infos: { type: "Tick" }) => {
+    console.log("Tick");
   },
   render: async (ctx: { called: number }, meta: LiveViewMeta) => {
     const { called } = ctx;

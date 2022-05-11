@@ -171,13 +171,13 @@ interface BaseLiveViewParams<
   TInfos extends LiveInfo = AnyLiveInfo
 > {
   mount?: (
-    socket: LiveViewSocket<TContext>,
+    socket: LiveViewSocket<TContext, TInfos>,
     session: Partial<SessionData>,
     params: LiveViewMountParams
   ) => void | Promise<void>;
-  handleParams?: (url: URL, socket: LiveViewSocket<TContext>) => void | Promise<void>;
-  handleEvent?: (event: TEvents, socket: LiveViewSocket<AnyLiveContext>) => void | Promise<void>;
-  handleInfo?: (info: TInfos, socket: LiveViewSocket<TContext>) => void | Promise<void>;
+  handleParams?: (url: URL, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
+  handleEvent?: (event: TEvents, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
+  handleInfo?: (info: TInfos, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
   render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 
