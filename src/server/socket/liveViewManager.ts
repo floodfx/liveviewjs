@@ -173,7 +173,7 @@ export class LiveViewManager {
 
       // run initial lifecycle steps for the liveview: mount => handleParams
       this.socket = this.newLiveViewSocket();
-      await this.liveView.mount(payloadParams, this.session, this.socket);
+      await this.liveView.mount(this.socket, this.session, payloadParams);
       await this.liveView.handleParams(url, this.socket);
 
       // now the socket context had a chance to be updated, we run the render steps

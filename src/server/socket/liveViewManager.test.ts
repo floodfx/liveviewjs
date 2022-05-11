@@ -808,7 +808,7 @@ interface SendInternalContext {
 type SendInternalInfo = { type: "internal" };
 
 class SendInternalTestLiveViewComponent extends BaseLiveView<SendInternalContext, AnyLiveEvent, SendInternalInfo> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SendInternalContext>) {
+  mount(socket: LiveViewSocket<SendInternalContext>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({
       handleEventCount: 0,
       handleInfoCount: 0,
@@ -842,7 +842,7 @@ interface RepeatCtx {
 }
 type RepeatInfo = { type: "add" };
 class Repeat50msTestLiveViewComponent extends BaseLiveView<RepeatCtx, AnyLiveEvent, RepeatInfo> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<RepeatCtx>) {
+  mount(socket: LiveViewSocket<RepeatCtx>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({ count: 0, ignores: 0 });
     socket.repeat(() => {
       socket.sendInfo({ type: "add" });
@@ -869,7 +869,7 @@ interface SubscribeCtx {
 }
 type SubscribeInfo = { type: "testTopicReceived" };
 class SubscribeTestLiveViewComponent extends BaseLiveView<SubscribeCtx> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<SubscribeCtx>) {
+  mount(socket: LiveViewSocket<SubscribeCtx>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.subscribe("testTopic");
     socket.assign({
       testReceived: 0,
@@ -891,7 +891,7 @@ interface PushPatchCtx {
   pushed: number;
 }
 class PushPatchingTestComponent extends BaseLiveView<PushPatchCtx> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PushPatchCtx>) {
+  mount(socket: LiveViewSocket<PushPatchCtx>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({
       pushed: 0,
     });
@@ -923,7 +923,7 @@ interface PushRedirectCtx {
   pushed: number;
 }
 class PushRedirectingTestComponent extends BaseLiveView<PushRedirectCtx> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PushRedirectCtx>) {
+  mount(socket: LiveViewSocket<PushRedirectCtx>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({
       pushed: 0,
     });
@@ -955,7 +955,7 @@ interface PushEventCtx {
   pushed: number;
 }
 class PushEventTestComponent extends BaseLiveView<PushEventCtx> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PushEventCtx>) {
+  mount(socket: LiveViewSocket<PushEventCtx>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({
       pushed: 0,
     });
@@ -985,7 +985,7 @@ interface PutFlashContext {
   called: number;
 }
 class PutFlashComponent extends BaseLiveView<PutFlashContext> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<PutFlashContext>) {
+  mount(socket: LiveViewSocket<PutFlashContext>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({
       called: 0,
     });
@@ -1033,7 +1033,7 @@ const newPhxJoin = (csrfToken: string, signingSecret: string, options: NewPhxJoi
 };
 
 class SetsPageTitleComponent extends BaseLiveView {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<{}>) {
+  mount(socket: LiveViewSocket<{}>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.pageTitle("new page title");
   }
   render(): HtmlSafeString {
@@ -1046,7 +1046,7 @@ interface TestLVAndLCContext {
 }
 
 class TestLiveViewAndLiveComponent extends BaseLiveView<TestLVAndLCContext> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVAndLCContext>) {
+  mount(socket: LiveViewSocket<TestLVAndLCContext>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({ called: 0 });
   }
 
