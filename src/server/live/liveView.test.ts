@@ -2,7 +2,7 @@ import { BaseLiveComponent, LiveViewTemplate } from ".";
 import { html } from "..";
 import { LiveComponentMeta } from "./liveComponent";
 import { LiveViewManager } from "../socket/liveViewManager";
-import { AnyLiveEvent, BaseLiveView, LiveViewMeta, LiveViewMountParams } from "./liveView";
+import { BaseLiveView, createLiveView, LiveViewMeta, LiveViewMountParams } from "./liveView";
 import { SessionData } from "../session";
 import { LiveViewSocket, WsMessageRouter } from "../socket";
 import { SingleProcessPubSub } from "../pubsub";
@@ -70,7 +70,7 @@ interface TestLVContext {
 }
 
 class TestLiveView extends BaseLiveView<TestLVContext> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVContext>) {
+  mount(socket: LiveViewSocket<TestLVContext>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({ called: 0 });
   }
 
@@ -93,7 +93,8 @@ class CallbackMessenger implements WsAdaptor {
 
 function newManager(callback: (message: string) => void): LiveViewManager {
   return new LiveViewManager(
-    new TestLiveView(),
+    // new TestLiveView(),
+    TestFuncLiveView,
     "id",
     new CallbackMessenger(callback),
     new JsonSerDe(),
@@ -101,3 +102,15 @@ function newManager(callback: (message: string) => void): LiveViewManager {
     new SessionFlashAdaptor()
   );
 }
+
+// functional LiveView
+const TestFuncLiveView = createLiveView({
+  mount: (socket) => {
+    socket.assign({ called: 0 });
+  },
+  render: async (ctx: { called: number }, meta: LiveViewMeta) => {
+    const { called } = ctx;
+    const { live_component } = meta;
+    return html` <div>${await live_component(new TestLiveComponent(), { id: 1, foo: `called:${called}` })}</div> `;
+  },
+});

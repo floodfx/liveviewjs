@@ -40,13 +40,13 @@ describe("test LiveViewSocket", () => {
 
   it("http mount returns context", () => {
     const socket = new HttpLiveViewSocket<TestLVContext>("id");
-    component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
+    component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     expect(socket.context.foo).toEqual("bar");
   });
 
   it("http default handleParams does NOT change context", async () => {
     const socket = new HttpLiveViewSocket<TestLVContext>("id");
-    component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
+    component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     await component.handleParams(new URL("http://example.com/?foo=baz"), socket);
     expect(socket.context.foo).toEqual("bar");
   });
@@ -54,7 +54,7 @@ describe("test LiveViewSocket", () => {
   it("http render returns context view", async () => {
     const socket = new HttpLiveViewSocket<TestLVContext>("id");
     const url = new URL("http://example.com/?foo=baz");
-    component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
+    component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     await component.handleParams(url, socket);
     expect(socket.context.foo).toEqual("bar");
     const view = await component.render(socket.context, { csrfToken: "csrf", live_component: jest.fn(), url });
@@ -73,7 +73,7 @@ describe("test LiveViewSocket", () => {
       repeatCallback,
       subscribeCallback
     );
-    await component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
+    await component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     expect(socket.context.foo).toEqual("bar");
   });
 
@@ -90,7 +90,7 @@ describe("test LiveViewSocket", () => {
       repeatCallback,
       subscribeCallback
     );
-    component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
+    component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
 
     expect(pageTitleCallback).toHaveBeenCalledTimes(1);
     expect(pushEventCallback).toHaveBeenCalledTimes(1);
@@ -114,7 +114,7 @@ describe("test LiveViewSocket", () => {
       repeatCallback,
       subscribeCallback
     );
-    component.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
+    component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     socket.assign({ foo: "bar" });
     socket.tempAssign({ foo: "" });
     expect(socket.context.foo).toEqual("bar");
@@ -125,7 +125,7 @@ describe("test LiveViewSocket", () => {
   it("pushRedirect works in mount and handleParams in HTTP request", () => {
     const socket = new HttpLiveViewSocket<TestRedirectingContext>("id");
     const c = new TestRedirectingLiveView();
-    c.mount({ _csrf_token: "csrf", _mounts: -1 }, {}, socket);
+    c.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     expect(socket.redirect).toEqual({ to: "/new/path?param=mount", replace: false });
     expect(socket.context.redirectedIn).toEqual("mount");
     c.handleParams(new URL("http://example.com"), socket);
@@ -139,7 +139,7 @@ interface TestLVContext {
 }
 
 class TestLiveView extends BaseLiveView<TestLVContext> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVContext>) {
+  mount(socket: LiveViewSocket<TestLVContext>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({ foo: "bar" });
   }
 
@@ -153,7 +153,7 @@ interface TestLVPushAndSendContext {
 }
 
 class TestLVPushAndSend extends BaseLiveView<TestLVPushAndSendContext> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestLVPushAndSendContext>) {
+  mount(socket: LiveViewSocket<TestLVPushAndSendContext>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.pageTitle("new page title");
     socket.pushEvent({ type: "event", data: "blah" });
     socket.pushPatch("path");
@@ -178,7 +178,7 @@ interface TestRedirectingContext {
 }
 
 class TestRedirectingLiveView extends BaseLiveView<TestRedirectingContext> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TestRedirectingContext>) {
+  mount(socket: LiveViewSocket<TestRedirectingContext>, session: Partial<SessionData>, params: LiveViewMountParams) {
     if (!socket.context.redirectedIn) {
       socket.assign({ redirectedIn: "mount" });
       socket.pushRedirect("/new/path", new URLSearchParams({ param: "mount" }), false);

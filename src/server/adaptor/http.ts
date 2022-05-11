@@ -78,7 +78,7 @@ export const handleHttpLiveView = async (
   const liveViewSocket = new HttpLiveViewSocket<AnyLiveContext>(liveViewId);
 
   // execute the `LiveView`'s `mount` function, passing in the data from the HTTP request
-  await liveView.mount({ _csrf_token: sessionData._csrf_token, _mounts: -1 }, { ...sessionData }, liveViewSocket);
+  await liveView.mount(liveViewSocket, { ...sessionData }, { _csrf_token: sessionData._csrf_token, _mounts: -1 });
 
   // check for redirects in `mount`
   if (liveViewSocket.redirect) {

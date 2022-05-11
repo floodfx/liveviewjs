@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1651812294508" clover="3.2.0">
-  <project timestamp="1651812294508" name="All files">
-    <metrics statements="635" coveredstatements="635" conditionals="216" coveredconditionals="203" methods="138" coveredmethods="127" elements="989" coveredelements="965" complexity="0" loc="635" ncloc="635" packages="8" files="28" classes="28"/>
+<coverage generated="1652268852056" clover="3.2.0">
+  <project timestamp="1652268852056" name="All files">
+    <metrics statements="637" coveredstatements="637" conditionals="224" coveredconditionals="210" methods="143" coveredmethods="129" elements="1004" coveredelements="976" complexity="0" loc="637" ncloc="637" packages="8" files="28" classes="28"/>
     <package name="server">
       <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
       <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/index.ts">
@@ -116,7 +116,7 @@
       </file>
     </package>
     <package name="server.live">
-      <metrics statements="19" coveredstatements="19" conditionals="2" coveredconditionals="1" methods="16" coveredmethods="13"/>
+      <metrics statements="21" coveredstatements="21" conditionals="10" coveredconditionals="8" methods="21" coveredmethods="15"/>
       <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/live/index.ts">
         <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="8" type="stmt"/>
@@ -142,8 +142,10 @@
         <line num="197" count="8" type="stmt"/>
       </file>
       <file name="liveView.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/src/server/live/liveView.ts">
-        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="3"/>
+        <metrics statements="3" coveredstatements="3" conditionals="8" coveredconditionals="7" methods="9" coveredmethods="5"/>
         <line num="139" count="8" type="stmt"/>
+        <line num="184" count="8" type="stmt"/>
+        <line num="191" count="1" type="stmt"/>
       </file>
     </package>
     <package name="server.pubsub">

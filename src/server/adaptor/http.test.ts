@@ -153,7 +153,7 @@ class TestLiveView extends BaseLiveView {
     this.redirectHP = redirectHP;
     this.showLiveComponent = showLiveComponent;
   }
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<AnyLiveContext>): void {
+  mount(socket: LiveViewSocket<AnyLiveContext>, session: Partial<SessionData>, params: LiveViewMountParams): void {
     if (this.redirectM) {
       socket.pushRedirect("/redirectM");
     }
