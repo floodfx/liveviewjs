@@ -103,18 +103,89 @@ function newManager(callback: (message: string) => void): LiveViewManager {
   );
 }
 
-// functional LiveView
 const TestFuncLiveView = createLiveView({
+  handleInfo: (infos: { type: "Tick" }, socket) => {
+    console.log("Tick");
+  },
   mount: (socket) => {
     socket.assign({ called: 0 });
     socket.sendInfo({ type: "Tick" });
   },
-  handleInfo: (infos: { type: "Tick" }) => {
-    console.log("Tick");
-  },
-  render: async (ctx: { called: number }, meta: LiveViewMeta) => {
+  render: async (ctx: { called: number; id?: string }, meta: LiveViewMeta) => {
     const { called } = ctx;
-    const { live_component } = meta;
-    return html` <div>${await live_component(new TestLiveComponent(), { id: 1, foo: `called:${called}` })}</div> `;
+    return html` <div>${called}</div> `;
   },
 });
+
+// const TestFuncLiveView = createLiveView({
+//   handleInfo: (infos: { type: "Tick" }, socket) => {
+//     console.log("Tick");
+//   },
+//   mount: (socket) => {
+//     socket.assign({ called: 0 });
+//     socket.sendInfo({ type: "Tick" });
+//   },
+//   handleEvent: (event: { type: "Click" }, socket) => {},
+//   handleParams: (url, socket) => {
+//     socket.assign({ id: url.searchParams.get("id") ?? undefined });
+//   },
+//   render: async (ctx: { called: number; id?: string }, meta: LiveViewMeta) => {
+//     const { called } = ctx;
+//     const { live_component } = meta;
+//     return html` <div>${await live_component(new TestLiveComponent(), { id: 1, foo: `called:${called}` })}</div> `;
+//   },
+// });
+
+const dashboardLV = createLiveView({
+  handleInfo: (info: { type: "tick" }, socket) => {
+    socket.assign(nextRandomData());
+  },
+  mount: (socket) => {
+    if (socket.connected) {
+      // socket will be connected after websocket connetion established
+      socket.repeat(() => {
+        socket.sendInfo({ type: "tick" });
+      }, 1000);
+    }
+    socket.assign(nextRandomData());
+  },
+  handleEvent: (event: { type: "refresh" }, socket) => {
+    socket.assign(nextRandomData());
+  },
+  render: async (context: { newOrders: number; salesAmount: number; rating: number }) => {
+    const { newOrders, salesAmount, rating } = context;
+    return html`
+      <h1>Sales Dashboard</h1>
+      <hr />
+      <span>🥡 New Orders</span>
+      <h2>${newOrders}</h2>
+      <hr />
+      <span>💰 Sales Amount</span>
+      <h2>${salesAmount}</h2>
+      <hr />
+      <span>🌟 Rating</spa>
+      <h2>${rating}</h2>
+
+      <br />
+      <br />
+      <button phx-click="refresh">↻ Refresh</button>
+    `;
+  },
+});
+
+function nextRandomData() {
+  return {
+    newOrders: randomNewOrders(),
+    salesAmount: randomSalesAmount(),
+    rating: randomRating(),
+  };
+}
+
+// generate a random number between min and max
+const random = (min: number, max: number): (() => number) => {
+  return () => Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+const randomSalesAmount = random(100, 1000);
+const randomNewOrders = random(5, 20);
+const randomRating = random(1, 5);
