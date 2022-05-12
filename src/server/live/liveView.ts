@@ -67,7 +67,7 @@ export interface LiveView<
    * @param socket the `LiveViewSocket` for this `LiveView`
    */
   mount(
-    socket: LiveViewSocket<TContext>,
+    socket: LiveViewSocket<TContext, TInfos>,
     session: Partial<SessionData>,
     params: LiveViewMountParams
   ): void | Promise<void>;
@@ -89,7 +89,7 @@ export interface LiveView<
    * @param url
    * @param socket
    */
-  handleParams(url: URL, socket: LiveViewSocket<TContext>): void | Promise<void>;
+  handleParams(url: URL, socket: LiveViewSocket<TContext, TInfos>): void | Promise<void>;
 
   /**
    * Events initiated by the client (i.e. user interactions with the `LiveView` elements
@@ -99,7 +99,7 @@ export interface LiveView<
    * @param params any parameters associated with the event
    * @param socket The `LiveViewSocket` for this `LiveView`
    */
-  handleEvent(event: TEvents, socket: LiveViewSocket<TContext>): void | Promise<void>;
+  handleEvent(event: TEvents, socket: LiveViewSocket<TContext, TInfos>): void | Promise<void>;
 
   /**
    * Events initiated by the `LiveView` or `LiveComponent`s that are childern of this
@@ -107,7 +107,7 @@ export interface LiveView<
    * @param event The event to handle
    * @param socket The `LiveViewSocket` for the `LiveView`
    */
-  handleInfo(info: TInfos, socket: LiveViewSocket<TContext>): void | Promise<void>;
+  handleInfo(info: TInfos, socket: LiveViewSocket<TContext, TInfos>): void | Promise<void>;
 }
 
 /**
@@ -142,23 +142,23 @@ export abstract class BaseLiveView<
   TInfos extends LiveInfo = AnyLiveInfo
 > implements LiveView<TContext, TEvents, TInfos>
 {
-  handleEvent(event: TEvents, socket: LiveViewSocket<TContext>) {
+  handleEvent(event: TEvents, socket: LiveViewSocket<TContext, TInfos>) {
     // istanbul ignore next
     console.warn(
       `handleEvent not implemented for ${this.constructor.name} but event received: ${JSON.stringify(event)}`
     );
   }
 
-  handleInfo(info: TInfos, socket: LiveViewSocket<TContext>) {
+  handleInfo(info: TInfos, socket: LiveViewSocket<TContext, TInfos>) {
     // istanbul ignore next
     console.warn(`handleInfo not implemented for ${this.constructor.name} but info received: ${JSON.stringify(info)}`);
   }
 
-  mount(socket: LiveViewSocket<TContext>, session: Partial<SessionData>, params: LiveViewMountParams) {
+  mount(socket: LiveViewSocket<TContext, TInfos>, session: Partial<SessionData>, params: LiveViewMountParams) {
     // no-op
   }
 
-  handleParams(url: URL, socket: LiveViewSocket<TContext>) {
+  handleParams(url: URL, socket: LiveViewSocket<TContext, TInfos>) {
     // no-op
   }
 
@@ -198,13 +198,13 @@ export const createLiveView = <
     handleParams: params.handleParams ?? (() => {}),
     handleEvent:
       params.handleEvent ??
-      ((event: TEvents, socket: LiveViewSocket<TContext>) => {
+      ((event: TEvents, socket: LiveViewSocket<TContext, TInfos>) => {
         // istanbul ignore next
         console.warn(`handleEvent not implemented in LiveView but event received: ${JSON.stringify(event)}`);
       }),
     handleInfo:
       params.handleInfo ??
-      ((info: TInfos, socket: LiveViewSocket<TContext>) => {
+      ((info: TInfos, socket: LiveViewSocket<TContext, TInfos>) => {
         // istanbul ignore next
         console.warn(`handleInfo not implemented in LiveView but info received: ${JSON.stringify(info)}`);
       }),
