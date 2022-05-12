@@ -1,17 +1,12 @@
-import { BaseLiveView, html, LiveViewMeta, LiveViewMountParams, LiveViewSocket, SessionData } from "liveviewjs";
+import { createLiveView, html } from "liveviewjs";
 
-interface Context {
-  count: number;
-}
-
-type Events = { type: "increment" } | { type: "decrement" };
-
-export class CounterLiveView extends BaseLiveView<Context, Events> {
-  mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<Context>): void {
+const counterLiveView = createLiveView({
+  mount: (socket) => {
+    // init state, set count to 0
     socket.assign({ count: 0 });
-  }
-
-  handleEvent(event: Events, socket: LiveViewSocket<Context>) {
+  },
+  handleEvent: (event: { type: "increment" } | { type: "decrement" }, socket) => {
+    // handle increment and decrement events
     const { count } = socket.context;
     switch (event.type) {
       case "increment":
@@ -21,9 +16,9 @@ export class CounterLiveView extends BaseLiveView<Context, Events> {
         socket.assign({ count: count - 1 });
         break;
     }
-  }
-
-  render(context: Context, meta: LiveViewMeta) {
+  },
+  render: async (context: { count: number }) => {
+    // render the view based on the state
     const { count } = context;
     return html`
       <div>
@@ -32,5 +27,5 @@ export class CounterLiveView extends BaseLiveView<Context, Events> {
         <button phx-click="increment">+</button>
       </div>
     `;
-  }
-}
+  },
+});
