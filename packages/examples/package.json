@@ -35,7 +35,7 @@
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "MIT",
   "dependencies": {
-    "liveviewjs": "^0.3.0",
+    "liveviewjs": "file:../../liveviewjs-0.4.0-rc.1.tgz",
     "nanoid": "^3.2.0",
     "node-fetch": "^2.6.7",
     "zod": "^3.14.3"
@@ -60,5 +60,9 @@
     "rollup-plugin-dts": "^4.2.0",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.4"
+  },
+  "engines": {
+    "npm": ">=8.5.0",
+    "node": ">=17.8.0"
   }
 }
