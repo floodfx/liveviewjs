@@ -116,7 +116,7 @@ interface TestLVPushAndSendContext {
 class TestLVPushAndSendComponent extends BaseLiveComponent<TestLVPushAndSendContext> {
   mount(socket: LiveComponentSocket<TestLVPushAndSendContext>): void {
     socket.pushEvent({ type: "event", data: "blah" });
-    socket.send({ type: "my_event" });
+    socket.sendParentInfo({ type: "my_event" });
   }
 
   render(ctx: TestLVPushAndSendContext): LiveViewTemplate {

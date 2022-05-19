@@ -1,5 +1,14 @@
 import { LiveViewTemplate } from ".";
-import { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveEvent } from "./liveView";
+import { Info } from "../socket";
+import {
+  AnyLiveContext,
+  AnyLiveEvent,
+  AnyLiveInfo,
+  AnyLivePushEvent,
+  LiveContext,
+  LiveEvent,
+  LiveInfo,
+} from "./liveView";
 
 export interface LiveComponentMeta {
   /**
@@ -18,7 +27,10 @@ export interface LiveComponentMeta {
  * state of the component.  Also provides a method for sending messages
  * internally to the parent `LiveView`.
  */
-export interface LiveComponentSocket<TContext extends LiveContext = AnyLiveContext> {
+export interface LiveComponentSocket<
+  TContext extends LiveContext = AnyLiveContext,
+  TInfo extends LiveInfo = AnyLiveInfo
+> {
   /**
    * The id of the parent `LiveView`
    */
@@ -36,7 +48,7 @@ export interface LiveComponentSocket<TContext extends LiveContext = AnyLiveConte
   /**
    * helper method to send messages to the parent `LiveView` via the `handleInfo`
    */
-  send(info: AnyLiveInfo): void;
+  sendParentInfo(info: Info<TInfo>): void;
   /**
    * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
    */
@@ -47,8 +59,10 @@ export interface LiveComponentSocket<TContext extends LiveContext = AnyLiveConte
   pushEvent(pushEvent: AnyLivePushEvent): void;
 }
 
-abstract class BaseLiveComponentSocket<TContext extends LiveContext = AnyLiveContext>
-  implements LiveComponentSocket<TContext>
+abstract class BaseLiveComponentSocket<
+  TContext extends LiveContext = AnyLiveContext,
+  TInfo extends LiveInfo = AnyLiveInfo
+> implements LiveComponentSocket<TContext, TInfo>
 {
   readonly id: string;
   private _context: TContext;
@@ -69,7 +83,7 @@ abstract class BaseLiveComponentSocket<TContext extends LiveContext = AnyLiveCon
     };
   }
 
-  send(info: AnyLiveInfo) {
+  sendParentInfo(info: Info<TInfo>) {
     // no-op
   }
 
@@ -81,8 +95,9 @@ abstract class BaseLiveComponentSocket<TContext extends LiveContext = AnyLiveCon
 }
 
 export class HttpLiveComponentSocket<
-  TContext extends LiveContext = AnyLiveContext
-> extends BaseLiveComponentSocket<TContext> {
+  TContext extends LiveContext = AnyLiveContext,
+  TInfo extends LiveInfo = AnyLiveInfo
+> extends BaseLiveComponentSocket<TContext, TInfo> {
   readonly connected: boolean = false;
 
   constructor(id: string, context: TContext) {
@@ -91,26 +106,27 @@ export class HttpLiveComponentSocket<
 }
 
 export class WsLiveComponentSocket<
-  TContext extends LiveContext = AnyLiveContext
-> extends BaseLiveComponentSocket<TContext> {
+  TContext extends LiveContext = AnyLiveContext,
+  TInfo extends LiveInfo = AnyLiveInfo
+> extends BaseLiveComponentSocket<TContext, TInfo> {
   readonly connected: boolean = true;
 
-  private sendCallback: (info: AnyLiveInfo) => void;
+  private sendParentCallback: (info: Info<TInfo>) => void;
   private pushEventCallback: (pushEvent: AnyLivePushEvent) => void;
 
   constructor(
     id: string,
     context: TContext,
-    sendCallback: (info: AnyLiveInfo) => void,
+    sendParentCallback: (info: Info<TInfo>) => void,
     pushEventCallback: (pushEvent: AnyLivePushEvent) => void
   ) {
     super(id, context);
-    this.sendCallback = sendCallback;
+    this.sendParentCallback = sendParentCallback;
     this.pushEventCallback = pushEventCallback;
   }
 
-  send(info: AnyLiveInfo) {
-    this.sendCallback(info);
+  sendParentInfo(info: Info<TInfo>) {
+    this.sendParentCallback(info);
   }
 
   pushEvent(pushEvent: AnyLivePushEvent): void {
@@ -136,7 +152,8 @@ export class WsLiveComponentSocket<
  */
 export interface LiveComponent<
   TContext extends LiveContext = AnyLiveContext,
-  TEvents extends LiveEvent = AnyLiveEvent
+  TEvents extends LiveEvent = AnyLiveEvent,
+  TInfo extends LiveInfo = AnyLiveInfo
 > {
   /**
    * `preload` is useful when multiple `LiveComponent`s of the same type are loaded
@@ -153,7 +170,7 @@ export interface LiveComponent<
    *
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  mount(socket: LiveComponentSocket<TContext>): void | Promise<void>;
+  mount(socket: LiveComponentSocket<TContext, TInfo>): void | Promise<void>;
 
   /**
    * Allows the `LiveComponent` to update its stateful context.  This is called
@@ -168,7 +185,7 @@ export interface LiveComponent<
    * @param context the current state for this `LiveComponent`
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
-  update(socket: LiveComponentSocket<TContext>): void | Promise<void>;
+  update(socket: LiveComponentSocket<TContext, TInfo>): void | Promise<void>;
 
   /**
    * Renders the `LiveComponent` by returning a `LiveViewTemplate`.  Each time a
@@ -196,22 +213,23 @@ export interface LiveComponent<
  */
 export abstract class BaseLiveComponent<
   TContext extends LiveContext = AnyLiveContext,
-  TEvents extends LiveEvent = AnyLiveEvent
-> implements LiveComponent<TContext, TEvents>
+  TEvents extends LiveEvent = AnyLiveEvent,
+  TInfo extends LiveInfo = AnyLiveInfo
+> implements LiveComponent<TContext, TEvents, TInfo>
 {
   // preload(contextsList: Context[]): Partial<Context>[] {
   //   return contextsList;
   // }
 
-  mount(socket: LiveComponentSocket<TContext>) {
+  mount(socket: LiveComponentSocket<TContext, TInfo>) {
     // no-op
   }
 
-  update(socket: LiveComponentSocket<TContext>) {
+  update(socket: LiveComponentSocket<TContext, TInfo>) {
     // no-op
   }
 
-  handleEvent(event: TEvents, socket: LiveComponentSocket<TContext>) {
+  handleEvent(event: TEvents, socket: LiveComponentSocket<TContext, TInfo>) {
     // no-op
   }
 
