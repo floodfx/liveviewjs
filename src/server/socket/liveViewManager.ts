@@ -18,7 +18,7 @@ import { PubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { HtmlSafeString, Parts, safe } from "../templates";
 import { deepDiff } from "../templates/diff";
-import { WsLiveViewSocket } from "./liveSocket";
+import { Info, WsLiveViewSocket } from "./liveSocket";
 import {
   PhxBlurPayload,
   PhxClickPayload,
@@ -616,7 +616,11 @@ export class LiveViewManager {
    * Queues `AnyLiveInfo` messages to be sent to the LiveView until after the current lifecycle
    * @param info the AnyLiveInfo to queue
    */
-  private onSendInfo(info: AnyLiveInfo) {
+  private onSendInfo(info: Info<AnyLiveInfo>) {
+    // if info is a string, wrap it in an object
+    if (typeof info === "string") {
+      info = { type: info };
+    }
     // queue info
     this._infoQueue.push(info);
   }

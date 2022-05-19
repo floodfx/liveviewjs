@@ -454,6 +454,32 @@ describe("test liveview manager", () => {
     expect(ws.send).toHaveBeenCalledTimes(3);
   });
 
+  it("sendInternal with handleInfo string info", async () => {
+    const sic = new SendInternalTestLiveViewComponent(true);
+    const cm = new LiveViewManager(
+      sic,
+      liveViewConnectionId,
+      ws,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SessionFlashAdaptor()
+    );
+    const phx_click: PhxIncomingMessage<PhxClickPayload> = [
+      "4",
+      "6",
+      "lv:phx-AAAAAAAA",
+      "event",
+      {
+        type: "click",
+        event: "eventName",
+        value: { value: "eventValue" },
+      },
+    ];
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
+    await cm.handleSubscriptions({ type: "event", message: phx_click });
+    expect(ws.send).toHaveBeenCalledTimes(3);
+  });
+
   it("send phxReply on unknown socket error", async () => {
     const tc = new TestLiveViewComponent();
     const ws: WsAdaptor = {
@@ -808,6 +834,11 @@ interface SendInternalContext {
 type SendInternalInfo = { type: "internal" };
 
 class SendInternalTestLiveViewComponent extends BaseLiveView<SendInternalContext, AnyLiveEvent, SendInternalInfo> {
+  useStringInfo: boolean = false;
+  constructor(useStringInfo: boolean = false) {
+    super();
+    this.useStringInfo = useStringInfo;
+  }
   mount(socket: LiveViewSocket<SendInternalContext>, session: Partial<SessionData>, params: LiveViewMountParams) {
     socket.assign({
       handleEventCount: 0,
@@ -816,7 +847,7 @@ class SendInternalTestLiveViewComponent extends BaseLiveView<SendInternalContext
   }
 
   handleEvent(event: AnyLiveEvent, socket: LiveViewSocket<SendInternalContext>) {
-    socket.sendInfo({ type: "internal" });
+    this.useStringInfo ? socket.sendInfo("internal") : socket.sendInfo({ type: "internal" });
     socket.assign({
       handleEventCount: socket.context.handleEventCount + 1,
       handleInfoCount: socket.context.handleInfoCount,
