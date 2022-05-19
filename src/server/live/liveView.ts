@@ -62,24 +62,15 @@ export interface LiveView<
    * and upon the first time the `LiveView` is mounted (i.e. connected) via
    * the websocket.  This is where you should load data and set the initial
    * context of the `LiveView`.
-   * @param params the `LiveViewMountParams` for this `LiveView`
-   * @param session the `SessionData` for this session (i.e. the user)
    * @param socket the `LiveViewSocket` for this `LiveView`
+   * @param session the `SessionData` for this session (i.e. the user)
+   * @param params the `LiveViewMountParams` for this `LiveView`
    */
   mount(
     socket: LiveViewSocket<TContext, TInfos>,
     session: Partial<SessionData>,
     params: LiveViewMountParams
   ): void | Promise<void>;
-
-  /**
-   * `render` is where the user interface is generated based on the `LiveView`'s
-   * context and meta data.  This is called every lifecycle of the `LiveView`,
-   * that is when internal or external events occur.
-   * @param context the current state for this `LiveView`
-   * @param meta the `LiveViewMeta` for this `LiveView`
-   */
-  render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 
   /**
    * `handleParams` is called on initial joining of the `LiveView` as well as on
@@ -96,18 +87,26 @@ export interface LiveView<
    * that have the attributes `phx-click`, `phx-change`, `phx-submit`, etc) will be
    * passed into this handler.
    * @param event the (string) event to handle
-   * @param params any parameters associated with the event
    * @param socket The `LiveViewSocket` for this `LiveView`
    */
   handleEvent(event: TEvents, socket: LiveViewSocket<TContext, TInfos>): void | Promise<void>;
 
   /**
-   * Events initiated by the `LiveView` or `LiveComponent`s that are childern of this
+   * Internal events, i.e. "Info" initiated by the `LiveView` or `LiveComponent`s that are childern of this
    * `LiveView` are passed into this handler.
-   * @param event The event to handle
+   * @param event The info to handle
    * @param socket The `LiveViewSocket` for the `LiveView`
    */
   handleInfo(info: TInfos, socket: LiveViewSocket<TContext, TInfos>): void | Promise<void>;
+
+  /**
+   * `render` is where the user interface is generated based on the `LiveView`'s
+   * context and meta data.  This is called every lifecycle of the `LiveView`,
+   * that is when internal or external events occur.
+   * @param context the current state for this `LiveView`
+   * @param meta the `LiveViewMeta` for this `LiveView`
+   */
+  render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 
 /**
@@ -127,9 +126,9 @@ export interface LiveViewMeta {
   /**
    * A helper for loading `LiveComponent`s within a `LiveView`.
    */
-  live_component<Context extends LiveContext>(
-    liveComponent: LiveComponent<Context>,
-    params?: Partial<Context & { id: string | number }>
+  live_component<TContext extends LiveContext>(
+    liveComponent: LiveComponent<TContext>,
+    params?: Partial<TContext & { id: string | number }>
   ): Promise<LiveViewTemplate>;
 }
 
@@ -142,6 +141,9 @@ export abstract class BaseLiveView<
   TInfos extends LiveInfo = AnyLiveInfo
 > implements LiveView<TContext, TEvents, TInfos>
 {
+  mount(socket: LiveViewSocket<TContext, TInfos>, session: Partial<SessionData>, params: LiveViewMountParams) {
+    // no-op
+  }
   handleEvent(event: TEvents, socket: LiveViewSocket<TContext, TInfos>) {
     // istanbul ignore next
     console.warn(
@@ -153,11 +155,6 @@ export abstract class BaseLiveView<
     // istanbul ignore next
     console.warn(`handleInfo not implemented for ${this.constructor.name} but info received: ${JSON.stringify(info)}`);
   }
-
-  mount(socket: LiveViewSocket<TContext, TInfos>, session: Partial<SessionData>, params: LiveViewMountParams) {
-    // no-op
-  }
-
   handleParams(url: URL, socket: LiveViewSocket<TContext, TInfos>) {
     // no-op
   }
@@ -165,6 +162,10 @@ export abstract class BaseLiveView<
   abstract render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 
+/**
+ * Set of methods that can (or must be) defined when using the `createLiveView` factory function.
+ * @see `createLiveView`, `LiveView`, `BaseLiveView`
+ */
 interface BaseLiveViewParams<
   TContext extends LiveContext = AnyLiveContext,
   TEvents extends LiveEvent = AnyLiveEvent,
@@ -183,7 +184,7 @@ interface BaseLiveViewParams<
 
 /**
  * Functional `LiveView` factory method for generating a `LiveView`.
- * @param params the methods available to implement for a `LiveView`
+ * @param params the BaseLiveViewParams with methods available to implement for a `LiveView`
  * @returns the `LiveView` instance
  */
 export const createLiveView = <
@@ -194,21 +195,19 @@ export const createLiveView = <
   params: BaseLiveViewParams<TContext, TEvents, TInfos>
 ): LiveView<TContext, TEvents, TInfos> => {
   return {
-    mount: params.mount ?? (() => {}),
-    handleParams: params.handleParams ?? (() => {}),
-    handleEvent:
-      params.handleEvent ??
-      ((event: TEvents, socket: LiveViewSocket<TContext, TInfos>) => {
-        // istanbul ignore next
-        console.warn(`handleEvent not implemented in LiveView but event received: ${JSON.stringify(event)}`);
-      }),
-    handleInfo:
-      params.handleInfo ??
-      ((info: TInfos, socket: LiveViewSocket<TContext, TInfos>) => {
-        // istanbul ignore next
-        console.warn(`handleInfo not implemented in LiveView but info received: ${JSON.stringify(info)}`);
-      }),
-    render: params.render,
+    // default imps
+    mount: () => {},
+    handleParams: () => {},
+    handleEvent: (event) => {
+      // istanbul ignore next
+      console.warn(`handleEvent not implemented in LiveView but event received: ${JSON.stringify(event)}`);
+    },
+    handleInfo: (info) => {
+      // istanbul ignore next
+      console.warn(`handleInfo not implemented in LiveView but info received: ${JSON.stringify(info)}`);
+    },
+    // replace default impls with params if they are defined
+    ...params,
   };
 };
 

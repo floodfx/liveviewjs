@@ -86,8 +86,8 @@ describe("test LiveViewSocket", () => {
       pushPatchCallback,
       pushRedirectCallback,
       putFlashCallback,
-      sendCallback,
       repeatCallback,
+      sendCallback,
       subscribeCallback
     );
     component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
@@ -98,7 +98,7 @@ describe("test LiveViewSocket", () => {
     expect(pushRedirectCallback).toHaveBeenCalledTimes(3);
     expect(putFlashCallback).toHaveBeenCalledTimes(1);
     expect(repeatCallback).toHaveBeenCalledTimes(1);
-    expect(sendCallback).toHaveBeenCalledTimes(1);
+    expect(sendCallback).toHaveBeenCalledTimes(2);
     expect(subscribeCallback).toHaveBeenCalledTimes(1);
   });
 
@@ -165,6 +165,7 @@ class TestLVPushAndSend extends BaseLiveView<TestLVPushAndSendContext> {
     socket.putFlash("info", "Helpful message");
     socket.repeat(() => {}, 1000);
     socket.sendInfo({ type: "my_event" });
+    socket.sendInfo("my_event");
     socket.subscribe("topic");
   }
 

@@ -1,5 +1,8 @@
 import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveInfo } from "../live";
 
+// type to enable Info events to be passed as plain strings
+export type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
+
 /**
  * Main interface to update state, interact, manage, message, and otherwise
  * manage the lifecycle of a `LiveView`.
@@ -74,8 +77,8 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
   pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
   /**
    * Add flash to the socket for a given key and value.
-   * @param key
-   * @param value
+   * @param key the key to add the flash to
+   * @param value the flash value
    */
   putFlash(key: string, value: string): Promise<void>;
   /**
@@ -91,7 +94,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    *
    * @param event the event to send to `handleInfo`
    */
-  sendInfo(info: TInfos): void;
+  sendInfo(info: Info<TInfos>): void;
   /**
    * Subscribes to the given topic using pub/sub.  Any events published to the topic
    * will be received by the `LiveView` instance via `handleEvent`.
@@ -101,7 +104,9 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
   subscribe(topic: string): Promise<void>;
 }
 
-abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext> implements LiveViewSocket<TContext> {
+abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos extends LiveInfo = AnyLiveInfo>
+  implements LiveViewSocket<TContext>
+{
   abstract connected: boolean;
   abstract id: string;
 
@@ -150,7 +155,7 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext>
   repeat(fn: () => void, intervalMillis: number) {
     // no-op
   }
-  sendInfo(info: AnyLiveInfo) {
+  sendInfo(info: Info<TInfos>) {
     // no-op
   }
   subscribe(topic: string) {
@@ -170,7 +175,10 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext>
  * Used to render Http requests for `LiveView`s.  Only support setting the context via
  * `assign` and reading the context via `context`.
  */
-export class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
+export class HttpLiveViewSocket<
+  TContext extends LiveContext = AnyLiveContext,
+  TInfo extends LiveInfo = AnyLiveInfo
+> extends BaseLiveViewSocket<TContext, TInfo> {
   readonly id: string;
   readonly connected: boolean = false;
 
@@ -197,7 +205,10 @@ export class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
  */
-export class WsLiveViewSocket extends BaseLiveViewSocket {
+export class WsLiveViewSocket<
+  TContext extends LiveContext = AnyLiveContext,
+  TInfo extends LiveInfo = AnyLiveInfo
+> extends BaseLiveViewSocket<TContext, TInfo> {
   readonly id: string;
   readonly connected: boolean = true;
 
@@ -208,7 +219,7 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
   private pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void;
   private putFlashCallback: (key: string, value: string) => void;
   private repeatCallback: (fn: () => void, intervalMillis: number) => void;
-  private sendInfoCallback: (info: AnyLiveInfo) => void;
+  private sendInfoCallback: (info: Info<TInfo>) => void;
   private subscribeCallback: (topic: string) => void;
 
   constructor(
@@ -219,7 +230,7 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
     pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void,
     putFlashCallback: (key: string, value: string) => void,
     repeatCallback: (fn: () => void, intervalMillis: number) => void,
-    sendInfoCallback: (info: AnyLiveInfo) => void,
+    sendInfoCallback: (info: Info<TInfo>) => void,
     subscribeCallback: (topic: string) => void
   ) {
     super();
@@ -251,7 +262,7 @@ export class WsLiveViewSocket extends BaseLiveViewSocket {
   repeat(fn: () => void, intervalMillis: number) {
     this.repeatCallback(fn, intervalMillis);
   }
-  sendInfo(info: AnyLiveInfo): void {
+  sendInfo(info: Info<TInfo>): void {
     this.sendInfoCallback(info);
   }
   async subscribe(topic: string) {
