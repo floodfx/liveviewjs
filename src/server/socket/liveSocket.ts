@@ -104,8 +104,8 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
   subscribe(topic: string): Promise<void>;
 }
 
-abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos extends LiveInfo = AnyLiveInfo>
-  implements LiveViewSocket<TContext>
+abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo>
+  implements LiveViewSocket<TContext, TInfo>
 {
   abstract connected: boolean;
   abstract id: string;
@@ -155,7 +155,7 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext,
   repeat(fn: () => void, intervalMillis: number) {
     // no-op
   }
-  sendInfo(info: Info<TInfos>) {
+  sendInfo(info: Info<TInfo>) {
     // no-op
   }
   subscribe(topic: string) {
