@@ -13,6 +13,7 @@ declare type SessionData = {
     [key: string]: any;
 };
 
+declare type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
 /**
  * Main interface to update state, interact, manage, message, and otherwise
  * manage the lifecycle of a `LiveView`.
@@ -22,7 +23,7 @@ declare type SessionData = {
  * context (via `context`) as well as various methods update the `LiveView` including
  * `assign` which updates the `LiveView`'s context (i.e. state).
  */
-interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
+interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos extends LiveInfo = AnyLiveInfo> {
     /**
      * The id of the `LiveView` (same as the `phx_join` id)
      */
@@ -85,8 +86,8 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
     pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     /**
      * Add flash to the socket for a given key and value.
-     * @param key
-     * @param value
+     * @param key the key to add the flash to
+     * @param value the flash value
      */
     putFlash(key: string, value: string): Promise<void>;
     /**
@@ -102,7 +103,7 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      *
      * @param event the event to send to `handleInfo`
      */
-    sendInfo(info: AnyLiveInfo): void;
+    sendInfo(info: Info<TInfos>): void;
     /**
      * Subscribes to the given topic using pub/sub.  Any events published to the topic
      * will be received by the `LiveView` instance via `handleEvent`.
@@ -111,7 +112,7 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext> {
      */
     subscribe(topic: string): Promise<void>;
 }
-declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext> implements LiveViewSocket<TContext> {
+declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos extends LiveInfo = AnyLiveInfo> implements LiveViewSocket<TContext> {
     abstract connected: boolean;
     abstract id: string;
     private _context;
@@ -125,7 +126,7 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
     pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     putFlash(key: string, value: string): Promise<void>;
     repeat(fn: () => void, intervalMillis: number): void;
-    sendInfo(info: AnyLiveInfo): void;
+    sendInfo(info: Info<TInfos>): void;
     subscribe(topic: string): Promise<void>;
     updateContextWithTempAssigns(): void;
 }
@@ -133,7 +134,7 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
  * Used to render Http requests for `LiveView`s.  Only support setting the context via
  * `assign` and reading the context via `context`.
  */
-declare class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
+declare class HttpLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> extends BaseLiveViewSocket<TContext, TInfo> {
     readonly id: string;
     readonly connected: boolean;
     private _redirect;
@@ -147,7 +148,7 @@ declare class HttpLiveViewSocket<Context> extends BaseLiveViewSocket<Context> {
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
  */
-declare class WsLiveViewSocket extends BaseLiveViewSocket {
+declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> extends BaseLiveViewSocket<TContext, TInfo> {
     readonly id: string;
     readonly connected: boolean;
     private pageTitleCallback;
@@ -158,14 +159,14 @@ declare class WsLiveViewSocket extends BaseLiveViewSocket {
     private repeatCallback;
     private sendInfoCallback;
     private subscribeCallback;
-    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: AnyLiveInfo) => void, subscribeCallback: (topic: string) => void);
+    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void);
     putFlash(key: string, value: string): Promise<void>;
     pageTitle(newPageTitle: string): void;
     pushEvent(pushEvent: AnyLivePushEvent): void;
     pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     repeat(fn: () => void, intervalMillis: number): void;
-    sendInfo(info: AnyLiveInfo): void;
+    sendInfo(info: Info<TInfo>): void;
     subscribe(topic: string): Promise<void>;
 }
 
@@ -289,19 +290,11 @@ interface LiveView<TContext extends LiveContext = AnyLiveContext, TEvents extend
      * and upon the first time the `LiveView` is mounted (i.e. connected) via
      * the websocket.  This is where you should load data and set the initial
      * context of the `LiveView`.
-     * @param params the `LiveViewMountParams` for this `LiveView`
-     * @param session the `SessionData` for this session (i.e. the user)
      * @param socket the `LiveViewSocket` for this `LiveView`
+     * @param session the `SessionData` for this session (i.e. the user)
+     * @param params the `LiveViewMountParams` for this `LiveView`
      */
-    mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TContext>): void | Promise<void>;
-    /**
-     * `render` is where the user interface is generated based on the `LiveView`'s
-     * context and meta data.  This is called every lifecycle of the `LiveView`,
-     * that is when internal or external events occur.
-     * @param context the current state for this `LiveView`
-     * @param meta the `LiveViewMeta` for this `LiveView`
-     */
-    render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+    mount(socket: LiveViewSocket<TContext, TInfos>, session: Partial<SessionData>, params: LiveViewMountParams): void | Promise<void>;
     /**
      * `handleParams` is called on initial joining of the `LiveView` as well as on
      * `pushPatch` and `livePatch` events.  This is where you should handle any context (i.e. state)
@@ -310,23 +303,30 @@ interface LiveView<TContext extends LiveContext = AnyLiveContext, TEvents extend
      * @param url
      * @param socket
      */
-    handleParams(url: URL, socket: LiveViewSocket<TContext>): void | Promise<void>;
+    handleParams(url: URL, socket: LiveViewSocket<TContext, TInfos>): void | Promise<void>;
     /**
      * Events initiated by the client (i.e. user interactions with the `LiveView` elements
      * that have the attributes `phx-click`, `phx-change`, `phx-submit`, etc) will be
      * passed into this handler.
      * @param event the (string) event to handle
-     * @param params any parameters associated with the event
      * @param socket The `LiveViewSocket` for this `LiveView`
      */
-    handleEvent(event: TEvents, socket: LiveViewSocket<TContext>): void | Promise<void>;
+    handleEvent(event: TEvents, socket: LiveViewSocket<TContext, TInfos>): void | Promise<void>;
     /**
-     * Events initiated by the `LiveView` or `LiveComponent`s that are childern of this
+     * Internal events, i.e. "Info" initiated by the `LiveView` or `LiveComponent`s that are childern of this
      * `LiveView` are passed into this handler.
-     * @param event The event to handle
+     * @param event The info to handle
      * @param socket The `LiveViewSocket` for the `LiveView`
      */
-    handleInfo(info: TInfos, socket: LiveViewSocket<TContext>): void | Promise<void>;
+    handleInfo(info: TInfos, socket: LiveViewSocket<TContext, TInfos>): void | Promise<void>;
+    /**
+     * `render` is where the user interface is generated based on the `LiveView`'s
+     * context and meta data.  This is called every lifecycle of the `LiveView`,
+     * that is when internal or external events occur.
+     * @param context the current state for this `LiveView`
+     * @param meta the `LiveViewMeta` for this `LiveView`
+     */
+    render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 /**
  * Meta data and helpers for `LiveView`s.
@@ -344,20 +344,33 @@ interface LiveViewMeta {
     /**
      * A helper for loading `LiveComponent`s within a `LiveView`.
      */
-    live_component<Context extends LiveContext>(liveComponent: LiveComponent<Context>, params?: Partial<Context & {
+    live_component<TContext extends LiveContext>(liveComponent: LiveComponent<TContext>, params?: Partial<TContext & {
         id: string | number;
     }>): Promise<LiveViewTemplate>;
 }
 /**
- * Abstract `LiveView` class that is easy to extend for any `LiveView`
+ * Abstract `LiveView` class that is easy to extend for any class-based `LiveView`
  */
 declare abstract class BaseLiveView<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo> implements LiveView<TContext, TEvents, TInfos> {
-    handleEvent(event: TEvents, socket: LiveViewSocket<TContext>): void;
-    handleInfo(info: TInfos, socket: LiveViewSocket<TContext>): void;
-    mount(params: LiveViewMountParams, session: Partial<SessionData>, socket: LiveViewSocket<TContext>): void;
-    handleParams(url: URL, socket: LiveViewSocket<TContext>): void;
+    mount(socket: LiveViewSocket<TContext, TInfos>, session: Partial<SessionData>, params: LiveViewMountParams): void;
+    handleEvent(event: TEvents, socket: LiveViewSocket<TContext, TInfos>): void;
+    handleInfo(info: TInfos, socket: LiveViewSocket<TContext, TInfos>): void;
+    handleParams(url: URL, socket: LiveViewSocket<TContext, TInfos>): void;
     abstract render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
+interface BaseLiveViewParams<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo> {
+    mount?: (socket: LiveViewSocket<TContext, TInfos>, session: Partial<SessionData>, params: LiveViewMountParams) => void | Promise<void>;
+    handleParams?: (url: URL, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
+    handleEvent?: (event: TEvents, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
+    handleInfo?: (info: TInfos, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
+    render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+}
+/**
+ * Functional `LiveView` factory method for generating a `LiveView`.
+ * @param params the methods available to implement for a `LiveView`
+ * @returns the `LiveView` instance
+ */
+declare const createLiveView: <TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo>(params: BaseLiveViewParams<TContext, TEvents, TInfos>) => LiveView<TContext, TEvents, TInfos>;
 /**
  * LiveViewTemplate renderer that lays out the html elements for all of
  * the `LiveView`.  It is required that this page sets the csrf meta tag using
@@ -932,4 +945,4 @@ interface LiveViewServerAdaptor<TMiddlewareInterface> {
     wsRouter(): WsMessageRouter;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveView, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };

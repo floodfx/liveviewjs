@@ -72,24 +72,46 @@ class BaseLiveComponent {
 }
 
 /**
- * Abstract `LiveView` class that is easy to extend for any `LiveView`
+ * Abstract `LiveView` class that is easy to extend for any class-based `LiveView`
  */
 class BaseLiveView {
+    mount(socket, session, params) {
+        // no-op
+    }
     handleEvent(event, socket) {
         // istanbul ignore next
-        console.warn(`onEvent not implemented for ${this.constructor.name} but event received: ${JSON.stringify(event)}`);
+        console.warn(`handleEvent not implemented for ${this.constructor.name} but event received: ${JSON.stringify(event)}`);
     }
     handleInfo(info, socket) {
         // istanbul ignore next
-        console.warn(`onInfo not implemented for ${this.constructor.name} but info received: ${JSON.stringify(info)}`);
-    }
-    mount(params, session, socket) {
-        // no-op
+        console.warn(`handleInfo not implemented for ${this.constructor.name} but info received: ${JSON.stringify(info)}`);
     }
     handleParams(url, socket) {
         // no-op
     }
 }
+/**
+ * Functional `LiveView` factory method for generating a `LiveView`.
+ * @param params the methods available to implement for a `LiveView`
+ * @returns the `LiveView` instance
+ */
+const createLiveView = (params) => {
+    return {
+        // default imps
+        mount: () => { },
+        handleParams: () => { },
+        handleEvent: (event) => {
+            // istanbul ignore next
+            console.warn(`handleEvent not implemented in LiveView but event received: ${JSON.stringify(event)}`);
+        },
+        handleInfo: (info) => {
+            // istanbul ignore next
+            console.warn(`handleInfo not implemented in LiveView but info received: ${JSON.stringify(info)}`);
+        },
+        // replace default impls with params if they are defined
+        ...params,
+    };
+};
 
 class BaseLiveViewSocket {
     _context;
@@ -609,7 +631,7 @@ const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor,
     // prepare a http socket for the `LiveView` render lifecycle: mount => handleParams => render
     const liveViewSocket = new HttpLiveViewSocket(liveViewId);
     // execute the `LiveView`'s `mount` function, passing in the data from the HTTP request
-    await liveView.mount({ _csrf_token: sessionData._csrf_token, _mounts: -1 }, { ...sessionData }, liveViewSocket);
+    await liveView.mount(liveViewSocket, { ...sessionData }, { _csrf_token: sessionData._csrf_token, _mounts: -1 });
     // check for redirects in `mount`
     if (liveViewSocket.redirect) {
         const { to } = liveViewSocket.redirect;
@@ -915,7 +937,7 @@ class LiveViewManager {
             this.subscriptionIds[this.joinId] = subId;
             // run initial lifecycle steps for the liveview: mount => handleParams
             this.socket = this.newLiveViewSocket();
-            await this.liveView.mount(payloadParams, this.session, this.socket);
+            await this.liveView.mount(this.socket, this.session, payloadParams);
             await this.liveView.handleParams(url, this.socket);
             // now the socket context had a chance to be updated, we run the render steps
             // step 1: render the `LiveView`
@@ -1294,6 +1316,10 @@ class LiveViewManager {
      * @param info the AnyLiveInfo to queue
      */
     onSendInfo(info) {
+        // if info is a string, wrap it in an object
+        if (typeof info === "string") {
+            info = { type: info };
+        }
         // queue info
         this._infoQueue.push(info);
     }
@@ -1648,4 +1674,4 @@ class WsMessageRouter {
     }
 }
 
-export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SessionFlashAdaptor, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SessionFlashAdaptor, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveView, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
