@@ -2,7 +2,19 @@ import { BaseLiveComponent, LiveViewTemplate } from ".";
 import { html } from "..";
 import { LiveComponentMeta } from "./liveComponent";
 import { LiveViewManager } from "../socket/liveViewManager";
-import { BaseLiveView, createLiveView, LiveViewMeta, LiveViewMountParams } from "./liveView";
+import {
+  AnyLiveContext,
+  AnyLiveEvent,
+  AnyLiveInfo,
+  BaseLiveView,
+  createLiveView,
+  LiveContext,
+  LiveEvent,
+  LiveInfo,
+  LiveView,
+  LiveViewMeta,
+  LiveViewMountParams,
+} from "./liveView";
 import { SessionData } from "../session";
 import { LiveViewSocket, WsMessageRouter } from "../socket";
 import { SingleProcessPubSub } from "../pubsub";
@@ -128,3 +140,52 @@ const TestFuncLiveView = createLiveView<
     return html` <div>${await live_component(new TestLiveComponent(), { id: 1, foo: `called:${eventCount}` })}</div> `;
   },
 });
+
+// Matt P's suggestions
+// interface BaseLiveViewParams<
+//   TContext extends LiveContext = AnyLiveContext,
+//   TEvents extends LiveEvent = AnyLiveEvent,
+//   TInfos extends LiveInfo = AnyLiveInfo
+// > {
+//   mount?: (
+//     socket: LiveViewSocket<TContext, TInfos>,
+//     session: Partial<SessionData>,
+//     params: LiveViewMountParams
+//   ) => void | Promise<void>;
+//   handleParams?: (url: URL, socket: LiveViewSocket<TContext, TInfos>) => void;
+//   handleEvent?: (event: TEvents, socket: LiveViewSocket<TContext, TInfos>) => void;
+//   handleInfo?: (info: TInfos, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
+//   render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+// }
+
+// const createLiveViewFunc = <
+//   TContext extends LiveContext = AnyLiveContext,
+//   TEvents extends LiveEvent = AnyLiveEvent,
+//   TInfos extends LiveInfo = AnyLiveInfo
+// >(
+//   params: BaseLiveViewParams<TContext, TEvents, TInfos>
+// ): LiveView<TContext, TEvents, TInfos> => {
+//   return {} as any;
+// };
+
+// weird inference issues:
+// 1) adding "meta" to render function transforms "mount" socket inferrence from render context to AnyLiveContext
+// 1a) adding full type of meta (meta: LiveViewMeta) to render fixes this!?
+// 2) handleInfo must be before mount || the socket type in handleInfo must be "socket: LiveViewSocket" otherwise
+// the handleInfo fuction has a type mismatch error. removing the socket param also fixes this
+// createLiveViewFunc({
+//   mount: (socket) => {
+//     socket.assign({ videoId: "id", foo: "bar" });
+//   },
+//   handleInfo: (info: { type: "blah" }, socket: LiveViewSocket) => {},
+//   handleParams(url, socket) {
+//     socket.assign({
+//       videoId: url.searchParams.get("videoId")!,
+//     });
+//   },
+
+//   handleEvent: (events: { type: "WHATEVER" }, socket) => {},
+//   render: (context: { videoId: string }, meta) => {
+//     return html``;
+//   },
+// });
