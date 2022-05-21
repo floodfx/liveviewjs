@@ -1,4 +1,4 @@
-import { PaginateOptions, SortOptions } from "./liveView";
+import { PaginateOptions, SortOptions } from "./index";
 
 export interface Donation {
   id: number;

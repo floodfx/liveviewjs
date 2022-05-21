@@ -1092,16 +1092,16 @@ const listCities = [
     "Yuma, AZ",
 ];
 
-class AutocompleteLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+const autocompleteLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
         const zip = "";
         const city = "";
         const stores = [];
         const matches = [];
         const loading = false;
         socket.assign({ zip, city, stores, matches, loading });
-    }
-    handleEvent(event, socket) {
+    },
+    handleEvent: (event, socket) => {
         // console.log("event:", event, params, socket);
         let city;
         switch (event.type) {
@@ -1121,8 +1121,8 @@ class AutocompleteLiveView extends liveviewjs.BaseLiveView {
                 socket.assign({ city, loading: false, matches });
                 break;
         }
-    }
-    handleInfo(info, socket) {
+    },
+    handleInfo: (info, socket) => {
         const { type } = info;
         let stores = [];
         switch (type) {
@@ -1144,8 +1144,8 @@ class AutocompleteLiveView extends liveviewjs.BaseLiveView {
                     loading: false,
                 });
         }
-    }
-    render(context) {
+    },
+    render: (context, meta) => {
         return liveviewjs.html `
       <h1>Find a Store</h1>
       <div id="search">
@@ -1180,210 +1180,210 @@ class AutocompleteLiveView extends liveviewjs.BaseLiveView {
           ${context.matches.map((match) => liveviewjs.html `<option value="${match}">${match}</option>`)}
         </datalist>
 
-        ${context.loading ? this.renderLoading() : ""}
+        ${context.loading ? renderLoading$1() : ""}
 
         <div class="stores">
           <ul>
-            ${context.stores.map((store) => this.renderStore(store))}
+            ${context.stores.map((store) => renderStore$1(store))}
           </ul>
         </div>
       </div>
     `;
+    },
+});
+function renderStoreStatus$1(store) {
+    if (store.open) {
+        return liveviewjs.html `<span class="open">🔓 Open</span>`;
     }
-    renderStoreStatus(store) {
-        if (store.open) {
-            return liveviewjs.html `<span class="open">🔓 Open</span>`;
-        }
-        else {
-            return liveviewjs.html `<span class="closed">🔐 Closed</span>`;
-        }
-    }
-    renderStore(store) {
-        return liveviewjs.html ` <li>
-      <div class="first-line">
-        <div class="name">${store.name}</div>
-        <div class="status">${this.renderStoreStatus(store)}</div>
-        <div class="second-line">
-          <div class="street">📍 ${store.street}</div>
-          <div class="phone_number">📞 ${store.phone_number}</div>
-        </div>
-      </div>
-    </li>`;
-    }
-    renderLoading() {
-        return liveviewjs.html ` <div class="loader">Loading...</div> `;
+    else {
+        return liveviewjs.html `<span class="closed">🔐 Closed</span>`;
     }
 }
+function renderStore$1(store) {
+    return liveviewjs.html ` <li>
+    <div class="first-line">
+      <div class="name">${store.name}</div>
+      <div class="status">${renderStoreStatus$1(store)}</div>
+      <div class="second-line">
+        <div class="street">📍 ${store.street}</div>
+        <div class="phone_number">📞 ${store.phone_number}</div>
+      </div>
+    </div>
+  </li>`;
+}
+function renderLoading$1() {
+    return liveviewjs.html ` <div class="loader">Loading...</div> `;
+}
 
-const vehicleTypes = {
+// These numbers are completely made up!
+const vehicleTypeValues = ["gas", "electric", "hybrid", "dontHave"];
+const vehicleTypeLabels = {
     gas: "🦕 Gas",
     electric: "🔌 Electric",
     hybrid: "🔋 Hybrid",
     dontHave: "🚎 Don't have",
 };
-const vehicleCarbonFootprint = {
+const vehicleCO2Tons = {
     gas: 8,
     hybrid: 4,
     electric: 1,
     dontHave: 0,
 };
-const spaceHeatingTypes = {
+const spaceHeatingTypeValues = ["gas", "oil", "electric", "heatpump", "notsure"];
+const spaceHeatingTypeLabels = {
     gas: "🔥 Furnace that burns gas",
     oil: "🦕 Furnace that burns fuel oil",
     electric: "🔌 Electric resistance heaters (wall or baseboard heaters)",
-    radiant: "💧 Radiators or radiant floors",
     heatpump: "♨️ Heat pump",
-    other: "🪵 Other",
-    notSure: "🤷 Not sure",
+    notsure: "🤷 Not sure",
 };
-const spaceHeatingCarbonFootprint = {
+const spaceHeatingCO2Tons = {
     gas: 6,
     oil: 5,
     electric: 3,
-    radiant: 3,
     heatpump: 1,
-    other: 5,
-    notSure: 5, // assume 5 is average
+    notsure: 5, // assume 5 is average
 };
-const gridElectricityTypes = {
+const gridElectricityTypeValues = ["grid", "renewable", "solar", "notsure"];
+const gridElectricityTypeLabels = {
     grid: "🔌 Grid electricity",
     renewable: "☀️ Renewable plan from my utility",
-    commSolar: "🤝 Community solar",
-    notSure: "🤷 Not sure",
+    solar: "🤝 Community solar",
+    notsure: "🤷 Not sure",
 };
-const gridElectricityCarbonFootprint = {
+const gridElectricityCO2Tons = {
     grid: 6,
     renewable: 2,
-    commSolar: 2,
-    notSure: 6, // assume 6 is average
+    solar: 2,
+    notsure: 6, // assume 6 is average
 };
 
-class CalculatorLiveComponent extends liveviewjs.BaseLiveComponent {
-    render(context, meta) {
-        const { vehicle1, vehicle2, spaceHeating, gridElectricity, carbonFootprintTons } = context;
+/**
+ * "Stateful" `LiveComponet` that calculates the tons of CO2 based on the type of
+ * vehicle, space heating and grid electricity.
+ *
+ * "Stateful" means that it has an "id" attribute which allows it to keep track of it's local state
+ * and receive events from user input and handle them in "handleEvent" function.
+ *
+ */
+const calcLiveComponent = liveviewjs.createLiveComponent({
+    handleEvent(event, socket) {
+        const { vehicle, spaceHeating, gridElectricity } = event;
+        // calculate footprint
+        const vTons = vehicleCO2Tons[vehicle];
+        const shTons = spaceHeatingCO2Tons[spaceHeating];
+        const geTons = gridElectricityCO2Tons[gridElectricity];
+        const footprintData = {
+            vehicleCO2Tons: vTons,
+            spaceHeatingCO2Tons: shTons,
+            gridElectricityCO2Tons: geTons,
+        };
+        // send parent the new state
+        socket.sendParentInfo({ type: "update", footprintData });
+        // update context
+        socket.assign({
+            vehicle,
+            spaceHeating,
+            gridElectricity,
+        });
+    },
+    render: (context, meta) => {
+        const { vehicle, spaceHeating, gridElectricity } = context;
         const { myself } = meta;
         return liveviewjs.html `
       <div id="calc_${myself}">
         <form phx-change="calculate" phx-target="${myself}">
           <div>
-            <label>Vehicle 1</label>
-            <select name="vehicle1" autocomplete="off">
-              <option>Select</option>
-              ${Object.keys(vehicleTypes).map((vehicle) => liveviewjs.html `<option value="${vehicle}" ${vehicle1 === vehicle ? "selected" : ""}>
-                    ${vehicleTypes[vehicle]}
-                  </option>`)}
-            </select>
-          </div>
-
-          <div>
-            <label>Vehicle 2</label>
-            <select name="vehicle2" autocomplete="off">
-              <option>Select</option>
-              ${Object.keys(vehicleTypes).map((vehicle) => liveviewjs.html `<option value="${vehicle}" ${vehicle2 === vehicle ? "selected" : ""}>
-                    ${vehicleTypes[vehicle]}
-                  </option>`)}
+            <label>Vehicle</label>
+            <select name="vehicle" autocomplete="off">
+              <option disabled>Select</option>
+              ${vehicleTypeValues.map((type) => {
+            const selected = type === vehicle ? "selected" : "";
+            return liveviewjs.html `<option value="${type}" ${selected}>${vehicleTypeLabels[type]}</option>`;
+        })}
             </select>
           </div>
 
           <div>
             <label>Space Heating</label>
             <select name="spaceHeating" autocomplete="off">
-              <option>Select</option>
-              ${Object.keys(spaceHeatingTypes).map((sh) => liveviewjs.html `<option value="${sh}" ${spaceHeating === sh ? "selected" : ""}>
-                    ${spaceHeatingTypes[sh]}
-                  </option>`)}
+              <option disabled>Select</option>
+              ${spaceHeatingTypeValues.map((type) => {
+            const selected = type === spaceHeating ? "selected" : "";
+            return liveviewjs.html `<option value="${type}" ${selected}>${spaceHeatingTypeLabels[type]}</option>`;
+        })}
             </select>
           </div>
 
           <div>
             <label>Grid Electricity Source</label>
-            <select name="gridElectricity" autocomplete="off" value="${gridElectricity}">
-              <option>Select</option>
-              ${Object.keys(gridElectricityTypes).map((grid) => liveviewjs.html `<option value="${grid}" ${gridElectricity === grid ? "selected" : ""}>
-                    ${gridElectricityTypes[grid]}
-                  </option>`)}
+            <select name="gridElectricity" autocomplete="off">
+              <option disabled>Select</option>
+              ${gridElectricityTypeValues.map((type) => {
+            const selected = type === gridElectricity ? "selected" : "";
+            return liveviewjs.html `<option value="${type}" ${selected}>${gridElectricityTypeLabels[type]}</option>`;
+        })}
             </select>
           </div>
         </form>
-
-        ${carbonFootprintTons > 0 ? this.renderFootprint(carbonFootprintTons, myself || 0, context) : ""}
       </div>
     `;
-    }
-    renderFootprint(carbonFootprintTons, myself, context) {
+    },
+});
+/**
+ * "Stateless" `LiveComponent` which shows the carbon footprint based on the
+ * provided data.
+ */
+const footprintLiveComponent = liveviewjs.createLiveComponent({
+    render: (context) => {
+        const { data } = context;
+        if (!data) {
+            return liveviewjs.html ``;
+        }
+        const { vehicleCO2Tons, spaceHeatingCO2Tons, gridElectricityCO2Tons } = data;
+        const totalCO2Tons = vehicleCO2Tons + spaceHeatingCO2Tons + gridElectricityCO2Tons;
         return liveviewjs.html `
-      <div id="footprint_${myself}">
+      <div>
         <h3>Carbon Footprint 👣</h3>
-        <p>${carbonFootprintTons} tons of CO2</p>
-        ${this.renderChart("footprint_chart", context)}
+        <p>${totalCO2Tons} tons of CO2</p>
       </div>
     `;
-    }
-    renderChart(id, context) {
-        const data = this.getChartData(id, context).data;
-        return liveviewjs.html `
-      <span id="${id}-init-data" style="display: none;">${liveviewjs.safe(JSON.stringify(data))}</span>
-      <canvas id="${id}" phx-hook="Chart"></canvas>
-    `;
-    }
-    handleEvent(event, socket) {
-        // calculate footprint
-        const { vehicle1, vehicle2, spaceHeating, gridElectricity } = event;
-        const v1Tons = vehicleCarbonFootprint[vehicle1];
-        const v2Tons = vehicleCarbonFootprint[vehicle2];
-        const shTons = spaceHeatingCarbonFootprint[spaceHeating];
-        const geTons = gridElectricityCarbonFootprint[gridElectricity];
-        const carbonFootprintData = [v1Tons, v2Tons, shTons, geTons];
-        socket.pushEvent({ type: "updateChart", carbonFootprintData });
-        socket.assign({
-            vehicle1,
-            vehicle2,
-            spaceHeating,
-            gridElectricity,
-            carbonFootprintTons: carbonFootprintData.reduce((a, b) => a + b, 0),
-        });
-    }
-    getChartData(id, context) {
-        return {
-            chartId: id,
-            data: {
-                labels: ["Vehicle 1", "Vehicle 2", "Space heating", "Electricity (non-heat)"],
-                datasets: [
-                    {
-                        data: [
-                            vehicleCarbonFootprint[context.vehicle1],
-                            vehicleCarbonFootprint[context.vehicle2],
-                            spaceHeatingCarbonFootprint[context.spaceHeating],
-                            gridElectricityCarbonFootprint[context.gridElectricity],
-                        ],
-                        backgroundColor: ["#4E0606", "#4E2706", "#06284E", "#DBD111"],
-                    },
-                ],
-            },
-        };
-    }
-}
+    },
+});
 
-class DecarbonizeLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+const decarbLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
         socket.pageTitle("Decarbonize Calculator");
-    }
-    async render(context, meta) {
+    },
+    // receive the info from the stateful child LiveComponent
+    handleInfo: (info, socket) => {
+        console.log("info", info);
+        const { footprintData } = info;
+        socket.assign({ footprintData });
+    },
+    render: async (context, meta) => {
         // use the live_component helper to render a `LiveComponent`
+        const { footprintData } = context;
         const { live_component } = meta;
+        console.log("footprintData", footprintData);
         return liveviewjs.html `
       <h1>Decarbonize Calculator</h1>
       <div>
-        ${await live_component(new CalculatorLiveComponent(), {
-            vehicle1: "gas",
+        ${await live_component(calcLiveComponent, {
+            vehicle: "gas",
             spaceHeating: "gas",
             gridElectricity: "grid",
             id: 1,
         })}
       </div>
+      <div>
+        ${await live_component(footprintLiveComponent, {
+            data: footprintData,
+        })}
+      </div>
     `;
-    }
-}
+    },
+});
 
 function numberToCurrency(amount) {
     var formatter = new Intl.NumberFormat("en-US", {
@@ -1394,14 +1394,20 @@ function numberToCurrency(amount) {
 }
 
 const photoSizes = ["4x6", "5x7", "8x10", "10x13", "11x14"];
-class PrintsLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+const printLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
         const photoSizeIndex = 1;
         const photoSize = photoSizeByIndex(photoSizeIndex);
         const cost = calculateCost(photoSize);
         socket.assign({ photoSize, photoSizeIndex, cost });
-    }
-    render(context, meta) {
+    },
+    handleEvent: (event, socket) => {
+        const { photoSizeIndex } = event;
+        const photoSize = photoSizeByIndex(Number(photoSizeIndex));
+        const cost = calculateCost(photoSize);
+        socket.assign({ photoSize, cost });
+    },
+    render: (context, meta) => {
         const { photoSize, photoSizeIndex, cost } = context;
         // pull apart dimensions
         const [width, _] = photoSize.split("x");
@@ -1422,14 +1428,8 @@ class PrintsLiveView extends liveviewjs.BaseLiveView {
           src="https://placekitten.com/2400/1200" />
       </div>
     `;
-    }
-    handleEvent(event, socket) {
-        const { photoSizeIndex } = event;
-        const photoSize = photoSizeByIndex(Number(photoSizeIndex));
-        const cost = calculateCost(photoSize);
-        socket.assign({ photoSize, cost });
-    }
-}
+    },
+});
 function photoSizeByIndex(index) {
     if (index >= 0 && index < photoSizes.length) {
         return photoSizes[index];
@@ -1451,40 +1451,15 @@ function calculateCost(photSize) {
     }
 }
 
-class VolumeLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+/**
+ * Simulates a UI to control the volume using buttons and keyboard input.
+ */
+const volumeLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
         socket.pageTitle("🎧 Volume Control");
         socket.assign({ volume: 10 });
-    }
-    render(context, meta) {
-        const { volume } = context;
-        return liveviewjs.html `
-      <div id="light">
-        <h1>🎧 Volume Control</h1>
-        <div>
-          <div>${volume}%</div>
-          <progress
-            id="volume_control"
-            style="width: 300px; height: 2em; opacity: ${volume / 100}"
-            value="${volume}"
-            max="100"></progress>
-        </div>
-
-        <button phx-click="off" phx-window-keydown="key_update" phx-key="ArrowLeft">⬅️ Silence</button>
-
-        <button phx-click="down" phx-window-keydown="key_update" phx-key="ArrowDown">⬇️ Turn Down</button>
-
-        <button phx-click="up" phx-window-keydown="key_update" phx-key="ArrowUp">⬆️ Turn Up</button>
-
-        <button phx-click="on" phx-window-keydown="key_update" phx-key="ArrowRight">➡️ Cranked</button>
-
-        <div>
-          <h5>Try using the keys too!</h5>
-        </div>
-      </div>
-    `;
-    }
-    async handleEvent(event, socket) {
+    },
+    handleEvent: async (event, socket) => {
         const { volume } = socket.context;
         let key = event.type;
         // if event was a key event, use the key name as the event
@@ -1517,40 +1492,63 @@ class VolumeLiveView extends liveviewjs.BaseLiveView {
             await socket.putFlash("error", "Silence! 🤫");
         }
         socket.assign({ volume: newVolume });
-    }
-}
+    },
+    render: (context) => {
+        const { volume } = context;
+        return liveviewjs.html `
+      <div id="light">
+        <h1>🎧 Volume Control</h1>
+        <div>
+          <div>${volume}%</div>
+          <progress
+            id="volume_control"
+            style="width: 300px; height: 2em; opacity: ${volume / 100}"
+            value="${volume}"
+            max="100"></progress>
+        </div>
 
-class SearchLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+        <button phx-click="off" phx-window-keydown="key_update" phx-key="ArrowLeft">⬅️ Silence</button>
+
+        <button phx-click="down" phx-window-keydown="key_update" phx-key="ArrowDown">⬇️ Turn Down</button>
+
+        <button phx-click="up" phx-window-keydown="key_update" phx-key="ArrowUp">⬆️ Turn Up</button>
+
+        <button phx-click="on" phx-window-keydown="key_update" phx-key="ArrowRight">➡️ Cranked</button>
+
+        <div>
+          <h5>Try using the keys too!</h5>
+        </div>
+      </div>
+    `;
+    },
+});
+
+const searchLiveView = liveviewjs.createLiveView({
+    // initialState
+    mount: (socket) => {
         const zip = "";
         const stores = [];
         const loading = false;
         socket.assign({ zip, stores, loading });
-    }
-    renderStoreStatus(store) {
-        if (store.open) {
-            return liveviewjs.html `<span class="open">🔓 Open</span>`;
-        }
-        else {
-            return liveviewjs.html `<span class="closed">🔐 Closed</span>`;
-        }
-    }
-    renderStore(store) {
-        return liveviewjs.html ` <li>
-      <div class="first-line">
-        <div class="name">${store.name}</div>
-        <div class="status">${this.renderStoreStatus(store)}</div>
-        <div class="second-line">
-          <div class="street">📍 ${store.street}</div>
-          <div class="phone_number">📞 ${store.phone_number}</div>
-        </div>
-      </div>
-    </li>`;
-    }
-    renderLoading() {
-        return liveviewjs.html ` <div class="loader">Loading...</div> `;
-    }
-    render(context, meta) {
+    },
+    // user events
+    handleEvent: (event, socket) => {
+        const { zip } = event;
+        socket.sendInfo({ type: "run_zip_search", zip });
+        socket.assign({ zip, stores: [], loading: true });
+    },
+    // internal events
+    handleInfo: (info, socket) => {
+        const { zip } = info;
+        const stores = searchByZip(zip);
+        socket.assign({
+            zip,
+            stores,
+            loading: false,
+        });
+    },
+    // render the LiveView
+    render: (context, meta) => {
         const { zip, stores, loading } = context;
         return liveviewjs.html `
       <h1>Find a Store</h1>
@@ -1569,30 +1567,39 @@ class SearchLiveView extends liveviewjs.BaseLiveView {
           <button type="submit">🔎</button>
         </form>
 
-        ${loading ? this.renderLoading() : ""}
+        ${loading ? renderLoading() : ""}
 
         <div class="stores">
           <ul>
-            ${stores.map((store) => this.renderStore(store))}
+            ${stores.map((store) => renderStore(store))}
           </ul>
         </div>
       </div>
     `;
+    },
+});
+function renderStoreStatus(store) {
+    if (store.open) {
+        return liveviewjs.html `<span class="open">🔓 Open</span>`;
     }
-    handleEvent(event, socket) {
-        const { zip } = event;
-        socket.sendInfo({ type: "run_zip_search", zip });
-        socket.assign({ zip, stores: [], loading: true });
+    else {
+        return liveviewjs.html `<span class="closed">🔐 Closed</span>`;
     }
-    handleInfo(info, socket) {
-        const { zip } = info;
-        const stores = searchByZip(zip);
-        socket.assign({
-            zip,
-            stores,
-            loading: false,
-        });
-    }
+}
+function renderStore(store) {
+    return liveviewjs.html ` <li>
+    <div class="first-line">
+      <div class="name">${store.name}</div>
+      <div class="status">${renderStoreStatus(store)}</div>
+      <div class="second-line">
+        <div class="street">📍 ${store.street}</div>
+        <div class="phone_number">📞 ${store.phone_number}</div>
+      </div>
+    </div>
+  </li>`;
+}
+function renderLoading() {
+    return liveviewjs.html ` <div class="loader">Loading...</div> `;
 }
 
 const items$1 = [
@@ -1659,8 +1666,8 @@ const listItems$1 = (page, perPage) => {
 };
 const almostExpired$1 = (donation) => donation.days_until_expires <= 10;
 
-class PaginateLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+const paginateLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
         const options = { page: 1, perPage: 10 };
         const { page, perPage } = options;
         const donations = listItems$1(page, perPage);
@@ -1668,8 +1675,8 @@ class PaginateLiveView extends liveviewjs.BaseLiveView {
             options,
             donations,
         });
-    }
-    handleParams(url, socket) {
+    },
+    handleParams: (url, socket) => {
         const page = Number(url.searchParams.get("page") || 1);
         const perPage = Number(url.searchParams.get("perPage") || 10);
         const donations = listItems$1(page, perPage);
@@ -1677,8 +1684,17 @@ class PaginateLiveView extends liveviewjs.BaseLiveView {
             options: { page, perPage },
             donations,
         });
-    }
-    render(context) {
+    },
+    handleEvent: (event, socket) => {
+        const page = socket.context.options.page;
+        const perPage = Number(event.perPage || 10);
+        socket.pushPatch("/paginate", new URLSearchParams({ page: String(page), perPage: String(perPage) }));
+        socket.assign({
+            options: { page, perPage },
+            donations: listItems$1(page, perPage),
+        });
+    },
+    render: (context) => {
         const { options: { perPage, page }, donations, } = context;
         return liveviewjs.html `
       <h1>Food Bank Donations</h1>
@@ -1700,83 +1716,82 @@ class PaginateLiveView extends liveviewjs.BaseLiveView {
               </tr>
             </thead>
             <tbody>
-              ${this.renderDonations(donations)}
+              ${renderDonations$1(donations)}
             </tbody>
           </table>
           <div class="footer">
             <div class="pagination">
-              ${page > 1 ? this.paginationLink("Previous", page - 1, perPage, "previous") : ""}
-              ${this.pageLinks(page, perPage)} ${this.paginationLink("Next", page + 1, perPage, "next")}
+              ${page > 1 ? paginationLink$1("Previous", page - 1, perPage, "previous") : ""} ${pageLinks$1(page, perPage)}
+              ${paginationLink$1("Next", page + 1, perPage, "next")}
             </div>
           </div>
         </div>
       </div>
     `;
-    }
-    handleEvent(event, socket) {
-        const page = socket.context.options.page;
-        const perPage = Number(event.perPage || 10);
-        socket.pushPatch("/paginate", new URLSearchParams({ page: String(page), perPage: String(perPage) }));
-        socket.assign({
-            options: { page, perPage },
-            donations: listItems$1(page, perPage),
-        });
-    }
-    pageLinks(page, perPage) {
-        let links = [];
-        for (var p = page - 2; p <= page + 2; p++) {
-            if (p > 0) {
-                links.push(this.paginationLink(String(p), p, perPage, p === page ? "active" : ""));
-            }
+    },
+});
+function pageLinks$1(page, perPage) {
+    let links = [];
+    for (var p = page - 2; p <= page + 2; p++) {
+        if (p > 0) {
+            links.push(paginationLink$1(String(p), p, perPage, p === page ? "active" : ""));
         }
-        return liveviewjs.join(links, "");
     }
-    paginationLink(text, pageNum, perPageNum, className) {
-        const page = String(pageNum);
-        const perPage = String(perPageNum);
-        return liveviewjs.live_patch(liveviewjs.html `<button>${text}</button>`, {
-            to: {
-                path: "/paginate",
-                params: { page, perPage },
-            },
-            className,
-        });
+    return liveviewjs.join(links, "");
+}
+function paginationLink$1(text, pageNum, perPageNum, className) {
+    const page = String(pageNum);
+    const perPage = String(perPageNum);
+    return liveviewjs.live_patch(liveviewjs.html `<button>${text}</button>`, {
+        to: {
+            path: "/paginate",
+            params: { page, perPage },
+        },
+        className,
+    });
+}
+function renderDonations$1(donations) {
+    return donations.map((donation) => liveviewjs.html `
+      <tr>
+        <td class="item">
+          <span class="id">${donation.id}</span>
+          ${donation.emoji} ${donation.item}
+        </td>
+        <td>${donation.quantity} lbs</td>
+        <td>
+          <span> ${expiresDecoration$1(donation)} </span>
+        </td>
+      </tr>
+    `);
+}
+function expiresDecoration$1(donation) {
+    if (almostExpired$1(donation)) {
+        return liveviewjs.html `<mark>${donation.days_until_expires}</mark>`;
     }
-    renderDonations(donations) {
-        return donations.map((donation) => liveviewjs.html `
-        <tr>
-          <td class="item">
-            <span class="id">${donation.id}</span>
-            ${donation.emoji} ${donation.item}
-          </td>
-          <td>${donation.quantity} lbs</td>
-          <td>
-            <span> ${this.expiresDecoration(donation)} </span>
-          </td>
-        </tr>
-      `);
-    }
-    expiresDecoration(donation) {
-        if (almostExpired$1(donation)) {
-            return liveviewjs.html `<mark>${donation.days_until_expires}</mark>`;
-        }
-        else {
-            return donation.days_until_expires;
-        }
+    else {
+        return donation.days_until_expires;
     }
 }
 
-class DashboardLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+/**
+ * Dashboard that automatically refreshes every second or when a user hits refresh.
+ */
+const dashboardLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
         if (socket.connected) {
-            // socket will be connected after websocket connetion established
+            // only start repeating if the socket is connected (i.e. websocket is connected)
             socket.repeat(() => {
+                // send the tick event internally
                 socket.sendInfo({ type: "tick" });
             }, 1000);
         }
         socket.assign(nextRandomData());
-    }
-    render(context) {
+    },
+    // on tick, update random data
+    handleInfo: (_, socket) => socket.assign(nextRandomData()),
+    // on refresh, update random data
+    handleEvent: (_, socket) => socket.assign(nextRandomData()),
+    render: (context) => {
         const { newOrders, salesAmount, rating } = context;
         return liveviewjs.html `
       <h1>Sales Dashboard</h1>
@@ -1794,14 +1809,17 @@ class DashboardLiveView extends liveviewjs.BaseLiveView {
       <br />
       <button phx-click="refresh">↻ Refresh</button>
     `;
-    }
-    handleEvent(event, socket) {
-        socket.assign(nextRandomData());
-    }
-    handleInfo(info, socket) {
-        socket.assign(nextRandomData());
-    }
+    },
+});
+// generate a random set of data
+function nextRandomData() {
+    return {
+        newOrders: randomNewOrders(),
+        salesAmount: randomSalesAmount(),
+        rating: randomRating(),
+    };
 }
+// display star emojis given a rating
 function ratingToStars(rating) {
     const stars = [];
     let i = 0;
@@ -1812,13 +1830,6 @@ function ratingToStars(rating) {
         stars.push("✩");
     }
     return stars.join("");
-}
-function nextRandomData() {
-    return {
-        newOrders: randomNewOrders(),
-        salesAmount: randomSalesAmount(),
-        rating: randomRating(),
-    };
 }
 // generate a random number between min and max
 const random = (min, max) => {
@@ -1878,16 +1889,16 @@ const servers = [
     },
 ];
 
-class ServersLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+const serversLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
         const servers = listServers();
         const selectedServer = servers[0];
         socket.assign({
             servers,
             selectedServer,
         });
-    }
-    handleParams(url, socket) {
+    },
+    handleParams: (url, socket) => {
         const servers = listServers();
         const serverId = url.searchParams.get("id");
         const selectedServer = servers.find((server) => server.id === serverId) || servers[0];
@@ -1896,8 +1907,8 @@ class ServersLiveView extends liveviewjs.BaseLiveView {
             servers,
             selectedServer,
         });
-    }
-    render(context) {
+    },
+    render: (context) => {
         const { servers, selectedServer } = context;
         return liveviewjs.html `
       <h1>Servers</h1>
@@ -1905,7 +1916,7 @@ class ServersLiveView extends liveviewjs.BaseLiveView {
         <div class="sidebar">
           <nav>
             ${servers.map((server) => {
-            return liveviewjs.live_patch(this.link_body(server), {
+            return liveviewjs.live_patch(link_body(server), {
                 to: { path: "/servers", params: { id: server.id } },
                 className: server.id === selectedServer.id ? "selected" : "",
             });
@@ -1939,10 +1950,10 @@ class ServersLiveView extends liveviewjs.BaseLiveView {
         </div>
       </div>
     `;
-    }
-    link_body(server) {
-        return liveviewjs.html ` <button>🤖 ${server.name}</button> `;
-    }
+    },
+});
+function link_body(server) {
+    return liveviewjs.html `<button>🤖 ${server.name}</button>`;
 }
 
 const items = [
@@ -2020,8 +2031,8 @@ const listItems = (paginateOptions, sortOptions) => {
 };
 const almostExpired = (donation) => donation.days_until_expires <= 10;
 
-class SortLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+const sortLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
         const paginateOptions = {
             page: 1,
             perPage: 10,
@@ -2034,8 +2045,8 @@ class SortLiveView extends liveviewjs.BaseLiveView {
             options: { ...paginateOptions, ...sortOptions },
             donations: listItems(paginateOptions, sortOptions),
         });
-    }
-    handleParams(url, socket) {
+    },
+    handleParams: (url, socket) => {
         const page = Number(url.searchParams.get("page") || 1);
         const perPage = Number(url.searchParams.get("perPage") || 10);
         let sortby = (url.searchParams.get("sortby") || "item");
@@ -2046,50 +2057,8 @@ class SortLiveView extends liveviewjs.BaseLiveView {
             options: { page, perPage, sortby, sortOrder },
             donations: listItems({ page, perPage }, { sortby, sortOrder }),
         });
-    }
-    render(context, meta) {
-        const { options: { perPage, page, sortOrder, sortby }, donations, } = context;
-        return liveviewjs.html `
-      <h1>Food Bank Donations</h1>
-      <div id="donations">
-        <form phx-change="select-per-page">
-          Show
-          <select name="perPage">
-            ${liveviewjs.options_for_select([5, 10, 15, 20].map((n) => String(n)), String(perPage))}
-          </select>
-          <label for="perPage">per page</label>
-        </form>
-        <div class="wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th class="item" phx-click="change-sort" phx-value-sortby="id">
-                  ${this.sort_emoji(sortby, "id", sortOrder)}Item
-                </th>
-                <th phx-click="change-sort" phx-value-sortby="quantity">
-                  ${this.sort_emoji(sortby, "quantity", sortOrder)}Quantity
-                </th>
-                <th phx-click="change-sort" phx-value-sortby="days_until_expires">
-                  ${this.sort_emoji(sortby, "days_until_expires", sortOrder)}Days Until Expires
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.renderDonations(donations)}
-            </tbody>
-          </table>
-          <div class="footer">
-            <div class="pagination">
-              ${page > 1 ? this.paginationLink("Previous", page - 1, perPage, sortby, sortOrder, "previous") : ""}
-              ${this.pageLinks(page, perPage, sortby, sortOrder)}
-              ${this.paginationLink("Next", page + 1, perPage, sortby, sortOrder, "next")}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    handleEvent(event, socket) {
+    },
+    handleEvent: (event, socket) => {
         const { options } = socket.context;
         let { page, perPage, sortby, sortOrder } = options;
         switch (event.type) {
@@ -2111,51 +2080,93 @@ class SortLiveView extends liveviewjs.BaseLiveView {
             options: { page, perPage, sortby, sortOrder },
             donations: listItems({ page, perPage }, { sortby, sortOrder }),
         });
-    }
-    sort_emoji(sortby, sortby_value, sortOrder) {
-        return sortby === sortby_value ? (sortOrder === "asc" ? "👇" : "☝️") : "";
-    }
-    pageLinks(page, perPage, sortby, sortOrder) {
-        let links = [];
-        for (var p = page - 2; p <= page + 2; p++) {
-            if (p > 0) {
-                links.push(this.paginationLink(String(p), p, perPage, sortby, sortOrder, p === page ? "active" : ""));
-            }
+    },
+    render: (context) => {
+        const { options: { perPage, page, sortOrder, sortby }, donations, } = context;
+        return liveviewjs.html `
+      <h1>Food Bank Donations</h1>
+      <div id="donations">
+        <form phx-change="select-per-page">
+          Show
+          <select name="perPage">
+            ${liveviewjs.options_for_select([5, 10, 15, 20].map((n) => String(n)), String(perPage))}
+          </select>
+          <label for="perPage">per page</label>
+        </form>
+        <div class="wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th class="item" phx-click="change-sort" phx-value-sortby="id">
+                  ${sort_emoji(sortby, "id", sortOrder)}Item
+                </th>
+                <th phx-click="change-sort" phx-value-sortby="quantity">
+                  ${sort_emoji(sortby, "quantity", sortOrder)}Quantity
+                </th>
+                <th phx-click="change-sort" phx-value-sortby="days_until_expires">
+                  ${sort_emoji(sortby, "days_until_expires", sortOrder)}Days Until Expires
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              ${renderDonations(donations)}
+            </tbody>
+          </table>
+          <div class="footer">
+            <div class="pagination">
+              ${page > 1 ? paginationLink("Previous", page - 1, perPage, sortby, sortOrder, "previous") : ""}
+              ${pageLinks(page, perPage, sortby, sortOrder)}
+              ${paginationLink("Next", page + 1, perPage, sortby, sortOrder, "next")}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    },
+});
+function sort_emoji(sortby, sortby_value, sortOrder) {
+    return sortby === sortby_value ? (sortOrder === "asc" ? "👇" : "☝️") : "";
+}
+function pageLinks(page, perPage, sortby, sortOrder) {
+    let links = [];
+    for (var p = page - 2; p <= page + 2; p++) {
+        if (p > 0) {
+            links.push(paginationLink(String(p), p, perPage, sortby, sortOrder, p === page ? "active" : ""));
         }
-        return liveviewjs.join(links, "");
     }
-    paginationLink(text, pageNum, perPageNum, sortby, sortOrder, className) {
-        const page = String(pageNum);
-        const perPage = String(perPageNum);
-        return liveviewjs.live_patch(liveviewjs.html `<button>${text}</button>`, {
-            to: {
-                path: "/sort",
-                params: { page, perPage, sortby, sortOrder },
-            },
-            className,
-        });
+    return liveviewjs.join(links, "");
+}
+function paginationLink(text, pageNum, perPageNum, sortby, sortOrder, className) {
+    const page = String(pageNum);
+    const perPage = String(perPageNum);
+    return liveviewjs.live_patch(liveviewjs.html `<button>${text}</button>`, {
+        to: {
+            path: "/sort",
+            params: { page, perPage, sortby, sortOrder },
+        },
+        className,
+    });
+}
+function renderDonations(donations) {
+    return donations.map((donation) => liveviewjs.html `
+      <tr>
+        <td class="item">
+          <span class="id">${donation.id}</span>
+          ${donation.emoji} ${donation.item}
+        </td>
+        <td>${donation.quantity} lbs</td>
+        <td>
+          <span> ${expiresDecoration(donation)} </span>
+        </td>
+      </tr>
+    `);
+}
+function expiresDecoration(donation) {
+    if (almostExpired(donation)) {
+        return liveviewjs.html `<mark>${donation.days_until_expires}</mark>`;
     }
-    renderDonations(donations) {
-        return donations.map((donation) => liveviewjs.html `
-        <tr>
-          <td class="item">
-            <span class="id">${donation.id}</span>
-            ${donation.emoji} ${donation.item}
-          </td>
-          <td>${donation.quantity} lbs</td>
-          <td>
-            <span> ${this.expiresDecoration(donation)} </span>
-          </td>
-        </tr>
-      `);
-    }
-    expiresDecoration(donation) {
-        if (almostExpired(donation)) {
-            return liveviewjs.html `<mark>${donation.days_until_expires}</mark>`;
-        }
-        else {
-            return donation.days_until_expires;
-        }
+    else {
+        return donation.days_until_expires;
     }
 }
 
@@ -2225,11 +2236,11 @@ function broadcast(event) {
     pubSub.broadcast("volunteer", event);
 }
 
-class VolunteersLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+const volunteerLiveView = liveviewjs.createLiveView({
+    mount: async (socket) => {
         if (socket.connected) {
             // listen for changes to volunteer data
-            socket.subscribe("volunteer");
+            await socket.subscribe("volunteer");
         }
         socket.assign({
             volunteers: listVolunteers(),
@@ -2238,54 +2249,8 @@ class VolunteersLiveView extends liveviewjs.BaseLiveView {
         // reset volunteers to empty array after each render
         // in other words don't store this in memory
         socket.tempAssign({ volunteers: [] });
-    }
-    render(context, meta) {
-        const { changeset, volunteers } = context;
-        return liveviewjs.html `
-    <h1>Volunteer Check-In</h1>
-    <div id="checkin">
-
-      ${liveviewjs.form_for("#", meta.csrfToken, {
-            phx_submit: "save",
-            phx_change: "validate",
-        })}
-
-        <div class="field">
-          ${liveviewjs.text_input(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
-            ${liveviewjs.error_tag(changeset, "name")}
-        </div>
-
-        <div class="field">
-          ${liveviewjs.telephone_input(changeset, "phone", {
-            placeholder: "Phone",
-            autocomplete: "off",
-            phx_debounce: "blur",
-        })}
-            ${liveviewjs.error_tag(changeset, "phone")}
-        </div>
-        ${liveviewjs.submit("Check In", { phx_disable_with: "Saving..." })}
-        </form>
-
-        <div id="volunteers" phx-update="prepend">
-          ${volunteers.map(this.renderVolunteer)}
-        </div>
-    </div>
-    `;
-    }
-    renderVolunteer(volunteer) {
-        return liveviewjs.html `
-      <div id="${volunteer.id}" class="volunteer ${volunteer.checked_out ? " out" : ""}">
-        <div class="name">${volunteer.name}</div>
-        <div class="phone">📞 ${volunteer.phone}</div>
-        <div class="status">
-          <button phx-click="toggle-status" phx-value-id="${volunteer.id}" phx-disable-with="Saving...">
-            ${volunteer.checked_out ? "Check In" : "Check Out"}
-          </button>
-        </div>
-      </div>
-    `;
-    }
-    handleEvent(event, socket) {
+    },
+    handleEvent: (event, socket) => {
         switch (event.type) {
             case "validate":
                 socket.assign({
@@ -2312,22 +2277,74 @@ class VolunteersLiveView extends liveviewjs.BaseLiveView {
                 });
                 break;
         }
-    }
-    handleInfo(event, socket) {
-        // console.log("received", event, socket.id);
-        const { volunteer } = event;
+    },
+    handleInfo: (info, socket) => {
+        // console.log("received", info, socket.id);
+        const { volunteer } = info;
         socket.assign({
             volunteers: [volunteer],
             changeset: changeset({}, {}),
         });
-    }
+    },
+    render: (context, meta) => {
+        const { changeset, volunteers } = context;
+        const { csrfToken } = meta;
+        return liveviewjs.html `
+    <h1>Volunteer Check-In</h1>
+    <div id="checkin">
+
+      ${liveviewjs.form_for("#", csrfToken, {
+            phx_submit: "save",
+            phx_change: "validate",
+        })}
+
+        <div class="field">
+          ${liveviewjs.text_input(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
+            ${liveviewjs.error_tag(changeset, "name")}
+        </div>
+
+        <div class="field">
+          ${liveviewjs.telephone_input(changeset, "phone", {
+            placeholder: "Phone",
+            autocomplete: "off",
+            phx_debounce: "blur",
+        })}
+            ${liveviewjs.error_tag(changeset, "phone")}
+        </div>
+        ${liveviewjs.submit("Check In", { phx_disable_with: "Saving..." })}
+        </form>
+
+        <div id="volunteers" phx-update="prepend">
+          ${volunteers.map(renderVolunteer)}
+        </div>
+    </div>
+    `;
+    },
+});
+function renderVolunteer(volunteer) {
+    return liveviewjs.html `
+    <div id="${volunteer.id}" class="volunteer ${volunteer.checked_out ? " out" : ""}">
+      <div class="name">${volunteer.name}</div>
+      <div class="phone">📞 ${volunteer.phone}</div>
+      <div class="status">
+        <button phx-click="toggle-status" phx-value-id="${volunteer.id}" phx-disable-with="Saving...">
+          ${volunteer.checked_out ? "Check In" : "Check Out"}
+        </button>
+      </div>
+    </div>
+  `;
 }
 
-class CounterLiveView extends liveviewjs.BaseLiveView {
-    mount(params, session, socket) {
+/**
+ * A basic counter that increments and decrements a number.
+ */
+const counterLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
+        // init state, set count to 0
         socket.assign({ count: 0 });
-    }
-    handleEvent(event, socket) {
+    },
+    handleEvent: (event, socket) => {
+        // handle increment and decrement events
         const { count } = socket.context;
         switch (event.type) {
             case "increment":
@@ -2337,8 +2354,9 @@ class CounterLiveView extends liveviewjs.BaseLiveView {
                 socket.assign({ count: count - 1 });
                 break;
         }
-    }
-    render(context, meta) {
+    },
+    render: async (context) => {
+        // render the view based on the state
         const { count } = context;
         return liveviewjs.html `
       <div>
@@ -2347,8 +2365,8 @@ class CounterLiveView extends liveviewjs.BaseLiveView {
         <button phx-click="increment">+</button>
       </div>
     `;
-    }
-}
+    },
+});
 
 const routeDetails = [
     {
@@ -2425,16 +2443,15 @@ const routeDetails = [
     },
 ];
 
-exports.AutocompleteLiveView = AutocompleteLiveView;
-exports.CalculatorLiveComponent = CalculatorLiveComponent;
-exports.CounterLiveView = CounterLiveView;
-exports.DashboardLiveView = DashboardLiveView;
-exports.DecarbonizeLiveView = DecarbonizeLiveView;
-exports.PaginateLiveView = PaginateLiveView;
-exports.PrintsLiveView = PrintsLiveView;
-exports.SearchLiveView = SearchLiveView;
-exports.ServersLiveView = ServersLiveView;
-exports.SortLiveView = SortLiveView;
-exports.VolumeLiveView = VolumeLiveView;
-exports.VolunteersLiveView = VolunteersLiveView;
+exports.autocompleteLiveView = autocompleteLiveView;
+exports.counterLiveView = counterLiveView;
+exports.dashboardLiveView = dashboardLiveView;
+exports.decarbLiveView = decarbLiveView;
+exports.paginateLiveView = paginateLiveView;
+exports.printLiveView = printLiveView;
 exports.routeDetails = routeDetails;
+exports.searchLiveView = searchLiveView;
+exports.serversLiveView = serversLiveView;
+exports.sortLiveView = sortLiveView;
+exports.volumeLiveView = volumeLiveView;
+exports.volunteerLiveView = volunteerLiveView;
