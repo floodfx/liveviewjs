@@ -5,17 +5,17 @@ import { Server } from "http";
 import { nanoid } from "nanoid";
 import { LiveViewRouter, WsMessageRouter, SingleProcessPubSub, SessionFlashAdaptor } from "liveviewjs";
 import {
-  AutocompleteLiveView,
-  DecarbonizeLiveView,
-  PrintsLiveView,
-  VolumeLiveView,
-  PaginateLiveView,
-  DashboardLiveView,
-  SearchLiveView,
-  ServersLiveView,
-  SortLiveView,
-  VolunteersLiveView,
-  CounterLiveView,
+  autocompleteLiveView,
+  decarbLiveView,
+  printLiveView,
+  volumeLiveView,
+  paginateLiveView,
+  dashboardLiveView,
+  searchLiveView,
+  serversLiveView,
+  sortLiveView,
+  volunteerLiveView,
+  counterLiveView,
 } from "@liveviewjs/examples";
 import { pageRenderer, rootRenderer } from "./liveViewRenderers";
 import { NodeWsAdaptor } from "../node/wsAdaptor";
@@ -28,17 +28,17 @@ const signingSecret = "MY_VERY_SECRET_KEY";
 
 // map request paths to LiveViews
 const router: LiveViewRouter = {
-  "/autocomplete": new AutocompleteLiveView(),
-  "/decarbonize": new DecarbonizeLiveView(),
-  "/prints": new PrintsLiveView(),
-  "/volume": new VolumeLiveView(),
-  "/paginate": new PaginateLiveView(),
-  "/dashboard": new DashboardLiveView(),
-  "/search": new SearchLiveView(),
-  "/servers": new ServersLiveView(),
-  "/sort": new SortLiveView(),
-  "/volunteers": new VolunteersLiveView(),
-  "/counter": new CounterLiveView(),
+  "/autocomplete": autocompleteLiveView,
+  "/decarbonize": decarbLiveView,
+  "/prints": printLiveView,
+  "/volume": volumeLiveView,
+  "/paginate": paginateLiveView,
+  "/dashboard": dashboardLiveView,
+  "/search": searchLiveView,
+  "/servers": serversLiveView,
+  "/sort": sortLiveView,
+  "/volunteers": volunteerLiveView,
+  "/counter": counterLiveView,
 };
 
 // configure your express app
