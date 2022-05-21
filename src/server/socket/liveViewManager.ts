@@ -107,6 +107,8 @@ export class LiveViewManager {
   private liveViewRootTemplate?: LiveViewRootRenderer;
   private hasWarnedAboutMissingCsrfToken = false;
 
+  private _parts: Parts | undefined;
+
   constructor(
     liveView: LiveView,
     connectionId: string,
@@ -181,6 +183,8 @@ export class LiveViewManager {
       let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
       // step 2: if provided, wrap the rendered `LiveView` inside the root template
       view = await this.maybeWrapInRootTemplate(view);
+      // step 2.5: store parts for later diffing after rootTemplate is applied
+      this._parts = view.partsTree(true);
       // step 3: add any `LiveComponent` renderings to the parts tree
       let rendered = this.maybeAddLiveComponentsToParts(view.partsTree());
       // step 4: if set, add the page title to the parts tree
@@ -409,14 +413,18 @@ export class LiveViewManager {
         // if (!ctxEqual || event === "lv:clear-flash") {
         // get old render tree and new render tree for diffing
         // TODO - check forceRerender here and skip diffing if not needed
-        const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+        // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+
         let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
         // wrap in root template if there is one
         view = await this.maybeWrapInRootTemplate(view);
-        diff = view.partsTree();
-        diff = deepDiff(oldView.partsTree(true), view.partsTree(true));
-        // }
+
+        // diff the new view with the old view
+        const newParts = view.partsTree(true);
+        diff = deepDiff(this._parts!, newParts);
+        // store newParts for future diffs
+        this._parts = newParts;
 
         diff = this.maybeAddPageTitleToParts(diff);
         diff = this.maybeAddEventsToParts(diff);
@@ -458,14 +466,19 @@ export class LiveViewManager {
       await this.liveView.handleParams(url, this.socket);
 
       // get old render tree and new render tree for diffing
-      const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+      // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
       let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
       // wrap in root template if there is one
       view = await this.maybeWrapInRootTemplate(view);
 
       // TODO - why is the diff causing live_patch to fail??
-      let diff = deepDiff(oldView.partsTree(true), view.partsTree(true));
+      const newParts = view.partsTree(true);
+      let diff = deepDiff(this._parts!, newParts);
+      // reset parts to new parts
+      this._parts = newParts;
+
+      // add the rest of the things
       diff = this.maybeAddPageTitleToParts(diff);
       diff = this.maybeAddEventsToParts(diff);
 
@@ -647,13 +660,16 @@ export class LiveViewManager {
       // only calc diff if contexts have changed
       if (!ctxEqual) {
         // get old render tree and new render tree for diffing
-        const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+        // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
         let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
         // wrap in root template if there is one
         view = await this.maybeWrapInRootTemplate(view);
 
-        diff = deepDiff(oldView.partsTree(true), view.partsTree(true));
+        // diff the render trees and save the new parts
+        const newParts = view.partsTree(true);
+        diff = deepDiff(this._parts!, newParts);
+        this._parts = newParts;
 
         diff = this.maybeAddPageTitleToParts(diff);
         diff = this.maybeAddEventsToParts(diff);
