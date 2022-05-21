@@ -127,8 +127,8 @@ export interface LiveViewMeta<TEvents extends LiveEvent = AnyLiveEvent> {
   /**
    * A helper for loading `LiveComponent`s within a `LiveView`.
    */
-  live_component<TContext extends LiveContext>(
-    liveComponent: LiveComponent<TContext>,
+  live_component<TContext extends LiveContext = AnyLiveContext>(
+    liveComponent: LiveComponent<TContext, any, any>,
     params?: Partial<TContext & { id: string | number }>
   ): Promise<LiveViewTemplate>;
 
