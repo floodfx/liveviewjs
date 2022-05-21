@@ -7,53 +7,47 @@ import commonjs from "@rollup/plugin-commonjs";
 export default [
   {
     external: ["zod"],
-    input: './src/index.ts',
+    input: "./src/index.ts",
     output: {
-      file: './build/liveview.js',
-      format: 'cjs'
+      file: "./build/liveview.js",
+      format: "cjs",
     },
     plugins: [
       resolve({
         preferBuiltins: true,
       }),
-      typescript({ tsconfig: './tsconfig.json',
-        declarationDir: "./rollup",
-        declaration: true,
-      }),
+      typescript({ tsconfig: "./tsconfig.json", declarationDir: "./rollup", declaration: true }),
       commonjs(),
     ],
   },
   {
     external: ["zod"],
-    input: './src/index.ts',
+    input: "./src/index.ts",
     output: {
-      file: './build/liveview.mjs',
-      format: 'esm',
+      file: "./build/liveview.mjs",
+      format: "esm",
     },
     plugins: [
       {
         banner() {
           // add typescript types to the javascript bundle
           return '/// <reference types="./liveview.d.ts" />';
-        }
+        },
       },
       resolve({
         preferBuiltins: true,
       }),
-      typescript({ tsconfig: './tsconfig.json',
-        declarationDir: "./rollup",
-        declaration: true,
-      }),
+      typescript({ tsconfig: "./tsconfig.json", declarationDir: "./rollup", declaration: true }),
       commonjs(),
-    ]
+    ],
   },
   {
     external: ["zod"],
-    input: './build/rollup/server/index.d.ts',
+    input: "./build/rollup/server/index.d.ts",
     output: {
-      file: './build/liveview.d.ts',
-      format: 'esm',
+      file: "./build/liveview.d.ts",
+      format: "esm",
     },
     plugins: [dts()],
-  }
+  },
 ];
