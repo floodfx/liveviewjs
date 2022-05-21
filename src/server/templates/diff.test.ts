@@ -1,5 +1,6 @@
 import { html } from ".";
 import { deepDiff, diffArrays } from "./diff";
+import { Parts } from "./htmlSafeString";
 
 describe("test diffs", () => {
   it("diff is empty if no difference between parts", () => {
@@ -121,6 +122,76 @@ describe("test diffs", () => {
     });
   });
 
+  it("diffs for empty strings", () => {
+    // simulate a LiveComponent at the "1" key but with diff "0" keys
+    let oldParts: Parts = { 0: "" };
+    let newParts: Parts = { 0: "" };
+    expect(deepDiff(oldParts, newParts)).toMatchInlineSnapshot(`Object {}`);
+  });
+
+  it("diffs for live components", () => {
+    // simulate a LiveComponent at the "1" key but with diff "0" keys
+    let oldParts: Parts = { 0: "something", 1: 1 };
+    let newParts: Parts = { 0: "something else", 1: 1 };
+    expect(deepDiff(oldParts, newParts)).toMatchInlineSnapshot(`
+      Object {
+        "0": "something else",
+      }
+    `);
+
+    // simulate diff live component at key "1"
+    oldParts = { 0: "something", 1: 1 };
+    newParts = { 0: "something else", 1: 2 };
+    expect(deepDiff(oldParts, newParts)).toMatchInlineSnapshot(`
+      Object {
+        "0": "something else",
+        "1": 2,
+      }
+    `);
+  });
+
+  it("diffs correctly", () => {
+    const oldParts = {
+      "0": "",
+      "1": "",
+      "2": {
+        "0": 1,
+        "1": { s: [""] },
+        s: [
+          "\n      <h1>Decarbonize Calculator</h1>\n      <div>\n        ",
+          "\n      </div>\n      <div>\n        ",
+          "\n      </div>\n    ",
+        ],
+      },
+      s: ['\n    <main role="main" class="container">\n      ', "\n      ", "\n      ", "\n    </main>\n  "],
+    };
+
+    const newParts = {
+      "0": "",
+      "1": "",
+      "2": {
+        "0": 1,
+        "1": {
+          "0": "13",
+          s: [
+            "\n      <div>\n        <h3>Carbon Footprint 👣</h3>\n        <p>",
+            " tons of CO2</p>\n      </div>\n    ",
+          ],
+        },
+        s: [
+          "\n      <h1>Decarbonize Calculator</h1>\n      <div>\n        ",
+          "\n      </div>\n      <div>\n        ",
+          "\n      </div>\n    ",
+        ],
+      },
+      s: ['\n    <main role="main" class="container">\n      ', "\n      ", "\n      ", "\n    </main>\n  "],
+    };
+
+    expect(JSON.stringify(deepDiff(oldParts, newParts))).toMatchInlineSnapshot(
+      `"{\\"2\\":{\\"1\\":{\\"0\\":\\"13\\",\\"s\\":[\\"\\\\n      <div>\\\\n        <h3>Carbon Footprint 👣</h3>\\\\n        <p>\\",\\" tons of CO2</p>\\\\n      </div>\\\\n    \\"]}}}"`
+    );
+  });
+
   it("diffs arrays where both parts are objects but not arrays", () => {
     const oldArray = [{ 0: "a", 1: "b", s: ["1", "2", "3"] }];
     const newArray = [{ 0: "a", 1: "b", s: ["1", "2", "3"] }];
@@ -143,6 +214,12 @@ describe("test diffs", () => {
     const oldArray = [{ 0: "a" }, { 0: "b" }];
     const newArray = [{ 0: "a" }];
     expect(diffArrays(oldArray, newArray)).toBeTruthy();
+  });
+
+  it("diffs arrays with same number parts returns false", () => {
+    const oldArray = [{ 0: 1 }];
+    const newArray = [{ 0: 1 }];
+    expect(diffArrays(oldArray, newArray)).toBeFalsy();
   });
 
   it("diffs this", () => {

@@ -52,10 +52,16 @@ export function deepDiff(oldParts: Parts, newParts: Parts): Parts {
       if (diffArrays(oldParts[key] as Array<unknown>, newParts[key] as Array<unknown>)) {
         diff[key] = newParts[key];
       }
-    } else if (oldParts[key]) {
+    } else if (oldParts[key] !== undefined) {
       // if oldParts[key] is present it can only be a string or Parts object
       // check if string and diff it
       if (typeof newParts[key] === "string" && typeof oldParts[key] === "string") {
+        if (newParts[key] !== oldParts[key]) {
+          diff[key] = newParts[key];
+        }
+      }
+      // if both are numbers they are references to `LiveComponents`
+      else if (typeof newParts[key] === "number" && typeof oldParts[key] === "number") {
         if (newParts[key] !== oldParts[key]) {
           diff[key] = newParts[key];
         }
@@ -74,7 +80,7 @@ export function deepDiff(oldParts: Parts, newParts: Parts): Parts {
           }
         }
       }
-      // both aren't strings or Parts so they must be different
+      // both aren't strings, Parts, or numbers so they must be different
       // types.  in that case, keep the newParts.
       else {
         diff[key] = newParts[key];

@@ -334,6 +334,7 @@ export class LiveViewManager {
 
             // check for handleEvent and call it if it exists
             if (!liveComponent.handleEvent) {
+              // istanbul ignore next
               console.error(`LiveComponent ${componentClass} with id ${cid} has not implemented handleEvent() method`);
             } else {
               // run handleEvent and render then update context for cid
