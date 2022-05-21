@@ -1104,7 +1104,7 @@ class TestLiveComponent extends BaseLiveComponent<TestLVContext> {
   }
 
   handleEvent(event: AnyLiveEvent, socket: LiveComponentSocket<TestLVContext>) {
-    socket.send({ type: "test" });
+    socket.sendParentInfo({ type: "test" });
     socket.pushEvent({ type: "test", foo: "bar" });
     socket.assign({ foo: "bar" });
   }

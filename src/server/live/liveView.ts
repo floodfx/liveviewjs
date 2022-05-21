@@ -106,13 +106,14 @@ export interface LiveView<
    * @param context the current state for this `LiveView`
    * @param meta the `LiveViewMeta` for this `LiveView`
    */
-  render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+  render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 
+export type Event<TEvent extends LiveEvent> = TEvent["type"];
 /**
  * Meta data and helpers for `LiveView`s.
  */
-export interface LiveViewMeta {
+export interface LiveViewMeta<TEvents extends LiveEvent = AnyLiveEvent> {
   /**
    * The cross site request forgery token from the `LiveView` html page which
    * should be used to validate form submissions.
@@ -130,6 +131,9 @@ export interface LiveViewMeta {
     liveComponent: LiveComponent<TContext>,
     params?: Partial<TContext & { id: string | number }>
   ): Promise<LiveViewTemplate>;
+
+  // typesafe way to get an event string for use in 'render'?
+  // getEvent(event: Event<TEvents>): string;
 }
 
 /**
@@ -159,7 +163,7 @@ export abstract class BaseLiveView<
     // no-op
   }
 
-  abstract render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+  abstract render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 
 /**
@@ -179,7 +183,7 @@ interface BaseLiveViewParams<
   handleParams?: (url: URL, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
   handleEvent?: (event: TEvents, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
   handleInfo?: (info: TInfos, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
-  render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+  render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 
 /**

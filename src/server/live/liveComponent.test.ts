@@ -1,10 +1,22 @@
 import { BaseLiveComponent, LiveViewTemplate } from ".";
 import { html } from "..";
-import { HttpLiveComponentSocket, LiveComponentSocket, WsLiveComponentSocket } from "./liveComponent";
+import {
+  createLiveComponent,
+  HttpLiveComponentSocket,
+  LiveComponentSocket,
+  WsLiveComponentSocket,
+} from "./liveComponent";
 
 describe("test BaseLiveComponent", () => {
   it("mount returns context", () => {
     const component = new TestLiveComponent();
+    const socket = new HttpLiveComponentSocket<TestLVContext>("foo", { foo: "" });
+    component.mount(socket);
+    expect(socket.context.foo).toEqual("");
+  });
+
+  it("mount returns context using factory component", () => {
+    const component = testLiveComponent;
     const socket = new HttpLiveComponentSocket<TestLVContext>("foo", { foo: "" });
     component.mount(socket);
     expect(socket.context.foo).toEqual("");
@@ -23,17 +35,6 @@ describe("test BaseLiveComponent", () => {
     const socket = new HttpLiveComponentSocket<TestLVContext>("foo", { foo: "bar" });
     component.mount(socket);
     await component.update(socket);
-    expect(socket.context.foo).toEqual("bar");
-    const view = await component.render(socket.context);
-    expect(view.toString()).toEqual("<div>bar</div>");
-  });
-
-  it("handleEvent returns unchanged context", async () => {
-    const component = new TestLiveComponent();
-    const socket = new HttpLiveComponentSocket<TestLVContext>("foo", { foo: "bar" });
-    component.mount(socket);
-    await component.update(socket);
-    await component.handleEvent({ type: "event", foo: "baz" }, socket);
     expect(socket.context.foo).toEqual("bar");
     const view = await component.render(socket.context);
     expect(view.toString()).toEqual("<div>bar</div>");
@@ -70,19 +71,6 @@ describe("test BaseLiveComponent", () => {
     expect(view.toString()).toEqual("<div>bar</div>");
   });
 
-  it("handleEvent returns unchanged context ws", async () => {
-    const component = new TestLiveComponent();
-    const sendCallback = jest.fn();
-    const pushCallback = jest.fn();
-    const socket = new WsLiveComponentSocket<TestLVContext>("foo", { foo: "bar" }, sendCallback, pushCallback);
-    component.mount(socket);
-    await component.update(socket);
-    await component.handleEvent({ type: "event", foo: "baz" }, socket);
-    expect(socket.context.foo).toEqual("bar");
-    const view = await component.render(socket.context);
-    expect(view.toString()).toEqual("<div>bar</div>");
-  });
-
   it("push and send cb works ws", async () => {
     const component = new TestLVPushAndSendComponent();
     const sendCallback = jest.fn();
@@ -102,6 +90,10 @@ describe("test BaseLiveComponent", () => {
 interface TestLVContext {
   foo: string;
 }
+
+const testLiveComponent = createLiveComponent({
+  render: (context: { foo: string }) => html`<div>${context.foo}</div>`,
+});
 
 class TestLiveComponent extends BaseLiveComponent<TestLVContext> {
   render(ctx: TestLVContext): LiveViewTemplate {
