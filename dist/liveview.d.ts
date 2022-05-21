@@ -13,6 +13,266 @@ declare type SessionData = {
     [key: string]: any;
 };
 
+/**
+ * Adatpor that implements adding flash to the session data and removing flash from the session data.
+ */
+interface FlashAdaptor {
+    peekFlash(session: SessionData, key: string): Promise<string | undefined>;
+    popFlash(session: SessionData, key: string): Promise<string | undefined>;
+    putFlash(session: SessionData, key: string, value: string): Promise<void>;
+    clearFlash(session: SessionData, key: string): Promise<void>;
+}
+
+/**
+ * Adaptor that enables sending websocket messages over a concrete websocket implementation.
+ */
+interface WsAdaptor {
+    send(message: string, errorHandler?: (err: any) => void): void;
+}
+
+declare type SubscriberFunction<T> = (data: T) => void;
+declare type SubscriberId = string;
+interface Subscriber {
+    subscribe<T extends {
+        type: string;
+    }>(topic: string, subscriber: SubscriberFunction<T>): Promise<SubscriberId>;
+    unsubscribe(topic: string, subscriberId: SubscriberId): Promise<void>;
+}
+interface Publisher {
+    broadcast<T extends {
+        type: string;
+    }>(topic: string, data: T): Promise<void>;
+}
+interface PubSub extends Subscriber, Publisher {
+}
+
+declare class SingleProcessPubSub implements Subscriber, Publisher {
+    private subscribers;
+    subscribe<T>(topic: string, subscriber: SubscriberFunction<T>): Promise<string>;
+    broadcast<T>(topic: string, data: T): Promise<void>;
+    unsubscribe(topic: string, subscriberId: string): Promise<void>;
+}
+
+declare type PhxIncomingMessage<Payload> = [
+    joinRef: string | null,
+    messageRef: string | null,
+    topic: "phoenix" | string,
+    event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
+    payload: Payload
+];
+declare type PhxFlash = {
+    info?: string;
+    error?: string;
+};
+interface PhxJoinPayload {
+    params: LiveViewMountParams;
+    session: string;
+    static: string;
+    url?: string;
+    redirect?: string;
+    flash?: PhxFlash | null;
+}
+declare type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
+declare type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
+declare type PhxLivePatchIncoming = PhxIncomingMessage<{
+    url: string;
+}>;
+interface PhxEventPayload<TType extends string, TValue, TEvent extends string = string> {
+    type: TType;
+    event: TEvent;
+    value: TValue;
+    cid?: number;
+}
+interface PhxEventUploads {
+    uploads: {
+        [key: string]: unknown;
+    };
+}
+declare type PhxClickPayload = PhxEventPayload<"click", {
+    value: string;
+}>;
+declare type PhxLVClearFlashPayload = PhxEventPayload<"click", {
+    key: string;
+}, "lv:clear-flash">;
+declare type PhxFormPayload = PhxEventPayload<"form", {
+    value: string;
+}> & PhxEventUploads;
+declare type PhxKeyUpPayload = PhxEventPayload<"keyup", {
+    key: string;
+    value?: string;
+}>;
+declare type PhxKeyDownPayload = PhxEventPayload<"keydown", {
+    key: string;
+    value?: string;
+}>;
+declare type PhxFocusPayload = PhxEventPayload<"focus", {
+    value: string;
+}>;
+declare type PhxBlurPayload = PhxEventPayload<"blur", {
+    value: string;
+}>;
+declare type PhxHookPayload = PhxEventPayload<"hook", Record<string, string>>;
+declare type PhxMessage = {
+    type: "phx_join";
+    message: PhxJoinIncoming;
+} | {
+    type: "heartbeat";
+    message: PhxHeartbeatIncoming;
+} | {
+    type: "event";
+    message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload | PhxHookPayload>;
+} | {
+    type: "live_patch";
+    message: PhxLivePatchIncoming;
+} | {
+    type: "phx_leave";
+    message: PhxIncomingMessage<{}>;
+};
+
+/**
+ * The `LiveViewComponentManager` is responsible for managing the lifecycle of a `LiveViewComponent`
+ * including routing of events, the state (i.e. context), and other aspects of the component.  The
+ * `MessageRouter` is responsible for routing messages to the appropriate `LiveViewComponentManager`
+ * based on the topic on the incoming socket messages.
+ */
+declare class LiveViewManager {
+    private connectionId;
+    private joinId;
+    private url;
+    private wsAdaptor;
+    private subscriptionIds;
+    private liveView;
+    private intervals;
+    private session;
+    private pubSub;
+    private serDe;
+    private flashAdaptor;
+    private csrfToken?;
+    private _infoQueue;
+    private _events;
+    private _pageTitle;
+    private pageTitleChanged;
+    private socket;
+    private liveViewRootTemplate?;
+    private hasWarnedAboutMissingCsrfToken;
+    private _parts;
+    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
+    /**
+     * The `phx_join` event is the initial connection between the client and the server and initializes the
+     * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
+     * future client interactions.
+     * @param message a `PhxJoinIncoming` message
+     */
+    handleJoin(message: PhxJoinIncoming): Promise<void>;
+    /**
+     * Every event other than `phx_join` that is received over the connected WebSocket are passed into this
+     * method and then dispatched the appropriate handler based on the message type.
+     * @param phxMessage
+     */
+    handleSubscriptions(phxMessage: PhxMessage): Promise<void>;
+    /**
+     * Any message of type `event` is passed into this method and then handled based on the payload details of
+     * the message including: click, form, key, blur/focus, and hook events.
+     * @param message a `PhxEventIncoming` message with a different payload depending on the event type
+     */
+    onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload | PhxLVClearFlashPayload>): Promise<void>;
+    /**
+     * Handle's `live_patch` message from clients which denote change to the `LiveView`'s path parameters
+     * and kicks off a re-render after calling `handleParams`.
+     * @param message a `PhxLivePatchIncoming` message
+     */
+    onLivePatch(message: PhxLivePatchIncoming): Promise<void>;
+    /**
+     * Responds to `heartbeat` message from clients by sending a `heartbeat` message back.
+     * @param message
+     */
+    onHeartbeat(message: PhxHeartbeatIncoming): void;
+    /**
+     * Handles `phx_leave` messages from clients which are sent when the client is leaves the `LiveView`
+     * that is currently being rendered by navigating to a different `LiveView` or closing the browser.
+     * @param message
+     */
+    onPhxLeave(message: PhxIncomingMessage<{}>): Promise<void>;
+    /**
+     * Clean up any resources used by the `LiveView` and `LiveComponent` instances.
+     */
+    private shutdown;
+    /**
+     * Repeats a function every `intervalMillis` milliseconds until `shutdown` is called.
+     * @param fn
+     * @param intervalMillis
+     */
+    private repeat;
+    /**
+     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
+     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to update the browser's
+     * path and query string params.
+     * @param path the path to patch
+     * @param params the URLSearchParams to that will drive the new path query string params
+     * @param replaceHistory whether to replace the current browser history entry or not
+     */
+    private onPushPatch;
+    /**
+     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
+     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to redirect the browser to a
+     * new path and query string params.
+     * @param path the path to redirect to
+     * @param params the URLSearchParams to that will be added to the redirect
+     * @param replaceHistory whether to replace the current browser history entry or not
+     */
+    private onPushRedirect;
+    /**
+     * Common logic that handles both `live_patch` and `live_redirect` messages from clients.
+     * @param navEvent the type of navigation event to handle: either `live_patch` or `live_redirect`
+     * @param path the path to patch or to be redirected to
+     * @param params the URLSearchParams to that will be added to the path
+     * @param replaceHistory whether to replace the current browser history entry or not
+     */
+    private onPushNavigation;
+    /**
+     * Queues `AnyLivePushEvent` messages to be sent to the client on the subsequent `sendPhxReply` call.
+     * @param pushEvent the `AnyLivePushEvent` to queue
+     */
+    private onPushEvent;
+    /**
+     * Queues `AnyLiveInfo` messages to be sent to the LiveView until after the current lifecycle
+     * @param info the AnyLiveInfo to queue
+     */
+    private onSendInfo;
+    /**
+     * Handles sending `LiveInfo` events back to the `LiveView`'s `handleInfo` method.
+     * @param info the `LiveInfo` event to dispatch to the `LiveView`
+     */
+    private sendInternal;
+    private set pageTitle(value);
+    private putFlash;
+    private clearFlash;
+    private maybeSendInfos;
+    private maybeWrapInRootTemplate;
+    private maybeAddPageTitleToParts;
+    private maybeAddEventsToParts;
+    private sendPhxReply;
+    /**
+     * Records for stateful components where key is a compound id `${componentName}_${componentId}`
+     * and value is a tuple of [context, renderedPartsTree, changed, myself].
+     *
+     */
+    private statefulLiveComponents;
+    private statefuleLiveComponentInstances;
+    /**
+     * Collect all the LiveComponents first, group by their component type (e.g. instanceof),
+     * then run single preload for all components of same type. then run rest of lifecycle
+     * based on stateless or stateful.
+     * @param liveComponent
+     * @param params
+     */
+    private liveComponentProcessor;
+    private maybeAddLiveComponentsToParts;
+    defaultLiveViewMeta(): LiveViewMeta;
+    private newLiveViewSocket;
+    private newLiveComponentSocket;
+}
+
 declare type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
 /**
  * Main interface to update state, interact, manage, message, and otherwise
@@ -112,7 +372,7 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      */
     subscribe(topic: string): Promise<void>;
 }
-declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos extends LiveInfo = AnyLiveInfo> implements LiveViewSocket<TContext> {
+declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> implements LiveViewSocket<TContext, TInfo> {
     abstract connected: boolean;
     abstract id: string;
     private _context;
@@ -126,7 +386,7 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
     pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     putFlash(key: string, value: string): Promise<void>;
     repeat(fn: () => void, intervalMillis: number): void;
-    sendInfo(info: Info<TInfos>): void;
+    sendInfo(info: Info<TInfo>): void;
     subscribe(topic: string): Promise<void>;
     updateContextWithTempAssigns(): void;
 }
@@ -168,6 +428,22 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     repeat(fn: () => void, intervalMillis: number): void;
     sendInfo(info: Info<TInfo>): void;
     subscribe(topic: string): Promise<void>;
+}
+
+/**
+ * LiveViewJS Router for web socket messages.  Determines if a message is a `LiveView` message and routes it
+ * to the correct LiveView based on the meta data.
+ */
+declare class WsMessageRouter {
+    private router;
+    private pubSub;
+    private flashAdaptor;
+    private serDe;
+    private liveViewRootTemplate?;
+    constructor(router: LiveViewRouter, pubSub: PubSub, flashAdaptor: FlashAdaptor, serDe: SerDe, liveViewRootTemplate?: LiveViewRootRenderer);
+    onMessage(connectionId: string, messageString: string, wsAdaptor: WsAdaptor): Promise<void>;
+    onClose(connectionId: string): Promise<void>;
+    private onPhxJoin;
 }
 
 declare function deepDiff(oldParts: Parts, newParts: Parts): Parts;
@@ -326,12 +602,13 @@ interface LiveView<TContext extends LiveContext = AnyLiveContext, TEvents extend
      * @param context the current state for this `LiveView`
      * @param meta the `LiveViewMeta` for this `LiveView`
      */
-    render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+    render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
+declare type Event<TEvent extends LiveEvent> = TEvent["type"];
 /**
  * Meta data and helpers for `LiveView`s.
  */
-interface LiveViewMeta {
+interface LiveViewMeta<TEvents extends LiveEvent = AnyLiveEvent> {
     /**
      * The cross site request forgery token from the `LiveView` html page which
      * should be used to validate form submissions.
@@ -344,7 +621,7 @@ interface LiveViewMeta {
     /**
      * A helper for loading `LiveComponent`s within a `LiveView`.
      */
-    live_component<TContext extends LiveContext>(liveComponent: LiveComponent<TContext>, params?: Partial<TContext & {
+    live_component<TContext extends LiveContext = AnyLiveContext>(liveComponent: LiveComponent<TContext, any, any>, params?: Partial<TContext & {
         id: string | number;
     }>): Promise<LiveViewTemplate>;
 }
@@ -356,18 +633,22 @@ declare abstract class BaseLiveView<TContext extends LiveContext = AnyLiveContex
     handleEvent(event: TEvents, socket: LiveViewSocket<TContext, TInfos>): void;
     handleInfo(info: TInfos, socket: LiveViewSocket<TContext, TInfos>): void;
     handleParams(url: URL, socket: LiveViewSocket<TContext, TInfos>): void;
-    abstract render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+    abstract render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
+/**
+ * Set of methods that can (or must be) defined when using the `createLiveView` factory function.
+ * @see `createLiveView`, `LiveView`, `BaseLiveView`
+ */
 interface BaseLiveViewParams<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo> {
     mount?: (socket: LiveViewSocket<TContext, TInfos>, session: Partial<SessionData>, params: LiveViewMountParams) => void | Promise<void>;
     handleParams?: (url: URL, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
     handleEvent?: (event: TEvents, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
     handleInfo?: (info: TInfos, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
-    render(context: TContext, meta: LiveViewMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+    render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 /**
  * Functional `LiveView` factory method for generating a `LiveView`.
- * @param params the methods available to implement for a `LiveView`
+ * @param params the BaseLiveViewParams with methods available to implement for a `LiveView`
  * @returns the `LiveView` instance
  */
 declare const createLiveView: <TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo>(params: BaseLiveViewParams<TContext, TEvents, TInfos>) => LiveView<TContext, TEvents, TInfos>;
@@ -402,7 +683,7 @@ interface LiveComponentMeta {
  * state of the component.  Also provides a method for sending messages
  * internally to the parent `LiveView`.
  */
-interface LiveComponentSocket<TContext extends LiveContext = AnyLiveContext> {
+interface LiveComponentSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> {
     /**
      * The id of the parent `LiveView`
      */
@@ -419,7 +700,7 @@ interface LiveComponentSocket<TContext extends LiveContext = AnyLiveContext> {
     /**
      * helper method to send messages to the parent `LiveView` via the `handleInfo`
      */
-    send(info: AnyLiveInfo): void;
+    sendParentInfo(info: Info<TInfo>): void;
     /**
      * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
      */
@@ -429,26 +710,26 @@ interface LiveComponentSocket<TContext extends LiveContext = AnyLiveContext> {
      */
     pushEvent(pushEvent: AnyLivePushEvent): void;
 }
-declare abstract class BaseLiveComponentSocket<TContext extends LiveContext = AnyLiveContext> implements LiveComponentSocket<TContext> {
+declare abstract class BaseLiveComponentSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> implements LiveComponentSocket<TContext, TInfo> {
     readonly id: string;
     private _context;
     constructor(id: string, context: TContext);
     get context(): TContext;
     assign(context: Partial<TContext>): void;
-    send(info: AnyLiveInfo): void;
+    sendParentInfo(info: Info<TInfo>): void;
     pushEvent(pushEvent: AnyLivePushEvent): void;
     abstract connected: boolean;
 }
-declare class HttpLiveComponentSocket<TContext extends LiveContext = AnyLiveContext> extends BaseLiveComponentSocket<TContext> {
+declare class HttpLiveComponentSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> extends BaseLiveComponentSocket<TContext, TInfo> {
     readonly connected: boolean;
     constructor(id: string, context: TContext);
 }
-declare class WsLiveComponentSocket<TContext extends LiveContext = AnyLiveContext> extends BaseLiveComponentSocket<TContext> {
+declare class WsLiveComponentSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> extends BaseLiveComponentSocket<TContext, TInfo> {
     readonly connected: boolean;
-    private sendCallback;
+    private sendParentCallback;
     private pushEventCallback;
-    constructor(id: string, context: TContext, sendCallback: (info: AnyLiveInfo) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void);
-    send(info: AnyLiveInfo): void;
+    constructor(id: string, context: TContext, sendParentCallback: (info: Info<TInfo>) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void);
+    sendParentInfo(info: Info<TInfo>): void;
     pushEvent(pushEvent: AnyLivePushEvent): void;
 }
 /**
@@ -467,7 +748,7 @@ declare class WsLiveComponentSocket<TContext extends LiveContext = AnyLiveContex
  * To make a `LiveComponent` stateful, you must pass an `id` to the `live_component` helper in the
  * `LiveView` template.
  */
-interface LiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent> {
+interface LiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfo extends LiveInfo = AnyLiveInfo> {
     /**
      * `preload` is useful when multiple `LiveComponent`s of the same type are loaded
      * within the same `LiveView` and you want to preload data for all of them in batch.
@@ -476,26 +757,29 @@ interface LiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents e
      */
     /**
      * Mounts the `LiveComponent`'s stateful context.  This is called only once
-     * for stateful `LiveComponent` and always for a stateless `LiveComponent`.
+     * for stateful `LiveComponent` and every render for a stateless `LiveComponent`.
      * This is called prior to `update` and `render`.
      *
      * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
      */
-    mount(socket: LiveComponentSocket<TContext>): void | Promise<void>;
+    mount(socket: LiveComponentSocket<TContext, TInfo>): void | Promise<void>;
     /**
      * Allows the `LiveComponent` to update its stateful context.  This is called
      * prior to `render` for both stateful and stateless `LiveComponent`s.  This is a
      * good place to add additional business logic to the `LiveComponent` if you
-     * need to manipulate or otherwise update the context.
+     * need to change the context (e.g. derive data from or transform) of the `LiveComponentSocket`.
      *
-     * You only need to return a `Partial<Context>` with the changes you want to
-     * make to the context.  The `LiveView` will merge the changes with the existing
-     * state (context).
-     *
-     * @param context the current state for this `LiveComponent`
      * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
      */
-    update(socket: LiveComponentSocket<TContext>): void | Promise<void>;
+    update(socket: LiveComponentSocket<TContext, TInfo>): void | Promise<void>;
+    /**
+     * Optional method that handles events from the `LiveComponent` initiated by the end-user. Only
+     * called for "stateful" `LiveComponent`s (i.e. `LiveComponent`s with an "id" in their context).
+     * In other words, only components with an `id` attribute in their "LiveContext" can handleEvents.
+     * @param event the `TEvents` received from client
+     * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
+     */
+    handleEvent?: (event: TEvents, socket: LiveComponentSocket<TContext, TInfo>) => void | Promise<void>;
     /**
      * Renders the `LiveComponent` by returning a `LiveViewTemplate`.  Each time a
      * a `LiveComponent` receives new data, it will be re-rendered.
@@ -503,12 +787,6 @@ interface LiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents e
      * @param meta a `LiveComponentMeta` with additional meta data for this `LiveComponent`
      */
     render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
-    /**
-     * Handles events from the `LiveView` initiated by the end-user
-     * @param event a `LiveEvent` received from client
-     * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
-     */
-    handleEvent(event: TEvents, socket: LiveComponentSocket<TContext>): void | Promise<void>;
 }
 /**
  * Abstract base class implementation of a `LiveComponent` which can be used by
@@ -518,17 +796,33 @@ interface LiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents e
  * a stateful `LiveComponent` you most likely want to implement at least `mount` and
  * perhaps `update` as well.  See `LiveComponent` for more details.
  */
-declare abstract class BaseLiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent> implements LiveComponent<TContext, TEvents> {
-    mount(socket: LiveComponentSocket<TContext>): void;
-    update(socket: LiveComponentSocket<TContext>): void;
-    handleEvent(event: TEvents, socket: LiveComponentSocket<TContext>): void;
+declare abstract class BaseLiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfo extends LiveInfo = AnyLiveInfo> implements LiveComponent<TContext, TEvents, TInfo> {
+    mount(socket: LiveComponentSocket<TContext, TInfo>): void;
+    update(socket: LiveComponentSocket<TContext, TInfo>): void;
     abstract render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
+/**
+ * Shape of parameters passed to the `createLiveComponent` factory function to create a `LiveComponent`.
+ * @see `createLiveComponent`
+ * @see `LiveComponent`
+ */
+interface CreateLiveComponentParams<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo> {
+    mount?: (socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
+    update?: (socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
+    handleEvent?: (event: TEvents, socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
+    render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+}
+/**
+ * Creates a `LiveComponent` given the `CreateLiveComponentParams` and shape of the `LiveContext`, `LiveEvent` and `LiveInfo`.
+ * @param params the `CreateLiveComponentParams` with optionally implemented methods for each
+ * @returns the `LiveComponent` instance
+ */
+declare const createLiveComponent: <TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo>(params: CreateLiveComponentParams<TContext, TEvents, TInfos>) => LiveComponent<TContext, TEvents, TInfos>;
 
 interface LiveViewTemplate extends HtmlSafeString {
 }
 interface LiveViewRouter {
-    [key: string]: LiveView;
+    [key: string]: LiveView<AnyLiveContext, AnyLiveEvent, AnyLiveInfo>;
 }
 
 /**
@@ -596,23 +890,6 @@ interface HttpRequestAdaptor {
 declare const handleHttpLiveView: (idGenerator: IdGenerator, csrfGenerator: CsrfGenerator, liveView: LiveView, adaptor: HttpRequestAdaptor, pageRenderer: LiveViewPageRenderer, pageTitleDefaults?: PageTitleDefaults | undefined, rootRenderer?: LiveViewRootRenderer | undefined) => Promise<string | undefined>;
 
 /**
- * Adaptor that enables sending websocket messages over a concrete websocket implementation.
- */
-interface WsAdaptor {
-    send(message: string, errorHandler?: (err: any) => void): void;
-}
-
-/**
- * Adatpor that implements adding flash to the session data and removing flash from the session data.
- */
-interface FlashAdaptor {
-    peekFlash(session: SessionData, key: string): Promise<string | undefined>;
-    popFlash(session: SessionData, key: string): Promise<string | undefined>;
-    putFlash(session: SessionData, key: string, value: string): Promise<void>;
-    clearFlash(session: SessionData, key: string): Promise<void>;
-}
-
-/**
  * Naive implementation of flash adaptor that uses "__flash" property on session data
  * to implement flash.
  */
@@ -678,264 +955,6 @@ declare type LiveViewChangesetFactory<T> = (existing: Partial<T>, newAttrs: Part
  */
 declare const newChangesetFactory: <T>(schema: SomeZodObject) => LiveViewChangesetFactory<T>;
 
-declare type SubscriberFunction<T> = (data: T) => void;
-declare type SubscriberId = string;
-interface Subscriber {
-    subscribe<T extends {
-        type: string;
-    }>(topic: string, subscriber: SubscriberFunction<T>): Promise<SubscriberId>;
-    unsubscribe(topic: string, subscriberId: SubscriberId): Promise<void>;
-}
-interface Publisher {
-    broadcast<T extends {
-        type: string;
-    }>(topic: string, data: T): Promise<void>;
-}
-interface PubSub extends Subscriber, Publisher {
-}
-
-declare class SingleProcessPubSub implements Subscriber, Publisher {
-    private subscribers;
-    subscribe<T>(topic: string, subscriber: SubscriberFunction<T>): Promise<string>;
-    broadcast<T>(topic: string, data: T): Promise<void>;
-    unsubscribe(topic: string, subscriberId: string): Promise<void>;
-}
-
-declare type PhxIncomingMessage<Payload> = [
-    joinRef: string | null,
-    messageRef: string | null,
-    topic: "phoenix" | string,
-    event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
-    payload: Payload
-];
-declare type PhxFlash = {
-    info?: string;
-    error?: string;
-};
-interface PhxJoinPayload {
-    params: LiveViewMountParams;
-    session: string;
-    static: string;
-    url?: string;
-    redirect?: string;
-    flash?: PhxFlash | null;
-}
-declare type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
-declare type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
-declare type PhxLivePatchIncoming = PhxIncomingMessage<{
-    url: string;
-}>;
-interface PhxEventPayload<TType extends string, TValue, TEvent extends string = string> {
-    type: TType;
-    event: TEvent;
-    value: TValue;
-    cid?: number;
-}
-interface PhxEventUploads {
-    uploads: {
-        [key: string]: unknown;
-    };
-}
-declare type PhxClickPayload = PhxEventPayload<"click", {
-    value: string;
-}>;
-declare type PhxLVClearFlashPayload = PhxEventPayload<"click", {
-    key: string;
-}, "lv:clear-flash">;
-declare type PhxFormPayload = PhxEventPayload<"form", {
-    value: string;
-}> & PhxEventUploads;
-declare type PhxKeyUpPayload = PhxEventPayload<"keyup", {
-    key: string;
-    value?: string;
-}>;
-declare type PhxKeyDownPayload = PhxEventPayload<"keydown", {
-    key: string;
-    value?: string;
-}>;
-declare type PhxFocusPayload = PhxEventPayload<"focus", {
-    value: string;
-}>;
-declare type PhxBlurPayload = PhxEventPayload<"blur", {
-    value: string;
-}>;
-declare type PhxHookPayload = PhxEventPayload<"hook", Record<string, string>>;
-declare type PhxMessage = {
-    type: "phx_join";
-    message: PhxJoinIncoming;
-} | {
-    type: "heartbeat";
-    message: PhxHeartbeatIncoming;
-} | {
-    type: "event";
-    message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyDownPayload | PhxKeyUpPayload | PhxFocusPayload | PhxBlurPayload | PhxHookPayload>;
-} | {
-    type: "live_patch";
-    message: PhxLivePatchIncoming;
-} | {
-    type: "phx_leave";
-    message: PhxIncomingMessage<{}>;
-};
-
-/**
- * The `LiveViewComponentManager` is responsible for managing the lifecycle of a `LiveViewComponent`
- * including routing of events, the state (i.e. context), and other aspects of the component.  The
- * `MessageRouter` is responsible for routing messages to the appropriate `LiveViewComponentManager`
- * based on the topic on the incoming socket messages.
- */
-declare class LiveViewManager {
-    private connectionId;
-    private joinId;
-    private url;
-    private wsAdaptor;
-    private subscriptionIds;
-    private liveView;
-    private intervals;
-    private session;
-    private pubSub;
-    private serDe;
-    private flashAdaptor;
-    private csrfToken?;
-    private _infoQueue;
-    private _events;
-    private _pageTitle;
-    private pageTitleChanged;
-    private socket;
-    private liveViewRootTemplate?;
-    private hasWarnedAboutMissingCsrfToken;
-    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
-    /**
-     * The `phx_join` event is the initial connection between the client and the server and initializes the
-     * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
-     * future client interactions.
-     * @param message a `PhxJoinIncoming` message
-     */
-    handleJoin(message: PhxJoinIncoming): Promise<void>;
-    /**
-     * Every event other than `phx_join` that is received over the connected WebSocket are passed into this
-     * method and then dispatched the appropriate handler based on the message type.
-     * @param phxMessage
-     */
-    handleSubscriptions(phxMessage: PhxMessage): Promise<void>;
-    /**
-     * Any message of type `event` is passed into this method and then handled based on the payload details of
-     * the message including: click, form, key, blur/focus, and hook events.
-     * @param message a `PhxEventIncoming` message with a different payload depending on the event type
-     */
-    onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload | PhxLVClearFlashPayload>): Promise<void>;
-    /**
-     * Handle's `live_patch` message from clients which denote change to the `LiveView`'s path parameters
-     * and kicks off a re-render after calling `handleParams`.
-     * @param message a `PhxLivePatchIncoming` message
-     */
-    onLivePatch(message: PhxLivePatchIncoming): Promise<void>;
-    /**
-     * Responds to `heartbeat` message from clients by sending a `heartbeat` message back.
-     * @param message
-     */
-    onHeartbeat(message: PhxHeartbeatIncoming): void;
-    /**
-     * Handles `phx_leave` messages from clients which are sent when the client is leaves the `LiveView`
-     * that is currently being rendered by navigating to a different `LiveView` or closing the browser.
-     * @param message
-     */
-    onPhxLeave(message: PhxIncomingMessage<{}>): Promise<void>;
-    /**
-     * Clean up any resources used by the `LiveView` and `LiveComponent` instances.
-     */
-    private shutdown;
-    /**
-     * Repeats a function every `intervalMillis` milliseconds until `shutdown` is called.
-     * @param fn
-     * @param intervalMillis
-     */
-    private repeat;
-    /**
-     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
-     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to update the browser's
-     * path and query string params.
-     * @param path the path to patch
-     * @param params the URLSearchParams to that will drive the new path query string params
-     * @param replaceHistory whether to replace the current browser history entry or not
-     */
-    private onPushPatch;
-    /**
-     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
-     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to redirect the browser to a
-     * new path and query string params.
-     * @param path the path to redirect to
-     * @param params the URLSearchParams to that will be added to the redirect
-     * @param replaceHistory whether to replace the current browser history entry or not
-     */
-    private onPushRedirect;
-    /**
-     * Common logic that handles both `live_patch` and `live_redirect` messages from clients.
-     * @param navEvent the type of navigation event to handle: either `live_patch` or `live_redirect`
-     * @param path the path to patch or to be redirected to
-     * @param params the URLSearchParams to that will be added to the path
-     * @param replaceHistory whether to replace the current browser history entry or not
-     */
-    private onPushNavigation;
-    /**
-     * Queues `AnyLivePushEvent` messages to be sent to the client on the subsequent `sendPhxReply` call.
-     * @param pushEvent the `AnyLivePushEvent` to queue
-     */
-    private onPushEvent;
-    /**
-     * Queues `AnyLiveInfo` messages to be sent to the LiveView until after the current lifecycle
-     * @param info the AnyLiveInfo to queue
-     */
-    private onSendInfo;
-    /**
-     * Handles sending `LiveInfo` events back to the `LiveView`'s `handleInfo` method.
-     * @param info the `LiveInfo` event to dispatch to the `LiveView`
-     */
-    private sendInternal;
-    private set pageTitle(value);
-    private putFlash;
-    private clearFlash;
-    private maybeSendInfos;
-    private maybeWrapInRootTemplate;
-    private maybeAddPageTitleToParts;
-    private maybeAddEventsToParts;
-    private sendPhxReply;
-    /**
-     * Records for stateful components where key is a compound id `${componentName}_${componentId}`
-     * and value is a tuple of [context, renderedPartsTree, changed, myself].
-     *
-     */
-    private statefulLiveComponents;
-    private statefuleLiveComponentInstances;
-    /**
-     * Collect all the LiveComponents first, group by their component type (e.g. instanceof),
-     * then run single preload for all components of same type. then run rest of lifecycle
-     * based on stateless or stateful.
-     * @param liveComponent
-     * @param params
-     */
-    private liveComponentProcessor;
-    private maybeAddLiveComponentsToParts;
-    defaultLiveViewMeta(): LiveViewMeta;
-    private newLiveViewSocket;
-    private newLiveComponentSocket;
-}
-
-/**
- * LiveViewJS Router for web socket messages.  Determines if a message is a `LiveView` message and routes it
- * to the correct LiveView based on the meta data.
- */
-declare class WsMessageRouter {
-    private router;
-    private pubSub;
-    private flashAdaptor;
-    private serDe;
-    private liveViewRootTemplate?;
-    constructor(router: LiveViewRouter, pubSub: PubSub, flashAdaptor: FlashAdaptor, serDe: SerDe, liveViewRootTemplate?: LiveViewRootRenderer);
-    onMessage(connectionId: string, messageString: string, wsAdaptor: WsAdaptor): Promise<void>;
-    onClose(connectionId: string): Promise<void>;
-    private onPhxJoin;
-}
-
 /**
  * Interface for LiveViewServerAdaptors to implement for a given runtime and web server.
  * e.g. NodeExpressServerAdaptor or DenoOakServerAdaptor
@@ -945,4 +964,4 @@ interface LiveViewServerAdaptor<TMiddlewareInterface> {
     wsRouter(): WsMessageRouter;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveView, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, Event, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
