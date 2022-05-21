@@ -682,7 +682,7 @@ describe("test liveview manager", () => {
       new SessionFlashAdaptor(),
       async (session, innerContent) => {
         const flashAdaptor = new SessionFlashAdaptor();
-        const peek = await flashAdaptor.peekFlash(session, "info");
+        const _ = await flashAdaptor.peekFlash(session, "info");
         const infoFlash = (await flashAdaptor.popFlash(session, "info")) || "";
         return html`
           <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info">${infoFlash}</p>
@@ -717,7 +717,7 @@ describe("test liveview manager", () => {
     expect(spyClearFlash).toHaveBeenCalledTimes(0);
     // has flash of "flash test"
     expect(lastMessage!).toMatchInlineSnapshot(
-      `"[\\"4\\",\\"6\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{\\"0\\":\\"flash test\\",\\"1\\":{\\"s\\":[\\"<div>test</div>\\"]},\\"s\\":[\\"\\\\n          <p class=\\\\\\"alert alert-info\\\\\\" role=\\\\\\"alert\\\\\\" phx-click=\\\\\\"lv:clear-flash\\\\\\" phx-value-key=\\\\\\"info\\\\\\">\\",\\"</p>\\\\n          <div>\\",\\"</div>\\\\n        \\"]}},\\"status\\":\\"ok\\"}]"`
+      `"[\\"4\\",\\"6\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{\\"0\\":\\"flash test\\"}},\\"status\\":\\"ok\\"}]"`
     );
 
     // clear flash by sending "lv:clear-flash" event
@@ -738,7 +738,7 @@ describe("test liveview manager", () => {
     expect(spyClearFlash).toHaveBeenCalledTimes(1);
     // flash should be cleared again
     expect(lastMessage!).toMatchInlineSnapshot(
-      `"[\\"4\\",\\"6\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{\\"0\\":\\"\\",\\"1\\":{\\"s\\":[\\"<div>test</div>\\"]},\\"s\\":[\\"\\\\n          <p class=\\\\\\"alert alert-info\\\\\\" role=\\\\\\"alert\\\\\\" phx-click=\\\\\\"lv:clear-flash\\\\\\" phx-value-key=\\\\\\"info\\\\\\">\\",\\"</p>\\\\n          <div>\\",\\"</div>\\\\n        \\"]}},\\"status\\":\\"ok\\"}]"`
+      `"[\\"4\\",\\"6\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{\\"0\\":\\"\\"}},\\"status\\":\\"ok\\"}]"`
     );
 
     (cm as any).shutdown();
