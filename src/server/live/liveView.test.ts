@@ -21,6 +21,7 @@ import { SingleProcessPubSub } from "../pubsub";
 import { PhxJoinIncoming } from "../socket/types";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
 import { SessionFlashAdaptor, WsAdaptor } from "../adaptor";
+import { LiveViewRouter } from "./types";
 
 describe("test LiveViewMeta", () => {
   it("test meta", async () => {
@@ -140,6 +141,10 @@ const TestFuncLiveView = createLiveView<
     return html` <div>${await live_component(new TestLiveComponent(), { id: 1, foo: `called:${eventCount}` })}</div> `;
   },
 });
+
+const router: LiveViewRouter = {
+  "/foo": TestFuncLiveView,
+};
 
 // Matt P's suggestions
 // interface BaseLiveViewParams<

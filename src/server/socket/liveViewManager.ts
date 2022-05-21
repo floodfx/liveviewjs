@@ -314,6 +314,7 @@ export class LiveViewManager {
       };
 
       // if the payload has a cid, then this event's target is a `LiveComponent`
+      // NOTE: only "stateful" components can handle events!
       if (cid !== undefined) {
         // handleLiveComponentEvent()
         // console.log("LiveComponent event", type, cid, event, value);
@@ -327,20 +328,25 @@ export class LiveViewManager {
             // socker for this live component instance
             const lcSocket = this.newLiveComponentSocket(structuredClone(oldContext) as LiveContext);
 
-            // run handleEvent and render then update context for cid
-            await liveComponent.handleEvent(eventObj, lcSocket);
+            // check for handleEvent and call it if it exists
+            if (!liveComponent.handleEvent) {
+              console.error(`LiveComponent ${componentClass} with id ${cid} has not implemented handleEvent() method`);
+            } else {
+              // run handleEvent and render then update context for cid
+              await liveComponent.handleEvent(eventObj, lcSocket);
+            }
 
             // TODO optimization - if contexts are the same, don't re-render
             const newView = await liveComponent.render(lcSocket.context, { myself: cid });
 
-            //
-            const newParts = deepDiff(oldParts, newView.partsTree());
+            //diff the new view with the old view
+            const newParts = deepDiff(oldParts, newView.partsTree(true));
             const changed = Object.keys(newParts).length > 0;
             // store state for subsequent loads
             this.statefulLiveComponents[compoundId] = {
               ...statefulComponent,
               context: lcSocket.context,
-              parts: newView.partsTree(),
+              parts: newView.partsTree(true),
               changed,
             };
 
@@ -403,13 +409,13 @@ export class LiveViewManager {
         // if (!ctxEqual || event === "lv:clear-flash") {
         // get old render tree and new render tree for diffing
         // TODO - check forceRerender here and skip diffing if not needed
-        // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+        const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
         let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
         // wrap in root template if there is one
         view = await this.maybeWrapInRootTemplate(view);
         diff = view.partsTree();
-        // diff = deepDiff(oldView.partsTree(), view.partsTree());
+        diff = deepDiff(oldView.partsTree(true), view.partsTree(true));
         // }
 
         diff = this.maybeAddPageTitleToParts(diff);
@@ -452,15 +458,15 @@ export class LiveViewManager {
       await this.liveView.handleParams(url, this.socket);
 
       // get old render tree and new render tree for diffing
-      // const oldView = await this.component.render(previousContext, this.defaultLiveViewMeta());
+      const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
       let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
       // wrap in root template if there is one
       view = await this.maybeWrapInRootTemplate(view);
 
       // TODO - why is the diff causing live_patch to fail??
-      // const diff = deepDiff(oldView.partsTree(), view.partsTree());
-      let diff = this.maybeAddPageTitleToParts(view.partsTree(false));
+      let diff = deepDiff(oldView.partsTree(true), view.partsTree(true));
+      diff = this.maybeAddPageTitleToParts(diff);
       diff = this.maybeAddEventsToParts(diff);
 
       const replyPayload = {
@@ -647,7 +653,7 @@ export class LiveViewManager {
         // wrap in root template if there is one
         view = await this.maybeWrapInRootTemplate(view);
 
-        diff = deepDiff(oldView.partsTree(), view.partsTree());
+        diff = deepDiff(oldView.partsTree(true), view.partsTree(true));
 
         diff = this.maybeAddPageTitleToParts(diff);
         diff = this.maybeAddEventsToParts(diff);
@@ -755,7 +761,7 @@ export class LiveViewManager {
    */
   private statefulLiveComponents: Record<string, StatefulLiveComponentData<unknown>> = {};
 
-  private statefuleLiveComponentInstances: Record<string, LiveComponent> = {};
+  private statefuleLiveComponentInstances: Record<string, LiveComponent<AnyLiveContext, AnyLiveInfo>> = {};
 
   /**
    * Collect all the LiveComponents first, group by their component type (e.g. instanceof),
@@ -781,14 +787,20 @@ export class LiveViewManager {
 
     // cache single instance of each component type
     if (!this.statefuleLiveComponentInstances[componentClass]) {
-      this.statefuleLiveComponentInstances[componentClass] = liveComponent;
+      this.statefuleLiveComponentInstances[componentClass] = liveComponent as LiveComponent<
+        AnyLiveContext,
+        AnyLiveEvent,
+        AnyLiveInfo
+      >;
     }
 
     // setup variables
     let context = structuredClone(params);
     let newView: LiveViewTemplate;
 
-    // determine if component is stateful or stateless
+    // LiveComponents with "id" attributes are "stateful" which means the state of
+    // context is maintained across multiple renders and it can "handleEvents"
+    // Note: the id is how events are routed back to the `LiveComponent`
     if (id !== undefined) {
       // stateful `LiveComponent`
       // lifecycle is:
@@ -839,14 +851,14 @@ export class LiveViewManager {
         await liveComponent.update(lcSocket);
         newView = await liveComponent.render(lcSocket.context, { myself });
 
-        const newParts = deepDiff(oldParts, newView.partsTree());
+        const newParts = deepDiff(oldParts, newView.partsTree(true));
         const changed = Object.keys(newParts).length > 0;
 
         // store state for subsequent loads
         this.statefulLiveComponents[compoundId] = {
           ...liveComponentData,
           context: lcSocket.context,
-          parts: newView.partsTree(),
+          parts: newView.partsTree(true),
           changed,
         };
       }
@@ -854,12 +866,17 @@ export class LiveViewManager {
       // tree (under the `c` key) we return an empty template here
       return new HtmlSafeString([String(myself)], [], true);
     } else {
-      // stateless `LiveComponent`
+      // No "id" so this is a "stateless" `LiveComponent`
       // lifecycle is:
       // 1. preload
       // 2. mount
       // 3. update
       // 4. render
+
+      // warn user if `handleEvent` is implemented that it cannot be called
+      if (liveComponent.handleEvent) {
+        console.warn(`${liveComponent} has a handleEvent method but no "id" attribute so cannot be called.`);
+      }
 
       // setup socket
       const lcSocket = this.newLiveComponentSocket(structuredClone(context) as TContext);
@@ -897,6 +914,8 @@ export class LiveViewManager {
         c: changedParts,
       };
     }
+    //TODO if no stateful components changed, remove cid references from parts tree?
+
     return parts;
   }
 
@@ -907,8 +926,7 @@ export class LiveViewManager {
         liveComponent: LiveComponent<Context>,
         params?: Partial<Context & { id: string | number }>
       ): Promise<LiveViewTemplate> => {
-        const render = await this.liveComponentProcessor<Context>(liveComponent, params);
-        return render;
+        return await this.liveComponentProcessor<Context>(liveComponent, params);
       },
       url: this.url,
     } as LiveViewMeta;

@@ -165,7 +165,7 @@ export interface LiveComponent<
 
   /**
    * Mounts the `LiveComponent`'s stateful context.  This is called only once
-   * for stateful `LiveComponent` and always for a stateless `LiveComponent`.
+   * for stateful `LiveComponent` and every render for a stateless `LiveComponent`.
    * This is called prior to `update` and `render`.
    *
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
@@ -176,16 +176,20 @@ export interface LiveComponent<
    * Allows the `LiveComponent` to update its stateful context.  This is called
    * prior to `render` for both stateful and stateless `LiveComponent`s.  This is a
    * good place to add additional business logic to the `LiveComponent` if you
-   * need to manipulate or otherwise update the context.
+   * need to change the context (e.g. derive data from or transform) of the `LiveComponentSocket`.
    *
-   * You only need to return a `Partial<Context>` with the changes you want to
-   * make to the context.  The `LiveView` will merge the changes with the existing
-   * state (context).
-   *
-   * @param context the current state for this `LiveComponent`
    * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
    */
   update(socket: LiveComponentSocket<TContext, TInfo>): void | Promise<void>;
+
+  /**
+   * Optional method that handles events from the `LiveComponent` initiated by the end-user. Only
+   * called for "stateful" `LiveComponent`s (i.e. `LiveComponent`s with an "id" in their context).
+   * In other words, only components with an `id` attribute in their "LiveContext" can handleEvents.
+   * @param event the `TEvents` received from client
+   * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
+   */
+  handleEvent?: (event: TEvents, socket: LiveComponentSocket<TContext, TInfo>) => void | Promise<void>;
 
   /**
    * Renders the `LiveComponent` by returning a `LiveViewTemplate`.  Each time a
@@ -194,13 +198,6 @@ export interface LiveComponent<
    * @param meta a `LiveComponentMeta` with additional meta data for this `LiveComponent`
    */
   render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
-
-  /**
-   * Handles events from the `LiveView` initiated by the end-user
-   * @param event a `LiveEvent` received from client
-   * @param socket a `LiveComponentSocket` with the context for this `LiveComponent`
-   */
-  handleEvent(event: TEvents, socket: LiveComponentSocket<TContext>): void | Promise<void>;
 }
 
 /**
@@ -229,9 +226,44 @@ export abstract class BaseLiveComponent<
     // no-op
   }
 
-  handleEvent(event: TEvents, socket: LiveComponentSocket<TContext, TInfo>) {
-    // no-op
-  }
+  // leave handleEvent unimplemented by default
 
   abstract render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
+
+/**
+ * Shape of parameters passed to the `createLiveComponent` factory function to create a `LiveComponent`.
+ * @see `createLiveComponent`
+ * @see `LiveComponent`
+ */
+interface CreateLiveComponentParams<
+  TContext extends LiveContext = AnyLiveContext,
+  TEvents extends LiveEvent = AnyLiveEvent,
+  TInfos extends LiveInfo = AnyLiveInfo
+> {
+  mount?: (socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
+  update?: (socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
+  handleEvent?: (event: TEvents, socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
+  render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+}
+
+/**
+ * Creates a `LiveComponent` given the `CreateLiveComponentParams` and shape of the `LiveContext`, `LiveEvent` and `LiveInfo`.
+ * @param params the `CreateLiveComponentParams` with optionally implemented methods for each
+ * @returns the `LiveComponent` instance
+ */
+export const createLiveComponent = <
+  TContext extends LiveContext = AnyLiveContext,
+  TEvents extends LiveEvent = AnyLiveEvent,
+  TInfos extends LiveInfo = AnyLiveInfo
+>(
+  params: CreateLiveComponentParams<TContext, TEvents, TInfos>
+): LiveComponent<TContext, TEvents, TInfos> => {
+  return {
+    // default imps
+    mount: () => {},
+    update: () => {},
+    // replace default impls with params if they are defined
+    ...params,
+  };
+};
