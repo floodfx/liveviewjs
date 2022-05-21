@@ -1,153 +1,127 @@
-import { BaseLiveComponent, html, LiveComponentMeta, LiveComponentSocket, LiveViewTemplate, safe } from "liveviewjs";
+import { BaseLiveComponent, createLiveComponent, html, LiveComponentSocket, safe } from "liveviewjs";
+import { FootprintData, FootprintUpdateInfo } from ".";
 import {
-  gridElectricityCarbonFootprint,
+  gridElectricityCO2Tons,
   GridElectricityType,
-  gridElectricityTypes,
-  spaceHeatingCarbonFootprint,
+  gridElectricityTypeLabels,
+  gridElectricityTypeValues,
+  spaceHeatingCO2Tons,
   SpaceHeatingType,
-  spaceHeatingTypes,
-  vehicleCarbonFootprint,
+  spaceHeatingTypeLabels,
+  spaceHeatingTypeValues,
+  vehicleCO2Tons,
   VehicleType,
-  vehicleTypes,
+  vehicleTypeLabels,
+  vehicleTypeValues,
 } from "./data";
 
-interface Context {
-  vehicle1: VehicleType;
-  vehicle2: VehicleType;
-  spaceHeating: SpaceHeatingType;
-  gridElectricity: GridElectricityType;
-  carbonFootprintTons: number;
-}
+/**
+ * "Stateful" `LiveComponet` that calculates the tons of CO2 based on the type of
+ * vehicle, space heating and grid electricity.
+ *
+ * "Stateful" means that it has an "id" attribute which allows it to keep track of it's local state
+ * and receive events from user input and handle them in "handleEvent" function.
+ *
+ */
+export const calcLiveComponent = createLiveComponent<
+  {
+    vehicle: VehicleType;
+    spaceHeating: SpaceHeatingType;
+    gridElectricity: GridElectricityType;
+  },
+  {
+    type: "calculate";
+    vehicle: VehicleType;
+    spaceHeating: SpaceHeatingType;
+    gridElectricity: GridElectricityType;
+  },
+  FootprintUpdateInfo
+>({
+  handleEvent(event, socket) {
+    const { vehicle, spaceHeating, gridElectricity } = event;
+    // calculate footprint
+    const vTons = vehicleCO2Tons[vehicle];
+    const shTons = spaceHeatingCO2Tons[spaceHeating];
+    const geTons = gridElectricityCO2Tons[gridElectricity];
 
-type Events = {
-  type: "calculate";
-  vehicle1: VehicleType;
-  vehicle2: VehicleType;
-  spaceHeating: SpaceHeatingType;
-  gridElectricity: GridElectricityType;
-};
+    const footprintData: FootprintData = {
+      vehicleCO2Tons: vTons,
+      spaceHeatingCO2Tons: shTons,
+      gridElectricityCO2Tons: geTons,
+    };
 
-export class CalculatorLiveComponent extends BaseLiveComponent<Context, Events> {
-  render(context: Context, meta: LiveComponentMeta): LiveViewTemplate {
-    const { vehicle1, vehicle2, spaceHeating, gridElectricity, carbonFootprintTons } = context;
+    // send parent the new state
+    socket.sendParentInfo({ type: "update", footprintData });
+
+    // update context
+    socket.assign({
+      vehicle,
+      spaceHeating,
+      gridElectricity,
+    });
+  },
+
+  render: (context, meta) => {
+    const { vehicle, spaceHeating, gridElectricity } = context;
     const { myself } = meta;
     return html`
       <div id="calc_${myself}">
         <form phx-change="calculate" phx-target="${myself}">
           <div>
-            <label>Vehicle 1</label>
-            <select name="vehicle1" autocomplete="off">
-              <option>Select</option>
-              ${Object.keys(vehicleTypes).map(
-                (vehicle) =>
-                  html`<option value="${vehicle}" ${vehicle1 === vehicle ? "selected" : ""}>
-                    ${vehicleTypes[vehicle as VehicleType]}
-                  </option>`
-              )}
-            </select>
-          </div>
-
-          <div>
-            <label>Vehicle 2</label>
-            <select name="vehicle2" autocomplete="off">
-              <option>Select</option>
-              ${Object.keys(vehicleTypes).map(
-                (vehicle) =>
-                  html`<option value="${vehicle}" ${vehicle2 === vehicle ? "selected" : ""}>
-                    ${vehicleTypes[vehicle as VehicleType]}
-                  </option>`
-              )}
+            <label>Vehicle</label>
+            <select name="vehicle" autocomplete="off">
+              <option disabled>Select</option>
+              ${vehicleTypeValues.map((type) => {
+                const selected = type === vehicle ? "selected" : "";
+                return html`<option value="${type}" ${selected}>${vehicleTypeLabels[type]}</option>`;
+              })}
             </select>
           </div>
 
           <div>
             <label>Space Heating</label>
             <select name="spaceHeating" autocomplete="off">
-              <option>Select</option>
-              ${Object.keys(spaceHeatingTypes).map(
-                (sh) =>
-                  html`<option value="${sh}" ${spaceHeating === sh ? "selected" : ""}>
-                    ${spaceHeatingTypes[sh as SpaceHeatingType]}
-                  </option>`
-              )}
+              <option disabled>Select</option>
+              ${spaceHeatingTypeValues.map((type) => {
+                const selected = type === spaceHeating ? "selected" : "";
+                return html`<option value="${type}" ${selected}>${spaceHeatingTypeLabels[type]}</option>`;
+              })}
             </select>
           </div>
 
           <div>
             <label>Grid Electricity Source</label>
-            <select name="gridElectricity" autocomplete="off" value="${gridElectricity}">
-              <option>Select</option>
-              ${Object.keys(gridElectricityTypes).map(
-                (grid) =>
-                  html`<option value="${grid}" ${gridElectricity === grid ? "selected" : ""}>
-                    ${gridElectricityTypes[grid as GridElectricityType]}
-                  </option>`
-              )}
+            <select name="gridElectricity" autocomplete="off">
+              <option disabled>Select</option>
+              ${gridElectricityTypeValues.map((type) => {
+                const selected = type === gridElectricity ? "selected" : "";
+                return html`<option value="${type}" ${selected}>${gridElectricityTypeLabels[type]}</option>`;
+              })}
             </select>
           </div>
         </form>
-
-        ${carbonFootprintTons > 0 ? this.renderFootprint(carbonFootprintTons, myself || 0, context) : ""}
       </div>
     `;
-  }
+  },
+});
 
-  renderFootprint(carbonFootprintTons: number, myself: number, context: Context) {
+/**
+ * "Stateless" `LiveComponent` which shows the carbon footprint based on the
+ * provided data.
+ */
+export const footprintLiveComponent = createLiveComponent<{ data?: FootprintData }>({
+  render: (context) => {
+    const { data } = context;
+    if (!data) {
+      return html``;
+    }
+    const { vehicleCO2Tons, spaceHeatingCO2Tons, gridElectricityCO2Tons } = data;
+    const totalCO2Tons = vehicleCO2Tons + spaceHeatingCO2Tons + gridElectricityCO2Tons;
     return html`
-      <div id="footprint_${myself}">
+      <div>
         <h3>Carbon Footprint 👣</h3>
-        <p>${carbonFootprintTons} tons of CO2</p>
-        ${this.renderChart("footprint_chart", context)}
+        <p>${totalCO2Tons} tons of CO2</p>
       </div>
     `;
-  }
-
-  renderChart(id: string, context: Context) {
-    const data = this.getChartData(id, context).data;
-    return html`
-      <span id="${id}-init-data" style="display: none;">${safe(JSON.stringify(data))}</span>
-      <canvas id="${id}" phx-hook="Chart"></canvas>
-    `;
-  }
-
-  handleEvent(event: Events, socket: LiveComponentSocket<Context>) {
-    // calculate footprint
-    const { vehicle1, vehicle2, spaceHeating, gridElectricity } = event;
-    const v1Tons = vehicleCarbonFootprint[vehicle1 as VehicleType];
-    const v2Tons = vehicleCarbonFootprint[vehicle2 as VehicleType];
-    const shTons = spaceHeatingCarbonFootprint[spaceHeating as SpaceHeatingType];
-    const geTons = gridElectricityCarbonFootprint[gridElectricity as GridElectricityType];
-
-    const carbonFootprintData = [v1Tons, v2Tons, shTons, geTons];
-
-    socket.pushEvent({ type: "updateChart", carbonFootprintData });
-
-    socket.assign({
-      vehicle1,
-      vehicle2,
-      spaceHeating,
-      gridElectricity,
-      carbonFootprintTons: carbonFootprintData.reduce((a, b) => a + b, 0),
-    });
-  }
-
-  getChartData(id: string, context: Context) {
-    return {
-      chartId: id,
-      data: {
-        labels: ["Vehicle 1", "Vehicle 2", "Space heating", "Electricity (non-heat)"],
-        datasets: [
-          {
-            data: [
-              vehicleCarbonFootprint[context.vehicle1],
-              vehicleCarbonFootprint[context.vehicle2],
-              spaceHeatingCarbonFootprint[context.spaceHeating],
-              gridElectricityCarbonFootprint[context.gridElectricity],
-            ],
-            backgroundColor: ["#4E0606", "#4E2706", "#06284E", "#DBD111"],
-          },
-        ],
-      },
-    };
-  }
-}
+  },
+});
