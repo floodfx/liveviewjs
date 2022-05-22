@@ -1,16 +1,4 @@
-import {
-  BaseLiveView,
-  createLiveView,
-  html,
-  HtmlSafeString,
-  LiveViewMeta,
-  LiveViewMountParams,
-  LiveViewSocket,
-  LiveViewTemplate,
-  live_patch,
-  safe,
-  SessionData,
-} from "liveviewjs";
+import { createLiveView, html, HtmlSafeString, live_patch, safe } from "liveviewjs";
 import { fetchXkcd, isValidXkcd, randomXkcdNum, XkcdData } from "./data";
 
 /**
@@ -18,6 +6,7 @@ import { fetchXkcd, isValidXkcd, randomXkcdNum, XkcdData } from "./data";
  * random comics from the same site.
  */
 export const xkcdLiveView = createLiveView({
+  // initialize the context
   mount: async (socket) => {
     // get today's comic from xkcd
     const comic = await fetchXkcd();
@@ -30,6 +19,7 @@ export const xkcdLiveView = createLiveView({
     });
   },
 
+  // handle url data and update the context accordingly
   handleParams: async (url, socket) => {
     // num should be between 1 and max
     const { max } = socket.context;
@@ -42,6 +32,7 @@ export const xkcdLiveView = createLiveView({
     });
   },
 
+  // update the LiveView based on the context
   render: (context: { comic: XkcdData; num?: number; max: number }, meta) => {
     const { comic, num, max } = context;
     return html`
@@ -61,6 +52,7 @@ export const xkcdLiveView = createLiveView({
   },
 });
 
+// helper to create a button to go to the previous comic using `live_patch`
 function prev(max: number, num?: number): HtmlSafeString {
   if (num && isValidXkcd(num - 1, max)) {
     return live_patch(html`<button>Previous</button>`, {
@@ -70,6 +62,7 @@ function prev(max: number, num?: number): HtmlSafeString {
   return html``;
 }
 
+// helper to create a button to go to the next comic using `live_patch`
 function next(max: number, num?: number): HtmlSafeString {
   if (num && isValidXkcd(num + 1, max)) {
     return live_patch(html`<button>Next</button>`, {
@@ -79,6 +72,7 @@ function next(max: number, num?: number): HtmlSafeString {
   return html``;
 }
 
+// helper to create a button to go to a randoms comic using `live_patch`
 function random(max: number): HtmlSafeString | undefined {
   const num = randomXkcdNum(max);
   return live_patch(html`<button>Random</button>`, {
@@ -86,6 +80,7 @@ function random(max: number): HtmlSafeString | undefined {
   });
 }
 
+// helper to create a button to go to today's comic using `live_patch`
 function today(): HtmlSafeString | undefined {
   return live_patch(html`<button>Today</button>`, {
     to: { path: "/asyncfetch" },
