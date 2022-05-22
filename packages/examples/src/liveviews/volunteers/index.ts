@@ -63,7 +63,6 @@ export const volunteerLiveView = createLiveView({
   },
 
   handleInfo: (info, socket) => {
-    // console.log("received", info, socket.id);
     const { volunteer } = info;
     socket.assign({
       volunteers: [volunteer],

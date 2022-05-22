@@ -27,7 +27,6 @@ export const autocompleteLiveView = createLiveView<Context, Events, Infos>({
     socket.assign({ zip, city, stores, matches, loading });
   },
   handleEvent: (event, socket) => {
-    // console.log("event:", event, params, socket);
     let city: string;
     switch (event.type) {
       case "zip-search":

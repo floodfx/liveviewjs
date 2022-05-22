@@ -26,7 +26,6 @@ export const decarbLiveView = createLiveView<
 
   // receive the info from the stateful child LiveComponent
   handleInfo: (info, socket) => {
-    console.log("info", info);
     const { footprintData } = info;
     socket.assign({ footprintData });
   },
@@ -34,7 +33,6 @@ export const decarbLiveView = createLiveView<
     // use the live_component helper to render a `LiveComponent`
     const { footprintData } = context;
     const { live_component } = meta;
-    console.log("footprintData", footprintData);
     return html`
       <h1>Decarbonize Calculator</h1>
       <div>
