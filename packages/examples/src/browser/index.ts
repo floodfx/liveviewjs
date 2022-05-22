@@ -26,29 +26,6 @@ let Hooks = {
       });
     },
   },
-  /**
-   * This hook allows you to load a pie chart with the given data and update based on
-   * events and data sent back from the server.
-   */
-  Chart: {
-    mounted() {
-      // load initial data
-      const initData = document.getElementById(`${this.el.id}-init-data`).innerText;
-      const data = JSON.parse(initData);
-
-      this.chart = new Chart(this.el.id, {
-        type: "pie",
-        data,
-      });
-
-      // listen for "updateChart" events from server
-      this.handleEvent("updateChart", (res) => {
-        // update data
-        this.chart.data.datasets[0].data = res.data.datasets[0].data;
-        this.chart.update();
-      });
-    },
-  },
 };
 
 const url = "/live";

@@ -1102,7 +1102,6 @@ const autocompleteLiveView = liveviewjs.createLiveView({
         socket.assign({ zip, city, stores, matches, loading });
     },
     handleEvent: (event, socket) => {
-        // console.log("event:", event, params, socket);
         let city;
         switch (event.type) {
             case "zip-search":
@@ -1357,7 +1356,6 @@ const decarbLiveView = liveviewjs.createLiveView({
     },
     // receive the info from the stateful child LiveComponent
     handleInfo: (info, socket) => {
-        console.log("info", info);
         const { footprintData } = info;
         socket.assign({ footprintData });
     },
@@ -1365,7 +1363,6 @@ const decarbLiveView = liveviewjs.createLiveView({
         // use the live_component helper to render a `LiveComponent`
         const { footprintData } = context;
         const { live_component } = meta;
-        console.log("footprintData", footprintData);
         return liveviewjs.html `
       <h1>Decarbonize Calculator</h1>
       <div>
@@ -2279,7 +2276,6 @@ const volunteerLiveView = liveviewjs.createLiveView({
         }
     },
     handleInfo: (info, socket) => {
-        // console.log("received", info, socket.id);
         const { volunteer } = info;
         socket.assign({
             volunteers: [volunteer],
