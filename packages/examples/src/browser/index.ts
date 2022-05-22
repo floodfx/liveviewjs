@@ -1,12 +1,10 @@
-import { Chart, registerables } from "chart.js";
 import NProgress from "nprogress";
 import { Socket } from "phoenix";
 import "phoenix_html";
 import { LiveSocket } from "phoenix_live_view";
-Chart.register(...registerables); // make sure to register all charts
-
 /**
  * Example of a customized LiveView client javascript which is loaded into the browser.
+ * See: @liveviewjs/browser pacage (packages/browser)
  */
 
 /**
