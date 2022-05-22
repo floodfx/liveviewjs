@@ -2,6 +2,7 @@ import { BaseLiveView, createLiveView, html, LiveViewMountParams, LiveViewSocket
 import { searchByCity, searchByZip, Store } from "../liveSearch/data";
 import { suggest } from "./data";
 
+// The internal state of the LiveView
 interface Context {
   zip: string;
   city: string;
@@ -10,14 +11,21 @@ interface Context {
   loading: boolean;
 }
 
+// Events initiated by user
 type Events =
   | { type: "zip-search"; zip: string }
   | { type: "city-search"; city: string }
   | { type: "suggest-city"; city: string };
 
+// Internal events initialized by the LiveView
 type Infos = { type: "run_zip_search"; zip: string } | { type: "run_city_search"; city: string };
 
+/**
+ * Example of a search box with autocomplete.  Start typing a city in the search box
+ * and a list of matching cities wiill appear.
+ */
 export const autocompleteLiveView = createLiveView<Context, Events, Infos>({
+  // initialize the context
   mount: (socket) => {
     const zip = "";
     const city = "";
@@ -26,6 +34,8 @@ export const autocompleteLiveView = createLiveView<Context, Events, Infos>({
     const loading = false;
     socket.assign({ zip, city, stores, matches, loading });
   },
+
+  // handle events from the user
   handleEvent: (event, socket) => {
     let city: string;
     switch (event.type) {
@@ -46,6 +56,8 @@ export const autocompleteLiveView = createLiveView<Context, Events, Infos>({
         break;
     }
   },
+
+  // handle internal events
   handleInfo: (info, socket) => {
     const { type } = info;
     let stores: Store[] = [];
@@ -69,7 +81,9 @@ export const autocompleteLiveView = createLiveView<Context, Events, Infos>({
         });
     }
   },
-  render: (context, meta) => {
+
+  // update the LiveView based on the context
+  render: (context) => {
     return html`
       <h1>Find a Store</h1>
       <div id="search">
@@ -116,6 +130,7 @@ export const autocompleteLiveView = createLiveView<Context, Events, Infos>({
   },
 });
 
+// helper function that shows the store status
 function renderStoreStatus(store: Store) {
   if (store.open) {
     return html`<span class="open">🔓 Open</span>`;
@@ -124,6 +139,7 @@ function renderStoreStatus(store: Store) {
   }
 }
 
+// helper function that renders a store details
 function renderStore(store: Store) {
   return html` <li>
     <div class="first-line">
@@ -137,14 +153,7 @@ function renderStore(store: Store) {
   </li>`;
 }
 
+// helper function that renders a loading message
 function renderLoading() {
-  return html` <div class="loader">Loading...</div> `;
-}
-
-function calculateLicenseAmount(seats: number): number {
-  if (seats <= 5) {
-    return seats * 20;
-  } else {
-    return 100 + (seats - 5) * 15;
-  }
+  return html`<div class="loader">Loading...</div>`;
 }
