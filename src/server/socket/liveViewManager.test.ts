@@ -698,7 +698,7 @@ describe("test liveview manager", () => {
     expect(spyPutFlash).toHaveBeenCalledTimes(0);
     expect(spyClearFlash).toHaveBeenCalledTimes(0);
     expect(lastMessage!).toMatchInlineSnapshot(
-      `"[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":\\"\\",\\"1\\":{\\"s\\":[\\"<div>test</div>\\"]},\\"s\\":[\\"\\\\n          <p class=\\\\\\"alert alert-info\\\\\\" role=\\\\\\"alert\\\\\\" phx-click=\\\\\\"lv:clear-flash\\\\\\" phx-value-key=\\\\\\"info\\\\\\">\\",\\"</p>\\\\n          <div>\\",\\"</div>\\\\n        \\"]}},\\"status\\":\\"ok\\"}]"`
+      `"[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":\\"\\",\\"1\\":\\"<div>test</div>\\",\\"s\\":[\\"\\\\n          <p class=\\\\\\"alert alert-info\\\\\\" role=\\\\\\"alert\\\\\\" phx-click=\\\\\\"lv:clear-flash\\\\\\" phx-value-key=\\\\\\"info\\\\\\">\\",\\"</p>\\\\n          <div>\\",\\"</div>\\\\n        \\"]}},\\"status\\":\\"ok\\"}]"`
     );
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
