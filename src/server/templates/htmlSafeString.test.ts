@@ -140,7 +140,7 @@ describe("test escapeHtml", () => {
     expect(loading.partsTree()).toEqual({
       "0": "80204",
       "1": "readonly",
-      "2": { s: [`${renderLoading().statics}`] },
+      "2": renderLoading().statics[0],
       "3": "",
       s: [...loading.statics],
     } as any);
@@ -157,25 +157,25 @@ describe("test escapeHtml", () => {
         d: [
           [
             stores[3].name,
-            { s: renderStoreStatusWithoutEmojis(stores[3]).statics },
+            renderStoreStatusWithoutEmojis(stores[3]).statics[0],
             stores[3].street,
             stores[3].phone_number,
           ],
           [
             stores[4].name,
-            { s: renderStoreStatusWithoutEmojis(stores[4]).statics },
+            renderStoreStatusWithoutEmojis(stores[4]).statics[0],
             stores[4].street,
             stores[4].phone_number,
           ],
           [
             stores[5].name,
-            { s: renderStoreStatusWithoutEmojis(stores[5]).statics },
+            renderStoreStatusWithoutEmojis(stores[5]).statics[0],
             stores[5].street,
             stores[5].phone_number,
           ],
           [
             stores[6].name,
-            { s: renderStoreStatusWithoutEmojis(stores[6]).statics },
+            renderStoreStatusWithoutEmojis(stores[6]).statics[0],
             stores[6].street,
             stores[6].phone_number,
           ],
@@ -206,7 +206,7 @@ describe("test escapeHtml", () => {
         d: [
           [
             escapehtml(xssStore.name),
-            { s: renderStoreStatusWithoutEmojis(xssStore).statics },
+            renderStoreStatusWithoutEmojis(xssStore).statics[0],
             escapehtml(xssStore.street),
             xssStore.phone_number,
           ],

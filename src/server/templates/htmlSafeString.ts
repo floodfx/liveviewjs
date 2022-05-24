@@ -101,11 +101,25 @@ export class HtmlSafeString {
           };
         } else {
           // this isn't a live component, so we need to contine walking
-          // the tree including to the children
-          return {
-            ...acc,
-            [`${index}`]: cur.partsTree(), // recurse to children
-          };
+          // the parts tree for this HtmlSafeString including to the children
+
+          // check if parts only has a single static string
+          // and if so make that the parts string instead of using
+          // the full parts tree
+          if (cur.statics.length === 1) {
+            return {
+              ...acc,
+              [`${index}`]: cur.statics[0],
+            };
+          }
+          // if not just a single static then we need to include the
+          // full parts tree
+          else {
+            return {
+              ...acc,
+              [`${index}`]: cur.partsTree(), // recurse to children
+            };
+          }
         }
       } else if (Array.isArray(cur)) {
         // if array is empty just return empty string
