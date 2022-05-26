@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { SerDe } from "../adaptor";
 import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
@@ -186,7 +187,7 @@ export class LiveViewManager {
       // step 2.5: store parts for later diffing after rootTemplate is applied
       this._parts = view.partsTree(true);
       // step 3: add any `LiveComponent` renderings to the parts tree
-      let rendered = this.maybeAddLiveComponentsToParts(view.partsTree());
+      let rendered = this.maybeAddLiveComponentsToParts(this._parts);
       // step 4: if set, add the page title to the parts tree
       rendered = this.maybeAddPageTitleToParts(rendered);
       // step 5: if added, add events to the parts tree
@@ -651,42 +652,33 @@ export class LiveViewManager {
    */
   private async sendInternal(info: AnyLiveInfo): Promise<void> {
     try {
-      // console.log("sendInternal", event, this.socketId);
-
-      const previousContext = this.socket.context;
       this.liveView.handleInfo(info, this.socket);
 
-      const ctxEqual = false; //areContextsValueEqual(previousContext, this.socket.context);
-      let diff: Parts = {};
-      // only calc diff if contexts have changed
-      if (!ctxEqual) {
-        // get old render tree and new render tree for diffing
-        // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
-        let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+      // render the new view
+      let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
-        // wrap in root template if there is one
-        view = await this.maybeWrapInRootTemplate(view);
+      // wrap in root template if there is one
+      view = await this.maybeWrapInRootTemplate(view);
 
-        // diff the render trees and save the new parts
-        const newParts = view.partsTree(true);
-        diff = deepDiff(this._parts!, newParts);
-        this._parts = newParts;
+      // diff the render trees and save the new parts
+      const newParts = view.partsTree(true);
+      let diff = deepDiff(this._parts!, newParts);
+      this._parts = newParts;
 
-        diff = this.maybeAddPageTitleToParts(diff);
-        diff = this.maybeAddEventsToParts(diff);
+      diff = this.maybeAddPageTitleToParts(diff);
+      diff = this.maybeAddEventsToParts(diff);
 
-        const reply: PhxDiffReply = [
-          null, // no join reference
-          null, // no message reference
-          this.joinId,
-          "diff",
-          diff,
-        ];
-        this.sendPhxReply(reply);
+      const reply: PhxDiffReply = [
+        null, // no join reference
+        null, // no message reference
+        this.joinId,
+        "diff",
+        diff,
+      ];
+      this.sendPhxReply(reply);
 
-        // remove temp data
-        this.socket.updateContextWithTempAssigns();
-      }
+      // remove temp data
+      this.socket.updateContextWithTempAssigns();
     } catch (e) {
       /* istanbul ignore next */
       console.error(`Error sending internal info`, e);
@@ -800,7 +792,11 @@ export class LiveViewManager {
 
     const { id } = params;
     delete params.id; // remove id from param to use as default context
-    const componentClass = liveComponent.constructor.name;
+
+    // concat all the component methods and hash them to get a unique component "class"
+    let code = liveComponent.mount.toString() + liveComponent.update.toString() + liveComponent.render.toString();
+    code = liveComponent.handleEvent ? code + liveComponent.handleEvent.toString() : code;
+    const componentClass = crypto.createHash("sha256").update(code).digest("hex");
 
     // cache single instance of each component type
     if (!this.statefuleLiveComponentInstances[componentClass]) {

@@ -114,7 +114,7 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext,
   private _tempContext: Partial<TContext> = {}; // values to reset the context to post render cycle
 
   get context(): TContext {
-    return this._context || ({} as TContext);
+    return structuredClone(this._context || ({} as TContext));
   }
 
   assign(context: Partial<TContext>) {
