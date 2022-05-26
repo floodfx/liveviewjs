@@ -296,6 +296,7 @@ function deepDiff(oldParts, newParts) {
             else if (keyCountsDiffer) {
                 // if key counts are different for new and old parts keep the new statics
                 diff[key] = newStatics;
+                // } else if (diffArrays2<string>(oldStatics, newStatics).length > 0) {
             }
             else if (diffArrays(oldStatics, newStatics)) {
                 // if length is the same but contents are different then keep new statics
@@ -304,6 +305,13 @@ function deepDiff(oldParts, newParts) {
         }
         else if (key === "d") {
             // key of 'd' should always be an array of Parts
+            // TODO for elements of 'd' we should check if the parts are the same
+            // if they are not the same for each element, we only send an array with the
+            // changed elements.
+            // const da = diffArrays2<Parts>(oldParts[key] as Array<Parts>, newParts[key] as Array<Parts>);
+            // if (da.length > 0) {
+            //   diff[key] = da;
+            // }
             if (diffArrays(oldParts[key], newParts[key])) {
                 diff[key] = newParts[key];
             }
@@ -381,6 +389,48 @@ function diffArrays(oldArray, newArray) {
         }
     }
     return false;
+}
+function diffArrays2(oldArray, newArray) {
+    const diffArray = [];
+    // if newArray is shorter than oldArray, then we just use the newArray
+    if (oldArray.length > newArray.length) {
+        return newArray;
+    }
+    // if newArray is longer than oldArray or same lengh, then we iterate over newArray
+    // and compare each element up to oldArray.length
+    const lenghtDiff = newArray.length - oldArray.length;
+    for (let i = 0; i < oldArray.length; i++) {
+        const newPart = newArray[i];
+        const oldPart = oldArray[i];
+        // parts are both strings
+        if (typeof newPart === "string" && typeof oldPart === "string") {
+            if (newPart !== oldPart) {
+                diffArray.push(newPart);
+            }
+        }
+        // parts are both objects (potentially arrays or not)
+        else if (typeof newPart === "object" && typeof oldPart === "object") {
+            // both parts are arrays
+            if (Array.isArray(newPart) && Array.isArray(oldPart)) {
+                const res = diffArrays2(oldPart, newPart);
+                if (res.length > 0) {
+                    diffArray.push(...res);
+                }
+            }
+            // both parts are Parts
+            else if (!Array.isArray(newPart) && !Array.isArray(oldPart)) {
+                const maybeDiff = deepDiff(oldPart, newPart);
+                // keep if any keys are different
+                if (Object.keys(maybeDiff).length > 0) {
+                    diffArray.push(maybeDiff);
+                }
+            }
+        }
+    }
+    if (lenghtDiff > 0) {
+        diffArray.push(...newArray.slice(oldArray.length));
+    }
+    return diffArray;
 }
 
 // Initially copied from https://github.com/Janpot/escape-html-template-tag/blob/master/src/index.ts
@@ -461,11 +511,24 @@ class HtmlSafeString {
                 }
                 else {
                     // this isn't a live component, so we need to contine walking
-                    // the tree including to the children
-                    return {
-                        ...acc,
-                        [`${index}`]: cur.partsTree(), // recurse to children
-                    };
+                    // the parts tree for this HtmlSafeString including to the children
+                    // check if parts only has a single static string
+                    // and if so make that the parts string instead of using
+                    // the full parts tree
+                    if (cur.statics.length === 1) {
+                        return {
+                            ...acc,
+                            [`${index}`]: cur.statics[0],
+                        };
+                    }
+                    // if not just a single static then we need to include the
+                    // full parts tree
+                    else {
+                        return {
+                            ...acc,
+                            [`${index}`]: cur.partsTree(), // recurse to children
+                        };
+                    }
                 }
             }
             else if (Array.isArray(cur)) {
@@ -965,7 +1028,7 @@ class LiveViewManager {
             // step 2.5: store parts for later diffing after rootTemplate is applied
             this._parts = view.partsTree(true);
             // step 3: add any `LiveComponent` renderings to the parts tree
-            let rendered = this.maybeAddLiveComponentsToParts(view.partsTree());
+            let rendered = this.maybeAddLiveComponentsToParts(this._parts);
             // step 4: if set, add the page title to the parts tree
             rendered = this.maybeAddPageTitleToParts(rendered);
             // step 5: if added, add events to the parts tree
@@ -1364,7 +1427,7 @@ class LiveViewManager {
     async sendInternal(info) {
         try {
             // console.log("sendInternal", event, this.socketId);
-            const previousContext = this.socket.context;
+            // const previousContext = this.socket.context;
             this.liveView.handleInfo(info, this.socket);
             const ctxEqual = false; //areContextsValueEqual(previousContext, this.socket.context);
             let diff = {};
@@ -1493,7 +1556,11 @@ class LiveViewManager {
         // been processed...  Perhaps `Parts` can track this?
         const { id } = params;
         delete params.id; // remove id from param to use as default context
-        const componentClass = liveComponent.constructor.name;
+        // concat all the component methods and hash them to get a unique id
+        let code = liveComponent.mount.toString() + liveComponent.update.toString() + liveComponent.render.toString();
+        code = liveComponent.handleEvent ? code + liveComponent.handleEvent.toString() : code;
+        const componentClass = crypto.createHash("sha256").update(code).digest("hex");
+        console.log("componentClass", componentClass);
         // cache single instance of each component type
         if (!this.statefuleLiveComponentInstances[componentClass]) {
             this.statefuleLiveComponentInstances[componentClass] = liveComponent;
@@ -1519,6 +1586,7 @@ class LiveViewManager {
             //   1. handleEvent
             //   2. render
             const compoundId = `${componentClass}_${id}`;
+            console.log("compoundId", compoundId);
             let myself;
             if (this.statefulLiveComponents[compoundId] === undefined) {
                 myself = Object.keys(this.statefulLiveComponents).length + 1;
@@ -1717,4 +1785,4 @@ class WsMessageRouter {
     }
 }
 
-export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SessionFlashAdaptor, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SessionFlashAdaptor, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };

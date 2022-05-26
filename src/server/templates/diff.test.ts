@@ -1,5 +1,5 @@
 import { html } from ".";
-import { deepDiff, diffArrays } from "./diff";
+import { deepDiff, diffArrays, diffArrays2 } from "./diff";
 import { Parts } from "./htmlSafeString";
 
 describe("test diffs", () => {
@@ -11,7 +11,7 @@ describe("test diffs", () => {
     expect(diff).toStrictEqual({});
   });
 
-  it("dynamics array ('d' key) is different so entire 'd' array is diff", () => {
+  it("dynamics array ('d' key) last two values changed new 'd' array is only last two values (that had changed)", () => {
     type FooItem = { name: string; which: "foo" | string };
     const renderFooOrBar = (item: FooItem) => html`${item.which === "foo" ? "foo" : "bar"}`;
 
@@ -195,31 +195,39 @@ describe("test diffs", () => {
   it("diffs arrays where both parts are objects but not arrays", () => {
     const oldArray = [{ 0: "a", 1: "b", s: ["1", "2", "3"] }];
     const newArray = [{ 0: "a", 1: "b", s: ["1", "2", "3"] }];
-    expect(diffArrays(oldArray, newArray)).toBeFalsy();
+    expect(diffArrays(oldArray, newArray)).toBe(false);
+    expect(diffArrays2(oldArray, newArray).length).toBe(0);
   });
 
   it("diffs arrays where both parts are objects but not arrays", () => {
     const oldArray = [{ 0: "a", 1: "b", s: ["1", "2", "3"] }];
     const newArray = [{ 0: "a", 1: "c", s: ["1", "2", "3"] }];
-    expect(diffArrays(oldArray, newArray)).toBeTruthy();
+    expect(diffArrays(oldArray, newArray)).toBe(true);
+    expect(diffArrays2(oldArray, newArray).length).toBe(1);
   });
 
   it("diffs arrays with objs with diff key lengths return true", () => {
     const oldArray = [{ 0: "a", 1: "b", s: ["1", "2", "3"] }];
     const newArray = [{ 0: "a", s: ["1", "2", "3"] }];
-    expect(diffArrays(oldArray, newArray)).toBeTruthy();
+    // TODO is this valid test?
+    expect(diffArrays(oldArray, newArray)).toBe(true);
+    expect(diffArrays2(oldArray, newArray).length).toBe(1);
   });
 
   it("diffs arrays with diff lengths return true", () => {
     const oldArray = [{ 0: "a" }, { 0: "b" }];
     const newArray = [{ 0: "a" }];
-    expect(diffArrays(oldArray, newArray)).toBeTruthy();
+    // new array is shorter, how do we represent this?
+    // send new array as a string?
+    expect(diffArrays(oldArray, newArray)).toBe(true);
+    expect(diffArrays2(oldArray, newArray).length).toBe(1);
   });
 
   it("diffs arrays with same number parts returns false", () => {
     const oldArray = [{ 0: 1 }];
     const newArray = [{ 0: 1 }];
-    expect(diffArrays(oldArray, newArray)).toBeFalsy();
+    expect(diffArrays(oldArray, newArray)).toBe(false);
+    expect(diffArrays2(oldArray, newArray).length).toBe(0);
   });
 
   it("diffs this", () => {

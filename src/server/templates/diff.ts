@@ -43,12 +43,20 @@ export function deepDiff(oldParts: Parts, newParts: Parts): Parts {
       } else if (keyCountsDiffer) {
         // if key counts are different for new and old parts keep the new statics
         diff[key] = newStatics;
+        // } else if (diffArrays2<string>(oldStatics, newStatics).length > 0) {
       } else if (diffArrays(oldStatics, newStatics)) {
         // if length is the same but contents are different then keep new statics
         diff[key] = newStatics;
       }
     } else if (key === "d") {
       // key of 'd' should always be an array of Parts
+      // TODO for elements of 'd' we should check if the parts are the same
+      // if they are not the same for each element, we only send an array with the
+      // changed elements.
+      // const da = diffArrays2<Parts>(oldParts[key] as Array<Parts>, newParts[key] as Array<Parts>);
+      // if (da.length > 0) {
+      //   diff[key] = da;
+      // }
       if (diffArrays(oldParts[key] as Array<unknown>, newParts[key] as Array<unknown>)) {
         diff[key] = newParts[key];
       }
@@ -125,4 +133,50 @@ export function diffArrays(oldArray: unknown[], newArray: unknown[]): boolean {
     }
   }
   return false;
+}
+
+export function diffArrays2<T extends Parts | string>(oldArray: T[], newArray: T[]): T[] {
+  const diffArray: any[] = [];
+
+  // if newArray is shorter than oldArray, then we just use the newArray
+  if (oldArray.length > newArray.length) {
+    return newArray;
+  }
+
+  // if newArray is longer than oldArray or same lengh, then we iterate over newArray
+  // and compare each element up to oldArray.length
+  const lenghtDiff = newArray.length - oldArray.length;
+  for (let i = 0; i < oldArray.length; i++) {
+    const newPart = newArray[i];
+    const oldPart = oldArray[i];
+    // parts are both strings
+    if (typeof newPart === "string" && typeof oldPart === "string") {
+      if (newPart !== oldPart) {
+        diffArray.push(newPart);
+      }
+    }
+    // parts are both objects (potentially arrays or not)
+    else if (typeof newPart === "object" && typeof oldPart === "object") {
+      // both parts are arrays
+      if (Array.isArray(newPart) && Array.isArray(oldPart)) {
+        const res = diffArrays2<Parts>(oldPart, newPart);
+        if (res.length > 0) {
+          diffArray.push(...res);
+        }
+      }
+      // both parts are Parts
+      else if (!Array.isArray(newPart) && !Array.isArray(oldPart)) {
+        const maybeDiff = deepDiff(oldPart as Parts, newPart as Parts);
+        // keep if any keys are different
+        if (Object.keys(maybeDiff).length > 0) {
+          diffArray.push(maybeDiff);
+        }
+      }
+    }
+  }
+
+  if (lenghtDiff > 0) {
+    diffArray.push(...newArray.slice(oldArray.length));
+  }
+  return diffArray;
 }
