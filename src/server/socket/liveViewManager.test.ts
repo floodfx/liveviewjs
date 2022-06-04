@@ -29,7 +29,7 @@ import {
   PhxLivePatchIncoming,
   PhxLVClearFlashPayload,
 } from "./types";
-import { AnyLiveContext, AnyLiveEvent, AnyLiveInfo } from "../live";
+import { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, createLiveComponent, createLiveView } from "../live";
 import { SessionData } from "../session";
 import { FlashAdaptor, SerDe, SessionFlashAdaptor, WsAdaptor } from "../adaptor";
 
@@ -512,7 +512,7 @@ describe("test liveview manager", () => {
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
   });
 
-  it("a component that sets page title", async () => {
+  it("a live view that sets page title", async () => {
     const c = new SetsPageTitleComponent();
     const cm = new LiveViewManager(
       c,
@@ -528,6 +528,53 @@ describe("test liveview manager", () => {
     expect(ws.send).toHaveBeenCalledTimes(1);
     expect(spyMaybeAddPageTitleToParts).toHaveBeenCalledTimes(1);
     expect(spyMaybeAddPageTitleToParts).toReturnWith({ s: ["<div>test</div>"], t: "new page title" });
+  });
+
+  it("a liveview with array of LiveTemplates", async () => {
+    let msg: string = "";
+    const wsa: WsAdaptor = {
+      send(message: string, errorHandler?: (error?: Error) => void) {
+        msg = message;
+      },
+    };
+    const cm = new LiveViewManager(
+      testArrayOfLiveTemplatesLV,
+      liveViewConnectionId,
+      wsa,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SessionFlashAdaptor()
+    );
+
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
+    // expect(ws.send).toHaveBeenCalledTimes(1);
+    expect(msg).toMatchInlineSnapshot(
+      `"[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":{\\"d\\":[[\\"a\\"],[\\"b\\"],[\\"c\\"]],\\"s\\":[\\"<div>LiveComponent: \\",\\"</div>\\"]},\\"s\\":[\\"\\",\\"\\"]}},\\"status\\":\\"ok\\"}]"`
+    );
+  });
+
+  it("a liveview with array of livecomponents", async () => {
+    let msg: string = "";
+    const wsa: WsAdaptor = {
+      send(message: string, errorHandler?: (error?: Error) => void) {
+        msg = message;
+      },
+    };
+    const cm = new LiveViewManager(
+      testArrayOfLCLV,
+      liveViewConnectionId,
+      wsa,
+      new JsonSerDe(),
+      new SingleProcessPubSub(),
+      new SessionFlashAdaptor()
+    );
+
+    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
+    // expect(ws.send).toHaveBeenCalledTimes(1);
+    console.log("result", msg);
+    expect(msg).toMatchInlineSnapshot(
+      `"[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":{\\"d\\":[[1],[2],[3]]},\\"s\\":[\\"<div>\\",\\"</div>\\"],\\"c\\":{\\"1\\":{\\"0\\":\\"1\\",\\"s\\":[\\"<div>LiveComponent: \\",\\"</div>\\"]},\\"2\\":{\\"0\\":\\"2\\",\\"s\\":[\\"<div>LiveComponent: \\",\\"</div>\\"]},\\"3\\":{\\"0\\":\\"3\\",\\"s\\":[\\"<div>LiveComponent: \\",\\"</div>\\"]}}}},\\"status\\":\\"ok\\"}]"`
+    );
   });
 
   it("liveview that repeats", async () => {
@@ -1122,3 +1169,24 @@ class TestWsAdaptor implements WsAdaptor {
     }
   }
 }
+
+const testLC = createLiveComponent({
+  render: (ctx, meta) => {
+    return html`<div>LiveComponent: ${meta.myself}</div>`;
+  },
+});
+
+const items = ["a", "b", "c"];
+const testArrayOfLCLV = createLiveView({
+  render: async (context: AnyLiveContext, meta: LiveViewMeta) => {
+    const { live_component } = meta;
+    return html`<div>${await Promise.all(items.map(async (i) => await live_component(testLC, { id: i })))}</div>`;
+  },
+});
+
+const testArrayOfLiveTemplatesLV = createLiveView({
+  render: async (context: AnyLiveContext, meta: LiveViewMeta) => {
+    const { live_component } = meta;
+    return html`${items.map((i) => html`<div>LiveComponent: ${i}</div>`)}`;
+  },
+});
