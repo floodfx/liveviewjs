@@ -2,12 +2,10 @@ import { escapehtml, join } from "..";
 import {
   AnyLiveContext,
   AnyLiveEvent,
-  BaseLiveComponent,
-  BaseLiveView,
+  createLiveComponent,
+  createLiveView,
   LiveComponent,
-  LiveComponentMeta,
   LiveViewMeta,
-  LiveViewTemplate,
 } from "../live";
 import { html, HtmlSafeString, safe } from "./index";
 
@@ -217,7 +215,7 @@ describe("test escapeHtml", () => {
     });
   });
 
-  it("live component parts renders", () => {
+  it("direct live component parts renders", () => {
     const liveComponentResult = new HtmlSafeString(["1"], [], true);
 
     const liveView = html`<div>${liveComponentResult}</div>`;
@@ -229,9 +227,8 @@ describe("test escapeHtml", () => {
   });
 
   it("live component parts renders", async () => {
-    const lv = new TestLiveView();
     const url = new URL("http://example.com/foo");
-    const res = await lv.render(
+    const res = await testLV.render(
       {},
       {
         csrfToken: "",
@@ -254,19 +251,47 @@ describe("test escapeHtml", () => {
     const result = html`a${"b"}`;
     expect(result.partsTree()).toEqual({ 0: "b", s: ["a", ""] });
   });
+
+  it("renders a dynamic promise", async () => {
+    const result = html`a${await Promise.resolve(html`b`)}`;
+    expect(result.partsTree()).toEqual({ 0: "b", s: ["a", ""] });
+  });
+
+  it("renders an array of dynamic promise", async () => {
+    const result = html`a${await Promise.all(["b"].map(async (i) => await Promise.resolve(html`${i}`)))}`;
+    expect(result.partsTree()).toMatchInlineSnapshot(`
+      Object {
+        "0": Object {
+          "d": Array [
+            Array [
+              "b",
+            ],
+          ],
+          "s": Array [
+            "",
+            "",
+          ],
+        },
+        "s": Array [
+          "a",
+          "",
+        ],
+      }
+    `);
+  });
 });
 
-class TestLiveComponent extends BaseLiveComponent {
-  render(context: AnyLiveContext, meta: LiveComponentMeta): LiveViewTemplate {
+const testLC = createLiveComponent({
+  render: () => {
     return html`<div>LiveComponent</div>`;
-  }
-}
+  },
+});
 
-class TestLiveView extends BaseLiveView {
-  async render(context: AnyLiveContext, meta: LiveViewMeta): Promise<LiveViewTemplate> {
-    return html`${await meta.live_component(new TestLiveComponent(), { id: 1 })}`;
-  }
-}
+const testLV = createLiveView({
+  render: async (context: AnyLiveContext, meta: LiveViewMeta) => {
+    return html`${await meta.live_component(testLC, { id: 1 })}`;
+  },
+});
 
 interface Store {
   name: string;
