@@ -156,6 +156,7 @@ declare class LiveViewManager {
     private liveViewRootTemplate?;
     private hasWarnedAboutMissingCsrfToken;
     private _parts;
+    private _cidIndex;
     constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
     /**
      * The `phx_join` event is the initial connection between the client and the server and initializes the
