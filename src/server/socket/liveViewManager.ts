@@ -109,6 +109,7 @@ export class LiveViewManager {
   private hasWarnedAboutMissingCsrfToken = false;
 
   private _parts: Parts | undefined;
+  private _cidIndex = 0;
 
   constructor(
     liveView: LiveView,
@@ -831,7 +832,7 @@ export class LiveViewManager {
       const compoundId = `${componentClass}_${id}`;
       let myself: number;
       if (this.statefulLiveComponents[compoundId] === undefined) {
-        myself = Object.keys(this.statefulLiveComponents).length + 1;
+        myself = ++this._cidIndex; // get next cid
 
         // setup socket
         const lcSocket = this.newLiveComponentSocket(structuredClone(context) as TContext);
@@ -840,6 +841,7 @@ export class LiveViewManager {
         await liveComponent.mount(lcSocket);
         await liveComponent.update(lcSocket);
         newView = await liveComponent.render(lcSocket.context, { myself });
+        console.dir(newView);
 
         // store state for subsequent loads
         this.statefulLiveComponents[compoundId] = {
