@@ -2,6 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+var util = require('util');
 var crypto = require('crypto');
 var EventEmitter = require('events');
 
@@ -135,7 +136,7 @@ class BaseLiveViewSocket {
     _context;
     _tempContext = {}; // values to reset the context to post render cycle
     get context() {
-        return this._context || {};
+        return structuredClone(this._context || {});
     }
     assign(context) {
         this._context = {
@@ -441,9 +442,6 @@ function diffArrays2(oldArray, newArray) {
 }
 
 // Initially copied from https://github.com/Janpot/escape-html-template-tag/blob/master/src/index.ts
-// This is a modified version of escape-html-template-tag that builds a tree
-// of statics and dynamics that can be used to render the template.
-//
 const ENTITIES = {
     "&": "&amp;",
     "<": "&lt;",
@@ -490,7 +488,7 @@ class HtmlSafeString {
         // statics.length should always equal dynamics.length + 1
         if (this.dynamics.length === 0) {
             if (this.statics.length !== 1) {
-                throw new Error("Expected exactly one static string for HtmlSafeString" + this);
+                throw new Error("Expected exactly one static string for HtmlSafeString" + util.inspect(this));
             }
             // TODO Optimization to just return the single static string?
             // if only statics, return just the statics
@@ -546,18 +544,79 @@ class HtmlSafeString {
                         [`${index}`]: "",
                     };
                 }
-                // not an empty array but array of HtmlSafeString
+                // Not an empty array
                 else {
-                    const currentPart = cur;
-                    // collect all the dynamic partsTrees
-                    const d = currentPart.map((c) => Object.values(c.partsTree(false)));
-                    // we know the statics are the same for all the children
-                    // so we can just take the first one
-                    const s = currentPart.map((c) => c.statics)[0];
-                    return {
-                        ...acc,
-                        [`${index}`]: { d, s },
-                    };
+                    // elements of Array are either: HtmlSafeString or Promise<HtmlSafeString>
+                    let d;
+                    let s;
+                    if (cur[0] instanceof HtmlSafeString) {
+                        // if any of the children are live components, then we assume they all are
+                        // and do not return the statics for this array
+                        let isLiveComponentArray = false;
+                        d = cur.map((c) => {
+                            if (c.isLiveComponent) {
+                                isLiveComponentArray = true;
+                                return [Number(c.statics[0])];
+                            }
+                            else {
+                                return Object.values(c.partsTree(false));
+                            }
+                        });
+                        if (isLiveComponentArray) {
+                            return {
+                                ...acc,
+                                [`${index}`]: { d },
+                            };
+                        }
+                        // not an array of LiveComponents so return the statics too
+                        s = cur.map((c) => c.statics)[0];
+                        return {
+                            ...acc,
+                            [`${index}`]: { d, s },
+                        };
+                    }
+                    else if (cur[0] instanceof Promise) {
+                        // collect all the dynamic partsTrees
+                        let isLiveComponentArray = false;
+                        d = cur.map(async (c) => {
+                            const c2 = await c;
+                            if (c2.isLiveComponent) {
+                                isLiveComponentArray = true;
+                                return [Number(c2.statics[0])];
+                            }
+                            else {
+                                return Object.values(c2.partsTree(false));
+                            }
+                        });
+                        if (isLiveComponentArray) {
+                            return {
+                                ...acc,
+                                [`${index}`]: { d },
+                            };
+                        }
+                        // not an array of LiveComponents so return the statics too
+                        // we know the statics are the same for all elements so just return the first
+                        // element of the statics array
+                        s = cur.map(async (c) => (await c).statics)[0];
+                        return {
+                            ...acc,
+                            [`${index}`]: { d, s },
+                        };
+                    }
+                    else {
+                        throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got: ", cur[0].constructor.name);
+                    }
+                    // OLD Way - Assume all elements are the same type
+                    // const currentPart = cur as HtmlSafeString[];
+                    // // collect all the dynamic partsTrees
+                    // const d = currentPart.map((c) => Object.values(c.partsTree(false)));
+                    // // we know the statics are the same for all the children
+                    // // so we can just take the first one
+                    // const s = currentPart.map((c) => c.statics)[0];
+                    // return {
+                    //   ...acc,
+                    //   [`${index}`]: { d, s },
+                    // };
                 }
             }
             else {
@@ -974,6 +1033,7 @@ class LiveViewManager {
     liveViewRootTemplate;
     hasWarnedAboutMissingCsrfToken = false;
     _parts;
+    _cidIndex = 0;
     constructor(liveView, connectionId, wsAdaptor, serDe, pubSub, flashAdaptor, liveViewRootTemplate) {
         this.liveView = liveView;
         this.connectionId = connectionId;
@@ -1433,35 +1493,27 @@ class LiveViewManager {
      */
     async sendInternal(info) {
         try {
-            // console.log("sendInternal", event, this.socketId);
-            // const previousContext = this.socket.context;
             this.liveView.handleInfo(info, this.socket);
-            const ctxEqual = false; //areContextsValueEqual(previousContext, this.socket.context);
-            let diff = {};
-            // only calc diff if contexts have changed
-            if (!ctxEqual) {
-                // get old render tree and new render tree for diffing
-                // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
-                let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
-                // wrap in root template if there is one
-                view = await this.maybeWrapInRootTemplate(view);
-                // diff the render trees and save the new parts
-                const newParts = view.partsTree(true);
-                diff = deepDiff(this._parts, newParts);
-                this._parts = newParts;
-                diff = this.maybeAddPageTitleToParts(diff);
-                diff = this.maybeAddEventsToParts(diff);
-                const reply = [
-                    null,
-                    null,
-                    this.joinId,
-                    "diff",
-                    diff,
-                ];
-                this.sendPhxReply(reply);
-                // remove temp data
-                this.socket.updateContextWithTempAssigns();
-            }
+            // render the new view
+            let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+            // wrap in root template if there is one
+            view = await this.maybeWrapInRootTemplate(view);
+            // diff the render trees and save the new parts
+            const newParts = view.partsTree(true);
+            let diff = deepDiff(this._parts, newParts);
+            this._parts = newParts;
+            diff = this.maybeAddPageTitleToParts(diff);
+            diff = this.maybeAddEventsToParts(diff);
+            const reply = [
+                null,
+                null,
+                this.joinId,
+                "diff",
+                diff,
+            ];
+            this.sendPhxReply(reply);
+            // remove temp data
+            this.socket.updateContextWithTempAssigns();
         }
         catch (e) {
             /* istanbul ignore next */
@@ -1563,11 +1615,10 @@ class LiveViewManager {
         // been processed...  Perhaps `Parts` can track this?
         const { id } = params;
         delete params.id; // remove id from param to use as default context
-        // concat all the component methods and hash them to get a unique id
+        // concat all the component methods and hash them to get a unique component "class"
         let code = liveComponent.mount.toString() + liveComponent.update.toString() + liveComponent.render.toString();
         code = liveComponent.handleEvent ? code + liveComponent.handleEvent.toString() : code;
         const componentClass = crypto__default["default"].createHash("sha256").update(code).digest("hex");
-        console.log("componentClass", componentClass);
         // cache single instance of each component type
         if (!this.statefuleLiveComponentInstances[componentClass]) {
             this.statefuleLiveComponentInstances[componentClass] = liveComponent;
@@ -1593,16 +1644,16 @@ class LiveViewManager {
             //   1. handleEvent
             //   2. render
             const compoundId = `${componentClass}_${id}`;
-            console.log("compoundId", compoundId);
             let myself;
             if (this.statefulLiveComponents[compoundId] === undefined) {
-                myself = Object.keys(this.statefulLiveComponents).length + 1;
+                myself = ++this._cidIndex; // get next cid
                 // setup socket
                 const lcSocket = this.newLiveComponentSocket(structuredClone(context));
                 // first load lifecycle mount => update => render
                 await liveComponent.mount(lcSocket);
                 await liveComponent.update(lcSocket);
                 newView = await liveComponent.render(lcSocket.context, { myself });
+                console.dir(newView);
                 // store state for subsequent loads
                 this.statefulLiveComponents[compoundId] = {
                     context: lcSocket.context,
