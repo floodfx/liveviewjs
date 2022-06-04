@@ -51,10 +51,10 @@ export function escapehtml(unsafe: unknown): string {
 //   3. array of html substring e.g. html`${[1, 2, 3].map(x => html`<a>${x}</a>`)}`
 //     { d: [['1'], ['2'], ['3']], s:['<a>''</a>']}
 //   4. tree of statics and dymaics e.g. html`${html`${html`${1}${2}${3}`}`}`
-// type IndexPart = { [index: string]: string | Parts }
-// type StaticsPart = { s?: readonly string[] }
-// type DynamicsPart = { d?: (string | StaticsPart)[] }
-// type Parts = IndexPart & StaticsPart & DynamicsPart
+// type IndexPart = { [index: string]: string | Parts | number }
+// type StaticsPart = { s: readonly string[] }
+// type DynamicsPart = { d: (string | Parts)[] }
+// type Parts = IndexPart | StaticsPart | DynamicsPart
 export type Parts = { [key: string]: unknown };
 
 export class HtmlSafeString {
@@ -129,18 +129,64 @@ export class HtmlSafeString {
             [`${index}`]: "",
           };
         }
-        // not an empty array but array of HtmlSafeString
+        // Not an empty array
         else {
-          const currentPart = cur as HtmlSafeString[];
-          // collect all the dynamic partsTrees
-          const d = currentPart.map((c) => Object.values(c.partsTree(false)));
-          // we know the statics are the same for all the children
-          // so we can just take the first one
-          const s = currentPart.map((c) => c.statics)[0];
-          return {
-            ...acc,
-            [`${index}`]: { d, s },
-          };
+          // elements of Array are either: HtmlSafeString or Promise<HtmlSafeString>
+          let d: unknown[][] | Promise<unknown[]>[];
+          let s: readonly string[] | Promise<readonly string[]>;
+          if (cur[0] instanceof HtmlSafeString) {
+            // if any of the children are live components, then we assume they all are
+            // and do not return the statics for this array
+            let isLiveComponentArray = false;
+            d = cur.map((c: HtmlSafeString) => {
+              if (c.isLiveComponent) {
+                isLiveComponentArray = true;
+                return [Number(c.statics[0])];
+              } else {
+                return Object.values(c.partsTree(false));
+              }
+            });
+            if (isLiveComponentArray) {
+              return {
+                ...acc,
+                [`${index}`]: { d },
+              };
+            }
+            // not an array of LiveComponents so return the statics too
+            s = cur.map((c: HtmlSafeString) => c.statics)[0];
+            return {
+              ...acc,
+              [`${index}`]: { d, s },
+            };
+          } else if (cur[0] instanceof Promise) {
+            // collect all the dynamic partsTrees
+            let isLiveComponentArray = false;
+            d = cur.map(async (c: Promise<HtmlSafeString>) => {
+              const c2 = await c;
+              if (c2.isLiveComponent) {
+                isLiveComponentArray = true;
+                return [Number(c2.statics[0])];
+              } else {
+                return Object.values(c2.partsTree(false));
+              }
+            });
+            if (isLiveComponentArray) {
+              return {
+                ...acc,
+                [`${index}`]: { d },
+              };
+            }
+            // not an array of LiveComponents so return the statics too
+            // we know the statics are the same for all elements so just return the first
+            // element of the statics array
+            s = cur.map(async (c: Promise<HtmlSafeString>) => (await c).statics)[0];
+            return {
+              ...acc,
+              [`${index}`]: { d, s },
+            };
+          } else {
+            throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got: ", cur[0].constructor.name);
+          }
         }
       } else {
         // cur is a literal string or number
