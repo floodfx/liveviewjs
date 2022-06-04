@@ -11,8 +11,7 @@
   },
   "files.exclude": {
     "**/.git": true,
-    "**/.DS_Store": true,
-    "env*": true
+    "**/.DS_Store": true
   },
   "css.customData": [".vscode/css_custom_data.json"],
   "[typescript]": {
