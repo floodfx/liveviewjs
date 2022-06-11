@@ -134,7 +134,13 @@ export class HtmlSafeString {
           // elements of Array are either: HtmlSafeString or Promise<HtmlSafeString>
           let d: unknown[][] | Promise<unknown[]>[];
           let s: readonly string[] | Promise<readonly string[]>;
-          if (cur[0] instanceof HtmlSafeString) {
+          // istanbul ignore next
+          if (cur[0] instanceof Promise) {
+            // istanbul ignore next
+            throw new Error(
+              "Promise not supported in HtmlSafeString, try using Promise.all to wait for all promises to resolve."
+            );
+          } else if (cur[0] instanceof HtmlSafeString) {
             // if any of the children are live components, then we assume they all are
             // and do not return the statics for this array
             let isLiveComponentArray = false;
@@ -158,34 +164,9 @@ export class HtmlSafeString {
               ...acc,
               [`${index}`]: { d, s },
             };
-          } else if (cur[0] instanceof Promise) {
-            // collect all the dynamic partsTrees
-            let isLiveComponentArray = false;
-            d = cur.map(async (c: Promise<HtmlSafeString>) => {
-              const c2 = await c;
-              if (c2.isLiveComponent) {
-                isLiveComponentArray = true;
-                return [Number(c2.statics[0])];
-              } else {
-                return Object.values(c2.partsTree(false));
-              }
-            });
-            if (isLiveComponentArray) {
-              return {
-                ...acc,
-                [`${index}`]: { d },
-              };
-            }
-            // not an array of LiveComponents so return the statics too
-            // we know the statics are the same for all elements so just return the first
-            // element of the statics array
-            s = cur.map(async (c: Promise<HtmlSafeString>) => (await c).statics)[0];
-            return {
-              ...acc,
-              [`${index}`]: { d, s },
-            };
           } else {
-            throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got: ", cur[0].constructor.name);
+            // istanbul ignore next
+            throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got:", cur[0].constructor.name);
           }
         }
       } else {

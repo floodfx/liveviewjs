@@ -4,7 +4,7 @@ import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveInfo } 
 export type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
 
 /**
- * Main interface to update state, interact, manage, message, and otherwise
+ * Main interface to update state, interact, message, and otherwise
  * manage the lifecycle of a `LiveView`.
  *
  * The `LiveView` API (i.e. `mount`, `handleParams`, `handleInfo`, `handleEvent`)
@@ -14,7 +14,7 @@ export type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
  */
 export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos extends LiveInfo = AnyLiveInfo> {
   /**
-   * The id of the `LiveView` (same as the `phx_join` id)
+   * The id of the `LiveView`
    */
   readonly id: string;
   /**
@@ -23,12 +23,12 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    */
   readonly connected: boolean;
   /**
-   * The current state of the `LiveView`
+   * The current context (i.e. state) of the `LiveView`
    */
   readonly context: TContext;
   /**
-   * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
-   * @param context you can pass a partial of the current context to update
+   * `assign` is used to update the context (i.e. state) of the `LiveComponent`
+   * @param context a `Partial` of the LiveView's context to update
    */
   assign(context: Partial<TContext>): void;
   /**
@@ -62,9 +62,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    * @param params the query params to update the path with
    * @param replaceHistory whether to replace the current history entry or push a new one (defaults to false)
    */
-  // pushPatch(path: string, params: Record<string, string | number>): void;
   pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
-
   /**
    * Shutdowns the current `LiveView` and load another `LiveView` in its place without reloading the
    * whole page (i.e. making a full HTTP request).  Can be used to remount the current `LiveView` if
@@ -96,8 +94,8 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    */
   sendInfo(info: Info<TInfos>): void;
   /**
-   * Subscribes to the given topic using pub/sub.  Any events published to the topic
-   * will be received by the `LiveView` instance via `handleEvent`.
+   * Subscribes to the given topic using pub/sub.  Data published to this topic
+   * will be received by the `LiveView` instance via `handleInfo`.
    *
    * @param topic the topic to subscribe this `LiveView` to
    */
