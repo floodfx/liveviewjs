@@ -58,7 +58,7 @@ export interface LiveView<
   TInfos extends LiveInfo = AnyLiveInfo
 > {
   /**
-   * `mount` is both when the `LiveView` is rendered for the HTTP request
+   * `mount` is called both when the `LiveView` is rendered for the HTTP request
    * and upon the first time the `LiveView` is mounted (i.e. connected) via
    * the websocket.  This is where you should load data and set the initial
    * context of the `LiveView`.
@@ -73,7 +73,7 @@ export interface LiveView<
   ): void | Promise<void>;
 
   /**
-   * `handleParams` is called on initial joining of the `LiveView` as well as on
+   * `handleParams` is called on initial loading of the `LiveView` (one-time, after `mount`) as well as on
    * `pushPatch` and `livePatch` events.  This is where you should handle any context (i.e. state)
    * changes that are based on the `LiveView`'s URL parameters.
    * @param params

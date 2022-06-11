@@ -106,6 +106,19 @@ describe("test escapeHtml", () => {
     });
   });
 
+  it("array of dynamics maps to object with s and d attrs", async () => {
+    const strings = ["a", "b", "c"];
+    const promises = strings.map((x) => Promise.resolve(html`${x}`));
+    const result = html`${await Promise.all(promises)}`;
+    expect(result.partsTree()).toEqual({
+      0: {
+        s: ["", ""],
+        d: [["a"], ["b"], ["c"]],
+      },
+      s: ["", ""],
+    });
+  });
+
   it("tree of templates", () => {
     const result = html`3${html`2${html`1${1}1`}${2}2`}${3}3`;
     expect(result.partsTree()).toEqual({
@@ -222,6 +235,20 @@ describe("test escapeHtml", () => {
 
     expect(liveView.partsTree()).toEqual({
       0: 1, // LiveComponents result in a single number
+      s: ["<div>", "</div>"],
+    });
+  });
+
+  it("direct live component array renders", async () => {
+    const liveComponentArray = [
+      Promise.resolve(new HtmlSafeString(["1"], [], true)),
+      Promise.resolve(new HtmlSafeString(["2"], [], true)),
+    ];
+
+    const liveView = html`<div>${await Promise.all(liveComponentArray)}</div>`;
+
+    expect(liveView.partsTree()).toEqual({
+      0: { d: [[1], [2]] },
       s: ["<div>", "</div>"],
     });
   });

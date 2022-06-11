@@ -7,7 +7,6 @@ interface FormForOptions {
   id?: string;
 }
 
-// TODO insert hidden input for CSRF token?
 export const form_for = <T>(action: string, csrfToken: string, options?: FormForOptions) => {
   const method = options?.method ?? "post";
   const phx_submit = options?.phx_submit ? safe(` phx-submit="${options.phx_submit}"`) : "";

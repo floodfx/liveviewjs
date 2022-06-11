@@ -135,6 +135,8 @@ export function diffArrays(oldArray: unknown[], newArray: unknown[]): boolean {
   return false;
 }
 
+// Don't worry about test coverage for now since not used internally
+// istanbul ignore next
 export function diffArrays2<T extends Parts | string>(oldArray: T[], newArray: T[]): T[] {
   const diffArray: any[] = [];
 
