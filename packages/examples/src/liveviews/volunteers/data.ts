@@ -1,12 +1,12 @@
 import { nanoid } from "nanoid";
-import { SomeZodObject, z, ZodType } from "zod";
+import { z } from "zod";
 import { LiveViewChangeset, newChangesetFactory, SingleProcessPubSub } from "liveviewjs";
 
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/;
 
 // Use Zod to define the schema for the Volunteer model
 // More on Zod - https://github.com/colinhacks/zod
-export const VolunteerSchema: SomeZodObject = z.object({
+export const VolunteerSchema = z.object({
   id: z.string().default(nanoid),
   name: z.string().min(2).max(100),
   phone: z.string().regex(phoneRegex, "Should be a valid phone number"),
@@ -53,10 +53,10 @@ export const updateVolunteer = (
 };
 
 const pubSub = new SingleProcessPubSub();
-function broadcast(event: VolunteerMutationEvent) {
+function broadcast(event: VolunteerMutationInfo) {
   pubSub.broadcast("volunteer", event);
 }
 
-export type VolunteerMutationEvent =
+export type VolunteerMutationInfo =
   | { type: "created"; volunteer: Volunteer }
   | { type: "updated"; volunteer: Volunteer };

@@ -35,6 +35,10 @@ declare type Infos = {
     type: "run_city_search";
     city: string;
 };
+/**
+ * Example of a search box with autocomplete.  Start typing a city in the search box
+ * and a list of matching cities wiill appear.
+ */
 declare const autocompleteLiveView: liveviewjs.LiveView<Context, Events, Infos>;
 
 declare type FootprintData = {

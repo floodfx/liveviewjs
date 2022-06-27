@@ -4,10 +4,12 @@ import dts from "rollup-plugin-dts";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 
+const external = ["liveviewjs", "zod", "nanoid", "node-fetch"];
+
 export default [
   // build the common js rollup
   {
-    external: ["liveviewjs", "zod"],
+    external,
     input: "./src/nodeRollupEntry.ts",
     output: {
       file: "./build/liveviewjs-examples.js",
@@ -23,7 +25,7 @@ export default [
   },
   // build the esm rollup
   {
-    external: ["liveviewjs", "zod"],
+    external,
     input: "./src/nodeRollupEntry.ts",
     output: {
       file: "./build/liveviewjs-examples.mjs",
@@ -43,7 +45,7 @@ export default [
   },
   // bundle all the *.d.ts typescript definitions into a single d.ts file
   {
-    external: ["liveviewjs", "zod"],
+    external,
     input: "./build/rollup/nodeRollupEntry.d.ts",
     output: {
       file: "./build/liveviewjs-examples.d.ts",
