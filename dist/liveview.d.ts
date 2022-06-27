@@ -276,7 +276,7 @@ declare class LiveViewManager {
 
 declare type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
 /**
- * Main interface to update state, interact, manage, message, and otherwise
+ * Main interface to update state, interact, message, and otherwise
  * manage the lifecycle of a `LiveView`.
  *
  * The `LiveView` API (i.e. `mount`, `handleParams`, `handleInfo`, `handleEvent`)
@@ -286,7 +286,7 @@ declare type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
  */
 interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos extends LiveInfo = AnyLiveInfo> {
     /**
-     * The id of the `LiveView` (same as the `phx_join` id)
+     * The id of the `LiveView`
      */
     readonly id: string;
     /**
@@ -295,12 +295,12 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      */
     readonly connected: boolean;
     /**
-     * The current state of the `LiveView`
+     * The current context (i.e. state) of the `LiveView`
      */
     readonly context: TContext;
     /**
-     * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
-     * @param context you can pass a partial of the current context to update
+     * `assign` is used to update the context (i.e. state) of the `LiveComponent`
+     * @param context a `Partial` of the LiveView's context to update
      */
     assign(context: Partial<TContext>): void;
     /**
@@ -366,8 +366,8 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      */
     sendInfo(info: Info<TInfos>): void;
     /**
-     * Subscribes to the given topic using pub/sub.  Any events published to the topic
-     * will be received by the `LiveView` instance via `handleEvent`.
+     * Subscribes to the given topic using pub/sub.  Data published to this topic
+     * will be received by the `LiveView` instance via `handleInfo`.
      *
      * @param topic the topic to subscribe this `LiveView` to
      */
@@ -564,7 +564,7 @@ interface LiveViewMountParams {
  */
 interface LiveView<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo> {
     /**
-     * `mount` is both when the `LiveView` is rendered for the HTTP request
+     * `mount` is called both when the `LiveView` is rendered for the HTTP request
      * and upon the first time the `LiveView` is mounted (i.e. connected) via
      * the websocket.  This is where you should load data and set the initial
      * context of the `LiveView`.
@@ -574,7 +574,7 @@ interface LiveView<TContext extends LiveContext = AnyLiveContext, TEvents extend
      */
     mount(socket: LiveViewSocket<TContext, TInfos>, session: Partial<SessionData>, params: LiveViewMountParams): void | Promise<void>;
     /**
-     * `handleParams` is called on initial joining of the `LiveView` as well as on
+     * `handleParams` is called on initial loading of the `LiveView` (one-time, after `mount`) as well as on
      * `pushPatch` and `livePatch` events.  This is where you should handle any context (i.e. state)
      * changes that are based on the `LiveView`'s URL parameters.
      * @param params
