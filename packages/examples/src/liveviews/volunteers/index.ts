@@ -8,9 +8,31 @@ import {
   telephone_input,
   text_input,
 } from "liveviewjs";
-import { changeset, createVolunteer, getVolunteer, listVolunteers, updateVolunteer, Volunteer } from "./data";
+import {
+  changeset,
+  createVolunteer,
+  getVolunteer,
+  listVolunteers,
+  updateVolunteer,
+  Volunteer,
+  VolunteerMutationInfo,
+} from "./data";
 
-export const volunteerLiveView = createLiveView({
+export const volunteerLiveView = createLiveView<
+  // Define the Context of the LiveView
+  {
+    volunteers: Volunteer[];
+    changeset: LiveViewChangeset<Volunteer>;
+  },
+  // Define events that are initiated by the end-user
+  | { type: "save"; name: string; phone: string }
+  | { type: "validate"; name: string; phone: string }
+  | { type: "toggle-status"; id: string },
+  // Define info that are initiated by the LiveView
+  // In this case, these are internal info emitted from
+  // pub/sub subscriptions to the Volunter's mutation activities
+  VolunteerMutationInfo
+>({
   mount: async (socket) => {
     if (socket.connected) {
       // listen for changes to volunteer data
@@ -27,13 +49,7 @@ export const volunteerLiveView = createLiveView({
     socket.tempAssign({ volunteers: [] });
   },
 
-  handleEvent: (
-    event:
-      | { type: "save"; name: string; phone: string }
-      | { type: "validate"; name: string; phone: string }
-      | { type: "toggle-status"; id: string },
-    socket
-  ) => {
+  handleEvent: (event, socket) => {
     switch (event.type) {
       case "validate":
         socket.assign({
@@ -62,6 +78,7 @@ export const volunteerLiveView = createLiveView({
     }
   },
 
+  // Handle Volunteer mutation
   handleInfo: (info, socket) => {
     const { volunteer } = info;
     socket.assign({
@@ -70,13 +87,7 @@ export const volunteerLiveView = createLiveView({
     });
   },
 
-  render: (
-    context: {
-      volunteers: Volunteer[];
-      changeset: LiveViewChangeset<Volunteer>;
-    },
-    meta
-  ) => {
+  render: (context, meta) => {
     const { changeset, volunteers } = context;
     const { csrfToken } = meta;
     return html`
@@ -90,7 +101,7 @@ export const volunteerLiveView = createLiveView({
 
         <div class="field">
           ${text_input<Volunteer>(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
-            ${error_tag(changeset, "name")}
+          ${error_tag(changeset, "name")}
         </div>
 
         <div class="field">
@@ -99,7 +110,7 @@ export const volunteerLiveView = createLiveView({
             autocomplete: "off",
             phx_debounce: "blur",
           })}
-            ${error_tag(changeset, "phone")}
+          ${error_tag(changeset, "phone")}
         </div>
         ${submit("Check In", { phx_disable_with: "Saving..." })}
         </form>

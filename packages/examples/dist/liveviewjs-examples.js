@@ -3,12 +3,8 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var liveviewjs = require('liveviewjs');
-var crypto = require('crypto');
+var nanoid = require('nanoid');
 var zod = require('zod');
-
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
-
-var crypto__default = /*#__PURE__*/_interopDefaultLegacy(crypto);
 
 function searchByZip(zip) {
     return stores.filter((store) => store.zip === zip);
@@ -1092,7 +1088,12 @@ const listCities = [
     "Yuma, AZ",
 ];
 
+/**
+ * Example of a search box with autocomplete.  Start typing a city in the search box
+ * and a list of matching cities wiill appear.
+ */
 const autocompleteLiveView = liveviewjs.createLiveView({
+    // initialize the context
     mount: (socket) => {
         const zip = "";
         const city = "";
@@ -1101,6 +1102,7 @@ const autocompleteLiveView = liveviewjs.createLiveView({
         const loading = false;
         socket.assign({ zip, city, stores, matches, loading });
     },
+    // handle events from the user
     handleEvent: (event, socket) => {
         let city;
         switch (event.type) {
@@ -1121,6 +1123,7 @@ const autocompleteLiveView = liveviewjs.createLiveView({
                 break;
         }
     },
+    // handle internal events
     handleInfo: (info, socket) => {
         const { type } = info;
         let stores = [];
@@ -1144,7 +1147,8 @@ const autocompleteLiveView = liveviewjs.createLiveView({
                 });
         }
     },
-    render: (context, meta) => {
+    // update the LiveView based on the context
+    render: (context) => {
         return liveviewjs.html `
       <h1>Find a Store</h1>
       <div id="search">
@@ -1190,6 +1194,7 @@ const autocompleteLiveView = liveviewjs.createLiveView({
     `;
     },
 });
+// helper function that shows the store status
 function renderStoreStatus$1(store) {
     if (store.open) {
         return liveviewjs.html `<span class="open">🔓 Open</span>`;
@@ -1198,6 +1203,7 @@ function renderStoreStatus$1(store) {
         return liveviewjs.html `<span class="closed">🔐 Closed</span>`;
     }
 }
+// helper function that renders a store details
 function renderStore$1(store) {
     return liveviewjs.html ` <li>
     <div class="first-line">
@@ -1210,8 +1216,9 @@ function renderStore$1(store) {
     </div>
   </li>`;
 }
+// helper function that renders a loading message
 function renderLoading$1() {
-    return liveviewjs.html ` <div class="loader">Loading...</div> `;
+    return liveviewjs.html `<div class="loader">Loading...</div>`;
 }
 
 // These numbers are completely made up!
@@ -2167,36 +2174,11 @@ function expiresDecoration(donation) {
     }
 }
 
-let urlAlphabet =
-  'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict';
-
-const POOL_SIZE_MULTIPLIER = 128;
-let pool, poolOffset;
-let fillPool = bytes => {
-  if (!pool || pool.length < bytes) {
-    pool = Buffer.allocUnsafe(bytes * POOL_SIZE_MULTIPLIER);
-    crypto__default["default"].randomFillSync(pool);
-    poolOffset = 0;
-  } else if (poolOffset + bytes > pool.length) {
-    crypto__default["default"].randomFillSync(pool);
-    poolOffset = 0;
-  }
-  poolOffset += bytes;
-};
-let nanoid = (size = 21) => {
-  fillPool((size -= 0));
-  let id = '';
-  for (let i = poolOffset - size; i < poolOffset; i++) {
-    id += urlAlphabet[pool[i] & 63];
-  }
-  return id
-};
-
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/;
 // Use Zod to define the schema for the Volunteer model
 // More on Zod - https://github.com/colinhacks/zod
 const VolunteerSchema = zod.z.object({
-    id: zod.z.string().default(nanoid),
+    id: zod.z.string().default(nanoid.nanoid),
     name: zod.z.string().min(2).max(100),
     phone: zod.z.string().regex(phoneRegex, "Should be a valid phone number"),
     checked_out: zod.z.boolean().default(false),
@@ -2248,6 +2230,7 @@ const volunteerLiveView = liveviewjs.createLiveView({
         socket.tempAssign({ volunteers: [] });
     },
     handleEvent: (event, socket) => {
+        console.log("event", event);
         switch (event.type) {
             case "validate":
                 socket.assign({

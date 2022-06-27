@@ -1,4 +1,4 @@
-import { BaseLiveComponent, createLiveComponent, html, LiveComponentSocket, safe } from "liveviewjs";
+import { createLiveComponent, html } from "liveviewjs";
 import { FootprintData, FootprintUpdateInfo } from ".";
 import {
   gridElectricityCO2Tons,
