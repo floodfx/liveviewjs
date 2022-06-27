@@ -1,16 +1,16 @@
 import { Application, LiveViewRouter, nanoid, Router, SingleProcessPubSub, SessionFlashAdaptor } from "../deps.ts";
 import {
-  AutocompleteLiveView,
-  DecarbonizeLiveView,
-  PrintsLiveView,
-  VolumeLiveView,
-  PaginateLiveView,
-  DashboardLiveView,
-  SearchLiveView,
-  ServersLiveView,
-  SortLiveView,
-  VolunteersLiveView,
-  CounterLiveView,
+  autocompleteLiveView,
+  decarbLiveView,
+  printLiveView,
+  volumeLiveView,
+  paginateLiveView,
+  dashboardLiveView,
+  searchLiveView,
+  serversLiveView,
+  sortLiveView,
+  volunteerLiveView,
+  counterLiveView,
 } from "../deps.ts";
 import { pageRenderer, rootRenderer } from "./liveViewRenderers.ts";
 import { DenoOakLiveViewServer } from "../deno/server.ts";
@@ -20,17 +20,17 @@ import { indexHandler } from "./indexHandler.ts";
 
 // map request paths to LiveViews
 const lvRouter: LiveViewRouter = {
-  "/autocomplete": new AutocompleteLiveView(),
-  "/decarbonize": new DecarbonizeLiveView(),
-  "/prints": new PrintsLiveView(),
-  "/volume": new VolumeLiveView(),
-  "/paginate": new PaginateLiveView(),
-  "/dashboard": new DashboardLiveView(),
-  "/search": new SearchLiveView(),
-  "/servers": new ServersLiveView(),
-  "/sort": new SortLiveView(),
-  "/volunteers": new VolunteersLiveView(),
-  "/counter": new CounterLiveView(),
+  "/autocomplete": autocompleteLiveView,
+  "/decarbonize": decarbLiveView,
+  "/prints": printLiveView,
+  "/volume": volumeLiveView,
+  "/paginate": paginateLiveView,
+  "/dashboard": dashboardLiveView,
+  "/search": searchLiveView,
+  "/servers": serversLiveView,
+  "/sort": sortLiveView,
+  "/volunteers": volunteerLiveView,
+  "/counter": counterLiveView,
 };
 
 // configure your oak app

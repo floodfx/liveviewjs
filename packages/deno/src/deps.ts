@@ -6,7 +6,7 @@ export { create, verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 export type { Payload } from "https://deno.land/x/djwt@v2.4/mod.ts";
 
 // nanoid
-export { nanoid } from "https://deno.land/x/nanoid@v3.0.0/mod.ts";
+export { nanoid } from "nanoid";
 
 // oak exports
 export { Application, Context, Router } from "https://deno.land/x/oak@v10.5.1/mod.ts";
@@ -40,17 +40,17 @@ export type {
 
 // @liveviewjs/examples
 export {
-  AutocompleteLiveView,
-  DecarbonizeLiveView,
-  PrintsLiveView,
-  VolumeLiveView,
-  PaginateLiveView,
-  DashboardLiveView,
-  SearchLiveView,
-  ServersLiveView,
-  SortLiveView,
-  VolunteersLiveView,
-  CounterLiveView,
+  autocompleteLiveView,
+  decarbLiveView,
+  printLiveView,
+  volumeLiveView,
+  paginateLiveView,
+  dashboardLiveView,
+  searchLiveView,
+  serversLiveView,
+  sortLiveView,
+  volunteerLiveView,
+  counterLiveView,
   routeDetails,
 } from "@liveviewjs/examples"; // see import_map.json
 
