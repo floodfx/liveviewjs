@@ -3,7 +3,7 @@ import session, { MemoryStore } from "express-session";
 import WebSocket from "ws";
 import { Server } from "http";
 import { nanoid } from "nanoid";
-import { LiveViewRouter, WsMessageRouter, SingleProcessPubSub, SessionFlashAdaptor } from "liveviewjs";
+import { LiveViewRouter, SingleProcessPubSub, SessionFlashAdaptor } from "liveviewjs";
 import {
   autocompleteLiveView,
   decarbLiveView,
