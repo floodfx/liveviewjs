@@ -2,7 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var util = require('util');
 var crypto = require('crypto');
 var EventEmitter = require('events');
 
@@ -398,6 +397,8 @@ function diffArrays(oldArray, newArray) {
     }
     return false;
 }
+// Don't worry about test coverage for now since not used internally
+// istanbul ignore next
 function diffArrays2(oldArray, newArray) {
     const diffArray = [];
     // if newArray is shorter than oldArray, then we just use the newArray
@@ -442,6 +443,9 @@ function diffArrays2(oldArray, newArray) {
 }
 
 // Initially copied from https://github.com/Janpot/escape-html-template-tag/blob/master/src/index.ts
+// This is a modified version of escape-html-template-tag that builds a tree
+// of statics and dynamics that can be used to render the template.
+//
 const ENTITIES = {
     "&": "&amp;",
     "<": "&lt;",
@@ -488,7 +492,7 @@ class HtmlSafeString {
         // statics.length should always equal dynamics.length + 1
         if (this.dynamics.length === 0) {
             if (this.statics.length !== 1) {
-                throw new Error("Expected exactly one static string for HtmlSafeString" + util.inspect(this));
+                throw new Error("Expected exactly one static string for HtmlSafeString" + this);
             }
             // TODO Optimization to just return the single static string?
             // if only statics, return just the statics
@@ -549,7 +553,12 @@ class HtmlSafeString {
                     // elements of Array are either: HtmlSafeString or Promise<HtmlSafeString>
                     let d;
                     let s;
-                    if (cur[0] instanceof HtmlSafeString) {
+                    // istanbul ignore next
+                    if (cur[0] instanceof Promise) {
+                        // istanbul ignore next
+                        throw new Error("Promise not supported in HtmlSafeString, try using Promise.all to wait for all promises to resolve.");
+                    }
+                    else if (cur[0] instanceof HtmlSafeString) {
                         // if any of the children are live components, then we assume they all are
                         // and do not return the statics for this array
                         let isLiveComponentArray = false;
@@ -575,48 +584,10 @@ class HtmlSafeString {
                             [`${index}`]: { d, s },
                         };
                     }
-                    else if (cur[0] instanceof Promise) {
-                        // collect all the dynamic partsTrees
-                        let isLiveComponentArray = false;
-                        d = cur.map(async (c) => {
-                            const c2 = await c;
-                            if (c2.isLiveComponent) {
-                                isLiveComponentArray = true;
-                                return [Number(c2.statics[0])];
-                            }
-                            else {
-                                return Object.values(c2.partsTree(false));
-                            }
-                        });
-                        if (isLiveComponentArray) {
-                            return {
-                                ...acc,
-                                [`${index}`]: { d },
-                            };
-                        }
-                        // not an array of LiveComponents so return the statics too
-                        // we know the statics are the same for all elements so just return the first
-                        // element of the statics array
-                        s = cur.map(async (c) => (await c).statics)[0];
-                        return {
-                            ...acc,
-                            [`${index}`]: { d, s },
-                        };
-                    }
                     else {
-                        throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got: ", cur[0].constructor.name);
+                        // istanbul ignore next
+                        throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got:", cur[0].constructor.name);
                     }
-                    // OLD Way - Assume all elements are the same type
-                    // const currentPart = cur as HtmlSafeString[];
-                    // // collect all the dynamic partsTrees
-                    // const d = currentPart.map((c) => Object.values(c.partsTree(false)));
-                    // // we know the statics are the same for all the children
-                    // // so we can just take the first one
-                    // const s = currentPart.map((c) => c.statics)[0];
-                    // return {
-                    //   ...acc,
-                    //   [`${index}`]: { d, s },
-                    // };
                 }
             }
             else {
@@ -644,7 +615,6 @@ function html(statics, ...dynamics) {
     return new HtmlSafeString(statics, dynamics);
 }
 
-// TODO insert hidden input for CSRF token?
 const form_for = (action, csrfToken, options) => {
     const method = options?.method ?? "post";
     const phx_submit = options?.phx_submit ? safe(` phx-submit="${options.phx_submit}"`) : "";
