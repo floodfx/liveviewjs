@@ -8,18 +8,18 @@ The LiveView model is simple.  When a user makes an HTTP request, the server ren
 This paradigm was invented by the developers of the [Phoenix Framework](https://www.phoenixframework.org/) and is widely used (and battle-tested) by tens of thousands of [Elixir](https://elixir-lang.org/) developers and projects. LiveViewJS is an implementation of the Phoenix backend in Typescript / JavaScript.  For the client-side code, we use the exact same code/libraries that Phoenix uses.
 
 ### What are the advantages of LiveView?
- * Blazing fast first paint - we are just rendering HTML, no huge JS bundles, "hydration", tree-shaking, JSX, etc
- * User-experiences as rich, reactive, and dynamic as SPA frameworks but with a much simpler developer experience with less code
- * Super-simple LiveView lifecycle that can be learned in 10 minutes - usually just `mount`, `handleEvent`, `render` and sometimes `handleParams` and `handleInfo`
- * No need to build a separate back-end REST and/or GraphQL API and related shenanigans - the library automatically sent to the server over a web socket and diffs are automatically applied to the client
+ * Blazing fast first paint - we are just rendering HTML, no downloading huge JS bundles, "hydration", JSX, etc
+ * User-experiences as rich, reactive, and dynamic as SPA frameworks but with a much simpler developer paradigm that is requires less context switching
+ * Super-simple LiveView lifecycle that can be learned in 5 minutes - usually just `mount`, `handleEvent`, `render` and sometimes `handleParams` and `handleInfo`
+ * No need to build a separate back-end REST and/or GraphQL API and related shenanigans - the library automatically handles sending events to the server over a web socket and automatically appling diffs to the client
  * No synchronizing state between front-end and back-end - all the state is where your data lives...on the server
  * No need to reinvent routing - LiveViews are just URLs and the browser knows how to route them already
- * No need to build or learn a component library (with all its gotchas, workarounds, etc) - just render some HTML and CSS, add some LiveView attributes, and receive events
- * Small yet extensive user-events system that enables rich, dynamic user experiences: clicks, form events, key events, and focus/blur events
+ * No need to build or learn a component library (with all the effort, variants, workarounds, hacks, etc) - just render some HTML and CSS, add some LiveView attributes, and ship it!
+ * Small yet extensive user-events system that enables rich, dynamic user experiences: clicks, form events, key events, and focus/blur events, and escape hatches if needed (but most of the time, you don't need them)
  * Robust, battle-tested browser libraries used by tens of thousands of applications - we use the Phoenix LiveView javascript libraries directly (no reinventing the wheel)
  * Simple to use beyond "toy" examples - complexity does not grow exponentially like SPA frameworks
 
-#### Canonical "Counter" in LiveViewJS
+#### Canonical "Counter" Example in LiveViewJS
 ```ts
 import { createLiveView, html } from "liveviewjs";
 
@@ -67,11 +67,11 @@ The LiveViewJS API is extremely simple but very flexible.  There are 5 methods t
  * `mount` is called both when the `LiveView` is rendered for the HTTP request and upon the first time the `LiveView` is mounted (i.e. connected) via the websocket.  This is where you should load data and set the initial context of the `LiveView`
  * `handleParams` is called on initial loading of the `LiveView` (one-time, after `mount`) as well as on events that manipulate the URL of the `LiveView`. This is where you should handle any context (i.e. state) changes that are based on the `LiveView`'s URL parameters.  
  * `handleEvent` is called when events are initiated by the user interactions with the `LiveView`. Things like "clicks", "key events", "form input", and "focus/blur" events are all handled by this method. More details on "bindings" for user events below.
- * `handleInfo` handles server-side events which we call "info" that are initiated from `handleEvent` or other pub/sub subscriptions. Long running processes are often sent to `handleInfo` via a `handleEvent`.  More details on this soon too. 
+ * `handleInfo` handles server-side events which we call "info" that are initiated from `handleEvent` or other pub/sub subscriptions. Asynchronous processes are often sent to `handleInfo` via a `handleEvent` (e.g. run a search query).  More details below.
  * `render` is the only required method which provides the HTML and CSS that is rendered to the client. All of the other methods manupulate the "context" (i.e. state) of the `LiveView` and the resulting context is passed to the `render` method to determine the HTML and CSS that is rendered to the client.
 
 ### HTTP Lifecycle vs Websocket Lifecycle
-Quick note on HTTP and Websocket Lifecycles.  In LiveViewJS, each URL path is a different LiveView.  When a user visits a URL, the browser sends a HTTP get request to the server and LiveViewJS renders the page over HTTP.  This is the first HTTP lifecycle for that LiveView instance and the appropriate methods are called on the LiveView which are typically `mount`, `handleParams`, and `render`.  After the page fully loads in the browser, LiveViewJS automatically connects to the server over a websocket and runs the same initial lifecycle methods for the Websocket lifecycle and then starts to handle any user or server ininitated events.  The major difference is between the HTTP and Websocket initialization is that there is no user event handling or internal info handling for the HTTP lifecycle.  
+Quick note on HTTP and Websocket Lifecycles.  In LiveViewJS, each URL path is a different LiveView.  When a user visits a URL, the browser sends a HTTP get request to the server and LiveViewJS renders the page over HTTP.  This is the first HTTP lifecycle for that LiveView instance and the appropriate methods are called on the LiveView which are typically `mount`, `handleParams`, and `render`.  After the page fully loads in the browser, LiveViewJS automatically connects to the server over a websocket and runs the same initial lifecycle methods for the Websocket lifecycle and then starts to handle any user or server ininitated events.  The major difference is between the HTTP and Websocket initialization is that there is no user event handling or internal info handling for the HTTP lifecycle.  This entire HTTP + WS lifecycle happens extremely fast as again, we are rendering HTML not downloading large JS bundles or doing any other heavy lifting.
 
 ### User Events
 There are 4 main types of user events that a LiveView can listen to and respond to:
@@ -87,7 +87,7 @@ User clicks are the most common type of user event and there are two types of cl
   * `phx-click` - Add this binding to an HTML element (e.g. `<... phx-click="myEvent" ...>`) and when a user clicks on the element the event (i.e. value of the attribute) will be sent to the server. 
   * `phx-click-away` - This binding is similar to `phx-click` except that an event will occur when the user clicks outside of the element.
 
-Click binding example:
+**Click binding example** - send the `increment` event to the server when the user clicks on the "+" button
 ```html
 <button phx-click="increment">+</button>
 ```
@@ -97,7 +97,7 @@ Form events are triggered by the user interacting with form inputs.  There are t
   * `phx-change` - When a user changes the value of a form element, the event named by the `phx-change` attribute will be sent to the server along with all the form values. This is typically used for form validation purposes prior to form submission.  
   * `phx-submit` - This binding is initiated when a user submits a form and the event named by the `phx-submit` attribute will be sent to the server along with all the form values. 
 
-Forms are typically used in conjunction with `LiveViewChangeset`s to provide validation rules (based on [zod](https://github.com/colinhacks/zod)) and various template helpers like `form_for`, `text_input`, `error_tag`.  These are designed to work together to make form validation and submission easy and powerful.  We'll dive into more details later on.  For now here is an example of a form with `phx-change` and `phx-submit` bindings:
+Forms are typically used in conjunction with [`LiveViewChangeset`](docs/changesets.md)s to provide validation rules (based on [zod](https://github.com/colinhacks/zod)) and various template helpers like `form_for`, `text_input`, `error_tag`.  These are designed to work together to make form validation and submission easy and powerful.  We'll dive into more details later on.  For now here is an example of a form with `phx-change` and `phx-submit` bindings:
 ```html
 <form action="#" phx-change="validate" phx-submit="save">
   ...
@@ -111,6 +111,8 @@ Key events are triggered by the user pressing a key on the keyboard.  There are 
 
 `phx-key` is an optional attribute which limits triggering of the key events to the key provided in the attribute (e.g. `phx-key="ArrowUp"`).  You can find a list of the keys on [MDN Keyboard Values](https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values).
 
+**Key binding example** - send the `key_event` event to the server along with the `{key: "ArrowUp"}` payload when the user presses the "ArrowUp" key
+```html
 ```html
  <div phx-window-keydown="key_event" phx-key="ArrowUp" />
 ```
@@ -122,6 +124,8 @@ If a DOM element emits focus and blur events, you can use the following bindings
 Similar to key events, there are window-level and element-level bindings:
   * `phx-window-focus` - When a user focuses on the window, the event named by the `phx-window-focus` attribute will be sent to the server.
   * `phx-window-blur` - When a user blurs from the window, the event named by the `phx-window-blur` attribute will be sent to the server.
+
+**Focus binding example** - send the `focus_event` event to the server when the user focuses on the input and the `blur_event` event when the user blurs from the input
 ```html
 <input name="text" phx-focus="focus_event" phx-blur="blur_event"/>
 ```
@@ -131,27 +135,33 @@ There are other bindings that provide additional functionality for your LiveView
 
 #### Value Bindings
 When you need to send along additional data with an event binding you can use a value binding which looks something like `phx-value-[NAME]` where `[Name]` is replaced by the key of the value.  This binding can be used in conjunction with other click, key, and focus bindings.
+
+**Value binding example** - send the `mark_complete` event to the server along with the `{id: "myId"}` payload when the user clicks on the "Complete" button
 ```html
 <button phx-click="mark_complete" phx-value-id="myId">Complete</button>
 ```
-
-When a user clicks on this button the `mark_complete` event would be sent along with the data `{ id: "myId" }`.  Note the `[NAME]` part of `phx-value-[NAME]` is used as the object key while the attribute value is used as the object value.
+Note the `[NAME]` part of `phx-value-[NAME]` is used as the object key while the attribute value is used as the object value.
 
 #### Rate Limiting Bindings
 Deboucing and throttling events is a very common need and to support these use-cases there are the following bindings:
  * `phx-debounce` - Debounce an event by the number of milliseconds specified in the attribute value **or** by setting the value to `blur`.  This is useful for preventing multiple events from being sent to the server in rapid succession. When `blur` is the value, the event will be debounced until the element is blurred by the user. Typically used for input elements.
   * `phx-throttle` - Throttle an event by the number of milliseconds specified in the attribute value.  In contrast to debouncing, throttling emits an event immediately and then only once every specified number of milliseconds. Typically used to rate limit click events, key events, and mouse actions.
 
+**Debounce binding example** - send the `validate` event to the server when a user blurs away from the address input
 ```html
 <form action="#" phx-change="validate" phx-submit="save">
   <!--// only send "validate" event when address input is blurred -->
   <input name="address" phx-debounce="blur" />
 ```
+
+**Debounce binding example** - send the `search` event to the server 1 second after a user stops typing
 ```html
 <form action="#" phx-change="search">
   <!--// send "search" event after 1 second of debouncing  -->
   <input name="query" phx-debounce="1000" />
 ```
+
+**Throttling binding example** - only send one `volume_up` event every 500ms
 ```html
   <!--// rate limit clicks on a volume up event -->
   <button phx-click="volume_up" phx-throttle="500" />
@@ -176,6 +186,8 @@ const { foo } = socket.context;
 ```
 When creating a `LiveView` developers can provide a type annotation for `TContext` which describes the "shape" of the context. e.g.
 ```ts
+
+// You can define the "shape" of the TContext by annotating the createLiveView function
 const myLiveView = createLiveView<{foo: string}>(
   mount: (socket) => {
     socket.assign({ foo: "bar" }); 
@@ -184,28 +196,37 @@ const myLiveView = createLiveView<{foo: string}>(
   }
   ...
 )
-// you can define the context first and then use 
-interface MyContext = { foo: string };
+
+// Alternatively, you can define the context type first and then use it to as a type annotation for the `LiveView`
+
+// Define the MyContext interface
+interface MyContext { foo: string };
+// Annotate the createLiveView function with the MyContext interface
 const myLiveView = createLiveView<MyContext>(...)
 ```
-The state of a `LiveView` is persisted across page loads on the server-side (in memory by default).  For this reason, there is a method called `socket.tempAssign` which allows a developer to tell LiveViewJS to reset a context property to a given value.  Typically this is used for large objects or collections that don't change often and therefore probabaly don't need to be stored in memory.  
+
+The state of a `LiveView` is persisted across page loads on the server-side (in memory by default).  For this reason, there is a method called `socket.tempAssign` which allows a developer to tell LiveViewJS to reset a context property to a given value after the render lifecycle.  Typically this is used for large objects or collections that don't change often and therefore probabaly don't need to be stored in memory (e.g. collection of users or messages, etc).  
 ```ts
 // first assign a large object to the context
 socket.assign({ photos: [
-// 10s, 100s, 1000s, of photos 
+  ...// 10s, 100s, 1000s, of photos 
 ]}); 
-// use tempAssign to tell LiveViewJS to reset the large object to something else after render
+// use tempAssign to tell LiveViewJS to clear the photos array after this render cycle
 socket.tempAssign({ photos: [] });
 ```
 
 #### Send "Internal" Info
-`socket.sendInfo` enables a `LiveView` to send message to itself which is useful for executing actions that are asynchronous.  Messages sent via `socket.sendInfo` are received by the `handleInfo` method after the render lifecycle has completed.  (In other words, `handleInfo` is called after the `render` call which will result in another `render` after `handleInfo` completes.)  A typical pattern for events that run asynchronous processes is to show a loading indicator when the user initiates the event, then execute the process, and update the UI when the process finishes. 
+`socket.sendInfo` enables a `LiveView` to send message to itself which is useful for executing actions that are asynchronous.  Messages sent via `socket.sendInfo` are received by the `handleInfo` method after the render lifecycle has completed.  (In other words, `handleInfo` is called after the `render` call which will result in another `render` after `handleInfo` completes.)  A typical pattern for events that run asynchronous processes is to show a loading indicator when the user initiates the event, then execute the process in the background, and update the UI when the process finishes. 
 
 When creating your `LiveView` you can provide the typing for `TInfo` which describes the "shape" of the possible info messages.  e.g.
 ```ts
-type MyContext = {type: "search", query: string, loading: boolean, results: string[]};
+// Define the MyContext, MyEvents, and MyInfo types
+type MyContext = {query: string, loading: boolean, results: string[]};
+type MyEvents = {type: "search", query: string};
 type MyInfo = {type: "run_search", query: string} | {type: "refresh"};
-const myLiveView = createLiveView<MyContext, MyInfo>(
+
+// Annotate the createLiveView function with the types
+const myLiveView = createLiveView<MyContext, MyEvents, MyInfo>(
   handleEvent: (event, socket) => {
     ...
     if(event.type === "search" ) {
@@ -222,8 +243,7 @@ const myLiveView = createLiveView<MyContext, MyInfo>(
       const { query } = info;
       // run the search
       const results = searchService.run(query)
-      // update the context with results which will update
-      // the UI
+      // update the context with results which will update the UI
       socket.assign({ loading: false, results })
     }
     ...
