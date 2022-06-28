@@ -11,7 +11,6 @@ import type {
   LiveViewPageRenderer,
   LiveViewRootRenderer,
 } from "../deps.ts";
-import {} from "../deps.ts";
 import { DenoJwtSerDe } from "../deno/jwtSerDe.ts";
 
 export class DenoOakLiveViewServer
