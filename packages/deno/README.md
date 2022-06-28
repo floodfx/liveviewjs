@@ -129,6 +129,10 @@ Check out the full LiveViewJS repository:
 Then run the following command:
 `deno run --allow-net --allow-read --allow-write --allow-env --import-map=import_map.json src/example/index.ts`
 
+## To Run on Deno Deploy
+Run the following:
+`deployctl deploy --project=<Your Project> --import-map=import_map.json src/example/index.ts`
+
 
 
 
