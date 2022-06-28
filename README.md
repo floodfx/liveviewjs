@@ -61,6 +61,29 @@ export const counterLiveView = createLiveView<
 });
 ```
 
+### Run LiveViewJS Examples in 30 seconds
+```bash
+# clone the LiveViewJS repo
+git clone git@github.com:floodfx/liveviewjs.git
+```
+If you want to run examples for NodeJS (on Express), you can do it like this:
+```bash
+cd packages/express
+npm install
+npm run start
+# open your browser to http://localhost:4001/
+```
+If you want to run examples for Deno, you can do it like this:
+```bash
+cd packages/deno
+deno run --allow-net --allow-read --allow-write --allow-env --import-map=import_map.json src/example/index.ts
+# open your browser to http://localhost:9001/
+```
+To see the examples you just ran navigate to the examples folder:
+```bash
+cd ../examples
+```
+
 ### Anatomy of a LiveView
 The LiveViewJS API is extremely simple but very flexible.  There are 5 methods that make up the LiveView lifecycle: `mount`, `handleParams`, `handleEvent`, `handleInfo`, and `render`.  The `render` method is the only "required" method.  The other methods are optional but typically `mount` and `handleEvent` are also defined in order to setup the context (i.e. state) of the LiveView and handle user input.  
 
