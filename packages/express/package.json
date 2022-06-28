@@ -1,6 +1,6 @@
 {
   "name": "@liveviewjs/express",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Library for easy integration of LiveView into Express.js applications",
   "exports": {
     "require": "./dist/liveviewjs-express.js",
@@ -42,7 +42,7 @@
     "ws": "^8.4.2"
   },
   "devDependencies": {
-    "@liveviewjs/examples": "^0.4.1",
+    "@liveviewjs/examples": "^0.4.2",
     "@rollup/plugin-commonjs": "^21.0.2",
     "@rollup/plugin-node-resolve": "^13.1.3",
     "@rollup/plugin-typescript": "^8.3.1",
