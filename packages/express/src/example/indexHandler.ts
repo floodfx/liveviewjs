@@ -12,8 +12,8 @@ export const indexHandler: Handler = (req, res) => {
         <p>
           <a href="${route.path}">👀 Live Demo</a>
           <br />
-          <a href="https://github.com/floodfx/liveviewjs/tree/main/packages/examples/src${
-            route.path
+          <a href="https://github.com/floodfx/liveviewjs/tree/main/packages/examples/src/liveviews${
+            route.gitPath ?? route.path
           }">📦 Source Code</a>
         </p>
         <p><strong>Tags</strong>
