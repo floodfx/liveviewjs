@@ -1,11 +1,18 @@
 export interface RouteDetails {
   label: string;
   path: string;
+  gitPath?: string;
   summary: string;
   tags: string[];
 }
 
 export const routeDetails: RouteDetails[] = [
+  {
+    label: "Counter",
+    path: "/counter",
+    summary: 'Standard "hello world" example.',
+    tags: ["phx-click"],
+  },
   {
     label: "Volume",
     path: "/volume",
@@ -27,24 +34,28 @@ export const routeDetails: RouteDetails[] = [
   {
     label: "Search",
     path: "/search",
+    gitPath: "/liveSearch",
     summary: "Search for businesses by zip code with live search results.",
     tags: ["phx-submit", "sendSelf"],
   },
   {
     label: "Autocomplete",
     path: "/autocomplete",
+    gitPath: "/autoComplete",
     summary: "Autocomplete by city prefix with live search results and debouncing.",
     tags: ["phx-change", "phx-submit", "phx-debounce"],
   },
   {
     label: "Pagination",
     path: "/paginate",
+    gitPath: "/pagination",
     summary: "Paginate a list of items with live navigation updating the list content and url params.",
     tags: ["phx-change", "push-patch"],
   },
   {
     label: "Sorting",
     path: "/sort",
+    gitPath: "/sorting",
     summary: "Expand on the pagination example to sort the list of items using live navigation.",
     tags: ["phx-change", "phx-click", "push-patch"],
   },
@@ -71,11 +82,5 @@ export const routeDetails: RouteDetails[] = [
     path: "/decarbonize",
     summary: "Example of LiveComponents within a LiveView",
     tags: ["live_component"],
-  },
-  {
-    label: "Counter",
-    path: "/counter",
-    summary: 'Standard "hello world" example.',
-    tags: ["phx-click"],
   },
 ];

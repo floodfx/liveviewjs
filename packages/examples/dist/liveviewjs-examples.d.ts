@@ -231,6 +231,7 @@ declare const counterLiveView: liveviewjs.LiveView<{
 interface RouteDetails {
     label: string;
     path: string;
+    gitPath?: string;
     summary: string;
     tags: string[];
 }
