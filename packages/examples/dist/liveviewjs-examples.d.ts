@@ -1,5 +1,6 @@
 import * as liveviewjs from 'liveviewjs';
-import { AnyLiveEvent } from 'liveviewjs';
+import { AnyLiveEvent, LiveViewChangeset } from 'liveviewjs';
+import { z } from 'zod';
 
 interface Store {
     name: string;
@@ -175,7 +176,35 @@ declare const sortLiveView: liveviewjs.LiveView<{
     sortOrder: string;
 }, liveviewjs.AnyLiveInfo>;
 
-declare const volunteerLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, {
+declare const VolunteerSchema: z.ZodObject<{
+    id: z.ZodDefault<z.ZodString>;
+    name: z.ZodString;
+    phone: z.ZodString;
+    checked_out: z.ZodDefault<z.ZodBoolean>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    name: string;
+    phone: string;
+    checked_out: boolean;
+}, {
+    id?: string | undefined;
+    checked_out?: boolean | undefined;
+    name: string;
+    phone: string;
+}>;
+declare type Volunteer = z.infer<typeof VolunteerSchema>;
+declare type VolunteerMutationInfo = {
+    type: "created";
+    volunteer: Volunteer;
+} | {
+    type: "updated";
+    volunteer: Volunteer;
+};
+
+declare const volunteerLiveView: liveviewjs.LiveView<{
+    volunteers: Volunteer[];
+    changeset: LiveViewChangeset<Volunteer>;
+}, {
     type: "save";
     name: string;
     phone: string;
@@ -186,7 +215,7 @@ declare const volunteerLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, 
 } | {
     type: "toggle-status";
     id: string;
-}, liveviewjs.AnyLiveInfo>;
+}, VolunteerMutationInfo>;
 
 /**
  * A basic counter that increments and decrements a number.
