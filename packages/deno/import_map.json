@@ -4,7 +4,7 @@
     "crypto": "https://deno.land/std@0.128.0/node/crypto.ts",
     "events": "https://deno.land/std@0.128.0/node/events.ts",
     "nanoid": "https://deno.land/x/nanoid@v3.0.0/mod.ts",
-    "liveviewjs": "https://deno.land/x/liveviewjs@0.3.0/mod.ts",
-    "@liveviewjs/examples": "https://deno.land/x/liveviewjs@0.3.0/packages/examples/mod.ts"
+    "liveviewjs": "https://deno.land/x/liveviewjs@0.4.1/mod.ts",
+    "@liveviewjs/examples": "https://deno.land/x/liveviewjs@0.4.1/packages/examples/mod.ts"
   }
 }
