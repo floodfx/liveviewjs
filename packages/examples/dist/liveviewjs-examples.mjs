@@ -2228,7 +2228,6 @@ const volunteerLiveView = createLiveView({
         socket.tempAssign({ volunteers: [] });
     },
     handleEvent: (event, socket) => {
-        console.log("event", event);
         switch (event.type) {
             case "validate":
                 socket.assign({
@@ -2256,6 +2255,7 @@ const volunteerLiveView = createLiveView({
                 break;
         }
     },
+    // Handle Volunteer mutation
     handleInfo: (info, socket) => {
         const { volunteer } = info;
         socket.assign({
@@ -2277,7 +2277,7 @@ const volunteerLiveView = createLiveView({
 
         <div class="field">
           ${text_input(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
-            ${error_tag(changeset, "name")}
+          ${error_tag(changeset, "name")}
         </div>
 
         <div class="field">
@@ -2286,7 +2286,7 @@ const volunteerLiveView = createLiveView({
             autocomplete: "off",
             phx_debounce: "blur",
         })}
-            ${error_tag(changeset, "phone")}
+          ${error_tag(changeset, "phone")}
         </div>
         ${submit("Check In", { phx_disable_with: "Saving..." })}
         </form>
