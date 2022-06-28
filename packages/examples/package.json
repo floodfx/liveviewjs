@@ -1,6 +1,6 @@
 {
   "name": "@liveviewjs/examples",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Example LiveViews showing how LiveViewJS used by Express and Deno server examples",
   "exports": {
     "require": "./dist/liveviewjs-examples.js",
