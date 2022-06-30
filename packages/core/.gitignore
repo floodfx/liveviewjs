@@ -1,0 +1,10 @@
+node_modules
+.cache/
+.env
+.parcel-cache/
+.DS_Store
+coverage/lcov-report/
+coverage/lcov.info
+diffs/
+build/
+*.tgz
