@@ -19,7 +19,7 @@ This paradigm was invented by the developers of the [Phoenix Framework](https://
  * Robust, battle-tested browser libraries used by tens of thousands of applications - we use the Phoenix LiveView javascript libraries directly (no reinventing the wheel)
  * Simple to use beyond "toy" examples - complexity does not grow exponentially like SPA frameworks
 
-#### Canonical "Counter" Example in LiveViewJS
+### Canonical "Counter" Example in LiveViewJS
 ```ts
 import { createLiveView, html } from "liveviewjs";
 
@@ -61,7 +61,10 @@ export const counterLiveView = createLiveView<
 });
 ```
 
-### Run LiveViewJS Examples in 30 seconds
+### How to use LiveViewJS in your NodeJS or Deno app
+LiveViewJS works on both NodeJS and Deno and can be added to your application one route at a time on any javascript-based web server. Currently, we have prebuilt integrations (HTTP middleware and websocket adaptors) for NodeJS+ExpressJS (see: [`packages/express`](packages/express/)) and Deno+Oak (see: [`packages/deno`](packages/deno/)). LiveViewJS is designed so that any NodeJS or Deno webserver that supports HTTP middleware and web sockets should be able to use it (e.g. Koa, Hapi, etc).  If you want to use LiveViewJS on a different webserver please open an issue and we'll work with you to add support for it.  See the section *Adding LiveViewJS to your existing app* below for more details.
+
+### Run the LiveViewJS Examples in 30 seconds
 ```bash
 # clone the LiveViewJS repo
 git clone git@github.com:floodfx/liveviewjs.git
@@ -439,8 +442,6 @@ For Deno, the examples are available on DenoLand: (replace VERSION below with th
 `https://deno.land/x/liveviewjs@VERSION/packages/examples/mod.ts`
 Check out the code in the `packages/deno` directory for example code.
 
-### How to use LiveViewJS in your NodeJS or Deno app
-LiveViewJS works on both NodeJS and Deno and can be added to your application one route at a time on any web server.  Currently, we have prebuilt integrations (HTTP middleware and websocket adaptors) for NodeJS+ExpressJS (see: `packages/express`) and Deno+Oak (see: `packages/deno`).  LiveViewJS is designed so that any NodeJS or Deno webserver that supports HTTP middleware and web sockets can use it (e.g. Koa, Hapi, etc).  If you want to use LiveViewJS on a different webserver please open an issue and we'll work with you to add support for it.
 
 #### Adding LiveViewJS to your existing app
 
