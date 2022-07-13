@@ -633,7 +633,7 @@ const text_input = (changeset, key, options) => {
     const phx_debounce = options?.phx_debounce ? safe(` phx-debounce="${options.phx_debounce}"`) : "";
     const className = options?.className ? safe(` class="${options.className}"`) : "";
     const type = options?.type ?? "text";
-    const id = `input_${key}`;
+    const id = `input_${String(key)}`;
     const value = changeset.data[key] ?? "";
     // prettier-ignore
     return html `<input type="${type}" id="${id}" name="${String(key)}" value="${value}"${className}${autocomplete}${placeholder}${phx_debounce}/>`;
