@@ -473,7 +473,7 @@ interface FormForOptions {
     method?: "get" | "post";
     id?: string;
 }
-declare const form_for: <T>(action: string, csrfToken: string, options?: FormForOptions | undefined) => HtmlSafeString;
+declare const form_for: <T>(action: string, csrfToken: string, options?: FormForOptions) => HtmlSafeString;
 
 interface InputOptions {
     placeholder?: string;
@@ -482,14 +482,14 @@ interface InputOptions {
     type?: "text" | "tel";
     className?: string;
 }
-declare const text_input: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: InputOptions | undefined) => HtmlSafeString;
+declare const text_input: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: InputOptions) => HtmlSafeString;
 interface TelephoneInputOptions extends Omit<InputOptions, "type"> {
 }
-declare const telephone_input: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: TelephoneInputOptions | undefined) => HtmlSafeString;
+declare const telephone_input: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: TelephoneInputOptions) => HtmlSafeString;
 interface ErrorTagOptions {
     className?: string;
 }
-declare const error_tag: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: ErrorTagOptions | undefined) => HtmlSafeString;
+declare const error_tag: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: ErrorTagOptions) => HtmlSafeString;
 
 interface LiveViewPatchHelperOptions {
     to: {
@@ -504,11 +504,11 @@ interface LiveTitleTagOptions {
     prefix?: string;
     suffix?: string;
 }
-declare const live_title_tag: (title: string, options?: LiveTitleTagOptions | undefined) => HtmlSafeString;
+declare const live_title_tag: (title: string, options?: LiveTitleTagOptions) => HtmlSafeString;
 
 declare type Options = string[] | Record<string, string>;
 declare type Selected = string | string[];
-declare const options_for_select: (options: Options, selected?: Selected | undefined) => HtmlSafeString;
+declare const options_for_select: (options: Options, selected?: Selected) => HtmlSafeString;
 
 interface PageTitleDefaults {
     prefix?: string;
@@ -519,7 +519,7 @@ interface PageTitleDefaults {
 interface SubmitOptions {
     phx_disable_with: string;
 }
-declare const submit: (label: string, options?: SubmitOptions | undefined) => HtmlSafeString;
+declare const submit: (label: string, options?: SubmitOptions) => HtmlSafeString;
 
 interface LiveContext {
     [key: string]: any;
@@ -889,7 +889,7 @@ interface HttpRequestAdaptor {
  * @param liveViewTemplateRenderer optional @{LiveViewTemplate} used for adding additional content to the LiveView (typically reused across all LiveViews)
  * @returns the HTML for the HTTP server to return to the client
  */
-declare const handleHttpLiveView: (idGenerator: IdGenerator, csrfGenerator: CsrfGenerator, liveView: LiveView, adaptor: HttpRequestAdaptor, pageRenderer: LiveViewPageRenderer, pageTitleDefaults?: PageTitleDefaults | undefined, rootRenderer?: LiveViewRootRenderer | undefined) => Promise<string | undefined>;
+declare const handleHttpLiveView: (idGenerator: IdGenerator, csrfGenerator: CsrfGenerator, liveView: LiveView, adaptor: HttpRequestAdaptor, pageRenderer: LiveViewPageRenderer, pageTitleDefaults?: PageTitleDefaults, rootRenderer?: LiveViewRootRenderer) => Promise<string | undefined>;
 
 /**
  * Naive implementation of flash adaptor that uses "__flash" property on session data

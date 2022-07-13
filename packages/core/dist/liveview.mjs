@@ -1,14 +1,7 @@
-'use strict';
 
-Object.defineProperty(exports, '__esModule', { value: true });
-
-var crypto = require('crypto');
-var EventEmitter = require('events');
-
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
-
-var crypto__default = /*#__PURE__*/_interopDefaultLegacy(crypto);
-var EventEmitter__default = /*#__PURE__*/_interopDefaultLegacy(EventEmitter);
+/// <reference types="./liveview.d.ts" />
+import crypto from 'crypto';
+import EventEmitter from 'events';
 
 class BaseLiveComponentSocket {
     id;
@@ -633,7 +626,7 @@ const text_input = (changeset, key, options) => {
     const phx_debounce = options?.phx_debounce ? safe(` phx-debounce="${options.phx_debounce}"`) : "";
     const className = options?.className ? safe(` class="${options.className}"`) : "";
     const type = options?.type ?? "text";
-    const id = `input_${key}`;
+    const id = `input_${String(key)}`;
     const value = changeset.data[key] ?? "";
     // prettier-ignore
     return html `<input type="${type}" id="${id}" name="${String(key)}" value="${value}"${className}${autocomplete}${placeholder}${phx_debounce}/>`;
@@ -928,13 +921,13 @@ const newChangesetFactory = (schema) => {
  * Should only be used in single process environments like local development
  * or a single instance.  In a multi-process environment, use RedisPubSub.
  */
-const eventEmitter = new EventEmitter__default["default"](); // use this singleton for all pubSub events
+const eventEmitter = new EventEmitter(); // use this singleton for all pubSub events
 class SingleProcessPubSub {
     subscribers = {};
     async subscribe(topic, subscriber) {
         await eventEmitter.addListener(topic, subscriber);
         // store connection id for unsubscribe and return for caller
-        const subId = crypto__default["default"].randomBytes(10).toString("hex");
+        const subId = crypto.randomBytes(10).toString("hex");
         this.subscribers[subId] = subscriber;
         return subId;
     }
@@ -1588,7 +1581,7 @@ class LiveViewManager {
         // concat all the component methods and hash them to get a unique component "class"
         let code = liveComponent.mount.toString() + liveComponent.update.toString() + liveComponent.render.toString();
         code = liveComponent.handleEvent ? code + liveComponent.handleEvent.toString() : code;
-        const componentClass = crypto__default["default"].createHash("sha256").update(code).digest("hex");
+        const componentClass = crypto.createHash("sha256").update(code).digest("hex");
         // cache single instance of each component type
         if (!this.statefuleLiveComponentInstances[componentClass]) {
             this.statefuleLiveComponentInstances[componentClass] = liveComponent;
@@ -1813,33 +1806,4 @@ class WsMessageRouter {
     }
 }
 
-exports.BaseLiveComponent = BaseLiveComponent;
-exports.BaseLiveView = BaseLiveView;
-exports.HtmlSafeString = HtmlSafeString;
-exports.HttpLiveComponentSocket = HttpLiveComponentSocket;
-exports.HttpLiveViewSocket = HttpLiveViewSocket;
-exports.LiveViewManager = LiveViewManager;
-exports.SessionFlashAdaptor = SessionFlashAdaptor;
-exports.SingleProcessPubSub = SingleProcessPubSub;
-exports.WsLiveComponentSocket = WsLiveComponentSocket;
-exports.WsLiveViewSocket = WsLiveViewSocket;
-exports.WsMessageRouter = WsMessageRouter;
-exports.createLiveComponent = createLiveComponent;
-exports.createLiveView = createLiveView;
-exports.deepDiff = deepDiff;
-exports.diffArrays = diffArrays;
-exports.diffArrays2 = diffArrays2;
-exports.error_tag = error_tag;
-exports.escapehtml = escapehtml;
-exports.form_for = form_for;
-exports.handleHttpLiveView = handleHttpLiveView;
-exports.html = html;
-exports.join = join;
-exports.live_patch = live_patch;
-exports.live_title_tag = live_title_tag;
-exports.newChangesetFactory = newChangesetFactory;
-exports.options_for_select = options_for_select;
-exports.safe = safe;
-exports.submit = submit;
-exports.telephone_input = telephone_input;
-exports.text_input = text_input;
+export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SessionFlashAdaptor, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };

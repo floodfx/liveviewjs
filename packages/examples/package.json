@@ -35,7 +35,7 @@
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "MIT",
   "dependencies": {
-    "liveviewjs": "^0.4.1",
+    "liveviewjs": "*",
     "nanoid": "^3.2.0",
     "node-fetch": "^2.6.7",
     "zod": "^3.17.3"

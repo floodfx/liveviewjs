@@ -1,0 +1,12 @@
+.parcel-cache/
+.vscode/
+coverage/
+node_modules/
+.editorconfig
+.eslintrc.js
+.gitignore
+.gitattributes
+.npmignore
+jest.config.js
+package-lock.json
+tsconfig.json
