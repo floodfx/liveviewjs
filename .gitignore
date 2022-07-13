@@ -8,3 +8,4 @@ coverage/lcov.info
 diffs/
 build/
 *.tgz
+.turbo
