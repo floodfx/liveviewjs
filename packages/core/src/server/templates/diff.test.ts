@@ -230,7 +230,7 @@ describe("test diffs", () => {
     expect(diffArrays2(oldArray, newArray).length).toBe(0);
   });
 
-  it("diffs this", () => {
+  it.skip("diffs this", () => {
     const oldParts = require("../../../diffs/220323/oldView.json");
     const newParts = require("../../../diffs/220323/view.json");
     const diff = deepDiff(oldParts, newParts);
