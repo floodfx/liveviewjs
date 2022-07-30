@@ -17,6 +17,11 @@
   ],
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "MIT",
+  "scripts": {
+    "test": "turbo run test",
+    "dist": "turbo run dist",
+    "publish": "turbo run publish"
+  },
   "devDependencies": {
     "@changesets/cli": "^2.23.1",
     "@types/node": "^17.0.23",
