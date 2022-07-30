@@ -1,0 +1,41 @@
+name: Changeset Release
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: AutoRelease
+    runs-on: ubuntu-latest
+    steps:
+      # checkout the code
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      # setup node version
+      - name: Setup Node
+        uses: actions/setup-node@v3.0.0
+        with:
+          node-version: 17
+      # install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # run turbo publish
+      - name: Install dependencies
+        run: npm run publish
+
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: npm run cs:publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Print Release
+        if: ${{ steps.release.outputs.released == 'true' }}
+        run: echo Release ID ${{ steps.release.outputs.release_id }}

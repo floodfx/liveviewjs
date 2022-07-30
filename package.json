@@ -20,7 +20,10 @@
   "scripts": {
     "test": "turbo run test",
     "dist": "turbo run dist",
-    "publish": "turbo run publish"
+    "publish": "turbo run publish",
+    "cs": "changeset",
+    "cs:version": "changeset version",
+    "cs:publish": "changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.23.1",
