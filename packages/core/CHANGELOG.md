@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.5.0
+
+### Patch Changes
+
+- b1fa3a7: Add JS Commands to LiveViewJS
+
 ## 0.4.4
 
 ### Patch Changes
