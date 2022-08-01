@@ -1,22 +1,28 @@
-import { Application, LiveViewRouter, nanoid, Router, SingleProcessPubSub, SessionFlashAdaptor } from "../deps.ts";
-import {
-  autocompleteLiveView,
-  decarbLiveView,
-  printLiveView,
-  volumeLiveView,
-  paginateLiveView,
-  dashboardLiveView,
-  searchLiveView,
-  serversLiveView,
-  sortLiveView,
-  volunteerLiveView,
-  counterLiveView,
-} from "../deps.ts";
-import { pageRenderer, rootRenderer } from "./liveViewRenderers.ts";
+import { DenoJwtSerDe } from "../deno/jwtSerDe.ts";
 import { DenoOakLiveViewServer } from "../deno/server.ts";
 import { DenoWsAdaptor } from "../deno/wsAdaptor.ts";
-import { DenoJwtSerDe } from "../deno/jwtSerDe.ts";
+import {
+  Application,
+  autocompleteLiveView,
+  counterLiveView,
+  dashboardLiveView,
+  decarbLiveView,
+  jsCmdsLiveView,
+  LiveViewRouter,
+  nanoid,
+  paginateLiveView,
+  printLiveView,
+  Router,
+  searchLiveView,
+  serversLiveView,
+  SessionFlashAdaptor,
+  SingleProcessPubSub,
+  sortLiveView,
+  volumeLiveView,
+  volunteerLiveView,
+} from "../deps.ts";
 import { indexHandler } from "./indexHandler.ts";
+import { pageRenderer, rootRenderer } from "./liveViewRenderers.ts";
 
 // map request paths to LiveViews
 const lvRouter: LiveViewRouter = {
@@ -31,6 +37,7 @@ const lvRouter: LiveViewRouter = {
   "/sort": sortLiveView,
   "/volunteers": volunteerLiveView,
   "/counter": counterLiveView,
+  "/jscmds": jsCmdsLiveView,
 };
 
 // configure your oak app
