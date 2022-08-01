@@ -42,6 +42,30 @@ declare type Infos = {
  */
 declare const autocompleteLiveView: liveviewjs.LiveView<Context, Events, Infos>;
 
+/**
+ * A basic counter that increments and decrements a number.
+ */
+declare const counterLiveView: liveviewjs.LiveView<{
+    count: number;
+}, {
+    type: "increment";
+} | {
+    type: "decrement";
+}, liveviewjs.AnyLiveInfo>;
+
+/**
+ * Dashboard that automatically refreshes every second or when a user hits refresh.
+ */
+declare const dashboardLiveView: liveviewjs.LiveView<{
+    newOrders: number;
+    salesAmount: number;
+    rating: number;
+}, {
+    type: "refresh";
+}, {
+    type: "tick";
+}>;
+
 declare type FootprintData = {
     vehicleCO2Tons: number;
     spaceHeatingCO2Tons: number;
@@ -55,33 +79,18 @@ declare const decarbLiveView: liveviewjs.LiveView<{
     footprintData?: FootprintData | undefined;
 }, AnyLiveEvent, FootprintUpdateInfo>;
 
-declare type PhotoSize = "4x6" | "5x7" | "8x10" | "10x13" | "11x14";
-declare const printLiveView: liveviewjs.LiveView<{
-    photoSizeIndex: number;
-    photoSize: PhotoSize;
-    cost: number;
-}, {
-    type: "update";
-    photoSizeIndex: string;
-}, liveviewjs.AnyLiveInfo>;
-
+declare type MyContext = {
+    count: number;
+};
+declare type MyEvent = {
+    type: "increment";
+} | {
+    type: "decrement";
+};
 /**
- * Simulates a UI to control the volume using buttons and keyboard input.
+ * Example of a LiveView using JS Commands
  */
-declare const volumeLiveView: liveviewjs.LiveView<{
-    volume: number;
-}, {
-    type: "on";
-} | {
-    type: "off";
-} | {
-    type: "up";
-} | {
-    type: "down";
-} | {
-    type: "key_update";
-    key: string;
-}, liveviewjs.AnyLiveInfo>;
+declare const jsCmdsLiveView: liveviewjs.LiveView<MyContext, MyEvent, liveviewjs.AnyLiveInfo>;
 
 declare const searchLiveView: liveviewjs.LiveView<{
     zip: string;
@@ -115,18 +124,15 @@ declare const paginateLiveView: liveviewjs.LiveView<{
     perPage: string;
 }, liveviewjs.AnyLiveInfo>;
 
-/**
- * Dashboard that automatically refreshes every second or when a user hits refresh.
- */
-declare const dashboardLiveView: liveviewjs.LiveView<{
-    newOrders: number;
-    salesAmount: number;
-    rating: number;
+declare type PhotoSize = "4x6" | "5x7" | "8x10" | "10x13" | "11x14";
+declare const printLiveView: liveviewjs.LiveView<{
+    photoSizeIndex: number;
+    photoSize: PhotoSize;
+    cost: number;
 }, {
-    type: "refresh";
-}, {
-    type: "tick";
-}>;
+    type: "update";
+    photoSizeIndex: string;
+}, liveviewjs.AnyLiveInfo>;
 
 interface Server {
     id: string;
@@ -176,6 +182,24 @@ declare const sortLiveView: liveviewjs.LiveView<{
     sortOrder: string;
 }, liveviewjs.AnyLiveInfo>;
 
+/**
+ * Simulates a UI to control the volume using buttons and keyboard input.
+ */
+declare const volumeLiveView: liveviewjs.LiveView<{
+    volume: number;
+}, {
+    type: "on";
+} | {
+    type: "off";
+} | {
+    type: "up";
+} | {
+    type: "down";
+} | {
+    type: "key_update";
+    key: string;
+}, liveviewjs.AnyLiveInfo>;
+
 declare const VolunteerSchema: z.ZodObject<{
     id: z.ZodDefault<z.ZodString>;
     name: z.ZodString;
@@ -217,17 +241,6 @@ declare const volunteerLiveView: liveviewjs.LiveView<{
     id: string;
 }, VolunteerMutationInfo>;
 
-/**
- * A basic counter that increments and decrements a number.
- */
-declare const counterLiveView: liveviewjs.LiveView<{
-    count: number;
-}, {
-    type: "increment";
-} | {
-    type: "decrement";
-}, liveviewjs.AnyLiveInfo>;
-
 interface RouteDetails {
     label: string;
     path: string;
@@ -237,4 +250,4 @@ interface RouteDetails {
 }
 declare const routeDetails: RouteDetails[];
 
-export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, paginateLiveView, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView };
+export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView };

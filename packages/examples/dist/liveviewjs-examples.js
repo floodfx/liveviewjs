@@ -1221,6 +1221,113 @@ function renderLoading$1() {
     return liveviewjs.html `<div class="loader">Loading...</div>`;
 }
 
+/**
+ * A basic counter that increments and decrements a number.
+ */
+const counterLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
+        // init state, set count to 0
+        socket.assign({ count: 0 });
+    },
+    handleEvent: (event, socket) => {
+        // handle increment and decrement events
+        const { count } = socket.context;
+        switch (event.type) {
+            case "increment":
+                socket.assign({ count: count + 1 });
+                break;
+            case "decrement":
+                socket.assign({ count: count - 1 });
+                break;
+        }
+    },
+    render: async (context) => {
+        // render the view based on the state
+        const { count } = context;
+        return liveviewjs.html `
+      <div>
+        <h1>Count is: ${count}</h1>
+        <button phx-click="decrement">-</button>
+        <button phx-click="increment">+</button>
+      </div>
+    `;
+    },
+});
+
+function numberToCurrency(amount) {
+    var formatter = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+    });
+    return formatter.format(amount);
+}
+
+/**
+ * Dashboard that automatically refreshes every second or when a user hits refresh.
+ */
+const dashboardLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
+        if (socket.connected) {
+            // only start repeating if the socket is connected (i.e. websocket is connected)
+            socket.repeat(() => {
+                // send the tick event internally
+                socket.sendInfo({ type: "tick" });
+            }, 1000);
+        }
+        socket.assign(nextRandomData());
+    },
+    // on tick, update random data
+    handleInfo: (_, socket) => socket.assign(nextRandomData()),
+    // on refresh, update random data
+    handleEvent: (_, socket) => socket.assign(nextRandomData()),
+    render: (context) => {
+        const { newOrders, salesAmount, rating } = context;
+        return liveviewjs.html `
+      <h1>Sales Dashboard</h1>
+      <hr />
+      <span>🥡 New Orders</span>
+      <h2>${newOrders}</h2>
+      <hr />
+      <span>💰 Sales Amount</span>
+      <h2>${numberToCurrency(salesAmount)}</h2>
+      <hr />
+      <span>🌟 Rating</spa>
+      <h2>${ratingToStars(rating)}</h2>
+
+      <br />
+      <br />
+      <button phx-click="refresh">↻ Refresh</button>
+    `;
+    },
+});
+// generate a random set of data
+function nextRandomData() {
+    return {
+        newOrders: randomNewOrders(),
+        salesAmount: randomSalesAmount(),
+        rating: randomRating(),
+    };
+}
+// display star emojis given a rating
+function ratingToStars(rating) {
+    const stars = [];
+    let i = 0;
+    for (; i < rating; i++) {
+        stars.push("⭐");
+    }
+    for (; i < 5; i++) {
+        stars.push("✩");
+    }
+    return stars.join("");
+}
+// generate a random number between min and max
+const random = (min, max) => {
+    return () => Math.floor(Math.random() * (max - min + 1)) + min;
+};
+const randomSalesAmount = random(100, 1000);
+const randomNewOrders = random(5, 20);
+const randomRating = random(1, 5);
+
 // These numbers are completely made up!
 const vehicleTypeValues = ["gas", "electric", "hybrid", "dontHave"];
 const vehicleTypeLabels = {
@@ -1389,139 +1496,172 @@ const decarbLiveView = liveviewjs.createLiveView({
     },
 });
 
-function numberToCurrency(amount) {
-    var formatter = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-    });
-    return formatter.format(amount);
-}
-
-const photoSizes = ["4x6", "5x7", "8x10", "10x13", "11x14"];
-const printLiveView = liveviewjs.createLiveView({
-    mount: (socket) => {
-        const photoSizeIndex = 1;
-        const photoSize = photoSizeByIndex(photoSizeIndex);
-        const cost = calculateCost(photoSize);
-        socket.assign({ photoSize, photoSizeIndex, cost });
-    },
-    handleEvent: (event, socket) => {
-        const { photoSizeIndex } = event;
-        const photoSize = photoSizeByIndex(Number(photoSizeIndex));
-        const cost = calculateCost(photoSize);
-        socket.assign({ photoSize, cost });
-    },
-    render: (context, meta) => {
-        const { photoSize, photoSizeIndex, cost } = context;
-        // pull apart dimensions
-        const [width, _] = photoSize.split("x");
-        return liveviewjs.html `
-      <h1>Photo Print Pricing</h1>
-      <div id="size_cost_control">
-        <h4>Size: ${photoSize}</h4>
-        <h4>Cost: ${numberToCurrency(cost)}</h4>
-        <p>Move the slider to see the cost of each print size</p>
-        <form phx-change="update">
-          <input type="hidden" name="_csrf_token" value="${meta.csrfToken}" />
-          <input type="range" min="0" max="4" name="photoSizeIndex" value="${photoSizeIndex}" />
-        </form>
-
-        <img
-          width="${Number(width) * 15 * 3}"
-          height="${Number(width) * 15 * 2}"
-          src="https://placekitten.com/2400/1200" />
-      </div>
-    `;
-    },
-});
-function photoSizeByIndex(index) {
-    if (index >= 0 && index < photoSizes.length) {
-        return photoSizes[index];
-    }
-    return photoSizes[0];
-}
-function calculateCost(photSize) {
-    switch (photSize) {
-        case "4x6":
-            return 10;
-        case "5x7":
-            return 12;
-        case "8x10":
-            return 15;
-        case "10x13":
-            return 24;
-        case "11x14":
-            return 36;
-    }
-}
-
 /**
- * Simulates a UI to control the volume using buttons and keyboard input.
+ * Example of a LiveView using JS Commands
  */
-const volumeLiveView = liveviewjs.createLiveView({
-    mount: (socket) => {
-        socket.pageTitle("🎧 Volume Control");
-        socket.assign({ volume: 10 });
+const jsCmdsLiveView = liveviewjs.createLiveView({
+    mount: async (socket) => {
+        socket.assign({ count: 0 });
     },
-    handleEvent: async (event, socket) => {
-        const { volume } = socket.context;
-        let key = event.type;
-        // if event was a key event, use the key name as the event
-        if (event.type === "key_update") {
-            key = event.key;
+    handleEvent(event, socket) {
+        if (event.type === "increment") {
+            socket.assign({ count: socket.context.count + 1 });
         }
-        let newVolume = volume;
-        switch (key) {
-            case "off":
-            case "ArrowLeft":
-                newVolume = 0;
-                break;
-            case "on":
-            case "ArrowRight":
-                newVolume = 100;
-                break;
-            case "up":
-            case "ArrowUp":
-                newVolume = Math.min(volume + 10, 100);
-                break;
-            case "down":
-            case "ArrowDown":
-                newVolume = Math.max(volume - 10, 0);
-                break;
+        else if (event.type === "decrement") {
+            socket.assign({ count: socket.context.count - 1 });
         }
-        if (newVolume === 100) {
-            await socket.putFlash("info", "Cranked full volume! 🤘");
-        }
-        else if (newVolume === 0) {
-            await socket.putFlash("error", "Silence! 🤫");
-        }
-        socket.assign({ volume: newVolume });
     },
-    render: (context) => {
-        const { volume } = context;
+    render: async (ctx) => {
         return liveviewjs.html `
-      <div id="light">
-        <h1>🎧 Volume Control</h1>
-        <div>
-          <div>${volume}%</div>
-          <progress
-            id="volume_control"
-            style="width: 300px; height: 2em; opacity: ${volume / 100}"
-            value="${volume}"
-            max="100"></progress>
-        </div>
+      <div>
+        <h2>Add / Remove Class</h2>
+        <button phx-click="${new liveviewjs.JS().add_class("red underline", { to: "#add_rm_class" })}">Add Class</button>
+        <button phx-click="${new liveviewjs.JS().remove_class("red underline", { to: "#add_rm_class" })}">Remove Class</button>
+        <div id="add_rm_class">Add/Remove Class Target</div>
 
-        <button phx-click="off" phx-window-keydown="key_update" phx-key="ArrowLeft">⬅️ Silence</button>
+        <h2>Toggle</h2>
+        <button phx-click="${new liveviewjs.JS().toggle({ to: "#toggle" })}">Toggle</button>
+        <div id="toggle">Toggler</div>
 
-        <button phx-click="down" phx-window-keydown="key_update" phx-key="ArrowDown">⬇️ Turn Down</button>
+        <h2>Show / Hide</h2>
+        <button phx-click="${new liveviewjs.JS().show({ to: "#show_hide" })}">Show</button>
+        <button phx-click="${new liveviewjs.JS().hide({ to: "#show_hide" })}">Hide</button>
+        <div id="show_hide" style="display:none;">Show/Hide</div>
 
-        <button phx-click="up" phx-window-keydown="key_update" phx-key="ArrowUp">⬆️ Turn Up</button>
+        <h2>Set / Remove Attribute</h2>
+        <button phx-click="${new liveviewjs.JS().set_attribute(["disabled", ""], { to: "#set_rm_attr" })}">Set Disabled</button>
+        <button phx-click="${new liveviewjs.JS().remove_attribute("disabled", { to: "#set_rm_attr" })}">Remove Disabled</button>
+        <button id="set_rm_attr">Button</button>
 
-        <button phx-click="on" phx-window-keydown="key_update" phx-key="ArrowRight">➡️ Cranked</button>
+        <h2>Dispatch</h2>
+        <button phx-click="${new liveviewjs.JS().dispatch("click", { to: "#dispatch" })}">Dispatch Click</button>
+        <button phx-click="${new liveviewjs.JS().dispatch("custom", { to: "#dispatch", detail: { foo: "bar" } })}">
+          Dispatch Custom
+        </button>
+        <div id="dispatch">Dispatch Target</div>
+        <script type="text/javascript">
+          window.addEventListener("custom", (e) => {
+            console.log("Custom Event", e);
+          });
+          window.addEventListener("click", (e) => {
+            console.log("Click Event", e);
+          });
+        </script>
 
-        <div>
-          <h5>Try using the keys too!</h5>
-        </div>
+        <h2>Transition</h2>
+        <button
+          phx-click="${new liveviewjs.JS()
+            .transition("fade-in-scale", {
+            to: "#transition",
+        })
+            .show({ to: "#transition", transition: "fade-in-scale" })}">
+          Transition In
+        </button>
+        <button
+          phx-click="${new liveviewjs.JS()
+            .transition("fade-out-scale", {
+            to: "#transition",
+        })
+            .hide({ to: "#transition", transition: "fade-out-scale" })}">
+          Transition Out
+        </button>
+        <button phx-click="${new liveviewjs.JS().transition("shake")}">Shake</button>
+        <div id="transition">Transition Target</div>
+
+        <h2>Push</h2>
+        Count: ${ctx.count}
+        <button phx-click="${new liveviewjs.JS().push("increment")}">+</button>
+        <button phx-click="${new liveviewjs.JS().push("decrement")}">-</button>
+        <button phx-click="${new liveviewjs.JS().push("increment").hide()}">Add then hide</button>
+        <button phx-click="${new liveviewjs.JS().hide().push("increment")}">Hide then add</button>
+        <button phx-click="${new liveviewjs.JS().push("increment", { page_loading: true })}">Page Loading Push</button>
+
+        <!-- Some custom styles for demo-->
+        <style>
+          .red {
+            color: red;
+          }
+          .underline {
+            text-decoration: underline;
+          }
+
+          .fade-in-scale {
+            animation: 0.25s ease-in 0s normal forwards 1 fade-in-scale-keys;
+          }
+
+          .fade-out-scale {
+            animation: 0.25s ease-out 0s normal forwards 1 fade-out-scale-keys;
+          }
+
+          .fade-in {
+            animation: 0.25s ease-out 0s normal forwards 1 fade-in-keys;
+          }
+          .fade-out {
+            animation: 0.25s ease-out 0s normal forwards 1 fade-out-keys;
+          }
+
+          .shake {
+            animation: shake 0.2s infinite;
+          }
+
+          @keyframes shake {
+            20% {
+              transform: rotate(0deg);
+            }
+            40% {
+              transform: rotate(5deg);
+            }
+            60% {
+              transform: rotate(0deg);
+            }
+            80% {
+              transform: rotate(-5deg);
+            }
+            100% {
+              transform: rotate(0deg);
+            }
+          }
+
+          @keyframes fade-in-scale-keys {
+            0% {
+              scale: 0.95;
+              opacity: 0;
+            }
+            100% {
+              scale: 1;
+              opacity: 1;
+            }
+          }
+
+          @keyframes fade-out-scale-keys {
+            0% {
+              scale: 1;
+              opacity: 1;
+            }
+            100% {
+              scale: 0.95;
+              opacity: 0;
+            }
+          }
+
+          @keyframes fade-in-keys {
+            0% {
+              opacity: 0;
+            }
+            100% {
+              opacity: 1;
+            }
+          }
+
+          @keyframes fade-out-keys {
+            0% {
+              opacity: 1;
+            }
+            100% {
+              opacity: 0;
+            }
+          }
+        </style>
       </div>
     `;
     },
@@ -1777,71 +1917,63 @@ function expiresDecoration$1(donation) {
     }
 }
 
-/**
- * Dashboard that automatically refreshes every second or when a user hits refresh.
- */
-const dashboardLiveView = liveviewjs.createLiveView({
+const photoSizes = ["4x6", "5x7", "8x10", "10x13", "11x14"];
+const printLiveView = liveviewjs.createLiveView({
     mount: (socket) => {
-        if (socket.connected) {
-            // only start repeating if the socket is connected (i.e. websocket is connected)
-            socket.repeat(() => {
-                // send the tick event internally
-                socket.sendInfo({ type: "tick" });
-            }, 1000);
-        }
-        socket.assign(nextRandomData());
+        const photoSizeIndex = 1;
+        const photoSize = photoSizeByIndex(photoSizeIndex);
+        const cost = calculateCost(photoSize);
+        socket.assign({ photoSize, photoSizeIndex, cost });
     },
-    // on tick, update random data
-    handleInfo: (_, socket) => socket.assign(nextRandomData()),
-    // on refresh, update random data
-    handleEvent: (_, socket) => socket.assign(nextRandomData()),
-    render: (context) => {
-        const { newOrders, salesAmount, rating } = context;
+    handleEvent: (event, socket) => {
+        const { photoSizeIndex } = event;
+        const photoSize = photoSizeByIndex(Number(photoSizeIndex));
+        const cost = calculateCost(photoSize);
+        socket.assign({ photoSize, cost });
+    },
+    render: (context, meta) => {
+        const { photoSize, photoSizeIndex, cost } = context;
+        // pull apart dimensions
+        const [width, _] = photoSize.split("x");
         return liveviewjs.html `
-      <h1>Sales Dashboard</h1>
-      <hr />
-      <span>🥡 New Orders</span>
-      <h2>${newOrders}</h2>
-      <hr />
-      <span>💰 Sales Amount</span>
-      <h2>${numberToCurrency(salesAmount)}</h2>
-      <hr />
-      <span>🌟 Rating</spa>
-      <h2>${ratingToStars(rating)}</h2>
+      <h1>Photo Print Pricing</h1>
+      <div id="size_cost_control">
+        <h4>Size: ${photoSize}</h4>
+        <h4>Cost: ${numberToCurrency(cost)}</h4>
+        <p>Move the slider to see the cost of each print size</p>
+        <form phx-change="update">
+          <input type="hidden" name="_csrf_token" value="${meta.csrfToken}" />
+          <input type="range" min="0" max="4" name="photoSizeIndex" value="${photoSizeIndex}" />
+        </form>
 
-      <br />
-      <br />
-      <button phx-click="refresh">↻ Refresh</button>
+        <img
+          width="${Number(width) * 15 * 3}"
+          height="${Number(width) * 15 * 2}"
+          src="https://placekitten.com/2400/1200" />
+      </div>
     `;
     },
 });
-// generate a random set of data
-function nextRandomData() {
-    return {
-        newOrders: randomNewOrders(),
-        salesAmount: randomSalesAmount(),
-        rating: randomRating(),
-    };
-}
-// display star emojis given a rating
-function ratingToStars(rating) {
-    const stars = [];
-    let i = 0;
-    for (; i < rating; i++) {
-        stars.push("⭐");
+function photoSizeByIndex(index) {
+    if (index >= 0 && index < photoSizes.length) {
+        return photoSizes[index];
     }
-    for (; i < 5; i++) {
-        stars.push("✩");
-    }
-    return stars.join("");
+    return photoSizes[0];
 }
-// generate a random number between min and max
-const random = (min, max) => {
-    return () => Math.floor(Math.random() * (max - min + 1)) + min;
-};
-const randomSalesAmount = random(100, 1000);
-const randomNewOrders = random(5, 20);
-const randomRating = random(1, 5);
+function calculateCost(photSize) {
+    switch (photSize) {
+        case "4x6":
+            return 10;
+        case "5x7":
+            return 12;
+        case "8x10":
+            return 15;
+        case "10x13":
+            return 24;
+        case "11x14":
+            return 36;
+    }
+}
 
 function listServers() {
     return servers;
@@ -2174,6 +2306,78 @@ function expiresDecoration(donation) {
     }
 }
 
+/**
+ * Simulates a UI to control the volume using buttons and keyboard input.
+ */
+const volumeLiveView = liveviewjs.createLiveView({
+    mount: (socket) => {
+        socket.pageTitle("🎧 Volume Control");
+        socket.assign({ volume: 10 });
+    },
+    handleEvent: async (event, socket) => {
+        const { volume } = socket.context;
+        let key = event.type;
+        // if event was a key event, use the key name as the event
+        if (event.type === "key_update") {
+            key = event.key;
+        }
+        let newVolume = volume;
+        switch (key) {
+            case "off":
+            case "ArrowLeft":
+                newVolume = 0;
+                break;
+            case "on":
+            case "ArrowRight":
+                newVolume = 100;
+                break;
+            case "up":
+            case "ArrowUp":
+                newVolume = Math.min(volume + 10, 100);
+                break;
+            case "down":
+            case "ArrowDown":
+                newVolume = Math.max(volume - 10, 0);
+                break;
+        }
+        if (newVolume === 100) {
+            await socket.putFlash("info", "Cranked full volume! 🤘");
+        }
+        else if (newVolume === 0) {
+            await socket.putFlash("error", "Silence! 🤫");
+        }
+        socket.assign({ volume: newVolume });
+    },
+    render: (context) => {
+        const { volume } = context;
+        return liveviewjs.html `
+      <div id="light">
+        <h1>🎧 Volume Control</h1>
+        <div>
+          <div>${volume}%</div>
+          <progress
+            id="volume_control"
+            style="width: 300px; height: 2em; opacity: ${volume / 100}"
+            value="${volume}"
+            max="100"></progress>
+        </div>
+
+        <button phx-click="off" phx-window-keydown="key_update" phx-key="ArrowLeft">⬅️ Silence</button>
+
+        <button phx-click="down" phx-window-keydown="key_update" phx-key="ArrowDown">⬇️ Turn Down</button>
+
+        <button phx-click="up" phx-window-keydown="key_update" phx-key="ArrowUp">⬆️ Turn Up</button>
+
+        <button phx-click="on" phx-window-keydown="key_update" phx-key="ArrowRight">➡️ Cranked</button>
+
+        <div>
+          <h5>Try using the keys too!</h5>
+        </div>
+      </div>
+    `;
+    },
+});
+
 const phoneRegex = /^\d{3}[\s-.]?\d{3}[\s-.]?\d{4}$/;
 // Use Zod to define the schema for the Volunteer model
 // More on Zod - https://github.com/colinhacks/zod
@@ -2314,39 +2518,6 @@ function renderVolunteer(volunteer) {
   `;
 }
 
-/**
- * A basic counter that increments and decrements a number.
- */
-const counterLiveView = liveviewjs.createLiveView({
-    mount: (socket) => {
-        // init state, set count to 0
-        socket.assign({ count: 0 });
-    },
-    handleEvent: (event, socket) => {
-        // handle increment and decrement events
-        const { count } = socket.context;
-        switch (event.type) {
-            case "increment":
-                socket.assign({ count: count + 1 });
-                break;
-            case "decrement":
-                socket.assign({ count: count - 1 });
-                break;
-        }
-    },
-    render: async (context) => {
-        // render the view based on the state
-        const { count } = context;
-        return liveviewjs.html `
-      <div>
-        <h1>Count is: ${count}</h1>
-        <button phx-click="decrement">-</button>
-        <button phx-click="increment">+</button>
-      </div>
-    `;
-    },
-});
-
 const routeDetails = [
     {
         label: "Counter",
@@ -2424,12 +2595,19 @@ const routeDetails = [
         summary: "Example of LiveComponents within a LiveView",
         tags: ["live_component"],
     },
+    {
+        label: "JS Commands",
+        path: "/jscmds",
+        summary: "Example of using JS commands to update the DOM",
+        tags: ["js-cmds"],
+    },
 ];
 
 exports.autocompleteLiveView = autocompleteLiveView;
 exports.counterLiveView = counterLiveView;
 exports.dashboardLiveView = dashboardLiveView;
 exports.decarbLiveView = decarbLiveView;
+exports.jsCmdsLiveView = jsCmdsLiveView;
 exports.paginateLiveView = paginateLiveView;
 exports.printLiveView = printLiveView;
 exports.routeDetails = routeDetails;
