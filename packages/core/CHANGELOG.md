@@ -2,7 +2,7 @@
 
 ## 0.5.0
 
-### Patch Changes
+### Minor Changes
 
 - b1fa3a7: Add JS Commands to LiveViewJS
 
