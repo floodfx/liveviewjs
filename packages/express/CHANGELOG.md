@@ -1,5 +1,16 @@
 # @liveviewjs/express
 
+## 0.5.0
+
+### Minor Changes
+
+- d7e8e56: Add jscmd example to the express package and deno package
+
+### Patch Changes
+
+- Updated dependencies [b1fa3a7]
+  - liveviewjs@0.5.0
+
 ## 0.4.4
 
 ### Patch Changes
