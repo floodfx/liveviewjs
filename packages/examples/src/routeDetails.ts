@@ -83,4 +83,10 @@ export const routeDetails: RouteDetails[] = [
     summary: "Example of LiveComponents within a LiveView",
     tags: ["live_component"],
   },
+  {
+    label: "JS Commands",
+    path: "/jscmds",
+    summary: "Example of using JS commands to update the DOM",
+    tags: ["js-cmds"],
+  },
 ];
