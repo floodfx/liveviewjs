@@ -716,6 +716,246 @@ const submit = (label, options) => {
 };
 
 /**
+ * The JS Commands API allows you to perform a small set of powerful
+ *  DOM operations that only execute on the client.  This allows you
+ * apply css classes, show/hide elements, and dispatch events all without
+ * making a roundtrip to the server.  These commands are chainable - e.g.
+ * JS.add_class(...).show(...).dispatch(...).
+ *
+ * This is a port of the Phoenix LiveView JS Commands API.
+ * https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.JS.html
+ */
+class JS {
+    cmds = [];
+    /**
+     * Adds the css class(es) to the target element
+     * @param names the css class(es) to add (space delimited)
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    add_class(names, options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "add_class",
+                {
+                    to: options?.to ?? null,
+                    time: options?.time ?? 200,
+                    names: names.split(/\s+/),
+                    transition: transitionOptionsToCmd(options?.transition),
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * Removes the css class(es) from the target element
+     * @param names the css class(es) to remove (space delimited)
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    remove_class(names, options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "remove_class",
+                {
+                    to: options?.to ?? null,
+                    time: options?.time ?? 200,
+                    names: names.split(/\s+/),
+                    transition: transitionOptionsToCmd(options?.transition),
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * Shows the target element
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    show(options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "show",
+                {
+                    to: options?.to ?? null,
+                    time: options?.time ?? 200,
+                    transition: transitionOptionsToCmd(options?.transition),
+                    display: options?.display ?? null,
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * Hides the target element
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    hide(options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "hide",
+                {
+                    to: options?.to ?? null,
+                    time: options?.time ?? 200,
+                    transition: transitionOptionsToCmd(options?.transition),
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * Toggles the visibility of the target element
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    toggle(options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "toggle",
+                {
+                    to: options?.to ?? null,
+                    time: options?.time ?? 200,
+                    ins: transitionOptionsToCmd(options?.in),
+                    outs: transitionOptionsToCmd(options?.out),
+                    display: options?.display ?? null,
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * Sets the given attribute on the target element
+     * @param attr the 2-tuple of the attribute name and value to set
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    set_attribute(attr, options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "set_attr",
+                {
+                    to: options?.to ?? null,
+                    attr,
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * Removes the given attribute from the target element
+     * @param attr the attribute name to remove
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    remove_attribute(attr, options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "remove_attr",
+                {
+                    to: options?.to ?? null,
+                    attr,
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * Applies the given transition to the target element
+     * @param transition the transition to apply
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    transition(transition, options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "transition",
+                {
+                    to: options?.to ?? null,
+                    time: options?.time ?? 200,
+                    transition: transitionOptionsToCmd(transition),
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * Dispatches an event from the target element to the DOM.
+     *
+     * Note: All events dispatched are of a type CustomEvent, with the exception of "click".
+     * For a "click", a MouseEvent is dispatched to properly simulate a UI click.
+     *
+     * For emitted CustomEvent's, the event detail will contain a dispatcher, which references
+     * the DOM node that dispatched the JS event to the target element.
+     *
+     * @param event the event to dispatch
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    dispatch(event, options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "dispatch",
+                {
+                    to: options?.to ?? null,
+                    event,
+                    detail: options?.detail,
+                    bubbles: options?.bubbles,
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * Pushes the given event to the server
+     * @param event the event to push
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    push(event, options) {
+        this.cmds = [
+            ...this.cmds,
+            [
+                "push",
+                {
+                    event,
+                    ...options,
+                },
+            ],
+        ];
+        return this;
+    }
+    /**
+     * @returns JSON stringified commands for embedding in HTML
+     */
+    toString() {
+        return JSON.stringify(this.cmds);
+    }
+}
+/**
+ * Convert a transition option to a transition body command
+ */
+function transitionOptionsToCmd(opts) {
+    if (opts === undefined) {
+        return [[], [], []];
+    }
+    else if (typeof opts === "string") {
+        return [opts.split(/\s+/), [], []];
+    }
+    // split each transition option into an array of classes
+    return [opts[0].split(/\s+/), opts[1].split(/\s+/), opts[2].split(/\s+/)];
+}
+
+/**
  * Use the given inputs to handle (e.g. generate the HTML) for the requested LiveView. Usually this
  * is called via HTTP server middleware that determines if a request is to a LiveView and if so,
  * creates and passes all of the required inputs to this function
@@ -1806,4 +2046,4 @@ class WsMessageRouter {
     }
 }
 
-export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, LiveViewManager, SessionFlashAdaptor, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, JS, LiveViewManager, SessionFlashAdaptor, SingleProcessPubSub, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };

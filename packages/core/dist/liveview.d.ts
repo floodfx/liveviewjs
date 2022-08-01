@@ -521,6 +521,262 @@ interface SubmitOptions {
 }
 declare const submit: (label: string, options?: SubmitOptions) => HtmlSafeString;
 
+/**
+ * The string of classes to apply, or
+ * a 3-tuple containing the transition class, the class to apply to start
+ * the transition, and the class to apply to end the transition.
+ * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+ */
+declare type TransitionOption = string | [string, string, string];
+/**
+ * Options for the "add_class" and "remove_class" commands
+ */
+interface ClassOptions {
+    /**
+     * The optional DOM selector element to add or remove the class from (defaults to current element).
+     */
+    to?: string;
+    /**
+     * The time over which to apply the transition options.
+     */
+    time?: number;
+    /**
+     * The string of classes to apply before adding or removing the classes, or
+     * a 3-tuple containing the transition class, the class to apply to start
+     * the transition, and the class to apply to end the transition.
+     * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+     */
+    transition?: TransitionOption;
+}
+/**
+ * Options for the "show" command
+ */
+interface ShowOptions {
+    /**
+     * The optional DOM selector element to show (defaults to current element).
+     */
+    to?: string;
+    /**
+     * The time over which to apply the transition options.
+     */
+    time?: number;
+    /**
+     * The string of classes to apply before showing, or
+     * a 3-tuple containing the transition class, the class to apply to start
+     * the transition, and the class to apply to end the transition.
+     * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+     */
+    transition?: TransitionOption;
+    /**
+     * The optional display value to set when showing the element. Defaults to "block".
+     */
+    display?: string;
+}
+interface HideOptions {
+    /**
+     * The optional DOM selector element to hide (defaults to current element).
+     */
+    to?: string;
+    /**
+     * The time over which to apply the transition options.
+     */
+    time?: number;
+    /**
+     * The string of classes to apply before hiding, or
+     * a 3-tuple containing the transition class, the class to apply to start
+     * the transition, and the class to apply to end the transition.
+     * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+     */
+    transition?: TransitionOption;
+}
+/**
+ * Options for the "toggle" command
+ */
+interface ToggleOptions {
+    /**
+     * The optional DOM selector element to toggle (defaults to current element).
+     */
+    to?: string;
+    /**
+     * The time over which to apply the transition options.
+     */
+    time?: number;
+    /**
+     * The string of classes to apply when toggling in, or
+     * a 3-tuple containing the transition class, the class to apply to start
+     * the transition, and the class to apply to end the transition.
+     * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+     */
+    in?: TransitionOption;
+    /**
+     * The string of classes to apply when toggling out, or
+     * a 3-tuple containing the transition class, the class to apply to start
+     * the transition, and the class to apply to end the transition.
+     * e.g. ["ease-out duration-300", "opacity-100", "opacity-0"]
+     */
+    out?: TransitionOption;
+    /**
+     * The optional display value to set when toggling in the element. Defaults to "block".
+     */
+    display?: string;
+}
+/**
+ * Options for the "set_attribute" and "remove_attribute" commands
+ */
+interface AttributeOptions {
+    /**
+     * The optional DOM selector element to set or remove the attribute from (defaults to current element).
+     */
+    to?: string;
+}
+/**
+ * Options for the "transition" command
+ */
+interface TransitionOptions {
+    /**
+     * The optional DOM selector element to apply the transition to (defaults to current element).
+     */
+    to?: string;
+    /**
+     * The time over which to apply the transition.
+     */
+    time?: number;
+}
+/**
+ * Options for the "dispatch" command
+ */
+interface DispatchOptions {
+    /**
+     * The optional DOM selector element to apply the dispatch to (defaults to current element).
+     */
+    to?: string;
+    /**
+     * The optional map to use as the dispatched event's detail.
+     */
+    detail?: {
+        [key: string]: string | number | boolean;
+    };
+    /**
+     * The optional boolean that determines if the event bubbles (defaults to true).
+     */
+    bubbles?: boolean;
+}
+/**
+ * Options for the "push" command
+ */
+interface PushOptions {
+    /**
+     * The selector of component ID to push to
+     */
+    target?: string;
+    /**
+     * The selector to apply the phx loading classes to
+     */
+    loading?: string;
+    /**
+     * Determines if the push should trigger the "phx:page-loading-start"
+     * and "phx:page-loading-stop" events. Defaults to false
+     */
+    page_loading?: boolean;
+    /**
+     * The optional map of values to send to the server along with the event
+     */
+    value?: {
+        [key: string]: string | number | boolean;
+    };
+}
+/**
+ * The JS Commands API allows you to perform a small set of powerful
+ *  DOM operations that only execute on the client.  This allows you
+ * apply css classes, show/hide elements, and dispatch events all without
+ * making a roundtrip to the server.  These commands are chainable - e.g.
+ * JS.add_class(...).show(...).dispatch(...).
+ *
+ * This is a port of the Phoenix LiveView JS Commands API.
+ * https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.JS.html
+ */
+declare class JS {
+    private cmds;
+    /**
+     * Adds the css class(es) to the target element
+     * @param names the css class(es) to add (space delimited)
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    add_class(names: string, options?: ClassOptions): this;
+    /**
+     * Removes the css class(es) from the target element
+     * @param names the css class(es) to remove (space delimited)
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    remove_class(names: string, options?: ClassOptions): this;
+    /**
+     * Shows the target element
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    show(options?: ShowOptions): this;
+    /**
+     * Hides the target element
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    hide(options?: HideOptions): this;
+    /**
+     * Toggles the visibility of the target element
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    toggle(options?: ToggleOptions): this;
+    /**
+     * Sets the given attribute on the target element
+     * @param attr the 2-tuple of the attribute name and value to set
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    set_attribute(attr: [string, string], options?: AttributeOptions): this;
+    /**
+     * Removes the given attribute from the target element
+     * @param attr the attribute name to remove
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    remove_attribute(attr: string, options?: AttributeOptions): this;
+    /**
+     * Applies the given transition to the target element
+     * @param transition the transition to apply
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    transition(transition: TransitionOption, options?: TransitionOptions): this;
+    /**
+     * Dispatches an event from the target element to the DOM.
+     *
+     * Note: All events dispatched are of a type CustomEvent, with the exception of "click".
+     * For a "click", a MouseEvent is dispatched to properly simulate a UI click.
+     *
+     * For emitted CustomEvent's, the event detail will contain a dispatcher, which references
+     * the DOM node that dispatched the JS event to the target element.
+     *
+     * @param event the event to dispatch
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    dispatch(event: string, options?: DispatchOptions): this;
+    /**
+     * Pushes the given event to the server
+     * @param event the event to push
+     * @param options the options for the command
+     * @returns this instance for further chaining
+     */
+    push(event: string, options?: PushOptions): this;
+    /**
+     * @returns JSON stringified commands for embedding in HTML
+     */
+    toString(): string;
+}
+
 interface LiveContext {
     [key: string]: any;
 }
@@ -966,4 +1222,4 @@ interface LiveViewServerAdaptor<TMiddlewareInterface> {
     wsRouter(): WsMessageRouter;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, Event, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, Event, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
