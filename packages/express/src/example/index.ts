@@ -1,27 +1,28 @@
-import express, { NextFunction, Request, Response } from "express";
-import session, { MemoryStore } from "express-session";
-import WebSocket from "ws";
-import { Server } from "http";
-import { nanoid } from "nanoid";
-import { LiveViewRouter, SingleProcessPubSub, SessionFlashAdaptor } from "liveviewjs";
 import {
   autocompleteLiveView,
-  decarbLiveView,
-  printLiveView,
-  volumeLiveView,
-  paginateLiveView,
+  counterLiveView,
   dashboardLiveView,
+  decarbLiveView,
+  jsCmdsLiveView,
+  paginateLiveView,
+  printLiveView,
   searchLiveView,
   serversLiveView,
   sortLiveView,
+  volumeLiveView,
   volunteerLiveView,
-  counterLiveView,
 } from "@liveviewjs/examples";
-import { pageRenderer, rootRenderer } from "./liveViewRenderers";
-import { NodeWsAdaptor } from "../node/wsAdaptor";
+import express, { NextFunction, Request, Response } from "express";
+import session, { MemoryStore } from "express-session";
+import { Server } from "http";
+import { LiveViewRouter, SessionFlashAdaptor, SingleProcessPubSub } from "liveviewjs";
+import { nanoid } from "nanoid";
+import WebSocket from "ws";
 import { NodeJwtSerDe } from "../node/jwtSerDe";
-import { indexHandler } from "./indexHandler";
 import { NodeExpressLiveViewServer } from "../node/server";
+import { NodeWsAdaptor } from "../node/wsAdaptor";
+import { indexHandler } from "./indexHandler";
+import { pageRenderer, rootRenderer } from "./liveViewRenderers";
 
 // you'd want to set this to some secure, random string in production
 const signingSecret = "MY_VERY_SECRET_KEY";
@@ -39,6 +40,7 @@ const router: LiveViewRouter = {
   "/sort": sortLiveView,
   "/volunteers": volunteerLiveView,
   "/counter": counterLiveView,
+  "/jscmds": jsCmdsLiveView,
 };
 
 // configure your express app

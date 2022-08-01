@@ -1,9 +1,9 @@
 import type {
+  LiveViewPageRenderer,
+  LiveViewRootRenderer,
   LiveViewTemplate,
   PageTitleDefaults,
   SessionData,
-  LiveViewPageRenderer,
-  LiveViewRootRenderer,
 } from "../deps.ts";
 import { html, live_title_tag, safe, SessionFlashAdaptor } from "../deps.ts";
 
