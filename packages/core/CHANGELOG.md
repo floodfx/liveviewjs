@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.5.1
+
+### Patch Changes
+
+- 9aa6310: Document JS Commands and minor refactoring
+
 ## 0.5.0
 
 ### Minor Changes
