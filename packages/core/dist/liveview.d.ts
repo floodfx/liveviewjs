@@ -527,7 +527,7 @@ declare const submit: (label: string, options?: SubmitOptions) => HtmlSafeString
  * the transition, and the class to apply to end the transition.
  * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
  */
-declare type TransitionOption = string | [string, string, string];
+declare type Transition = string | [string, string, string];
 /**
  * Options for the "add_class" and "remove_class" commands
  */
@@ -546,7 +546,7 @@ declare type ClassOptions = {
      * the transition, and the class to apply to end the transition.
      * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
      */
-    transition?: TransitionOption;
+    transition?: Transition;
 };
 /**
  * Options for the "show" command
@@ -566,7 +566,7 @@ declare type ShowOptions = {
      * the transition, and the class to apply to end the transition.
      * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
      */
-    transition?: TransitionOption;
+    transition?: Transition;
     /**
      * The optional display value to set when showing the element. Defaults to "block".
      */
@@ -587,7 +587,7 @@ declare type HideOptions = {
      * the transition, and the class to apply to end the transition.
      * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
      */
-    transition?: TransitionOption;
+    transition?: Transition;
 };
 /**
  * Options for the "toggle" command
@@ -607,14 +607,14 @@ declare type ToggleOptions = {
      * the transition, and the class to apply to end the transition.
      * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
      */
-    in?: TransitionOption;
+    in?: Transition;
     /**
      * The string of classes to apply when toggling out, or
      * a 3-tuple containing the transition class, the class to apply to start
      * the transition, and the class to apply to end the transition.
      * e.g. ["ease-out duration-300", "opacity-100", "opacity-0"]
      */
-    out?: TransitionOption;
+    out?: Transition;
     /**
      * The optional display value to set when toggling in the element. Defaults to "block".
      */
@@ -666,7 +666,7 @@ declare type DispatchOptions = {
  */
 declare type PushOptions = {
     /**
-     * The selector of component ID to push to
+     * The selector or component ID to push to
      */
     target?: string;
     /**
@@ -674,12 +674,12 @@ declare type PushOptions = {
      */
     loading?: string;
     /**
-     * Determines if the push should trigger the "phx:page-loading-start"
-     * and "phx:page-loading-stop" events. Defaults to false
+     * An optional boolean indicating whether to trigger the "phx:page-loading-start"
+     * and "phx:page-loading-stop" events. Defaults to `false`
      */
     page_loading?: boolean;
     /**
-     * The optional map of values to send to the server along with the event
+     * An optional map of key/value pairs to include in the event's `value` property
      */
     value?: {
         [key: string]: string | number | boolean;
@@ -719,7 +719,7 @@ declare class JS {
     show(options?: ShowOptions): this;
     /**
      * Hides the target element
-     * @param options the @type {HideOptions} for the command
+     * @param options the options for the command
      * @returns this instance for further chaining
      */
     hide(options?: HideOptions): this;
@@ -749,7 +749,7 @@ declare class JS {
      * @param options the options for the command
      * @returns this instance for further chaining
      */
-    transition(transition: TransitionOption, options?: TransitionOptions): this;
+    transition(transition: Transition, options?: TransitionOptions): this;
     /**
      * Dispatches an event from the target element to the DOM.
      *

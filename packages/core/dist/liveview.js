@@ -798,7 +798,7 @@ class JS {
     }
     /**
      * Hides the target element
-     * @param options the @type {HideOptions} for the command
+     * @param options the options for the command
      * @returns this instance for further chaining
      */
     hide(options) {
