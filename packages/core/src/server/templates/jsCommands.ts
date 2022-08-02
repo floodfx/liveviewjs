@@ -4,7 +4,7 @@
  * the transition, and the class to apply to end the transition.
  * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
  */
-type TransitionOption = string | [string, string, string];
+type Transition = string | [string, string, string];
 
 /**
  * Internal type for commands that have transitions
@@ -15,7 +15,7 @@ type TransitionBodyCmd = [string[], string[], string[]];
 /**
  * Options for the "add_class" and "remove_class" commands
  */
-interface ClassOptions {
+type ClassOptions = {
   /**
    * The optional DOM selector element to add or remove the class from (defaults to current element).
    */
@@ -30,8 +30,8 @@ interface ClassOptions {
    * the transition, and the class to apply to end the transition.
    * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
    */
-  transition?: TransitionOption;
-}
+  transition?: Transition;
+};
 
 interface ClassCmdBody {
   names: string[];
@@ -47,7 +47,7 @@ type RemoveClassCmd = ["remove_class", ClassCmdBody];
 /**
  * Options for the "show" command
  */
-interface ShowOptions {
+type ShowOptions = {
   /**
    * The optional DOM selector element to show (defaults to current element).
    */
@@ -62,12 +62,12 @@ interface ShowOptions {
    * the transition, and the class to apply to end the transition.
    * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
    */
-  transition?: TransitionOption;
+  transition?: Transition;
   /**
    * The optional display value to set when showing the element. Defaults to "block".
    */
   display?: string;
-}
+};
 
 interface ShowCmdBody {
   time: number;
@@ -76,7 +76,7 @@ interface ShowCmdBody {
   display: string | null;
 }
 
-interface HideOptions {
+type HideOptions = {
   /**
    * The optional DOM selector element to hide (defaults to current element).
    */
@@ -91,8 +91,8 @@ interface HideOptions {
    * the transition, and the class to apply to end the transition.
    * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
    */
-  transition?: TransitionOption;
-}
+  transition?: Transition;
+};
 
 interface HideCmdBody {
   time: number;
@@ -108,7 +108,7 @@ type HideCmd = ["hide", HideCmdBody];
 /**
  * Options for the "toggle" command
  */
-interface ToggleOptions {
+type ToggleOptions = {
   /**
    * The optional DOM selector element to toggle (defaults to current element).
    */
@@ -123,19 +123,19 @@ interface ToggleOptions {
    * the transition, and the class to apply to end the transition.
    * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
    */
-  in?: TransitionOption;
+  in?: Transition;
   /**
    * The string of classes to apply when toggling out, or
    * a 3-tuple containing the transition class, the class to apply to start
    * the transition, and the class to apply to end the transition.
    * e.g. ["ease-out duration-300", "opacity-100", "opacity-0"]
    */
-  out?: TransitionOption;
+  out?: Transition;
   /**
    * The optional display value to set when toggling in the element. Defaults to "block".
    */
   display?: string;
-}
+};
 
 interface ToggleCmdBody {
   display: string | null;
@@ -152,12 +152,12 @@ type ToggleCmd = ["toggle", ToggleCmdBody];
 /**
  * Options for the "set_attribute" and "remove_attribute" commands
  */
-interface AttributeOptions {
+type AttributeOptions = {
   /**
    * The optional DOM selector element to set or remove the attribute from (defaults to current element).
    */
   to?: string;
-}
+};
 
 interface SetAttributeCmdBody {
   attr: [string, string];
@@ -178,7 +178,7 @@ type RemoveAttributeCmd = ["remove_attr", RemoveAttributeCmdBody];
 /**
  * Options for the "transition" command
  */
-interface TransitionOptions {
+type TransitionOptions = {
   /**
    * The optional DOM selector element to apply the transition to (defaults to current element).
    */
@@ -187,7 +187,7 @@ interface TransitionOptions {
    * The time over which to apply the transition.
    */
   time?: number;
-}
+};
 interface TransitionCmdBody {
   time: number;
   to: string | null;
@@ -200,7 +200,7 @@ type TransitionCmd = ["transition", TransitionCmdBody];
 /**
  * Options for the "dispatch" command
  */
-interface DispatchOptions {
+type DispatchOptions = {
   /**
    * The optional DOM selector element to apply the dispatch to (defaults to current element).
    */
@@ -213,7 +213,7 @@ interface DispatchOptions {
    * The optional boolean that determines if the event bubbles (defaults to true).
    */
   bubbles?: boolean;
-}
+};
 
 interface DispatchCmdBody {
   event: string;
@@ -229,9 +229,9 @@ type DispatchCmd = ["dispatch", DispatchCmdBody];
 /**
  * Options for the "push" command
  */
-interface PushOptions {
+type PushOptions = {
   /**
-   * The selector of component ID to push to
+   * The selector or component ID to push to
    */
   target?: string;
   /**
@@ -239,15 +239,15 @@ interface PushOptions {
    */
   loading?: string;
   /**
-   * Determines if the push should trigger the "phx:page-loading-start"
-   * and "phx:page-loading-stop" events. Defaults to false
+   * An optional boolean indicating whether to trigger the "phx:page-loading-start"
+   * and "phx:page-loading-stop" events. Defaults to `false`
    */
   page_loading?: boolean;
   /**
-   * The optional map of values to send to the server along with the event
+   * An optional map of key/value pairs to include in the event's `value` property
    */
   value?: { [key: string]: string | number | boolean };
-}
+};
 
 interface PushCmdBody {
   event: string;
@@ -438,7 +438,7 @@ export class JS {
    * @param options the options for the command
    * @returns this instance for further chaining
    */
-  transition(transition: TransitionOption, options?: TransitionOptions) {
+  transition(transition: Transition, options?: TransitionOptions) {
     this.cmds = [
       ...this.cmds,
       [
@@ -513,7 +513,7 @@ export class JS {
 /**
  * Convert a transition option to a transition body command
  */
-function transitionOptionsToCmd(opts?: TransitionOption): TransitionBodyCmd {
+function transitionOptionsToCmd(opts?: Transition): TransitionBodyCmd {
   if (opts === undefined) {
     return [[], [], []];
   } else if (typeof opts === "string") {

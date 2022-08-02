@@ -531,7 +531,7 @@ declare type TransitionOption = string | [string, string, string];
 /**
  * Options for the "add_class" and "remove_class" commands
  */
-interface ClassOptions {
+declare type ClassOptions = {
     /**
      * The optional DOM selector element to add or remove the class from (defaults to current element).
      */
@@ -547,11 +547,11 @@ interface ClassOptions {
      * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
      */
     transition?: TransitionOption;
-}
+};
 /**
  * Options for the "show" command
  */
-interface ShowOptions {
+declare type ShowOptions = {
     /**
      * The optional DOM selector element to show (defaults to current element).
      */
@@ -571,8 +571,8 @@ interface ShowOptions {
      * The optional display value to set when showing the element. Defaults to "block".
      */
     display?: string;
-}
-interface HideOptions {
+};
+declare type HideOptions = {
     /**
      * The optional DOM selector element to hide (defaults to current element).
      */
@@ -588,11 +588,11 @@ interface HideOptions {
      * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
      */
     transition?: TransitionOption;
-}
+};
 /**
  * Options for the "toggle" command
  */
-interface ToggleOptions {
+declare type ToggleOptions = {
     /**
      * The optional DOM selector element to toggle (defaults to current element).
      */
@@ -619,20 +619,20 @@ interface ToggleOptions {
      * The optional display value to set when toggling in the element. Defaults to "block".
      */
     display?: string;
-}
+};
 /**
  * Options for the "set_attribute" and "remove_attribute" commands
  */
-interface AttributeOptions {
+declare type AttributeOptions = {
     /**
      * The optional DOM selector element to set or remove the attribute from (defaults to current element).
      */
     to?: string;
-}
+};
 /**
  * Options for the "transition" command
  */
-interface TransitionOptions {
+declare type TransitionOptions = {
     /**
      * The optional DOM selector element to apply the transition to (defaults to current element).
      */
@@ -641,11 +641,11 @@ interface TransitionOptions {
      * The time over which to apply the transition.
      */
     time?: number;
-}
+};
 /**
  * Options for the "dispatch" command
  */
-interface DispatchOptions {
+declare type DispatchOptions = {
     /**
      * The optional DOM selector element to apply the dispatch to (defaults to current element).
      */
@@ -660,11 +660,11 @@ interface DispatchOptions {
      * The optional boolean that determines if the event bubbles (defaults to true).
      */
     bubbles?: boolean;
-}
+};
 /**
  * Options for the "push" command
  */
-interface PushOptions {
+declare type PushOptions = {
     /**
      * The selector of component ID to push to
      */
@@ -684,7 +684,7 @@ interface PushOptions {
     value?: {
         [key: string]: string | number | boolean;
     };
-}
+};
 /**
  * The JS Commands API allows you to perform a small set of powerful
  *  DOM operations that only execute on the client.  This allows you
@@ -719,7 +719,7 @@ declare class JS {
     show(options?: ShowOptions): this;
     /**
      * Hides the target element
-     * @param options the options for the command
+     * @param options the @type {HideOptions} for the command
      * @returns this instance for further chaining
      */
     hide(options?: HideOptions): this;
