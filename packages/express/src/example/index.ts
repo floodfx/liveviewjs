@@ -17,11 +17,12 @@ import session, { MemoryStore } from "express-session";
 import { Server } from "http";
 import { LiveViewRouter, SessionFlashAdaptor, SingleProcessPubSub } from "liveviewjs";
 import { nanoid } from "nanoid";
-import WebSocket from "ws";
+import { WebSocketServer } from "ws";
 import { NodeJwtSerDe } from "../node/jwtSerDe";
 import { NodeExpressLiveViewServer } from "../node/server";
 import { NodeWsAdaptor } from "../node/wsAdaptor";
 import { indexHandler } from "./indexHandler";
+import { helloLiveView } from "./liveview/hello";
 import { pageRenderer, rootRenderer } from "./liveViewRenderers";
 
 // you'd want to set this to some secure, random string in production
@@ -41,6 +42,7 @@ const router: LiveViewRouter = {
   "/volunteers": volunteerLiveView,
   "/counter": counterLiveView,
   "/jscmds": jsCmdsLiveView,
+  "/hello": helloLiveView,
 };
 
 // configure your express app
@@ -95,7 +97,7 @@ app.get("/", indexHandler);
 
 // configure express to handle both http and websocket requests
 const httpServer = new Server();
-const wsServer = new WebSocket.Server({
+const wsServer = new WebSocketServer({
   server: httpServer,
 });
 
