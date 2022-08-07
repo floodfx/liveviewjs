@@ -18,6 +18,17 @@ function run_child() {
   runner.stderr!.on("data", (data) => process.stderr.write(chalk.red(data.toString())));
 }
 
+function build_success() {
+  console.log(chalk.green("build succeeded"));
+  run_child();
+}
+
+function build_failure(error: unknown) {
+  console.error(chalk.red("build failed"));
+  console.error(error);
+  maybe_stop_child();
+}
+
 esbuild
   .build({
     entryPoints: ["src/example/index.ts"],
@@ -28,23 +39,17 @@ esbuild
     watch: {
       onRebuild(error) {
         if (error) {
-          console.error(chalk.red("build failed"));
-          console.error(error);
-          maybe_stop_child();
+          build_failure(error);
         } else {
-          console.log(chalk.green("build succeeded"));
-          run_child();
+          build_success();
         }
       },
     },
   })
   .then((result) => {
     if (result.errors.length > 0) {
-      console.error(chalk.red("build failed"));
-      console.error(result);
-      maybe_stop_child();
+      build_failure(result);
     } else {
-      console.log(chalk.green("build succeeded"));
-      run_child();
+      build_success();
     }
   });
