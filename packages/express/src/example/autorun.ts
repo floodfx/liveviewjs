@@ -1,0 +1,50 @@
+import chalk from "chalk";
+import { ChildProcess, spawn } from "child_process";
+import esbuild from "esbuild";
+
+const outdir = "build";
+let runner: ChildProcess;
+
+function maybe_stop_child() {
+  if (runner) {
+    runner.kill();
+  }
+}
+
+function run_child() {
+  maybe_stop_child();
+  runner = spawn("node", [`${outdir}/index.js`]);
+  runner.stdout!.on("data", (data) => process.stdout.write(chalk.blue(data.toString())));
+  runner.stderr!.on("data", (data) => process.stderr.write(chalk.red(data.toString())));
+}
+
+esbuild
+  .build({
+    entryPoints: ["src/example/index.ts"],
+    outdir,
+    bundle: true,
+    format: "cjs",
+    platform: "node",
+    watch: {
+      onRebuild(error) {
+        if (error) {
+          console.error(chalk.red("build failed"));
+          console.error(error);
+          maybe_stop_child();
+        } else {
+          console.log(chalk.green("build succeeded"));
+          run_child();
+        }
+      },
+    },
+  })
+  .then((result) => {
+    if (result.errors.length > 0) {
+      console.error(chalk.red("build failed"));
+      console.error(result);
+      maybe_stop_child();
+    } else {
+      console.log(chalk.green("build succeeded"));
+      run_child();
+    }
+  });
