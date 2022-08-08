@@ -1,5 +1,11 @@
 # @liveviewjs/express
 
+## 0.5.2
+
+### Patch Changes
+
+- a482b6b: Improve developer experience by making start script auto-build and reload for express package
+
 ## 0.5.0
 
 ### Minor Changes
