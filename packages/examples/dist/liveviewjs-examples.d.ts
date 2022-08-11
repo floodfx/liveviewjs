@@ -12,14 +12,14 @@ interface Store {
     hours: string;
 }
 
-interface Context {
+interface Context$1 {
     zip: string;
     city: string;
     stores: Store[];
     matches: string[];
     loading: boolean;
 }
-declare type Events = {
+declare type Events$1 = {
     type: "zip-search";
     zip: string;
 } | {
@@ -40,7 +40,7 @@ declare type Infos = {
  * Example of a search box with autocomplete.  Start typing a city in the search box
  * and a list of matching cities wiill appear.
  */
-declare const autocompleteLiveView: liveviewjs.LiveView<Context, Events, Infos>;
+declare const autocompleteLiveView: liveviewjs.LiveView<Context$1, Events$1, Infos>;
 
 /**
  * A basic counter that increments and decrements a number.
@@ -123,6 +123,38 @@ declare const paginateLiveView: liveviewjs.LiveView<{
     type: "select-per-page";
     perPage: string;
 }, liveviewjs.AnyLiveInfo>;
+
+declare const PhotoSchema: z.ZodObject<{
+    id: z.ZodDefault<z.ZodString>;
+    name: z.ZodOptional<z.ZodString>;
+    url: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    name?: string | undefined;
+    url?: string | undefined;
+    id: string;
+}, {
+    id?: string | undefined;
+    name?: string | undefined;
+    url?: string | undefined;
+}>;
+declare type Photo = z.infer<typeof PhotoSchema>;
+
+declare type Context = {
+    photos: Photo[];
+    changeset: LiveViewChangeset<Photo>;
+};
+declare type Events = {
+    type: "validate";
+    name: string;
+} | {
+    type: "save";
+    name: string;
+} | {
+    type: "cancel";
+    config_name: string;
+    ref: string;
+};
+declare const photos: liveviewjs.LiveView<Context, Events, liveviewjs.AnyLiveInfo>;
 
 declare type PhotoSize = "4x6" | "5x7" | "8x10" | "10x13" | "11x14";
 declare const printLiveView: liveviewjs.LiveView<{
@@ -250,4 +282,4 @@ interface RouteDetails {
 }
 declare const routeDetails: RouteDetails[];
 
-export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView };
+export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photos, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView };

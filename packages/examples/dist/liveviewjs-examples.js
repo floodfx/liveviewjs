@@ -1917,6 +1917,94 @@ function expiresDecoration$1(donation) {
     }
 }
 
+const PhotoSchema = zod.z.object({
+    id: zod.z.string().default(nanoid.nanoid),
+    name: zod.z.string().optional(),
+    url: zod.z.string().optional(),
+});
+const changeset$1 = liveviewjs.newChangesetFactory(PhotoSchema);
+
+const photos = liveviewjs.createLiveView({
+    mount: (socket) => {
+        socket.assign({
+            photos: [],
+            changeset: changeset$1({}, {}),
+        });
+        socket.allowUpload("photos", {
+            accept: [".png", ".jpg", ".jpeg", ".pdf"],
+            maxEntries: 3,
+            maxFileSize: 10 * 1024 * 1024, // 10MB
+        });
+    },
+    handleEvent: (event, socket) => {
+        console.log("handleEvent", event);
+        switch (event.type) {
+            case "validate": {
+                const photoChangeset = changeset$1({}, event, "validate");
+                console.log("validate", event, photoChangeset);
+                socket.assign({ changeset: photoChangeset });
+                break;
+            }
+            case "save": {
+                const photoChangeset = changeset$1({}, event, "validate");
+                if (photoChangeset.valid) {
+                    console.log("saving photo");
+                    socket.assign({
+                        changeset: changeset$1({}, {}),
+                    });
+                }
+                else {
+                    console.log("invalid photo");
+                    socket.assign({
+                        changeset: photoChangeset,
+                    });
+                }
+                break;
+            }
+            case "cancel": {
+                const { config_name, ref } = event;
+                socket.cancelUpload(config_name, ref);
+            }
+        }
+    },
+    render: (ctx, meta) => {
+        var _a;
+        const { photos, changeset } = ctx;
+        const { uploads } = meta;
+        return liveviewjs.html `
+      <h2>My Photos</h2>
+      ${liveviewjs.form_for("#", meta.csrfToken, {
+            id: "photo-form",
+            phx_change: "validate",
+            phx_submit: "save",
+        })}
+        ${liveviewjs.text_input(changeset, "name")}
+        ${liveviewjs.error_tag(changeset, "name")}
+        
+
+        ${liveviewjs.live_file_input(uploads.photos)}
+        ${(_a = meta.uploads.photos.errors) === null || _a === void 0 ? void 0 : _a.map((error) => liveviewjs.html `<p>${error}</p>`)}
+        
+        ${uploads.photos.entries.map((entry) => {
+            return liveviewjs.html `
+            <div>
+              <div style="width: 150px; border: 1px solid black; margin: 2rem 0;">${liveviewjs.live_img_preview(entry)}</div>
+              <div>Progress: ${entry.progress}</div>
+              <a href="#" phx-click="cancel" phx-value-config_name="photos" phx-value-ref="${entry.ref}">&times;</a>
+            </div>
+          `;
+        })}
+
+        ${liveviewjs.submit("Save", { phx_disable_with: "Saving..." })}
+      </form>
+      ${JSON.stringify(uploads.photos)}
+      <ul id="photo_list" phx-update="prepend">
+        ${photos.map((photo) => liveviewjs.html `<li id="${photo.id}">${photo.id}</li>`)}
+      </ul>
+    `;
+    },
+});
+
 const photoSizes = ["4x6", "5x7", "8x10", "10x13", "11x14"];
 const printLiveView = liveviewjs.createLiveView({
     mount: (socket) => {
@@ -2609,6 +2697,7 @@ exports.dashboardLiveView = dashboardLiveView;
 exports.decarbLiveView = decarbLiveView;
 exports.jsCmdsLiveView = jsCmdsLiveView;
 exports.paginateLiveView = paginateLiveView;
+exports.photos = photos;
 exports.printLiveView = printLiveView;
 exports.routeDetails = routeDetails;
 exports.searchLiveView = searchLiveView;

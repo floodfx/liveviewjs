@@ -1,6 +1,6 @@
 
 /// <reference types="./liveviewjs-examples.d.ts" />
-import { createLiveView, html, createLiveComponent, JS, options_for_select, live_patch, join, newChangesetFactory, SingleProcessPubSub, form_for, text_input, error_tag, telephone_input, submit } from 'liveviewjs';
+import { createLiveView, html, createLiveComponent, JS, options_for_select, live_patch, join, newChangesetFactory, form_for, text_input, error_tag, live_file_input, live_img_preview, submit, SingleProcessPubSub, telephone_input } from 'liveviewjs';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
@@ -1915,6 +1915,94 @@ function expiresDecoration$1(donation) {
     }
 }
 
+const PhotoSchema = z.object({
+    id: z.string().default(nanoid),
+    name: z.string().optional(),
+    url: z.string().optional(),
+});
+const changeset$1 = newChangesetFactory(PhotoSchema);
+
+const photos = createLiveView({
+    mount: (socket) => {
+        socket.assign({
+            photos: [],
+            changeset: changeset$1({}, {}),
+        });
+        socket.allowUpload("photos", {
+            accept: [".png", ".jpg", ".jpeg", ".pdf"],
+            maxEntries: 3,
+            maxFileSize: 10 * 1024 * 1024, // 10MB
+        });
+    },
+    handleEvent: (event, socket) => {
+        console.log("handleEvent", event);
+        switch (event.type) {
+            case "validate": {
+                const photoChangeset = changeset$1({}, event, "validate");
+                console.log("validate", event, photoChangeset);
+                socket.assign({ changeset: photoChangeset });
+                break;
+            }
+            case "save": {
+                const photoChangeset = changeset$1({}, event, "validate");
+                if (photoChangeset.valid) {
+                    console.log("saving photo");
+                    socket.assign({
+                        changeset: changeset$1({}, {}),
+                    });
+                }
+                else {
+                    console.log("invalid photo");
+                    socket.assign({
+                        changeset: photoChangeset,
+                    });
+                }
+                break;
+            }
+            case "cancel": {
+                const { config_name, ref } = event;
+                socket.cancelUpload(config_name, ref);
+            }
+        }
+    },
+    render: (ctx, meta) => {
+        var _a;
+        const { photos, changeset } = ctx;
+        const { uploads } = meta;
+        return html `
+      <h2>My Photos</h2>
+      ${form_for("#", meta.csrfToken, {
+            id: "photo-form",
+            phx_change: "validate",
+            phx_submit: "save",
+        })}
+        ${text_input(changeset, "name")}
+        ${error_tag(changeset, "name")}
+        
+
+        ${live_file_input(uploads.photos)}
+        ${(_a = meta.uploads.photos.errors) === null || _a === void 0 ? void 0 : _a.map((error) => html `<p>${error}</p>`)}
+        
+        ${uploads.photos.entries.map((entry) => {
+            return html `
+            <div>
+              <div style="width: 150px; border: 1px solid black; margin: 2rem 0;">${live_img_preview(entry)}</div>
+              <div>Progress: ${entry.progress}</div>
+              <a href="#" phx-click="cancel" phx-value-config_name="photos" phx-value-ref="${entry.ref}">&times;</a>
+            </div>
+          `;
+        })}
+
+        ${submit("Save", { phx_disable_with: "Saving..." })}
+      </form>
+      ${JSON.stringify(uploads.photos)}
+      <ul id="photo_list" phx-update="prepend">
+        ${photos.map((photo) => html `<li id="${photo.id}">${photo.id}</li>`)}
+      </ul>
+    `;
+    },
+});
+
 const photoSizes = ["4x6", "5x7", "8x10", "10x13", "11x14"];
 const printLiveView = createLiveView({
     mount: (socket) => {
@@ -2601,4 +2689,4 @@ const routeDetails = [
     },
 ];
 
-export { autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView };
+export { autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photos, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView };

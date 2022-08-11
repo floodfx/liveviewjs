@@ -5,6 +5,7 @@ export * from "./liveviews/decarbonize";
 export * from "./liveviews/jsCommands";
 export * from "./liveviews/liveSearch";
 export * from "./liveviews/pagination";
+export * from "./liveviews/photos";
 export * from "./liveviews/prints";
 export * from "./liveviews/servers";
 export * from "./liveviews/sorting";
