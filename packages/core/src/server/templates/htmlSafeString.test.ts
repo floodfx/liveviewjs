@@ -266,6 +266,7 @@ describe("test escapeHtml", () => {
           return new HtmlSafeString(["1"], [], true);
         },
         url,
+        uploads: {},
       }
     );
     expect(res.partsTree()).toEqual({

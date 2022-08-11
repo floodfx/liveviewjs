@@ -1,4 +1,6 @@
+import { nanoid } from "nanoid";
 import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveInfo } from "../live";
+import { UploadConfig } from "../upload/uploadConfig";
 
 // type to enable Info events to be passed as plain strings
 export type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
@@ -100,7 +102,25 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    * @param topic the topic to subscribe this `LiveView` to
    */
   subscribe(topic: string): Promise<void>;
+
+  /**
+   * Allows uploads for the given `LiveView` and sets options for what
+   * files can be uploaded.
+   */
+  allowUpload(name: string, options?: AllowUploadOptions): Promise<void>;
+
+  /**
+   * Cancels the file upload for a given UploadConfig (by name) and ref.
+   */
+  cancelUpload(configName: string, ref: string): Promise<void>;
 }
+
+export type AllowUploadOptions = {
+  accept?: string[];
+  maxEntries?: number;
+  maxFileSize?: number;
+  autoUpload?: boolean;
+};
 
 abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo>
   implements LiveViewSocket<TContext, TInfo>
@@ -161,6 +181,16 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext,
     // istanbul ignore next
     return Promise.resolve();
   }
+  allowUpload(name: string, options?: AllowUploadOptions): Promise<void> {
+    // no-op
+    // istanbul ignore next
+    return Promise.resolve();
+  }
+  cancelUpload(configName: string, ref: string): Promise<void> {
+    // no-op
+    // istanbul ignore next
+    return Promise.resolve();
+  }
 
   updateContextWithTempAssigns() {
     if (Object.keys(this._tempContext).length > 0) {
@@ -179,6 +209,7 @@ export class HttpLiveViewSocket<
 > extends BaseLiveViewSocket<TContext, TInfo> {
   readonly id: string;
   readonly connected: boolean = false;
+  readonly uploadConfigs: { [name: string]: UploadConfig } = {};
 
   private _redirect: { to: string; replace: boolean } | undefined;
   constructor(id: string) {
@@ -196,6 +227,19 @@ export class HttpLiveViewSocket<
       to,
       replace: replaceHistory || false,
     };
+    return Promise.resolve();
+  }
+
+  allowUpload(name: string, options?: AllowUploadOptions | undefined): Promise<void> {
+    this.uploadConfigs[name] = {
+      name,
+      accept: options?.accept ?? [],
+      maxEntries: options?.maxEntries ?? 1,
+      maxFileSize: options?.maxFileSize ?? 8 * 1024 * 1024, // 8MB
+      autoUpload: options?.autoUpload ?? false,
+      entries: [],
+      ref: `phx-${nanoid()}`,
+    } as UploadConfig;
     return Promise.resolve();
   }
 }
@@ -219,6 +263,8 @@ export class WsLiveViewSocket<
   private repeatCallback: (fn: () => void, intervalMillis: number) => void;
   private sendInfoCallback: (info: Info<TInfo>) => void;
   private subscribeCallback: (topic: string) => void;
+  private allowUploadCallback: (name: string, options?: AllowUploadOptions) => void;
+  private cancelUploadCallback: (configName: string, ref: string) => void;
 
   constructor(
     id: string,
@@ -229,7 +275,9 @@ export class WsLiveViewSocket<
     putFlashCallback: (key: string, value: string) => void,
     repeatCallback: (fn: () => void, intervalMillis: number) => void,
     sendInfoCallback: (info: Info<TInfo>) => void,
-    subscribeCallback: (topic: string) => void
+    subscribeCallback: (topic: string) => void,
+    allowUploadCallback: (name: string, options?: AllowUploadOptions) => void,
+    cancelUploadCallback: (configName: string, ref: string) => void
   ) {
     super();
     this.id = id;
@@ -241,6 +289,8 @@ export class WsLiveViewSocket<
     this.repeatCallback = repeatCallback;
     this.sendInfoCallback = sendInfoCallback;
     this.subscribeCallback = subscribeCallback;
+    this.allowUploadCallback = allowUploadCallback;
+    this.cancelUploadCallback = cancelUploadCallback;
   }
   async putFlash(key: string, value: string) {
     await this.putFlashCallback(key, value);
@@ -265,5 +315,11 @@ export class WsLiveViewSocket<
   }
   async subscribe(topic: string) {
     await this.subscribeCallback(topic);
+  }
+  async allowUpload(name: string, options?: AllowUploadOptions | undefined): Promise<void> {
+    await this.allowUploadCallback(name, options);
+  }
+  async cancelUpload(configName: string, ref: string): Promise<void> {
+    await this.cancelUploadCallback(configName, ref);
   }
 }

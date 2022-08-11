@@ -2,6 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+var nanoid = require('nanoid');
 var crypto = require('crypto');
 var EventEmitter = require('events');
 
@@ -181,6 +182,16 @@ class BaseLiveViewSocket {
         // istanbul ignore next
         return Promise.resolve();
     }
+    allowUpload(name, options) {
+        // no-op
+        // istanbul ignore next
+        return Promise.resolve();
+    }
+    cancelUpload(configName, ref) {
+        // no-op
+        // istanbul ignore next
+        return Promise.resolve();
+    }
     updateContextWithTempAssigns() {
         if (Object.keys(this._tempContext).length > 0) {
             this.assign(this._tempContext);
@@ -194,6 +205,7 @@ class BaseLiveViewSocket {
 class HttpLiveViewSocket extends BaseLiveViewSocket {
     id;
     connected = false;
+    uploadConfigs = {};
     _redirect;
     constructor(id) {
         super();
@@ -207,6 +219,18 @@ class HttpLiveViewSocket extends BaseLiveViewSocket {
         this._redirect = {
             to,
             replace: replaceHistory || false,
+        };
+        return Promise.resolve();
+    }
+    allowUpload(name, options) {
+        this.uploadConfigs[name] = {
+            name,
+            accept: options?.accept ?? [],
+            maxEntries: options?.maxEntries ?? 1,
+            maxFileSize: options?.maxFileSize ?? 8 * 1024 * 1024,
+            autoUpload: options?.autoUpload ?? false,
+            entries: [],
+            ref: `phx-${nanoid.nanoid()}`,
         };
         return Promise.resolve();
     }
@@ -226,7 +250,9 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     repeatCallback;
     sendInfoCallback;
     subscribeCallback;
-    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, repeatCallback, sendInfoCallback, subscribeCallback) {
+    allowUploadCallback;
+    cancelUploadCallback;
+    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, repeatCallback, sendInfoCallback, subscribeCallback, allowUploadCallback, cancelUploadCallback) {
         super();
         this.id = id;
         this.pageTitleCallback = pageTitleCallback;
@@ -237,6 +263,8 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
         this.repeatCallback = repeatCallback;
         this.sendInfoCallback = sendInfoCallback;
         this.subscribeCallback = subscribeCallback;
+        this.allowUploadCallback = allowUploadCallback;
+        this.cancelUploadCallback = cancelUploadCallback;
     }
     async putFlash(key, value) {
         await this.putFlashCallback(key, value);
@@ -261,6 +289,12 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     }
     async subscribe(topic) {
         await this.subscribeCallback(topic);
+    }
+    async allowUpload(name, options) {
+        await this.allowUploadCallback(name, options);
+    }
+    async cancelUpload(configName, ref) {
+        await this.cancelUploadCallback(configName, ref);
     }
 }
 
@@ -650,6 +684,49 @@ const error_tag = (changeset, key, options) => {
     return html ``;
 };
 
+function live_file_input(uploadConfig) {
+    const { name, accept, maxEntries, ref, entries } = uploadConfig;
+    const multiple = maxEntries > 1 ? "multiple" : "";
+    const activeRefs = entries
+        .filter((entry) => !entry?.done ?? false)
+        .map((entry) => entry.ref)
+        .join(",");
+    const doneRefs = entries
+        .filter((entry) => entry?.done ?? false)
+        .map((entry) => entry.ref)
+        .join(",");
+    const preflightedRefs = entries
+        .filter((entry) => entry?.preflighted ?? false)
+        .map((entry) => entry.ref)
+        .join(",");
+    return html `
+    <input
+      id="${ref}"
+      type="file"
+      name="${name}"
+      accept="${accept.join(",")}"
+      ${multiple}
+      data-phx-active-refs="${activeRefs}"
+      data-phx-done-refs="${doneRefs}"
+      data-phx-preflighted-refs="${preflightedRefs}"
+      data-phx-update="ignore"
+      data-phx-upload-ref="${ref}"
+      phx-hook="Phoenix.LiveFileUpload" />
+  `;
+}
+
+function live_img_preview(entry) {
+    const { ref, upload_ref } = entry;
+    return html `
+    <img
+      id="phx-preview-${ref}"
+      data-phx-upload-ref="${upload_ref}"
+      data-phx-entry-ref="${ref}"
+      data-phx-hook="Phoenix.LiveImgPreview"
+      data-phx-update="ignore" />
+  `;
+}
+
 function buildHref(options) {
     const { path, params } = options.to;
     const urlParams = new URLSearchParams(params);
@@ -1025,6 +1102,7 @@ const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor,
             return newView;
         },
         url,
+        uploads: liveViewSocket.uploadConfigs,
     });
     // now that we've rendered the `LiveView` and its `LiveComponent`s, we can serialize the session data
     // to be passed into the websocket connection
@@ -1234,6 +1312,7 @@ class LiveViewManager {
     pubSub;
     serDe;
     flashAdaptor;
+    uploadConfigs = {};
     csrfToken;
     _infoQueue = [];
     _events = [];
@@ -1400,6 +1479,49 @@ class LiveViewManager {
                         if (!this.hasWarnedAboutMissingCsrfToken) {
                             console.warn(`Warning: form event data missing _csrf_token value. \nConsider passing it in via a hidden input named "_csrf_token".  \nYou can get the value from the LiveViewMeta object passed the render method. \nWe won't warn you again for this instance of the LiveView.`);
                             this.hasWarnedAboutMissingCsrfToken = true;
+                        }
+                    }
+                    // parse uploads into uploadConfig for given name
+                    if (payload.uploads) {
+                        // get _target from form data
+                        const target = value["_target"];
+                        if (target && this.uploadConfigs.hasOwnProperty(target)) {
+                            let configErrors = [];
+                            this.uploadConfigs[target].entries = Object.keys(payload.uploads).reduce((acc, key) => {
+                                const entries = payload.uploads[key].map((upload) => {
+                                    // check size is valid
+                                    let error;
+                                    if (upload.size > this.uploadConfigs[target].maxFileSize) {
+                                        error = `File size is too large`;
+                                        configErrors.push(error);
+                                    }
+                                    return {
+                                        cancelled: false,
+                                        complete: false,
+                                        progress: 0,
+                                        ref: upload.ref,
+                                        // upload_config: this.uploadConfigs[target],
+                                        upload_ref: key,
+                                        uuid: "UUID??",
+                                        valid: error === undefined,
+                                        client_last_modified: undefined,
+                                        client_name: upload.name,
+                                        client_size: upload.size,
+                                        client_type: upload.type,
+                                        done: false,
+                                        preflighted: false,
+                                        errors: error ? [error] : undefined,
+                                    };
+                                });
+                                acc = [...acc, ...entries];
+                                return acc;
+                            }, []);
+                            if (configErrors.length > 0) {
+                                this.uploadConfigs[target].errors = configErrors;
+                            }
+                            if (this.uploadConfigs[target].entries.length > this.uploadConfigs[target].maxEntries) {
+                                this.uploadConfigs[target].errors = ["Too many files"];
+                            }
                         }
                     }
                     // TODO - check for _target variable from phx_change here and remove it from value?
@@ -1953,6 +2075,7 @@ class LiveViewManager {
                 return await this.liveComponentProcessor(liveComponent, params);
             },
             url: this.url,
+            uploads: this.uploadConfigs,
         };
     }
     newLiveViewSocket() {
@@ -1963,6 +2086,28 @@ class LiveViewManager {
                 this.sendInternal(info);
             });
             this.subscriptionIds[topic] = subId;
+        }, async (name, options) => {
+            console.log("allowUpload", name, options);
+            this.uploadConfigs[name] = {
+                name,
+                accept: options?.accept ?? [],
+                maxEntries: options?.maxEntries ?? 1,
+                maxFileSize: options?.maxFileSize ?? 8 * 1024 * 1024,
+                autoUpload: options?.autoUpload ?? false,
+                entries: [],
+                ref: `phx-${nanoid.nanoid()}`,
+            };
+            return Promise.resolve();
+        }, async (configName, ref) => {
+            console.log("cancelUpload", configName, ref);
+            const uploadConfig = this.uploadConfigs[configName];
+            if (uploadConfig) {
+                const entryIndex = uploadConfig.entries.findIndex((entry) => entry.ref === ref);
+                if (entryIndex > -1) {
+                    uploadConfig.entries.splice(entryIndex, 1);
+                }
+            }
+            return Promise.resolve();
         });
     }
     newLiveComponentSocket(context) {
@@ -2076,6 +2221,8 @@ exports.form_for = form_for;
 exports.handleHttpLiveView = handleHttpLiveView;
 exports.html = html;
 exports.join = join;
+exports.live_file_input = live_file_input;
+exports.live_img_preview = live_img_preview;
 exports.live_patch = live_patch;
 exports.live_title_tag = live_title_tag;
 exports.newChangesetFactory = newChangesetFactory;

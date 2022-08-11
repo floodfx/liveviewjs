@@ -14,6 +14,8 @@ describe("test LiveViewSocket", () => {
   let repeatCallback = jest.fn();
   let sendCallback = jest.fn();
   let subscribeCallback = jest.fn();
+  let allowUploadCallback = jest.fn();
+  let cancelUploadCallback = jest.fn();
 
   beforeEach(() => {
     component = new TestLiveView();
@@ -25,6 +27,8 @@ describe("test LiveViewSocket", () => {
     repeatCallback = jest.fn();
     sendCallback = jest.fn();
     subscribeCallback = jest.fn();
+    allowUploadCallback = jest.fn();
+    cancelUploadCallback = jest.fn();
     socket = new WsLiveViewSocket(
       "id",
       pageTitleCallback,
@@ -34,7 +38,9 @@ describe("test LiveViewSocket", () => {
       putFlashCallback,
       sendCallback,
       repeatCallback,
-      subscribeCallback
+      subscribeCallback,
+      allowUploadCallback,
+      cancelUploadCallback
     );
   });
 
@@ -57,7 +63,12 @@ describe("test LiveViewSocket", () => {
     component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     await component.handleParams(url, socket);
     expect(socket.context.foo).toEqual("bar");
-    const view = await component.render(socket.context, { csrfToken: "csrf", live_component: jest.fn(), url });
+    const view = await component.render(socket.context, {
+      csrfToken: "csrf",
+      live_component: jest.fn(),
+      url,
+      uploads: {},
+    });
     expect(view.toString()).toEqual("<div>bar</div>");
   });
 
@@ -71,7 +82,9 @@ describe("test LiveViewSocket", () => {
       putFlashCallback,
       sendCallback,
       repeatCallback,
-      subscribeCallback
+      subscribeCallback,
+      allowUploadCallback,
+      cancelUploadCallback
     );
     await component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     expect(socket.context.foo).toEqual("bar");
@@ -88,7 +101,9 @@ describe("test LiveViewSocket", () => {
       putFlashCallback,
       repeatCallback,
       sendCallback,
-      subscribeCallback
+      subscribeCallback,
+      allowUploadCallback,
+      cancelUploadCallback
     );
     component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
 
@@ -100,6 +115,7 @@ describe("test LiveViewSocket", () => {
     expect(repeatCallback).toHaveBeenCalledTimes(1);
     expect(sendCallback).toHaveBeenCalledTimes(2);
     expect(subscribeCallback).toHaveBeenCalledTimes(1);
+    expect(allowUploadCallback).toHaveBeenCalledTimes(0);
   });
 
   it("tempAssign works to clear assigns", () => {
@@ -112,7 +128,9 @@ describe("test LiveViewSocket", () => {
       putFlashCallback,
       sendCallback,
       repeatCallback,
-      subscribeCallback
+      subscribeCallback,
+      allowUploadCallback,
+      cancelUploadCallback
     );
     component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     socket.assign({ foo: "bar" });

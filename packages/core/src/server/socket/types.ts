@@ -74,7 +74,17 @@ export interface PhxEventPayload<TType extends string, TValue, TEvent extends st
 }
 
 export interface PhxEventUploads {
-  uploads: { [key: string]: unknown };
+  uploads: {
+    [key: string]: [
+      {
+        path: string;
+        ref: string; // order of upload
+        name: string; // original filename
+        type: string; // mime type
+        size: number; // bytes
+      }
+    ];
+  };
 }
 
 //{type: "click", event: "down", value: {value: ""}}
