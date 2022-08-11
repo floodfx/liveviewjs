@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { nanoid } from "nanoid";
 import { SerDe } from "../adaptor";
 import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
@@ -19,6 +20,7 @@ import { PubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { HtmlSafeString, Parts, safe } from "../templates";
 import { deepDiff } from "../templates/diff";
+import { UploadConfig, UploadEntry } from "../upload/uploadConfig";
 import { Info, WsLiveViewSocket } from "./liveSocket";
 import {
   PhxBlurPayload,
@@ -95,6 +97,7 @@ export class LiveViewManager {
   private pubSub: PubSub;
   private serDe: SerDe;
   private flashAdaptor: FlashAdaptor;
+  private uploadConfigs: { [key: string]: UploadConfig } = {};
 
   private csrfToken?: string;
 
@@ -306,6 +309,51 @@ export class LiveViewManager {
               this.hasWarnedAboutMissingCsrfToken = true;
             }
           }
+
+          // parse uploads into uploadConfig for given name
+          if (payload.uploads) {
+            // get _target from form data
+            const target = value["_target"];
+            if (target && this.uploadConfigs.hasOwnProperty(target)) {
+              let configErrors: string[] = [];
+              this.uploadConfigs[target].entries = Object.keys(payload.uploads).reduce((acc, key) => {
+                const entries = payload.uploads[key].map((upload) => {
+                  // check size is valid
+                  let error: string | undefined;
+                  if (upload.size > this.uploadConfigs[target].maxFileSize) {
+                    error = `File size is too large`;
+                    configErrors.push(error);
+                  }
+                  return {
+                    cancelled: false,
+                    complete: false,
+                    progress: 0,
+                    ref: upload.ref,
+                    // upload_config: this.uploadConfigs[target],
+                    upload_ref: key,
+                    uuid: "UUID??",
+                    valid: error === undefined,
+                    client_last_modified: undefined,
+                    client_name: upload.name,
+                    client_size: upload.size,
+                    client_type: upload.type,
+                    done: false,
+                    preflighted: false,
+                    errors: error ? [error] : undefined,
+                  } as UploadEntry;
+                });
+                acc = [...acc, ...entries];
+                return acc;
+              }, [] as UploadEntry[]);
+              if (configErrors.length > 0) {
+                this.uploadConfigs[target].errors = configErrors;
+              }
+              if (this.uploadConfigs[target].entries.length > this.uploadConfigs[target].maxEntries) {
+                this.uploadConfigs[target].errors = ["Too many files"];
+              }
+            }
+          }
+
           // TODO - check for _target variable from phx_change here and remove it from value?
           break;
         default:
@@ -944,6 +992,7 @@ export class LiveViewManager {
         return await this.liveComponentProcessor<Context>(liveComponent, params);
       },
       url: this.url,
+      uploads: this.uploadConfigs,
     } as LiveViewMeta;
   }
 
@@ -964,6 +1013,30 @@ export class LiveViewManager {
           this.sendInternal(info);
         });
         this.subscriptionIds[topic] = subId;
+      },
+      async (name, options) => {
+        console.log("allowUpload", name, options);
+        this.uploadConfigs[name] = {
+          name,
+          accept: options?.accept ?? [],
+          maxEntries: options?.maxEntries ?? 1,
+          maxFileSize: options?.maxFileSize ?? 8 * 1024 * 1024, // 8MB
+          autoUpload: options?.autoUpload ?? false,
+          entries: [],
+          ref: `phx-${nanoid()}`,
+        } as UploadConfig;
+        return Promise.resolve();
+      },
+      async (configName, ref) => {
+        console.log("cancelUpload", configName, ref);
+        const uploadConfig = this.uploadConfigs[configName];
+        if (uploadConfig) {
+          const entryIndex = uploadConfig.entries.findIndex((entry) => entry.ref === ref);
+          if (entryIndex > -1) {
+            uploadConfig.entries.splice(entryIndex, 1);
+          }
+        }
+        return Promise.resolve();
       }
     );
   }

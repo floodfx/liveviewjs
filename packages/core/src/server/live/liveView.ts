@@ -2,6 +2,7 @@ import { LiveComponent, LiveViewTemplate } from ".";
 import { SessionData } from "../session";
 import { LiveViewSocket } from "../socket/liveSocket";
 import { PageTitleDefaults } from "../templates";
+import { UploadConfig } from "../upload/uploadConfig";
 
 export interface LiveContext {
   [key: string]: any;
@@ -131,6 +132,10 @@ export interface LiveViewMeta<TEvents extends LiveEvent = AnyLiveEvent> {
     liveComponent: LiveComponent<TContext, any, any>,
     params?: Partial<TContext & { id: string | number }>
   ): Promise<LiveViewTemplate>;
+  /**
+   * Get UploadConfig details about given key
+   */
+  readonly uploads: { [key: string]: UploadConfig };
 
   // typesafe way to get an event string for use in 'render'?
   // getEvent(event: Event<TEvents>): string;

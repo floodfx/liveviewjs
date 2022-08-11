@@ -127,6 +127,7 @@ export const handleHttpLiveView = async (
       return newView;
     },
     url,
+    uploads: liveViewSocket.uploadConfigs,
   });
 
   // now that we've rendered the `LiveView` and its `LiveComponent`s, we can serialize the session data

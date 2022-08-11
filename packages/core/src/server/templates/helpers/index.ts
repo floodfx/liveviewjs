@@ -1,5 +1,7 @@
 export * from "./form_for";
 export * from "./inputs";
+export * from "./live_file_input";
+export * from "./live_img_preview";
 export * from "./live_patch";
 export * from "./live_title_tag";
 export * from "./options_for_select";

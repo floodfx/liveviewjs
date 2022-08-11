@@ -1,5 +1,6 @@
 /// <reference types="node" />
 import { SomeZodObject } from 'zod';
+import { UploadEntry as UploadEntry$1 } from 'src/server/upload/uploadConfig';
 
 /**
  * Generically represent session with `string` keys to `any` value and a named member called
@@ -85,7 +86,15 @@ interface PhxEventPayload<TType extends string, TValue, TEvent extends string = 
 }
 interface PhxEventUploads {
     uploads: {
-        [key: string]: unknown;
+        [key: string]: [
+            {
+                path: string;
+                ref: string;
+                name: string;
+                type: string;
+                size: number;
+            }
+        ];
     };
 }
 declare type PhxClickPayload = PhxEventPayload<"click", {
@@ -147,6 +156,7 @@ declare class LiveViewManager {
     private pubSub;
     private serDe;
     private flashAdaptor;
+    private uploadConfigs;
     private csrfToken?;
     private _infoQueue;
     private _events;
@@ -274,6 +284,33 @@ declare class LiveViewManager {
     private newLiveComponentSocket;
 }
 
+interface UploadEntry {
+    cancelled: boolean;
+    client_last_modified?: number;
+    client_name?: string;
+    client_size?: number;
+    client_type?: string;
+    done?: boolean;
+    preflighted?: boolean;
+    progress: number;
+    ref: string;
+    upload_config?: UploadConfig;
+    upload_ref: string;
+    uuid: string;
+    valid: boolean;
+    errors?: string[];
+}
+interface UploadConfig {
+    name: string;
+    accept: string[];
+    maxEntries: number;
+    maxFileSize: number;
+    autoUpload: boolean;
+    entries: UploadEntry[];
+    ref: string;
+    errors?: string[];
+}
+
 declare type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
 /**
  * Main interface to update state, interact, message, and otherwise
@@ -372,7 +409,22 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      * @param topic the topic to subscribe this `LiveView` to
      */
     subscribe(topic: string): Promise<void>;
+    /**
+     * Allows uploads for the given `LiveView` and sets options for what
+     * files can be uploaded.
+     */
+    allowUpload(name: string, options?: AllowUploadOptions): Promise<void>;
+    /**
+     * Cancels the file upload for a given UploadConfig (by name) and ref.
+     */
+    cancelUpload(configName: string, ref: string): Promise<void>;
 }
+declare type AllowUploadOptions = {
+    accept?: string[];
+    maxEntries?: number;
+    maxFileSize?: number;
+    autoUpload?: boolean;
+};
 declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> implements LiveViewSocket<TContext, TInfo> {
     abstract connected: boolean;
     abstract id: string;
@@ -389,6 +441,8 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
     repeat(fn: () => void, intervalMillis: number): void;
     sendInfo(info: Info<TInfo>): void;
     subscribe(topic: string): Promise<void>;
+    allowUpload(name: string, options?: AllowUploadOptions): Promise<void>;
+    cancelUpload(configName: string, ref: string): Promise<void>;
     updateContextWithTempAssigns(): void;
 }
 /**
@@ -398,6 +452,9 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
 declare class HttpLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> extends BaseLiveViewSocket<TContext, TInfo> {
     readonly id: string;
     readonly connected: boolean;
+    readonly uploadConfigs: {
+        [name: string]: UploadConfig;
+    };
     private _redirect;
     constructor(id: string);
     get redirect(): {
@@ -405,6 +462,7 @@ declare class HttpLiveViewSocket<TContext extends LiveContext = AnyLiveContext, 
         replace: boolean;
     } | undefined;
     pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
+    allowUpload(name: string, options?: AllowUploadOptions | undefined): Promise<void>;
 }
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
@@ -420,7 +478,9 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     private repeatCallback;
     private sendInfoCallback;
     private subscribeCallback;
-    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void);
+    private allowUploadCallback;
+    private cancelUploadCallback;
+    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void, allowUploadCallback: (name: string, options?: AllowUploadOptions) => void, cancelUploadCallback: (configName: string, ref: string) => void);
     putFlash(key: string, value: string): Promise<void>;
     pageTitle(newPageTitle: string): void;
     pushEvent(pushEvent: AnyLivePushEvent): void;
@@ -429,6 +489,8 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     repeat(fn: () => void, intervalMillis: number): void;
     sendInfo(info: Info<TInfo>): void;
     subscribe(topic: string): Promise<void>;
+    allowUpload(name: string, options?: AllowUploadOptions | undefined): Promise<void>;
+    cancelUpload(configName: string, ref: string): Promise<void>;
 }
 
 /**
@@ -490,6 +552,10 @@ interface ErrorTagOptions {
     className?: string;
 }
 declare const error_tag: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: ErrorTagOptions) => HtmlSafeString;
+
+declare function live_file_input(uploadConfig: UploadConfig): HtmlSafeString;
+
+declare function live_img_preview(entry: UploadEntry$1): HtmlSafeString;
 
 interface LiveViewPatchHelperOptions {
     to: {
@@ -882,6 +948,12 @@ interface LiveViewMeta<TEvents extends LiveEvent = AnyLiveEvent> {
     live_component<TContext extends LiveContext = AnyLiveContext>(liveComponent: LiveComponent<TContext, any, any>, params?: Partial<TContext & {
         id: string | number;
     }>): Promise<LiveViewTemplate>;
+    /**
+     * Get UploadConfig details about given key
+     */
+    readonly uploads: {
+        [key: string]: UploadConfig;
+    };
 }
 /**
  * Abstract `LiveView` class that is easy to extend for any class-based `LiveView`
@@ -1222,4 +1294,4 @@ interface LiveViewServerAdaptor<TMiddlewareInterface> {
     wsRouter(): WsMessageRouter;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, Event, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AllowUploadOptions, AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, Event, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
