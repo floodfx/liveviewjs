@@ -1,7 +1,9 @@
-import { PhxIncomingMessage, PhxReply, PhxProtocol } from "./types";
+import { PhxIncomingMessage, PhxProtocol, PhxReply } from "./types";
 
 export const newPhxReply = (from: PhxIncomingMessage<unknown>, payload: any): PhxReply => {
-  const [joinRef, messageRef, topic, ...rest] = from;
+  const joinRef = from[PhxProtocol.joinRef];
+  const messageRef = from[PhxProtocol.messageRef];
+  const topic = from[PhxProtocol.topic];
   return [joinRef, messageRef, topic, "phx_reply", payload];
 };
 

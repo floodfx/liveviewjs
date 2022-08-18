@@ -4,10 +4,7 @@ import { html, HtmlSafeString } from "../htmlSafeString";
 export function live_file_input(uploadConfig: UploadConfig): HtmlSafeString {
   const { name, accept, maxEntries, ref, entries } = uploadConfig;
   const multiple = maxEntries > 1 ? "multiple" : "";
-  const activeRefs = entries
-    .filter((entry) => !entry?.done ?? false)
-    .map((entry) => entry.ref)
-    .join(",");
+  const activeRefs = entries.map((entry) => entry.ref).join(",");
   const doneRefs = entries
     .filter((entry) => entry?.done ?? false)
     .map((entry) => entry.ref)

@@ -1,6 +1,5 @@
-import { nanoid } from "nanoid";
 import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveInfo } from "../live";
-import { UploadConfig } from "../upload/uploadConfig";
+import { UploadConfig, UploadConfigOptions } from "../upload/uploadConfig";
 
 // type to enable Info events to be passed as plain strings
 export type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
@@ -107,20 +106,13 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    * Allows uploads for the given `LiveView` and sets options for what
    * files can be uploaded.
    */
-  allowUpload(name: string, options?: AllowUploadOptions): Promise<void>;
+  allowUpload(name: string, options?: UploadConfigOptions): Promise<void>;
 
   /**
    * Cancels the file upload for a given UploadConfig (by name) and ref.
    */
   cancelUpload(configName: string, ref: string): Promise<void>;
 }
-
-export type AllowUploadOptions = {
-  accept?: string[];
-  maxEntries?: number;
-  maxFileSize?: number;
-  autoUpload?: boolean;
-};
 
 abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo>
   implements LiveViewSocket<TContext, TInfo>
@@ -181,7 +173,7 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext,
     // istanbul ignore next
     return Promise.resolve();
   }
-  allowUpload(name: string, options?: AllowUploadOptions): Promise<void> {
+  allowUpload(name: string, options?: UploadConfigOptions): Promise<void> {
     // no-op
     // istanbul ignore next
     return Promise.resolve();
@@ -230,16 +222,8 @@ export class HttpLiveViewSocket<
     return Promise.resolve();
   }
 
-  allowUpload(name: string, options?: AllowUploadOptions | undefined): Promise<void> {
-    this.uploadConfigs[name] = {
-      name,
-      accept: options?.accept ?? [],
-      maxEntries: options?.maxEntries ?? 1,
-      maxFileSize: options?.maxFileSize ?? 8 * 1024 * 1024, // 8MB
-      autoUpload: options?.autoUpload ?? false,
-      entries: [],
-      ref: `phx-${nanoid()}`,
-    } as UploadConfig;
+  allowUpload(name: string, options?: UploadConfigOptions | undefined): Promise<void> {
+    this.uploadConfigs[name] = new UploadConfig(name, options);
     return Promise.resolve();
   }
 }
@@ -263,7 +247,7 @@ export class WsLiveViewSocket<
   private repeatCallback: (fn: () => void, intervalMillis: number) => void;
   private sendInfoCallback: (info: Info<TInfo>) => void;
   private subscribeCallback: (topic: string) => void;
-  private allowUploadCallback: (name: string, options?: AllowUploadOptions) => void;
+  private allowUploadCallback: (name: string, options?: UploadConfigOptions) => void;
   private cancelUploadCallback: (configName: string, ref: string) => void;
 
   constructor(
@@ -276,7 +260,7 @@ export class WsLiveViewSocket<
     repeatCallback: (fn: () => void, intervalMillis: number) => void,
     sendInfoCallback: (info: Info<TInfo>) => void,
     subscribeCallback: (topic: string) => void,
-    allowUploadCallback: (name: string, options?: AllowUploadOptions) => void,
+    allowUploadCallback: (name: string, options?: UploadConfigOptions) => void,
     cancelUploadCallback: (configName: string, ref: string) => void
   ) {
     super();
@@ -316,7 +300,7 @@ export class WsLiveViewSocket<
   async subscribe(topic: string) {
     await this.subscribeCallback(topic);
   }
-  async allowUpload(name: string, options?: AllowUploadOptions | undefined): Promise<void> {
+  async allowUpload(name: string, options?: UploadConfigOptions | undefined): Promise<void> {
     await this.allowUploadCallback(name, options);
   }
   async cancelUpload(configName: string, ref: string): Promise<void> {

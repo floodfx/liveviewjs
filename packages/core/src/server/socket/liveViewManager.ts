@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { nanoid } from "nanoid";
 import { SerDe } from "../adaptor";
+import { FilesAdapter } from "../adaptor/files";
 import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
 import {
@@ -20,9 +21,10 @@ import { PubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { HtmlSafeString, Parts, safe } from "../templates";
 import { deepDiff } from "../templates/diff";
-import { UploadConfig, UploadEntry } from "../upload/uploadConfig";
+import { UploadConfig, UploadEntry } from "../upload";
 import { Info, WsLiveViewSocket } from "./liveSocket";
 import {
+  PhxAllowUploadIncoming,
   PhxBlurPayload,
   PhxClickPayload,
   PhxDiffReply,
@@ -32,6 +34,7 @@ import {
   PhxHookPayload,
   PhxIncomingMessage,
   PhxJoinIncoming,
+  PhxJoinUploadIncoming,
   PhxKeyDownPayload,
   PhxKeyUpPayload,
   PhxLivePatchIncoming,
@@ -39,6 +42,7 @@ import {
   PhxMessage,
   PhxOutgoingLivePatchPush,
   PhxOutgoingMessage,
+  PhxProgressUploadIncoming,
   PhxProtocol,
 } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
@@ -97,7 +101,9 @@ export class LiveViewManager {
   private pubSub: PubSub;
   private serDe: SerDe;
   private flashAdaptor: FlashAdaptor;
+  private filesAdaptor: FilesAdapter;
   private uploadConfigs: { [key: string]: UploadConfig } = {};
+  private activeUploadRef: string | undefined;
 
   private csrfToken?: string;
 
@@ -121,6 +127,7 @@ export class LiveViewManager {
     serDe: SerDe,
     pubSub: PubSub,
     flashAdaptor: FlashAdaptor,
+    fileAdapter: FilesAdapter,
     liveViewRootTemplate?: LiveViewRootRenderer
   ) {
     this.liveView = liveView;
@@ -129,6 +136,7 @@ export class LiveViewManager {
     this.serDe = serDe;
     this.pubSub = pubSub;
     this.flashAdaptor = flashAdaptor;
+    this.filesAdaptor = fileAdapter;
     this.liveViewRootTemplate = liveViewRootTemplate;
 
     // subscribe to events for a given connectionId which should only be heartbeat messages
@@ -224,19 +232,31 @@ export class LiveViewManager {
   public async handleSubscriptions(phxMessage: PhxMessage) {
     // console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
     try {
-      const { type } = phxMessage;
+      const { type, message } = phxMessage;
       switch (type) {
         case "heartbeat":
-          this.onHeartbeat(phxMessage.message);
+          this.onHeartbeat(message);
           break;
         case "event":
-          await this.onEvent(phxMessage.message);
+          await this.onEvent(message);
+          break;
+        case "allow_upload":
+          await this.onAllowUpload(message);
           break;
         case "live_patch":
-          await this.onLivePatch(phxMessage.message);
+          await this.onLivePatch(message);
           break;
         case "phx_leave":
-          await this.onPhxLeave(phxMessage.message);
+          await this.onPhxLeave(message);
+          break;
+        case "phx_join_upload":
+          await this.onPhxJoinUpload(message);
+          break;
+        case "upload_binary":
+          await this.onUploadBinary(message);
+          break;
+        case "progress":
+          await this.onProgressUpload(message);
           break;
         default:
           console.error(
@@ -312,44 +332,17 @@ export class LiveViewManager {
 
           // parse uploads into uploadConfig for given name
           if (payload.uploads) {
+            const { uploads } = payload;
             // get _target from form data
             const target = value["_target"];
             if (target && this.uploadConfigs.hasOwnProperty(target)) {
-              let configErrors: string[] = [];
-              this.uploadConfigs[target].entries = Object.keys(payload.uploads).reduce((acc, key) => {
-                const entries = payload.uploads[key].map((upload) => {
-                  // check size is valid
-                  let error: string | undefined;
-                  if (upload.size > this.uploadConfigs[target].maxFileSize) {
-                    error = `File size is too large`;
-                    configErrors.push(error);
-                  }
-                  return {
-                    cancelled: false,
-                    complete: false,
-                    progress: 0,
-                    ref: upload.ref,
-                    // upload_config: this.uploadConfigs[target],
-                    upload_ref: key,
-                    uuid: "UUID??",
-                    valid: error === undefined,
-                    client_last_modified: undefined,
-                    client_name: upload.name,
-                    client_size: upload.size,
-                    client_type: upload.type,
-                    done: false,
-                    preflighted: false,
-                    errors: error ? [error] : undefined,
-                  } as UploadEntry;
+              const config = this.uploadConfigs[target];
+              // check config ref matches uploads key
+              if (uploads.hasOwnProperty(config.ref)) {
+                const entries = uploads[config.ref].map((upload) => {
+                  return new UploadEntry(upload, config);
                 });
-                acc = [...acc, ...entries];
-                return acc;
-              }, [] as UploadEntry[]);
-              if (configErrors.length > 0) {
-                this.uploadConfigs[target].errors = configErrors;
-              }
-              if (this.uploadConfigs[target].entries.length > this.uploadConfigs[target].maxEntries) {
-                this.uploadConfigs[target].errors = ["Too many files"];
+                config.addEntries(entries);
               }
             }
           }
@@ -498,6 +491,247 @@ export class LiveViewManager {
     } catch (e) {
       /* istanbul ignore next */
       console.error("Error handling event", e);
+    }
+  }
+
+  public async onAllowUpload(message: PhxAllowUploadIncoming): Promise<void> {
+    try {
+      const payload = message[PhxProtocol.payload];
+
+      const { ref, entries } = payload;
+      console.log("onAllowUpload handle", ref, entries);
+      this.activeUploadRef = ref;
+
+      // get old render tree and new render tree for diffing
+      // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+      let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+
+      // wrap in root template if there is one
+      view = await this.maybeWrapInRootTemplate(view);
+
+      // diff the new view with the old view
+      const newParts = view.partsTree(true);
+      let diff = deepDiff(this._parts!, newParts);
+      // reset parts to new parts
+      this._parts = newParts;
+
+      // add the rest of the things
+      diff = this.maybeAddPageTitleToParts(diff);
+      diff = this.maybeAddEventsToParts(diff);
+
+      // TODO allow configuration settings for server
+      const config = {
+        chunk_size: 64000,
+        max_entries: 3,
+        max_file_size: 10000000,
+      };
+
+      const entriesReply: { [key: string]: string } = {
+        ref,
+      };
+      entries.forEach(async (entry) => {
+        try {
+          entriesReply[entry.ref] = JSON.stringify(entry); //await this.serDe.serialize(entry);
+        } catch (e) {
+          console.error("Error serializing entry", e);
+        }
+      });
+
+      const replyPayload = {
+        response: {
+          diff,
+          config,
+          entries: entriesReply,
+        },
+        status: "ok",
+      };
+
+      this.sendPhxReply(newPhxReply(message, replyPayload));
+
+      // maybe send any queued info messages
+      await this.maybeSendInfos();
+
+      // remove temp data
+      this.socket.updateContextWithTempAssigns();
+    } catch (e) {
+      /* istanbul ignore next */
+      console.error("Error handling allow_upload", e);
+    }
+  }
+
+  public async onPhxJoinUpload(message: PhxJoinUploadIncoming): Promise<void> {
+    try {
+      const topic = message[PhxProtocol.topic];
+      const payload = message[PhxProtocol.payload];
+
+      const { token } = payload;
+      console.log("onPhxJoinUpload handle", topic, token);
+      // add token to queue
+      // this.uploadTokens.push({ uploadRef: this.activeUploadRef!, token, message });
+
+      const replyPayload = {
+        response: {},
+        status: "ok",
+      };
+
+      this.sendPhxReply(newPhxReply(message, replyPayload));
+    } catch (e) {
+      /* istanbul ignore next */
+      console.error("Error handling onPhxJoinUpload", e);
+    }
+  }
+
+  public async onUploadBinary(message: { data: Buffer }): Promise<void> {
+    try {
+      console.log("onUploadBinary handle", message.data.length);
+
+      // store data to temp file
+      const tempFile = this.filesAdaptor.tempPath(nanoid());
+      // read first 5 bytes to get sizes of parts
+      const sizesOffset = 5;
+      const sizes = message.data.slice(0, sizesOffset);
+      console.log("sizes", sizes);
+      const startSize = parseInt(sizes[0].toString());
+      if (startSize !== 0) {
+        throw Error(`Unexpected startSize ${sizes.slice(0, 1).toString()}`);
+      }
+      const joinRefSize = parseInt(sizes[1].toString());
+      const messageRefSize = parseInt(sizes[2].toString());
+      const topicSize = parseInt(sizes[3].toString());
+      const eventSize = parseInt(sizes[4].toString());
+
+      // read header and header parts
+      const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
+      const header = message.data.slice(sizesOffset, sizesOffset + headerLength).toString();
+      let start = 0;
+      let end = joinRefSize;
+      const joinRef = header.slice(0, end).toString();
+      start += joinRefSize;
+      end += messageRefSize;
+      const messageRef = header.slice(start, end).toString();
+      start += messageRefSize;
+      end += topicSize;
+      const topic = header.slice(start, end).toString();
+      start += topicSize;
+      end += eventSize;
+      const event = header.slice(start, end).toString();
+      console.log(
+        `onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`
+      );
+
+      // adjust data index based on message length
+      const dataStartIndex = sizesOffset + headerLength;
+      this.filesAdaptor.writeTempFile(tempFile, message.data.slice(dataStartIndex, message.data.length));
+      console.log("wrote temp file", tempFile, header.length, `"${header.toString()}"`);
+
+      // split topic to get uploadRef
+      const ref = topic.split(":")[1];
+      // find entry by uploadRef
+      // const entry = this.uploadTokens.find((e) => e.uploadRef === uploadRef);
+      // get activeUploadConfig
+      const activeUploadConfig = Object.values(this.uploadConfigs).find((c) => c.ref === this.activeUploadRef);
+      if (activeUploadConfig) {
+        // find entry by ref
+        const entry = activeUploadConfig.entries.find((e) => e.ref === ref);
+
+        const tempFilePath = this.filesAdaptor.tempPath(entry!.uuid);
+        entry?.setTempFile(tempFilePath);
+        this.filesAdaptor.createOrAppendFile(tempFilePath, tempFile);
+        console.log("found entry for binary upload", entry, entry?.getTempFile());
+      }
+
+      // TODO run diff at somepoint but not sure what would be different?
+      const diffMessage: PhxOutgoingMessage<{}> = [joinRef, null, this.joinId, "diff", {}];
+      let returnDiff = true;
+      Object.keys(this.uploadConfigs).forEach((key) => {
+        const config = this.uploadConfigs[key];
+        // match upload config on the active upload ref
+        if (config.ref === this.activeUploadRef) {
+          console.log("matched upload config", key, config);
+          // check if ref progress > 0
+          config.entries.forEach((entry) => {
+            if (entry.ref === ref) {
+              returnDiff = entry.progress === 0;
+            }
+          });
+        }
+      });
+      if (returnDiff) {
+        this.sendPhxReply(diffMessage);
+      }
+
+      // now send lvu reply
+      this.sendPhxReply([
+        joinRef,
+        messageRef,
+        topic,
+        "phx_reply",
+        {
+          response: {},
+          status: "ok",
+        },
+      ]);
+    } catch (e) {
+      /* istanbul ignore next */
+      console.error("Error handling onUploadBinary", e);
+    }
+  }
+
+  public async onProgressUpload(message: PhxProgressUploadIncoming): Promise<void> {
+    try {
+      const payload = message[PhxProtocol.payload];
+
+      const { event, ref, entry_ref, progress } = payload;
+      console.log("onProgressUpload handle", event, ref, entry_ref, progress);
+
+      // iterate through uploadConfigs and find the one that matches the ref
+      const uploadConfig = Object.values(this.uploadConfigs).find((config) => config.ref === ref);
+      if (uploadConfig) {
+        uploadConfig.entries = uploadConfig.entries.map((entry) => {
+          if (entry.ref === entry_ref) {
+            entry.updateProgress(progress);
+          }
+          return entry;
+        });
+        this.uploadConfigs[uploadConfig.name] = uploadConfig;
+      } else {
+        console.error("Could not find upload config for ref", ref);
+      }
+
+      // get old render tree and new render tree for diffing
+      // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+      let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+
+      // wrap in root template if there is one
+      view = await this.maybeWrapInRootTemplate(view);
+
+      // diff the new view with the old view
+      const newParts = view.partsTree(true);
+      let diff = deepDiff(this._parts!, newParts);
+      // reset parts to new parts
+      this._parts = newParts;
+
+      // add the rest of the things
+      diff = this.maybeAddPageTitleToParts(diff);
+      diff = this.maybeAddEventsToParts(diff);
+
+      const replyPayload = {
+        response: {
+          diff,
+        },
+        status: "ok",
+      };
+
+      this.sendPhxReply(newPhxReply(message, replyPayload));
+
+      // maybe send any queued info messages
+      await this.maybeSendInfos();
+
+      // remove temp data
+      this.socket.updateContextWithTempAssigns();
+    } catch (e) {
+      /* istanbul ignore next */
+      console.error("Error handling allow_upload", e);
     }
   }
 
@@ -1016,25 +1250,16 @@ export class LiveViewManager {
       },
       async (name, options) => {
         console.log("allowUpload", name, options);
-        this.uploadConfigs[name] = {
-          name,
-          accept: options?.accept ?? [],
-          maxEntries: options?.maxEntries ?? 1,
-          maxFileSize: options?.maxFileSize ?? 8 * 1024 * 1024, // 8MB
-          autoUpload: options?.autoUpload ?? false,
-          entries: [],
-          ref: `phx-${nanoid()}`,
-        } as UploadConfig;
+        this.uploadConfigs[name] = new UploadConfig(name, options);
         return Promise.resolve();
       },
       async (configName, ref) => {
         console.log("cancelUpload", configName, ref);
         const uploadConfig = this.uploadConfigs[configName];
         if (uploadConfig) {
-          const entryIndex = uploadConfig.entries.findIndex((entry) => entry.ref === ref);
-          if (entryIndex > -1) {
-            uploadConfig.entries.splice(entryIndex, 1);
-          }
+          uploadConfig.removeEntry(ref);
+        } else {
+          console.warn(`Upload config ${configName} not found`);
         }
         return Promise.resolve();
       }

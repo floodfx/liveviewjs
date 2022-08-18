@@ -1,19 +1,5 @@
-export interface UploadEntry {
-  cancelled: boolean;
-  client_last_modified?: number; // timestamp
-  client_name?: string; // original filename
-  client_size?: number; // bytes
-  client_type?: string; // mime type
-  done?: boolean; // true if the upload has been completed
-  preflighted?: boolean; // true if the upload has been preflighted,
-  progress: number; // 0-100% or is it bytes?,
-  ref: string; // order of upload
-  upload_config?: UploadConfig; // upload config
-  upload_ref: string; // upload ref nanoid
-  uuid: string; // uuid
-  valid: boolean; // true if the upload is valid
-  errors?: string[]; // errors
-}
+import { nanoid } from "nanoid";
+import { UploadEntry } from ".";
 
 export interface UploadConfig {
   name: string;
@@ -23,5 +9,51 @@ export interface UploadConfig {
   autoUpload: boolean;
   entries: UploadEntry[];
   ref: string;
-  errors?: string[];
+  errors: string[];
+}
+
+export type UploadConfigOptions = {
+  accept?: string[];
+  maxEntries?: number;
+  maxFileSize?: number;
+  autoUpload?: boolean;
+};
+
+export class UploadConfig {
+  constructor(name: string, options?: UploadConfigOptions) {
+    this.name = name;
+    this.accept = options?.accept ?? [];
+    this.maxEntries = options?.maxEntries ?? 1;
+    this.maxFileSize = options?.maxFileSize ?? 8 * 1024 * 1024; // 8MB
+    this.autoUpload = options?.autoUpload ?? false;
+    this.entries = [];
+    this.ref = `phx-${nanoid()}`;
+    this.errors = [];
+  }
+
+  addEntries(entries: UploadEntry[]) {
+    this.entries = this.entries.concat(entries);
+    this.validate();
+  }
+
+  removeEntry(ref: string) {
+    const entryIndex = this.entries.findIndex((entry) => entry.ref === ref);
+    if (entryIndex > -1) {
+      this.entries.splice(entryIndex, 1);
+    }
+    this.validate();
+  }
+
+  private validate() {
+    this.errors = [];
+    if (this.entries.length > this.maxEntries) {
+      this.errors.push("Too many files");
+    }
+    // add errors from entries
+    this.entries.forEach((entry) => {
+      if (!entry.valid) {
+        this.errors.push(...entry.errors);
+      }
+    });
+  }
 }
