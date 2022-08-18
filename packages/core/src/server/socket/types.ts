@@ -12,7 +12,7 @@ export type PhxIncomingMessage<Payload> = [
   joinRef: string | null, // number
   messageRef: string | null, // number
   topic: "phoenix" | string,
-  event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave",
+  event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave" | "allow_upload" | "progress",
   payload: Payload
 ];
 
@@ -42,6 +42,23 @@ export interface PhxJoinPayload {
 export type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
 export type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
 export type PhxLivePatchIncoming = PhxIncomingMessage<{ url: string }>;
+
+export type AllowUploadEntry = {
+  last_modified: number;
+  name: string;
+  size: number;
+  type: string;
+  ref: string;
+};
+
+export type PhxAllowUploadIncoming = PhxIncomingMessage<{ ref: string; entries: AllowUploadEntry[] }>;
+export type PhxJoinUploadIncoming = PhxIncomingMessage<{ token: string }>;
+export type PhxProgressUploadIncoming = PhxIncomingMessage<{
+  event: string | null;
+  ref: string;
+  entry_ref: string; // usually number as a string
+  progress: number;
+}>;
 
 export type Diff = { [key: string]: unknown | Diff };
 
@@ -73,17 +90,18 @@ export interface PhxEventPayload<TType extends string, TValue, TEvent extends st
   cid?: number;
 }
 
+export type PhxEventUpload = {
+  path: string; // config path
+  last_modified: number; // ts of last modified
+  ref: string; // order of upload
+  name: string; // original filename
+  type: string; // mime type
+  size: number; // bytes
+};
+
 export interface PhxEventUploads {
   uploads: {
-    [key: string]: [
-      {
-        path: string;
-        ref: string; // order of upload
-        name: string; // original filename
-        type: string; // mime type
-        size: number; // bytes
-      }
-    ];
+    [key: string]: PhxEventUpload[];
   };
 }
 
@@ -134,4 +152,8 @@ export type PhxMessage =
       >;
     }
   | { type: "live_patch"; message: PhxLivePatchIncoming }
-  | { type: "phx_leave"; message: PhxIncomingMessage<{}> };
+  | { type: "phx_leave"; message: PhxIncomingMessage<{}> }
+  | { type: "allow_upload"; message: PhxAllowUploadIncoming }
+  | { type: "phx_join_upload"; message: PhxJoinUploadIncoming }
+  | { type: "upload_binary"; message: { data: Buffer } }
+  | { type: "progress"; message: PhxProgressUploadIncoming };

@@ -1,26 +1,15 @@
 import { BaseLiveComponent, LiveViewTemplate } from ".";
 import { html } from "..";
-import { LiveComponentMeta } from "./liveComponent";
-import { LiveViewManager } from "../socket/liveViewManager";
-import {
-  AnyLiveContext,
-  AnyLiveEvent,
-  AnyLiveInfo,
-  BaseLiveView,
-  createLiveView,
-  LiveContext,
-  LiveEvent,
-  LiveInfo,
-  LiveView,
-  LiveViewMeta,
-  LiveViewMountParams,
-} from "./liveView";
-import { SessionData } from "../session";
-import { LiveViewSocket, WsMessageRouter } from "../socket";
-import { SingleProcessPubSub } from "../pubsub";
-import { PhxJoinIncoming } from "../socket/types";
-import { JsonSerDe } from "../adaptor/jsonSerDe";
 import { SessionFlashAdaptor, WsAdaptor } from "../adaptor";
+import { JsonSerDe } from "../adaptor/jsonSerDe";
+import { TestNodeFilesAdatptor } from "../adaptor/testFilesAdatptor";
+import { SingleProcessPubSub } from "../pubsub";
+import { SessionData } from "../session";
+import { LiveViewSocket } from "../socket";
+import { LiveViewManager } from "../socket/liveViewManager";
+import { PhxJoinIncoming } from "../socket/types";
+import { LiveComponentMeta } from "./liveComponent";
+import { BaseLiveView, createLiveView, LiveViewMeta, LiveViewMountParams } from "./liveView";
 import { LiveViewRouter } from "./types";
 
 describe("test LiveViewMeta", () => {
@@ -112,7 +101,8 @@ function newManager(callback: (message: string) => void): LiveViewManager {
     new CallbackMessenger(callback),
     new JsonSerDe(),
     new SingleProcessPubSub(),
-    new SessionFlashAdaptor()
+    new SessionFlashAdaptor(),
+    new TestNodeFilesAdatptor()
   );
 }
 

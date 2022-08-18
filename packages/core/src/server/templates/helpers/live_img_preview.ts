@@ -1,4 +1,4 @@
-import { UploadEntry } from "src/server/upload/uploadConfig";
+import { UploadEntry } from "../../upload";
 import { html, HtmlSafeString } from "../htmlSafeString";
 
 export function live_img_preview(entry: UploadEntry): HtmlSafeString {

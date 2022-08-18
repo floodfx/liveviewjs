@@ -132,6 +132,42 @@ const createLiveView = (params) => {
     };
 };
 
+class UploadConfig {
+    constructor(name, options) {
+        this.name = name;
+        this.accept = options?.accept ?? [];
+        this.maxEntries = options?.maxEntries ?? 1;
+        this.maxFileSize = options?.maxFileSize ?? 8 * 1024 * 1024; // 8MB
+        this.autoUpload = options?.autoUpload ?? false;
+        this.entries = [];
+        this.ref = `phx-${nanoid.nanoid()}`;
+        this.errors = [];
+    }
+    addEntries(entries) {
+        this.entries = this.entries.concat(entries);
+        this.validate();
+    }
+    removeEntry(ref) {
+        const entryIndex = this.entries.findIndex((entry) => entry.ref === ref);
+        if (entryIndex > -1) {
+            this.entries.splice(entryIndex, 1);
+        }
+        this.validate();
+    }
+    validate() {
+        this.errors = [];
+        if (this.entries.length > this.maxEntries) {
+            this.errors.push("Too many files");
+        }
+        // add errors from entries
+        this.entries.forEach((entry) => {
+            if (!entry.valid) {
+                this.errors.push(...entry.errors);
+            }
+        });
+    }
+}
+
 class BaseLiveViewSocket {
     _context;
     _tempContext = {}; // values to reset the context to post render cycle
@@ -223,15 +259,7 @@ class HttpLiveViewSocket extends BaseLiveViewSocket {
         return Promise.resolve();
     }
     allowUpload(name, options) {
-        this.uploadConfigs[name] = {
-            name,
-            accept: options?.accept ?? [],
-            maxEntries: options?.maxEntries ?? 1,
-            maxFileSize: options?.maxFileSize ?? 8 * 1024 * 1024,
-            autoUpload: options?.autoUpload ?? false,
-            entries: [],
-            ref: `phx-${nanoid.nanoid()}`,
-        };
+        this.uploadConfigs[name] = new UploadConfig(name, options);
         return Promise.resolve();
     }
 }
@@ -687,10 +715,7 @@ const error_tag = (changeset, key, options) => {
 function live_file_input(uploadConfig) {
     const { name, accept, maxEntries, ref, entries } = uploadConfig;
     const multiple = maxEntries > 1 ? "multiple" : "";
-    const activeRefs = entries
-        .filter((entry) => !entry?.done ?? false)
-        .map((entry) => entry.ref)
-        .join(",");
+    const activeRefs = entries.map((entry) => entry.ref).join(",");
     const doneRefs = entries
         .filter((entry) => entry?.done ?? false)
         .map((entry) => entry.ref)
@@ -794,9 +819,20 @@ function renderOption(option) {
 }
 
 const submit = (label, options) => {
-    const phx_disable_with = options?.phx_disable_with ? safe(` phx-disable-with="${options.phx_disable_with}"`) : "";
+    const attrs = Object.entries(options || {}).reduce((acc, [key, value]) => {
+        if (key === "disabled") {
+            acc += value ? safe(` disabled`) : "";
+        }
+        else if (key === "phx_disable_with") {
+            acc += safe(` phx-disable-with="${escapehtml(value)}"`);
+        }
+        else {
+            acc += safe(` ${key}="${escapehtml(value)}"`);
+        }
+        return acc;
+    }, "");
     // prettier-ignore
-    return html `<button type="submit"${phx_disable_with}>${label}</button>`;
+    return html `<button type="submit"${safe(attrs)}>${label}</button>`;
 };
 
 /**
@@ -1268,6 +1304,50 @@ class SingleProcessPubSub {
     }
 }
 
+class UploadEntry {
+    // keep config private
+    #config;
+    #tempFile;
+    constructor(upload, config) {
+        this.cancelled = false;
+        this.client_last_modified = upload.last_modified;
+        this.client_name = upload.name;
+        this.client_size = upload.size;
+        this.client_type = upload.type;
+        this.done = false;
+        this.preflighted = false;
+        this.progress = 0;
+        this.ref = upload.ref;
+        this.upload_ref = config.ref;
+        this.uuid = nanoid.nanoid();
+        this.errors = [];
+        this.valid = this.errors.length === 0;
+        this.#config = config;
+        this.validate();
+    }
+    updateProgress(progress) {
+        this.progress = progress;
+        this.preflighted = progress > 0;
+        this.done = progress === 100;
+    }
+    validate() {
+        if (this.client_size > this.#config.maxFileSize) {
+            this.errors.push("Too large");
+        }
+        // TODO map mime types to extensions so we can check for valid extensions
+        // if (this.#config.accept.length > 0 && !this.#config.accept.includes(this.client_type)) {
+        //   this.errors.push("Not allowed");
+        // }
+        this.valid = this.errors.length === 0;
+    }
+    setTempFile(tempFilePath) {
+        this.#tempFile = tempFilePath;
+    }
+    getTempFile() {
+        return this.#tempFile;
+    }
+}
+
 var PhxProtocol;
 (function (PhxProtocol) {
     PhxProtocol[PhxProtocol["joinRef"] = 0] = "joinRef";
@@ -1278,7 +1358,9 @@ var PhxProtocol;
 })(PhxProtocol || (PhxProtocol = {}));
 
 const newPhxReply = (from, payload) => {
-    const [joinRef, messageRef, topic, ...rest] = from;
+    const joinRef = from[PhxProtocol.joinRef];
+    const messageRef = from[PhxProtocol.messageRef];
+    const topic = from[PhxProtocol.topic];
     return [joinRef, messageRef, topic, "phx_reply", payload];
 };
 const newHeartbeatReply = (incoming) => {
@@ -1312,7 +1394,10 @@ class LiveViewManager {
     pubSub;
     serDe;
     flashAdaptor;
+    filesAdaptor;
     uploadConfigs = {};
+    activeUploadRef;
+    tempFiles = [];
     csrfToken;
     _infoQueue = [];
     _events = [];
@@ -1323,13 +1408,14 @@ class LiveViewManager {
     hasWarnedAboutMissingCsrfToken = false;
     _parts;
     _cidIndex = 0;
-    constructor(liveView, connectionId, wsAdaptor, serDe, pubSub, flashAdaptor, liveViewRootTemplate) {
+    constructor(liveView, connectionId, wsAdaptor, serDe, pubSub, flashAdaptor, fileAdapter, liveViewRootTemplate) {
         this.liveView = liveView;
         this.connectionId = connectionId;
         this.wsAdaptor = wsAdaptor;
         this.serDe = serDe;
         this.pubSub = pubSub;
         this.flashAdaptor = flashAdaptor;
+        this.filesAdaptor = fileAdapter;
         this.liveViewRootTemplate = liveViewRootTemplate;
         // subscribe to events for a given connectionId which should only be heartbeat messages
         const subId = this.pubSub.subscribe(connectionId, this.handleSubscriptions.bind(this));
@@ -1414,19 +1500,31 @@ class LiveViewManager {
     async handleSubscriptions(phxMessage) {
         // console.log("handleSubscriptions", this.connectionId, this.joinId, phxMessage.type);
         try {
-            const { type } = phxMessage;
+            const { type, message } = phxMessage;
             switch (type) {
                 case "heartbeat":
-                    this.onHeartbeat(phxMessage.message);
+                    this.onHeartbeat(message);
                     break;
                 case "event":
-                    await this.onEvent(phxMessage.message);
+                    await this.onEvent(message);
+                    break;
+                case "allow_upload":
+                    await this.onAllowUpload(message);
                     break;
                 case "live_patch":
-                    await this.onLivePatch(phxMessage.message);
+                    await this.onLivePatch(message);
                     break;
                 case "phx_leave":
-                    await this.onPhxLeave(phxMessage.message);
+                    await this.onPhxLeave(message);
+                    break;
+                case "phx_join_upload":
+                    await this.onPhxJoinUpload(message);
+                    break;
+                case "upload_binary":
+                    await this.onUploadBinary(message);
+                    break;
+                case "progress":
+                    await this.onProgressUpload(message);
                     break;
                 default:
                     console.error(`Unknown message type:"${type}", message:"${JSON.stringify(phxMessage)}" on connectionId:"${this.connectionId}" and joinId:"${this.joinId}"`);
@@ -1483,44 +1581,17 @@ class LiveViewManager {
                     }
                     // parse uploads into uploadConfig for given name
                     if (payload.uploads) {
+                        const { uploads } = payload;
                         // get _target from form data
                         const target = value["_target"];
                         if (target && this.uploadConfigs.hasOwnProperty(target)) {
-                            let configErrors = [];
-                            this.uploadConfigs[target].entries = Object.keys(payload.uploads).reduce((acc, key) => {
-                                const entries = payload.uploads[key].map((upload) => {
-                                    // check size is valid
-                                    let error;
-                                    if (upload.size > this.uploadConfigs[target].maxFileSize) {
-                                        error = `File size is too large`;
-                                        configErrors.push(error);
-                                    }
-                                    return {
-                                        cancelled: false,
-                                        complete: false,
-                                        progress: 0,
-                                        ref: upload.ref,
-                                        // upload_config: this.uploadConfigs[target],
-                                        upload_ref: key,
-                                        uuid: "UUID??",
-                                        valid: error === undefined,
-                                        client_last_modified: undefined,
-                                        client_name: upload.name,
-                                        client_size: upload.size,
-                                        client_type: upload.type,
-                                        done: false,
-                                        preflighted: false,
-                                        errors: error ? [error] : undefined,
-                                    };
+                            const config = this.uploadConfigs[target];
+                            // check config ref matches uploads key
+                            if (uploads.hasOwnProperty(config.ref)) {
+                                const entries = uploads[config.ref].map((upload) => {
+                                    return new UploadEntry(upload, config);
                                 });
-                                acc = [...acc, ...entries];
-                                return acc;
-                            }, []);
-                            if (configErrors.length > 0) {
-                                this.uploadConfigs[target].errors = configErrors;
-                            }
-                            if (this.uploadConfigs[target].entries.length > this.uploadConfigs[target].maxEntries) {
-                                this.uploadConfigs[target].errors = ["Too many files"];
+                                config.addEntries(entries);
                             }
                         }
                     }
@@ -1651,6 +1722,217 @@ class LiveViewManager {
         catch (e) {
             /* istanbul ignore next */
             console.error("Error handling event", e);
+        }
+    }
+    async onAllowUpload(message) {
+        try {
+            const payload = message[PhxProtocol.payload];
+            const { ref, entries } = payload;
+            console.log("onAllowUpload handle", ref, entries);
+            this.activeUploadRef = ref;
+            // get old render tree and new render tree for diffing
+            // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+            let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+            // wrap in root template if there is one
+            view = await this.maybeWrapInRootTemplate(view);
+            // diff the new view with the old view
+            const newParts = view.partsTree(true);
+            let diff = deepDiff(this._parts, newParts);
+            // reset parts to new parts
+            this._parts = newParts;
+            // add the rest of the things
+            diff = this.maybeAddPageTitleToParts(diff);
+            diff = this.maybeAddEventsToParts(diff);
+            // TODO allow configuration settings for server
+            const config = {
+                chunk_size: 64000,
+                max_entries: 3,
+                max_file_size: 10000000,
+            };
+            const entriesReply = {
+                ref,
+            };
+            entries.forEach(async (entry) => {
+                try {
+                    entriesReply[entry.ref] = JSON.stringify(entry); //await this.serDe.serialize(entry);
+                }
+                catch (e) {
+                    console.error("Error serializing entry", e);
+                }
+            });
+            const replyPayload = {
+                response: {
+                    diff,
+                    config,
+                    entries: entriesReply,
+                },
+                status: "ok",
+            };
+            this.sendPhxReply(newPhxReply(message, replyPayload));
+            // maybe send any queued info messages
+            await this.maybeSendInfos();
+            // remove temp data
+            this.socket.updateContextWithTempAssigns();
+        }
+        catch (e) {
+            /* istanbul ignore next */
+            console.error("Error handling allow_upload", e);
+        }
+    }
+    async onPhxJoinUpload(message) {
+        try {
+            const topic = message[PhxProtocol.topic];
+            const payload = message[PhxProtocol.payload];
+            const { token } = payload;
+            console.log("onPhxJoinUpload handle", topic, token);
+            // add token to queue
+            // this.uploadTokens.push({ uploadRef: this.activeUploadRef!, token, message });
+            const replyPayload = {
+                response: {},
+                status: "ok",
+            };
+            this.sendPhxReply(newPhxReply(message, replyPayload));
+        }
+        catch (e) {
+            /* istanbul ignore next */
+            console.error("Error handling onPhxJoinUpload", e);
+        }
+    }
+    async onUploadBinary(message) {
+        try {
+            console.log("onUploadBinary handle", message.data.length);
+            // store data to temp file
+            const tempFile = this.filesAdaptor.tempPath(nanoid.nanoid());
+            // read first 5 bytes to get sizes of parts
+            const sizesOffset = 5;
+            const sizes = message.data.slice(0, sizesOffset);
+            console.log("sizes", sizes);
+            const startSize = parseInt(sizes[0].toString());
+            if (startSize !== 0) {
+                throw Error(`Unexpected startSize ${sizes.slice(0, 1).toString()}`);
+            }
+            const joinRefSize = parseInt(sizes[1].toString());
+            const messageRefSize = parseInt(sizes[2].toString());
+            const topicSize = parseInt(sizes[3].toString());
+            const eventSize = parseInt(sizes[4].toString());
+            // read header and header parts
+            const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
+            const header = message.data.slice(sizesOffset, sizesOffset + headerLength).toString();
+            let start = 0;
+            let end = joinRefSize;
+            const joinRef = header.slice(0, end).toString();
+            start += joinRefSize;
+            end += messageRefSize;
+            const messageRef = header.slice(start, end).toString();
+            start += messageRefSize;
+            end += topicSize;
+            const topic = header.slice(start, end).toString();
+            start += topicSize;
+            end += eventSize;
+            const event = header.slice(start, end).toString();
+            console.log(`onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`);
+            // adjust data index based on message length
+            const dataStartIndex = sizesOffset + headerLength;
+            this.filesAdaptor.writeTempFile(tempFile, message.data.slice(dataStartIndex, message.data.length));
+            console.log("wrote temp file", tempFile, header.length, `"${header.toString()}"`);
+            // this.tempFiles.push(tempFile);
+            // split topic to get uploadRef
+            const ref = topic.split(":")[1];
+            // find entry by uploadRef
+            // const entry = this.uploadTokens.find((e) => e.uploadRef === uploadRef);
+            // get activeUploadConfig
+            const activeUploadConfig = Object.values(this.uploadConfigs).find((c) => c.ref === this.activeUploadRef);
+            if (activeUploadConfig) {
+                // find entry by ref
+                const entry = activeUploadConfig.entries.find((e) => e.ref === ref);
+                const tempFilePath = this.filesAdaptor.tempPath(entry.uuid);
+                entry?.setTempFile(tempFilePath);
+                this.filesAdaptor.createOrAppendFile(tempFilePath, tempFile);
+                console.log("found entry for binary upload", entry, entry?.getTempFile());
+            }
+            // TODO run diff at somepoint but not sure what would be different?
+            const diffMessage = [joinRef, null, this.joinId, "diff", {}];
+            let returnDiff = true;
+            Object.keys(this.uploadConfigs).forEach((key) => {
+                const config = this.uploadConfigs[key];
+                // match upload config on the active upload ref
+                if (config.ref === this.activeUploadRef) {
+                    console.log("matched upload config", key, config);
+                    // check if ref progress > 0
+                    config.entries.forEach((entry) => {
+                        if (entry.ref === ref) {
+                            returnDiff = entry.progress === 0;
+                        }
+                    });
+                }
+            });
+            if (returnDiff) {
+                this.sendPhxReply(diffMessage);
+            }
+            // now send lvu reply
+            this.sendPhxReply([
+                joinRef,
+                messageRef,
+                topic,
+                "phx_reply",
+                {
+                    response: {},
+                    status: "ok",
+                },
+            ]);
+        }
+        catch (e) {
+            /* istanbul ignore next */
+            console.error("Error handling onUploadBinary", e);
+        }
+    }
+    async onProgressUpload(message) {
+        try {
+            const payload = message[PhxProtocol.payload];
+            const { event, ref, entry_ref, progress } = payload;
+            console.log("onProgressUpload handle", event, ref, entry_ref, progress);
+            // iterate through uploadConfigs and find the one that matches the ref
+            const uploadConfig = Object.values(this.uploadConfigs).find((config) => config.ref === ref);
+            if (uploadConfig) {
+                uploadConfig.entries = uploadConfig.entries.map((entry) => {
+                    if (entry.ref === entry_ref) {
+                        entry.updateProgress(progress);
+                    }
+                    return entry;
+                });
+                this.uploadConfigs[uploadConfig.name] = uploadConfig;
+            }
+            else {
+                console.error("Could not find upload config for ref", ref);
+            }
+            // get old render tree and new render tree for diffing
+            // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
+            let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
+            // wrap in root template if there is one
+            view = await this.maybeWrapInRootTemplate(view);
+            // diff the new view with the old view
+            const newParts = view.partsTree(true);
+            let diff = deepDiff(this._parts, newParts);
+            // reset parts to new parts
+            this._parts = newParts;
+            // add the rest of the things
+            diff = this.maybeAddPageTitleToParts(diff);
+            diff = this.maybeAddEventsToParts(diff);
+            const replyPayload = {
+                response: {
+                    diff,
+                },
+                status: "ok",
+            };
+            this.sendPhxReply(newPhxReply(message, replyPayload));
+            // maybe send any queued info messages
+            await this.maybeSendInfos();
+            // remove temp data
+            this.socket.updateContextWithTempAssigns();
+        }
+        catch (e) {
+            /* istanbul ignore next */
+            console.error("Error handling allow_upload", e);
         }
     }
     /**
@@ -2088,24 +2370,16 @@ class LiveViewManager {
             this.subscriptionIds[topic] = subId;
         }, async (name, options) => {
             console.log("allowUpload", name, options);
-            this.uploadConfigs[name] = {
-                name,
-                accept: options?.accept ?? [],
-                maxEntries: options?.maxEntries ?? 1,
-                maxFileSize: options?.maxFileSize ?? 8 * 1024 * 1024,
-                autoUpload: options?.autoUpload ?? false,
-                entries: [],
-                ref: `phx-${nanoid.nanoid()}`,
-            };
+            this.uploadConfigs[name] = new UploadConfig(name, options);
             return Promise.resolve();
         }, async (configName, ref) => {
             console.log("cancelUpload", configName, ref);
             const uploadConfig = this.uploadConfigs[configName];
             if (uploadConfig) {
-                const entryIndex = uploadConfig.entries.findIndex((entry) => entry.ref === ref);
-                if (entryIndex > -1) {
-                    uploadConfig.entries.splice(entryIndex, 1);
-                }
+                uploadConfig.removeEntry(ref);
+            }
+            else {
+                console.warn(`Upload config ${configName} not found`);
             }
             return Promise.resolve();
         });
@@ -2124,27 +2398,53 @@ class WsMessageRouter {
     pubSub;
     flashAdaptor;
     serDe;
+    filesAdapter;
     liveViewRootTemplate;
-    constructor(router, pubSub, flashAdaptor, serDe, liveViewRootTemplate) {
+    constructor(router, pubSub, flashAdaptor, serDe, filesAdapter, liveViewRootTemplate) {
         this.router = router;
         this.pubSub = pubSub;
         this.flashAdaptor = flashAdaptor;
         this.serDe = serDe;
+        this.filesAdapter = filesAdapter;
         this.liveViewRootTemplate = liveViewRootTemplate;
     }
-    async onMessage(connectionId, messageString, wsAdaptor) {
+    async onMessage(connectionId, data, wsAdaptor, isBinary) {
+        if (isBinary) {
+            // save binary data to disk
+            console.log("got binary data on connection", connectionId, data instanceof Buffer ? data.length : "unknown");
+            await this.pubSub.broadcast(connectionId, {
+                type: "upload_binary",
+                // TODO: size of data defaults to 64k which should be fine to broadcast
+                message: { data },
+            });
+            return;
+        }
         // parse string to JSON
-        const rawPhxMessage = JSON.parse(messageString);
+        const rawPhxMessage = JSON.parse(data.toString());
         // rawPhxMessage must be an array with 5 elements
         if (typeof rawPhxMessage === "object" && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
             const event = rawPhxMessage[PhxProtocol.event];
             const topic = rawPhxMessage[PhxProtocol.topic];
+            console.log("connectionId", connectionId, "received message", rawPhxMessage, "topic", topic, "event", event);
             try {
                 switch (event) {
                     case "phx_join":
                         // handle phx_join seperate from other events so we can create a new
                         // component manager and send the join message to it
-                        await this.onPhxJoin(connectionId, rawPhxMessage, wsAdaptor);
+                        // check prefix of topic to determine if LiveView (lv:*) or LiveViewUpload (lvu:*)
+                        if (topic.startsWith("lv:")) {
+                            await this.onPhxJoin(connectionId, rawPhxMessage, wsAdaptor);
+                        }
+                        else if (topic.startsWith("lvu:")) {
+                            // since we don't have the lv topic id, use the connectionId to broadcast to the component manager
+                            await this.pubSub.broadcast(connectionId, {
+                                type: "phx_join_upload",
+                                message: rawPhxMessage,
+                            });
+                        }
+                        else {
+                            throw new Error(`Unknown phx_join prefix: ${topic}`);
+                        }
                         break;
                     case "heartbeat":
                         // send heartbeat to component manager via connectionId broadcast
@@ -2157,6 +2457,14 @@ class WsMessageRouter {
                     case "live_patch":
                     case "phx_leave":
                         // other events we can send via topic broadcast
+                        await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage });
+                        break;
+                    case "allow_upload":
+                        // handle file uploads
+                        await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage });
+                        break;
+                    case "progress":
+                        // handle file progress
                         await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage });
                         break;
                     default:
@@ -2193,7 +2501,7 @@ class WsMessageRouter {
             throw Error(`no component found for ${url}`);
         }
         // create a LiveViewManager for this connection / LiveView
-        const liveViewManager = new LiveViewManager(component, connectionId, wsAdaptor, this.serDe, this.pubSub, this.flashAdaptor, this.liveViewRootTemplate);
+        const liveViewManager = new LiveViewManager(component, connectionId, wsAdaptor, this.serDe, this.pubSub, this.flashAdaptor, this.filesAdapter, this.liveViewRootTemplate);
         await liveViewManager.handleJoin(message);
     }
 }
@@ -2207,6 +2515,8 @@ exports.JS = JS;
 exports.LiveViewManager = LiveViewManager;
 exports.SessionFlashAdaptor = SessionFlashAdaptor;
 exports.SingleProcessPubSub = SingleProcessPubSub;
+exports.UploadConfig = UploadConfig;
+exports.UploadEntry = UploadEntry;
 exports.WsLiveComponentSocket = WsLiveComponentSocket;
 exports.WsLiveViewSocket = WsLiveViewSocket;
 exports.WsMessageRouter = WsMessageRouter;

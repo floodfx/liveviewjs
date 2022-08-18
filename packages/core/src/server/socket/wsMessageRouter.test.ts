@@ -1,6 +1,7 @@
 import { BaseLiveView, LiveViewMountParams, LiveViewRouter } from "..";
 import { FlashAdaptor, SessionFlashAdaptor, WsAdaptor } from "../adaptor";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
+import { TestNodeFilesAdatptor } from "../adaptor/testFilesAdatptor";
 import { PubSub, SingleProcessPubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { html } from "../templates";
@@ -20,13 +21,15 @@ describe("test message router", () => {
   let ws: WsAdaptor;
   let pubSub: PubSub;
   let flashAdaptor: FlashAdaptor;
+  let filesAdaptor: TestNodeFilesAdatptor;
   beforeEach(() => {
     pubSub = new SingleProcessPubSub();
     flashAdaptor = new SessionFlashAdaptor();
+    filesAdaptor = new TestNodeFilesAdatptor();
     ws = {
       send: jest.fn(),
     };
-    mr = new WsMessageRouter(router, pubSub, flashAdaptor, new JsonSerDe());
+    mr = new WsMessageRouter(router, pubSub, flashAdaptor, new JsonSerDe(), filesAdaptor);
   });
 
   it("onMessage unknown message logs error", async () => {
