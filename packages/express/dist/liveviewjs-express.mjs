@@ -3,8 +3,8 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createClient } from 'redis';
-import { nanoid } from 'nanoid';
 import { handleHttpLiveView, WsMessageRouter } from 'liveviewjs';
+import { nanoid } from 'nanoid';
 
 /**
  * Session data serializer/deserializer for Node using JWT tokens.
@@ -73,11 +73,12 @@ class NodeExpressLiveViewServer {
      * @param flashAdaptor
      * @param rootRenderer (optional) another renderer that can sit between the root template and the rendered LiveView
      */
-    constructor(router, serDe, pubSub, pageRenderer, pageTitleDefaults, flashAdaptor, rootRenderer) {
+    constructor(router, serDe, pubSub, pageRenderer, pageTitleDefaults, flashAdaptor, filesAdapter, rootRenderer) {
         this.router = router;
         this.serDe = serDe;
         this.flashAdapter = flashAdaptor;
         this.pubSub = pubSub;
+        this.filesAdapter = filesAdapter;
         this.pageRenderer = pageRenderer;
         this.pageTitleDefaults = pageTitleDefaults;
         this.rootRenderer = rootRenderer;
@@ -115,7 +116,7 @@ class NodeExpressLiveViewServer {
         };
     }
     wsRouter() {
-        return new WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.rootRenderer);
+        return new WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.filesAdapter, this.rootRenderer);
     }
 }
 /**

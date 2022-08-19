@@ -5,6 +5,7 @@ import {
   decarbLiveView,
   jsCmdsLiveView,
   paginateLiveView,
+  photos,
   printLiveView,
   searchLiveView,
   serversLiveView,
@@ -17,6 +18,7 @@ import session, { MemoryStore } from "express-session";
 import { Server } from "http";
 import { LiveViewRouter, SessionFlashAdaptor, SingleProcessPubSub } from "liveviewjs";
 import { nanoid } from "nanoid";
+import { NodeFilesAdatptor } from "src/node/filesAdaptor";
 import { WebSocketServer } from "ws";
 import { NodeJwtSerDe } from "../node/jwtSerDe";
 import { NodeExpressLiveViewServer } from "../node/server";
@@ -43,10 +45,14 @@ const router: LiveViewRouter = {
   "/counter": counterLiveView,
   "/jscmds": jsCmdsLiveView,
   "/hello": helloLiveView,
+  "/photos": photos,
 };
 
 // configure your express app
 const app = express();
+
+// add static file serving
+app.use(express.static("public"));
 
 // setup express-session middleware
 app.use(
@@ -86,6 +92,7 @@ const liveView = new NodeExpressLiveViewServer(
   pageRenderer,
   { title: "Express Demo", suffix: " · LiveViewJS" },
   new SessionFlashAdaptor(),
+  new NodeFilesAdatptor(),
   rootRenderer
 );
 
@@ -110,9 +117,9 @@ const liveViewRouter = liveView.wsRouter();
 // send websocket requests to the LiveViewJS message router
 wsServer.on("connection", (ws) => {
   const connectionId = nanoid();
-  ws.on("message", async (message) => {
+  ws.on("message", async (message, isBinary) => {
     // pass websocket messages to LiveViewJS
-    await liveViewRouter.onMessage(connectionId, message.toString(), new NodeWsAdaptor(ws));
+    await liveViewRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
   });
   ws.on("close", async () => {
     // pass websocket close events to LiveViewJS

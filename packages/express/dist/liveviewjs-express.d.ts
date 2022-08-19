@@ -1,4 +1,4 @@
-import { SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, PubSub, LiveViewPageRenderer, PageTitleDefaults, FlashAdaptor, LiveViewRootRenderer, WsMessageRouter, WsAdaptor } from 'liveviewjs';
+import { SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, PubSub, LiveViewPageRenderer, PageTitleDefaults, FlashAdaptor, FilesAdapter, LiveViewRootRenderer, WsMessageRouter, WsAdaptor } from 'liveviewjs';
 import { RedisClientOptions } from '@node-redis/client';
 import { RequestHandler } from 'express';
 import { WebSocket } from 'ws';
@@ -33,6 +33,7 @@ declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<Request
     private serDe;
     private flashAdapter;
     private pubSub;
+    private filesAdapter;
     private pageRenderer;
     private pageTitleDefaults;
     private rootRenderer?;
@@ -47,7 +48,7 @@ declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<Request
      * @param flashAdaptor
      * @param rootRenderer (optional) another renderer that can sit between the root template and the rendered LiveView
      */
-    constructor(router: LiveViewRouter, serDe: SerDe, pubSub: PubSub, pageRenderer: LiveViewPageRenderer, pageTitleDefaults: PageTitleDefaults, flashAdaptor: FlashAdaptor, rootRenderer?: LiveViewRootRenderer);
+    constructor(router: LiveViewRouter, serDe: SerDe, pubSub: PubSub, pageRenderer: LiveViewPageRenderer, pageTitleDefaults: PageTitleDefaults, flashAdaptor: FlashAdaptor, filesAdapter: FilesAdapter, rootRenderer?: LiveViewRootRenderer);
     httpMiddleware(): RequestHandler;
     wsRouter(): WsMessageRouter;
 }

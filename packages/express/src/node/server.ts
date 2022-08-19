@@ -1,25 +1,27 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
-import { nanoid } from "nanoid";
 import {
+  FilesAdapter,
+  FlashAdaptor,
   handleHttpLiveView,
   HttpRequestAdaptor,
-  PageTitleDefaults,
-  SerDe,
-  SessionData,
-  LiveViewRouter,
   LiveViewPageRenderer,
   LiveViewRootRenderer,
-  FlashAdaptor,
-  PubSub,
-  WsMessageRouter,
+  LiveViewRouter,
   LiveViewServerAdaptor,
+  PageTitleDefaults,
+  PubSub,
+  SerDe,
+  SessionData,
+  WsMessageRouter,
 } from "liveviewjs";
+import { nanoid } from "nanoid";
 
 export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler> {
   private router: LiveViewRouter;
   private serDe: SerDe;
   private flashAdapter: FlashAdaptor;
   private pubSub: PubSub;
+  private filesAdapter: FilesAdapter;
   private pageRenderer: LiveViewPageRenderer;
   private pageTitleDefaults: PageTitleDefaults;
   private rootRenderer?: LiveViewRootRenderer;
@@ -42,12 +44,14 @@ export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestH
     pageRenderer: LiveViewPageRenderer,
     pageTitleDefaults: PageTitleDefaults,
     flashAdaptor: FlashAdaptor,
+    filesAdapter: FilesAdapter,
     rootRenderer?: LiveViewRootRenderer
   ) {
     this.router = router;
     this.serDe = serDe;
     this.flashAdapter = flashAdaptor;
     this.pubSub = pubSub;
+    this.filesAdapter = filesAdapter;
     this.pageRenderer = pageRenderer;
     this.pageTitleDefaults = pageTitleDefaults;
     this.rootRenderer = rootRenderer;
@@ -98,7 +102,14 @@ export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestH
   }
 
   wsRouter() {
-    return new WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.rootRenderer);
+    return new WsMessageRouter(
+      this.router,
+      this.pubSub,
+      this.flashAdapter,
+      this.serDe,
+      this.filesAdapter,
+      this.rootRenderer
+    );
   }
 }
 
