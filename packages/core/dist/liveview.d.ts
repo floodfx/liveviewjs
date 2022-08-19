@@ -204,7 +204,6 @@ declare class LiveViewManager {
     private filesAdaptor;
     private uploadConfigs;
     private activeUploadRef;
-    private tempFiles;
     private csrfToken?;
     private _infoQueue;
     private _events;
@@ -338,6 +337,29 @@ declare class LiveViewManager {
     private newLiveComponentSocket;
 }
 
+declare type UploadConfigOptions = {
+    accept?: string[];
+    maxEntries?: number;
+    maxFileSize?: number;
+    autoUpload?: boolean;
+};
+interface UploadConfig {
+    name: string;
+    accept: string[];
+    maxEntries: number;
+    maxFileSize: number;
+    autoUpload: boolean;
+    entries: UploadEntry[];
+    ref: string;
+    errors: string[];
+}
+declare class UploadConfig {
+    constructor(name: string, options?: UploadConfigOptions);
+    addEntries(entries: UploadEntry[]): void;
+    removeEntry(ref: string): void;
+    private validate;
+}
+
 interface UploadEntry {
     cancelled: boolean;
     client_last_modified: number;
@@ -360,29 +382,6 @@ declare class UploadEntry {
     validate(): void;
     setTempFile(tempFilePath: string): void;
     getTempFile(): string;
-}
-
-declare type UploadConfigOptions = {
-    accept?: string[];
-    maxEntries?: number;
-    maxFileSize?: number;
-    autoUpload?: boolean;
-};
-interface UploadConfig {
-    name: string;
-    accept: string[];
-    maxEntries: number;
-    maxFileSize: number;
-    autoUpload: boolean;
-    entries: UploadEntry[];
-    ref: string;
-    errors: string[];
-}
-declare class UploadConfig {
-    constructor(name: string, options?: UploadConfigOptions);
-    addEntries(entries: UploadEntry[]): void;
-    removeEntry(ref: string): void;
-    private validate;
 }
 
 declare type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
@@ -492,6 +491,12 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      * Cancels the file upload for a given UploadConfig (by name) and ref.
      */
     cancelUpload(configName: string, ref: string): Promise<void>;
+    /**
+     * Consume the uploaded files for a given UploadConfig (by name) and ref.
+     */
+    consumeUploadedEntries<T>(configName: string, fn: (meta: {
+        path: string;
+    }, entry: UploadEntry) => Promise<T>): Promise<T[]>;
 }
 declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> implements LiveViewSocket<TContext, TInfo> {
     abstract connected: boolean;
@@ -511,6 +516,9 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
     subscribe(topic: string): Promise<void>;
     allowUpload(name: string, options?: UploadConfigOptions): Promise<void>;
     cancelUpload(configName: string, ref: string): Promise<void>;
+    consumeUploadedEntries<T>(configName: string, fn: (meta: {
+        path: string;
+    }, entry: UploadEntry) => Promise<T>): Promise<T[]>;
     updateContextWithTempAssigns(): void;
 }
 /**
@@ -548,7 +556,10 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     private subscribeCallback;
     private allowUploadCallback;
     private cancelUploadCallback;
-    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void, allowUploadCallback: (name: string, options?: UploadConfigOptions) => void, cancelUploadCallback: (configName: string, ref: string) => void);
+    private consumeUploadedEntriesCallback;
+    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void, allowUploadCallback: (name: string, options?: UploadConfigOptions) => void, cancelUploadCallback: (configName: string, ref: string) => void, consumeUploadedEntriesCallback: <T>(configName: string, fn: (meta: {
+        path: string;
+    }, entry: UploadEntry) => Promise<T>) => Promise<T[]>);
     putFlash(key: string, value: string): Promise<void>;
     pageTitle(newPageTitle: string): void;
     pushEvent(pushEvent: AnyLivePushEvent): void;
@@ -559,6 +570,9 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     subscribe(topic: string): Promise<void>;
     allowUpload(name: string, options?: UploadConfigOptions | undefined): Promise<void>;
     cancelUpload(configName: string, ref: string): Promise<void>;
+    consumeUploadedEntries<T>(configName: string, fn: (meta: {
+        path: string;
+    }, entry: UploadEntry) => Promise<T>): Promise<T[]>;
 }
 
 /**
@@ -924,7 +938,7 @@ interface LiveEvent {
     type: string;
 }
 interface AnyLiveEvent extends LiveEvent {
-    [key: string]: string;
+    [key: string]: string | number | boolean | (string | number | boolean)[];
 }
 interface LiveInfo {
     type: string;

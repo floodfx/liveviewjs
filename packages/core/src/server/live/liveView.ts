@@ -17,7 +17,7 @@ export interface LiveEvent {
 }
 
 export interface AnyLiveEvent extends LiveEvent {
-  [key: string]: string;
+  [key: string]: string | number | boolean | (string | number | boolean)[];
 }
 
 export interface LiveInfo {

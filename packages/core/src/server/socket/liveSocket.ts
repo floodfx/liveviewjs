@@ -1,4 +1,5 @@
 import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveInfo } from "../live";
+import { UploadEntry } from "../upload";
 import { UploadConfig, UploadConfigOptions } from "../upload/uploadConfig";
 
 // type to enable Info events to be passed as plain strings
@@ -112,6 +113,14 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    * Cancels the file upload for a given UploadConfig (by name) and ref.
    */
   cancelUpload(configName: string, ref: string): Promise<void>;
+
+  /**
+   * Consume the uploaded files for a given UploadConfig (by name) and ref.
+   */
+  consumeUploadedEntries<T>(
+    configName: string,
+    fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
+  ): Promise<T[]>;
 }
 
 abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo>
@@ -183,6 +192,14 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext,
     // istanbul ignore next
     return Promise.resolve();
   }
+  consumeUploadedEntries<T>(
+    configName: string,
+    fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
+  ): Promise<T[]> {
+    // no-op
+    // istanbul ignore next
+    return Promise.resolve([]);
+  }
 
   updateContextWithTempAssigns() {
     if (Object.keys(this._tempContext).length > 0) {
@@ -249,6 +266,10 @@ export class WsLiveViewSocket<
   private subscribeCallback: (topic: string) => void;
   private allowUploadCallback: (name: string, options?: UploadConfigOptions) => void;
   private cancelUploadCallback: (configName: string, ref: string) => void;
+  private consumeUploadedEntriesCallback: <T>(
+    configName: string,
+    fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
+  ) => Promise<T[]>;
 
   constructor(
     id: string,
@@ -261,7 +282,11 @@ export class WsLiveViewSocket<
     sendInfoCallback: (info: Info<TInfo>) => void,
     subscribeCallback: (topic: string) => void,
     allowUploadCallback: (name: string, options?: UploadConfigOptions) => void,
-    cancelUploadCallback: (configName: string, ref: string) => void
+    cancelUploadCallback: (configName: string, ref: string) => void,
+    consumeUploadedEntriesCallback: <T>(
+      configName: string,
+      fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
+    ) => Promise<T[]>
   ) {
     super();
     this.id = id;
@@ -275,6 +300,7 @@ export class WsLiveViewSocket<
     this.subscribeCallback = subscribeCallback;
     this.allowUploadCallback = allowUploadCallback;
     this.cancelUploadCallback = cancelUploadCallback;
+    this.consumeUploadedEntriesCallback = consumeUploadedEntriesCallback;
   }
   async putFlash(key: string, value: string) {
     await this.putFlashCallback(key, value);
@@ -305,5 +331,11 @@ export class WsLiveViewSocket<
   }
   async cancelUpload(configName: string, ref: string): Promise<void> {
     await this.cancelUploadCallback(configName, ref);
+  }
+  async consumeUploadedEntries<T>(
+    configName: string,
+    fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
+  ): Promise<T[]> {
+    return await this.consumeUploadedEntriesCallback<T>(configName, fn);
   }
 }
