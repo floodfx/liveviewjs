@@ -149,6 +149,7 @@ declare type Events = {
 } | {
     type: "save";
     name: string;
+    photoUrls: string[];
 } | {
     type: "cancel";
     config_name: string;

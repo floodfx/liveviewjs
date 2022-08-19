@@ -1,6 +1,8 @@
 
 /// <reference types="./liveviewjs-examples.d.ts" />
 import { createLiveView, html, createLiveComponent, JS, options_for_select, live_patch, join, newChangesetFactory, form_for, text_input, error_tag, live_file_input, live_img_preview, submit, SingleProcessPubSub, telephone_input } from 'liveviewjs';
+import fs from 'fs';
+import path from 'path';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
@@ -1934,7 +1936,7 @@ const photos = createLiveView({
             maxFileSize: 10 * 1024 * 1024, // 10MB
         });
     },
-    handleEvent: (event, socket) => {
+    handleEvent: async (event, socket) => {
         console.log("handleEvent", event);
         switch (event.type) {
             case "validate": {
@@ -1944,9 +1946,19 @@ const photos = createLiveView({
                 break;
             }
             case "save": {
+                const urls = await socket.consumeUploadedEntries("photos", async (meta, entry) => {
+                    console.log("save", meta, entry);
+                    // copy photos to public folder to serve them
+                    const dest = `${path.join(__dirname, "..")}/public/${entry.uuid}`;
+                    console.log("dest", dest);
+                    fs.copyFileSync(meta.path, dest);
+                    return dest;
+                });
+                console.log("urls", urls);
+                event.photoUrls = urls;
                 const photoChangeset = changeset$1({}, event, "validate");
                 if (photoChangeset.valid) {
-                    console.log("saving photo");
+                    console.log("saving photo", photoChangeset.data);
                     socket.assign({
                         changeset: changeset$1({}, {}),
                     });
@@ -1979,9 +1991,11 @@ const photos = createLiveView({
         ${text_input(changeset, "name")}
         ${error_tag(changeset, "name")}
         
-
-        ${live_file_input(uploads.photos)}
-        ${(_a = meta.uploads.photos.errors) === null || _a === void 0 ? void 0 : _a.map((error) => html `<p>${error}</p>`)}
+        <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
+          ${live_file_input(uploads.photos)}
+          drag and drop files here
+        </div>
+        ${(_a = uploads.photos.errors) === null || _a === void 0 ? void 0 : _a.map((error) => html `<p>${error}</p>`)}
         
         ${uploads.photos.entries.map((entry) => {
             return html `
@@ -1993,7 +2007,7 @@ const photos = createLiveView({
           `;
         })}
 
-        ${submit("Save", { phx_disable_with: "Saving..." })}
+        ${submit("Save", { phx_disable_with: "Saving...", disabled: uploads.photos.errors.length > 0 })}
       </form>
       ${JSON.stringify(uploads.photos)}
       <ul id="photo_list" phx-update="prepend">
