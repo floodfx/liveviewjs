@@ -5,8 +5,8 @@ Object.defineProperty(exports, '__esModule', { value: true });
 var jwt = require('jsonwebtoken');
 var crypto = require('crypto');
 var redis = require('redis');
-var nanoid = require('nanoid');
 var liveviewjs = require('liveviewjs');
+var nanoid = require('nanoid');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -80,11 +80,12 @@ class NodeExpressLiveViewServer {
      * @param flashAdaptor
      * @param rootRenderer (optional) another renderer that can sit between the root template and the rendered LiveView
      */
-    constructor(router, serDe, pubSub, pageRenderer, pageTitleDefaults, flashAdaptor, rootRenderer) {
+    constructor(router, serDe, pubSub, pageRenderer, pageTitleDefaults, flashAdaptor, filesAdapter, rootRenderer) {
         this.router = router;
         this.serDe = serDe;
         this.flashAdapter = flashAdaptor;
         this.pubSub = pubSub;
+        this.filesAdapter = filesAdapter;
         this.pageRenderer = pageRenderer;
         this.pageTitleDefaults = pageTitleDefaults;
         this.rootRenderer = rootRenderer;
@@ -122,7 +123,7 @@ class NodeExpressLiveViewServer {
         };
     }
     wsRouter() {
-        return new liveviewjs.WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.rootRenderer);
+        return new liveviewjs.WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.filesAdapter, this.rootRenderer);
     }
 }
 /**
