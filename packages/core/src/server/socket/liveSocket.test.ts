@@ -16,6 +16,7 @@ describe("test LiveViewSocket", () => {
   let subscribeCallback = jest.fn();
   let allowUploadCallback = jest.fn();
   let cancelUploadCallback = jest.fn();
+  let consumeUploadedEntriesCallback = jest.fn();
 
   beforeEach(() => {
     component = new TestLiveView();
@@ -29,6 +30,7 @@ describe("test LiveViewSocket", () => {
     subscribeCallback = jest.fn();
     allowUploadCallback = jest.fn();
     cancelUploadCallback = jest.fn();
+    consumeUploadedEntriesCallback = jest.fn();
     socket = new WsLiveViewSocket(
       "id",
       pageTitleCallback,
@@ -40,7 +42,8 @@ describe("test LiveViewSocket", () => {
       repeatCallback,
       subscribeCallback,
       allowUploadCallback,
-      cancelUploadCallback
+      cancelUploadCallback,
+      consumeUploadedEntriesCallback
     );
   });
 
@@ -84,7 +87,8 @@ describe("test LiveViewSocket", () => {
       repeatCallback,
       subscribeCallback,
       allowUploadCallback,
-      cancelUploadCallback
+      cancelUploadCallback,
+      consumeUploadedEntriesCallback
     );
     await component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     expect(socket.context.foo).toEqual("bar");
@@ -103,7 +107,8 @@ describe("test LiveViewSocket", () => {
       sendCallback,
       subscribeCallback,
       allowUploadCallback,
-      cancelUploadCallback
+      cancelUploadCallback,
+      consumeUploadedEntriesCallback
     );
     component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
 
@@ -130,7 +135,8 @@ describe("test LiveViewSocket", () => {
       repeatCallback,
       subscribeCallback,
       allowUploadCallback,
-      cancelUploadCallback
+      cancelUploadCallback,
+      consumeUploadedEntriesCallback
     );
     component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     socket.assign({ foo: "bar" });

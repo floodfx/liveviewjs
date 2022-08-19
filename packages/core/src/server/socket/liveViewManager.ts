@@ -292,7 +292,7 @@ export class LiveViewManager {
       const payload = message[PhxProtocol.payload];
       const { type, event, cid } = payload;
       // TODO - handle uploads
-      let value: Record<string, string> = {};
+      let value: Record<string, unknown> = {};
       switch (type) {
         case "click":
           // check if the click is a lv:clear-flash event
@@ -334,7 +334,7 @@ export class LiveViewManager {
           if (payload.uploads) {
             const { uploads } = payload;
             // get _target from form data
-            const target = value["_target"];
+            const target = value["_target"] as string;
             if (target && this.uploadConfigs.hasOwnProperty(target)) {
               const config = this.uploadConfigs[target];
               // check config ref matches uploads key
@@ -1259,9 +1259,21 @@ export class LiveViewManager {
         if (uploadConfig) {
           uploadConfig.removeEntry(ref);
         } else {
-          console.warn(`Upload config ${configName} not found`);
+          console.warn(`Upload config ${configName} not found for cancelUpload`);
         }
         return Promise.resolve();
+      },
+      async <T>(configName: string, fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>) => {
+        console.log("consomeUploadedEntries", configName, fn);
+        const uploadConfig = this.uploadConfigs[configName];
+        if (uploadConfig) {
+          return await Promise.all(
+            uploadConfig.entries.map(async (entry) => await fn({ path: entry.getTempFile() }, entry))
+          );
+        } else {
+          console.warn(`Upload config ${configName} not found for consumeUploadedEntries`);
+        }
+        return [];
       }
     );
   }

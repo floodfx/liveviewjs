@@ -221,6 +221,11 @@ class BaseLiveViewSocket {
         // istanbul ignore next
         return Promise.resolve();
     }
+    consumeUploadedEntries(configName, fn) {
+        // no-op
+        // istanbul ignore next
+        return Promise.resolve([]);
+    }
     updateContextWithTempAssigns() {
         if (Object.keys(this._tempContext).length > 0) {
             this.assign(this._tempContext);
@@ -273,7 +278,8 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     subscribeCallback;
     allowUploadCallback;
     cancelUploadCallback;
-    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, repeatCallback, sendInfoCallback, subscribeCallback, allowUploadCallback, cancelUploadCallback) {
+    consumeUploadedEntriesCallback;
+    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, repeatCallback, sendInfoCallback, subscribeCallback, allowUploadCallback, cancelUploadCallback, consumeUploadedEntriesCallback) {
         super();
         this.id = id;
         this.pageTitleCallback = pageTitleCallback;
@@ -286,6 +292,7 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
         this.subscribeCallback = subscribeCallback;
         this.allowUploadCallback = allowUploadCallback;
         this.cancelUploadCallback = cancelUploadCallback;
+        this.consumeUploadedEntriesCallback = consumeUploadedEntriesCallback;
     }
     async putFlash(key, value) {
         await this.putFlashCallback(key, value);
@@ -316,6 +323,9 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     }
     async cancelUpload(configName, ref) {
         await this.cancelUploadCallback(configName, ref);
+    }
+    async consumeUploadedEntries(configName, fn) {
+        return await this.consumeUploadedEntriesCallback(configName, fn);
     }
 }
 
@@ -1390,7 +1400,6 @@ class LiveViewManager {
     filesAdaptor;
     uploadConfigs = {};
     activeUploadRef;
-    tempFiles = [];
     csrfToken;
     _infoQueue = [];
     _events = [];
@@ -1828,7 +1837,6 @@ class LiveViewManager {
             const dataStartIndex = sizesOffset + headerLength;
             this.filesAdaptor.writeTempFile(tempFile, message.data.slice(dataStartIndex, message.data.length));
             console.log("wrote temp file", tempFile, header.length, `"${header.toString()}"`);
-            // this.tempFiles.push(tempFile);
             // split topic to get uploadRef
             const ref = topic.split(":")[1];
             // find entry by uploadRef
@@ -2372,9 +2380,19 @@ class LiveViewManager {
                 uploadConfig.removeEntry(ref);
             }
             else {
-                console.warn(`Upload config ${configName} not found`);
+                console.warn(`Upload config ${configName} not found for cancelUpload`);
             }
             return Promise.resolve();
+        }, async (configName, fn) => {
+            console.log("consomeUploadedEntries", configName, fn);
+            const uploadConfig = this.uploadConfigs[configName];
+            if (uploadConfig) {
+                return await Promise.all(uploadConfig.entries.map(async (entry) => await fn({ path: entry.getTempFile() }, entry)));
+            }
+            else {
+                console.warn(`Upload config ${configName} not found for consumeUploadedEntries`);
+            }
+            return [];
         });
     }
     newLiveComponentSocket(context) {
