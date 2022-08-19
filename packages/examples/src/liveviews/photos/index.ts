@@ -1,3 +1,4 @@
+import fs from "fs";
 import {
   createLiveView,
   error_tag,
@@ -9,6 +10,7 @@ import {
   submit,
   text_input,
 } from "liveviewjs";
+import path from "path";
 import { changeset, Photo } from "./data";
 
 type Context = {
@@ -18,7 +20,7 @@ type Context = {
 
 type Events =
   | { type: "validate"; name: string }
-  | { type: "save"; name: string }
+  | { type: "save"; name: string; photoUrls: string[] }
   | { type: "cancel"; config_name: string; ref: string };
 
 export const photos = createLiveView<Context, Events>({
@@ -33,7 +35,7 @@ export const photos = createLiveView<Context, Events>({
       maxFileSize: 10 * 1024 * 1024, // 10MB
     });
   },
-  handleEvent: (event, socket) => {
+  handleEvent: async (event, socket) => {
     console.log("handleEvent", event);
     switch (event.type) {
       case "validate": {
@@ -43,9 +45,19 @@ export const photos = createLiveView<Context, Events>({
         break;
       }
       case "save": {
+        const urls = await socket.consumeUploadedEntries("photos", async (meta, entry) => {
+          console.log("save", meta, entry);
+          // copy photos to public folder to serve them
+          const dest = `${path.join(__dirname, "..")}/public/${entry.uuid}`;
+          console.log("dest", dest);
+          fs.copyFileSync(meta.path, dest);
+          return dest;
+        });
+        console.log("urls", urls);
+        event.photoUrls = urls;
         const photoChangeset = changeset({}, event, "validate");
         if (photoChangeset.valid) {
-          console.log("saving photo");
+          console.log("saving photo", photoChangeset.data);
           socket.assign({
             changeset: changeset({}, {}),
           });
@@ -76,9 +88,11 @@ export const photos = createLiveView<Context, Events>({
         ${text_input<Photo>(changeset, "name")}
         ${error_tag<Photo>(changeset, "name")}
         
-
-        ${live_file_input(uploads.photos)}
-        ${meta.uploads.photos.errors?.map((error) => html`<p>${error}</p>`)}
+        <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
+          ${live_file_input(uploads.photos)}
+          or drag and drop files here
+        </div>
+        ${uploads.photos.errors?.map((error) => html`<p>${error}</p>`)}
         
         ${uploads.photos.entries.map((entry) => {
           return html`
@@ -90,7 +104,7 @@ export const photos = createLiveView<Context, Events>({
           `;
         })}
 
-        ${submit("Save", { phx_disable_with: "Saving..." })}
+        ${submit("Save", { phx_disable_with: "Saving...", disabled: uploads.photos.errors.length > 0 })}
       </form>
       ${JSON.stringify(uploads.photos)}
       <ul id="photo_list" phx-update="prepend">
