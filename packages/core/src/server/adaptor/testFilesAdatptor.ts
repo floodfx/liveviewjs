@@ -1,9 +1,9 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { FilesAdapter } from "./files";
+import { FileSystemAdaptor } from "./files";
 
-export class TestNodeFilesAdatptor implements FilesAdapter {
+export class TestNodeFileSystemAdatptor implements FileSystemAdaptor {
   tempPath(lastPathPart: string): string {
     return path.join(os.tmpdir(), lastPathPart);
   }

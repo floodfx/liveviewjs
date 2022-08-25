@@ -1,9 +1,26 @@
+import { FileSystemAdaptor } from "../adaptor";
 import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveInfo } from "../live";
-import { UploadEntry } from "../upload";
-import { UploadConfig, UploadConfigOptions } from "../upload/uploadConfig";
+import { UploadConfig, UploadEntry } from "../upload";
+import { UploadConfigOptions } from "../upload/uploadConfig";
 
-// type to enable Info events to be passed as plain strings
+/**
+ *  Type that enables Info events to be passed as plain strings
+ */
 export type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
+
+/**
+ * The type passed to the `consumeUploadedEntries` callback's "meta" parameter
+ */
+export type ConsumeUploadedEntriesMeta = {
+  /**
+   * The location of the file on the server
+   */
+  path: string;
+  /**
+   * The FileSystemAdaptor for the platform (node or deno)
+   */
+  fileSystem: FileSystemAdaptor;
+};
 
 /**
  * Main interface to update state, interact, message, and otherwise
@@ -119,8 +136,16 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    */
   consumeUploadedEntries<T>(
     configName: string,
-    fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
+    fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>
   ): Promise<T[]>;
+
+  /**
+   * Get the uploaded files for a given UploadConfig (by name) and ref
+   */
+  uploadedEntries(configName: string): Promise<{
+    completed: UploadEntry[];
+    inProgress: UploadEntry[];
+  }>;
 }
 
 abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo>
@@ -194,11 +219,16 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext,
   }
   consumeUploadedEntries<T>(
     configName: string,
-    fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
+    fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>
   ): Promise<T[]> {
     // no-op
     // istanbul ignore next
     return Promise.resolve([]);
+  }
+  uploadedEntries(configName: string): Promise<{ completed: UploadEntry[]; inProgress: UploadEntry[] }> {
+    // no-op
+    // istanbul ignore next
+    return Promise.resolve({ completed: [], inProgress: [] });
   }
 
   updateContextWithTempAssigns() {
@@ -247,6 +277,8 @@ export class HttpLiveViewSocket<
 
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
+ * In practice, this uses callbacks defined in the LiveViewManager that
+ * capture state and manipulate it in the context of that LiveViewManager instance.
  */
 export class WsLiveViewSocket<
   TContext extends LiveContext = AnyLiveContext,
@@ -268,8 +300,11 @@ export class WsLiveViewSocket<
   private cancelUploadCallback: (configName: string, ref: string) => void;
   private consumeUploadedEntriesCallback: <T>(
     configName: string,
-    fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
+    fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>
   ) => Promise<T[]>;
+  private uploadedEntriesCallback: (
+    configName: string
+  ) => Promise<{ completed: UploadEntry[]; inProgress: UploadEntry[] }>;
 
   constructor(
     id: string,
@@ -285,8 +320,9 @@ export class WsLiveViewSocket<
     cancelUploadCallback: (configName: string, ref: string) => void,
     consumeUploadedEntriesCallback: <T>(
       configName: string,
-      fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
-    ) => Promise<T[]>
+      fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>
+    ) => Promise<T[]>,
+    uploadedEntriesCallback: (configName: string) => Promise<{ completed: UploadEntry[]; inProgress: UploadEntry[] }>
   ) {
     super();
     this.id = id;
@@ -301,6 +337,7 @@ export class WsLiveViewSocket<
     this.allowUploadCallback = allowUploadCallback;
     this.cancelUploadCallback = cancelUploadCallback;
     this.consumeUploadedEntriesCallback = consumeUploadedEntriesCallback;
+    this.uploadedEntriesCallback = uploadedEntriesCallback;
   }
   async putFlash(key: string, value: string) {
     await this.putFlashCallback(key, value);
@@ -334,8 +371,11 @@ export class WsLiveViewSocket<
   }
   async consumeUploadedEntries<T>(
     configName: string,
-    fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>
+    fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>
   ): Promise<T[]> {
     return await this.consumeUploadedEntriesCallback<T>(configName, fn);
+  }
+  async uploadedEntries(configName: string): Promise<{ completed: UploadEntry[]; inProgress: UploadEntry[] }> {
+    return await this.uploadedEntriesCallback(configName);
   }
 }

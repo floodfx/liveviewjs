@@ -137,22 +137,44 @@ class UploadConfig {
         this.name = name;
         this.accept = options?.accept ?? [];
         this.maxEntries = options?.maxEntries ?? 1;
-        this.maxFileSize = options?.maxFileSize ?? 8 * 1024 * 1024; // 8MB
+        this.maxFileSize = options?.maxFileSize ?? 10 * 1024 * 1024; // 8MB
         this.autoUpload = options?.autoUpload ?? false;
         this.entries = [];
         this.ref = `phx-${nanoid.nanoid()}`;
         this.errors = [];
     }
-    addEntries(entries) {
-        this.entries = this.entries.concat(entries);
+    /**
+     * Add entries to the config.
+     * @param entries UploadEntry[] to add to the config.
+     */
+    setEntries(entries) {
+        this.entries = [...entries];
         this.validate();
     }
+    /**
+     * Remove an entry from the config.
+     * @param ref The unique ref of the UploadEntry to remove.
+     */
     removeEntry(ref) {
         const entryIndex = this.entries.findIndex((entry) => entry.ref === ref);
         if (entryIndex > -1) {
             this.entries.splice(entryIndex, 1);
         }
         this.validate();
+    }
+    /**
+     * Returns all the entries (throws if any are still uploading) and removes
+     * the entries from the config.
+     */
+    consumeEntries() {
+        const inProgress = this.entries.some((entry) => !entry.done);
+        if (inProgress) {
+            throw new Error("Cannot consume entries while uploads are still in progress");
+        }
+        const entries = [...this.entries];
+        this.entries = [];
+        this.validate();
+        return entries;
     }
     validate() {
         this.errors = [];
@@ -165,6 +187,132 @@ class UploadConfig {
                 this.errors.push(...entry.errors);
             }
         });
+    }
+}
+
+/*
+ * Welp there isn't a cross platform mime type library for both
+ * nodejs and deno.  So instead we'll download the mime-db json from
+ * the CDN and use that to map from mime-types to extensions.
+ */
+const MIME_DB_URL = "https://cdn.jsdelivr.net/gh/jshttp/mime-db@master/db.json";
+let db;
+let extensions = {};
+let loaded = false;
+/**
+ * A class for looking up mime type extensions built on top of the mime-db.
+ */
+class Mime {
+    constructor() {
+        if (!loaded) {
+            this.load();
+        }
+    }
+    /**
+     * Given a mime type, return the string[] of extensions associated with it.
+     * @param mimeType the string mime type to lookup
+     * @returns the string[] of extensions associated with the mime type or an empty array if none are found.
+     */
+    lookupExtensions(mimeType) {
+        return db[mimeType]?.extensions || [];
+    }
+    lookupMimeType(ext) {
+        return extensions[ext] || [];
+    }
+    async load() {
+        if (loaded)
+            return;
+        loaded = true;
+        try {
+            const res = await fetch(MIME_DB_URL);
+            if (!res.ok) {
+                throw new Error(`Failed to load mime-db: ${res.status} ${res.statusText}`);
+            }
+            db = await res.json();
+            // build a reverse lookup table for extensions to mime types
+            Object.keys(db).forEach((mimeType, i) => {
+                const exts = this.lookupExtensions(mimeType);
+                exts.forEach((ext) => {
+                    if (!extensions[ext]) {
+                        extensions[ext] = [];
+                    }
+                    extensions[ext].push(mimeType);
+                });
+            });
+        }
+        catch (e) {
+            console.error(e);
+            loaded = false;
+        }
+    }
+}
+const mime = new Mime();
+
+class UploadEntry {
+    // private fields
+    #config; // the parent upload config
+    #tempFile; // the temp file location where the file is stored
+    constructor(upload, config) {
+        this.cancelled = false;
+        this.client_last_modified = upload.last_modified;
+        this.client_name = upload.name;
+        this.client_size = upload.size;
+        this.client_type = upload.type;
+        this.done = false;
+        this.preflighted = false;
+        this.progress = 0;
+        this.ref = upload.ref;
+        this.upload_ref = config.ref;
+        this.uuid = nanoid.nanoid();
+        this.errors = [];
+        this.valid = true;
+        this.#config = config;
+        this.validate();
+    }
+    updateProgress(progress) {
+        this.progress = progress;
+        this.preflighted = progress > 0;
+        this.done = progress === 100;
+    }
+    validate() {
+        this.errors = [];
+        if (this.client_size > this.#config.maxFileSize) {
+            this.errors.push("Too large");
+        }
+        // TODO map mime types to extensions so we can check for valid extensions
+        if (this.#config.accept.length > 0) {
+            // client type is a mime type but accept list can be either a mime type or extension
+            // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
+            let allowed = false;
+            for (let i = 0; i < this.#config.accept.length; i++) {
+                const acceptItem = this.#config.accept[i];
+                if (acceptItem.startsWith(".")) {
+                    // extension so look up mime type (first trim off the leading dot)
+                    const mimeTypes = mime.lookupMimeType(acceptItem.slice(1));
+                    if (mimeTypes.includes(this.client_type)) {
+                        allowed = true;
+                        break;
+                    }
+                }
+                else {
+                    // mime type so check if it matches
+                    if (acceptItem === this.client_type) {
+                        allowed = true;
+                        break;
+                    }
+                }
+            }
+            if (!allowed) {
+                this.errors.push("Not allowed");
+            }
+        }
+        this.valid = this.errors.length === 0;
+    }
+    setTempFile(tempFilePath) {
+        this.#tempFile = tempFilePath;
+    }
+    getTempFile() {
+        return this.#tempFile;
     }
 }
 
@@ -233,6 +381,11 @@ class BaseLiveViewSocket {
         // istanbul ignore next
         return Promise.resolve([]);
     }
+    uploadedEntries(configName) {
+        // no-op
+        // istanbul ignore next
+        return Promise.resolve({ completed: [], inProgress: [] });
+    }
     updateContextWithTempAssigns() {
         if (Object.keys(this._tempContext).length > 0) {
             this.assign(this._tempContext);
@@ -270,6 +423,8 @@ class HttpLiveViewSocket extends BaseLiveViewSocket {
 }
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
+ * In practice, this uses callbacks defined in the LiveViewManager that
+ * capture state and manipulate it in the context of that LiveViewManager instance.
  */
 class WsLiveViewSocket extends BaseLiveViewSocket {
     id;
@@ -286,7 +441,8 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     allowUploadCallback;
     cancelUploadCallback;
     consumeUploadedEntriesCallback;
-    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, repeatCallback, sendInfoCallback, subscribeCallback, allowUploadCallback, cancelUploadCallback, consumeUploadedEntriesCallback) {
+    uploadedEntriesCallback;
+    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, repeatCallback, sendInfoCallback, subscribeCallback, allowUploadCallback, cancelUploadCallback, consumeUploadedEntriesCallback, uploadedEntriesCallback) {
         super();
         this.id = id;
         this.pageTitleCallback = pageTitleCallback;
@@ -300,6 +456,7 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
         this.allowUploadCallback = allowUploadCallback;
         this.cancelUploadCallback = cancelUploadCallback;
         this.consumeUploadedEntriesCallback = consumeUploadedEntriesCallback;
+        this.uploadedEntriesCallback = uploadedEntriesCallback;
     }
     async putFlash(key, value) {
         await this.putFlashCallback(key, value);
@@ -333,6 +490,9 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     }
     async consumeUploadedEntries(configName, fn) {
         return await this.consumeUploadedEntriesCallback(configName, fn);
+    }
+    async uploadedEntries(configName) {
+        return await this.uploadedEntriesCallback(configName);
     }
 }
 
@@ -657,8 +817,16 @@ class HtmlSafeString {
                         };
                     }
                     else {
+                        // probably added an array of objects directly
+                        // e.g. to the dynamic e.g. ${myArray}
+                        // so just render the object as a string
+                        s = cur.map((c) => String(c));
+                        return {
+                            ...acc,
+                            [`${index}`]: s.join(""),
+                        };
                         // istanbul ignore next
-                        throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got:", cur[0].constructor.name);
+                        // throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got:", cur[0].constructor.name);
                     }
                 }
             }
@@ -1270,7 +1438,20 @@ const newChangesetFactory = (schema) => {
         const result = schema.safeParse(merged);
         let errors;
         if (result.success === false) {
+            // check if _target is present in newAttrs and if so, only include
+            // error(s) for that field
+            const target = newAttrs["_target"] ?? false;
             errors = result.error.issues.reduce((acc, issue) => {
+                // TODO recursively walk the full tree of fields for the issues
+                if (target) {
+                    if (issue.path[0] === target) {
+                        // @ts-ignore
+                        acc[target] = issue.message;
+                        return acc;
+                    }
+                    // do not include other fields in the errors if the target is present
+                    return acc;
+                }
                 // @ts-ignore
                 acc[issue.path[0]] = issue.message;
                 return acc;
@@ -1280,6 +1461,7 @@ const newChangesetFactory = (schema) => {
             action,
             changes: updatedDiff(existing, merged),
             data: result.success ? result.data : merged,
+            // if action is empty then we assume no validation rules are being applied
             valid: action !== undefined ? result.success : true,
             errors,
         };
@@ -1311,50 +1493,6 @@ class SingleProcessPubSub {
         await eventEmitter.removeListener(topic, subscriber);
         // remove subscriber from subscribers
         delete this.subscribers[subscriberId];
-    }
-}
-
-class UploadEntry {
-    // keep config private
-    #config;
-    #tempFile;
-    constructor(upload, config) {
-        this.cancelled = false;
-        this.client_last_modified = upload.last_modified;
-        this.client_name = upload.name;
-        this.client_size = upload.size;
-        this.client_type = upload.type;
-        this.done = false;
-        this.preflighted = false;
-        this.progress = 0;
-        this.ref = upload.ref;
-        this.upload_ref = config.ref;
-        this.uuid = nanoid.nanoid();
-        this.errors = [];
-        this.valid = this.errors.length === 0;
-        this.#config = config;
-        this.validate();
-    }
-    updateProgress(progress) {
-        this.progress = progress;
-        this.preflighted = progress > 0;
-        this.done = progress === 100;
-    }
-    validate() {
-        if (this.client_size > this.#config.maxFileSize) {
-            this.errors.push("Too large");
-        }
-        // TODO map mime types to extensions so we can check for valid extensions
-        // if (this.#config.accept.length > 0 && !this.#config.accept.includes(this.client_type)) {
-        //   this.errors.push("Not allowed");
-        // }
-        this.valid = this.errors.length === 0;
-    }
-    setTempFile(tempFilePath) {
-        this.#tempFile = tempFilePath;
-    }
-    getTempFile() {
-        return this.#tempFile;
     }
 }
 
@@ -1404,7 +1542,7 @@ class LiveViewManager {
     pubSub;
     serDe;
     flashAdaptor;
-    filesAdaptor;
+    fileSystemAdaptor;
     uploadConfigs = {};
     activeUploadRef;
     csrfToken;
@@ -1424,7 +1562,7 @@ class LiveViewManager {
         this.serDe = serDe;
         this.pubSub = pubSub;
         this.flashAdaptor = flashAdaptor;
-        this.filesAdaptor = fileAdapter;
+        this.fileSystemAdaptor = fileAdapter;
         this.liveViewRootTemplate = liveViewRootTemplate;
         // subscribe to events for a given connectionId which should only be heartbeat messages
         const subId = this.pubSub.subscribe(connectionId, this.handleSubscriptions.bind(this));
@@ -1600,7 +1738,7 @@ class LiveViewManager {
                                 const entries = uploads[config.ref].map((upload) => {
                                     return new UploadEntry(upload, config);
                                 });
-                                config.addEntries(entries);
+                                config.setEntries(entries);
                             }
                         }
                     }
@@ -1810,15 +1948,14 @@ class LiveViewManager {
     async onUploadBinary(message) {
         try {
             console.log("onUploadBinary handle", message.data.length);
-            // store data to temp file
-            const tempFile = this.filesAdaptor.tempPath(nanoid.nanoid());
+            // generate a random temp file path
+            const randomTempFilePath = this.fileSystemAdaptor.tempPath(nanoid.nanoid());
             // read first 5 bytes to get sizes of parts
             const sizesOffset = 5;
-            const sizes = message.data.slice(0, sizesOffset);
-            console.log("sizes", sizes);
+            const sizes = message.data.subarray(0, sizesOffset);
             const startSize = parseInt(sizes[0].toString());
             if (startSize !== 0) {
-                throw Error(`Unexpected startSize ${sizes.slice(0, 1).toString()}`);
+                throw Error(`Unexpected startSize from uploadBinary: ${sizes.subarray(0, 1).toString()}`);
             }
             const joinRefSize = parseInt(sizes[1].toString());
             const messageRefSize = parseInt(sizes[2].toString());
@@ -1826,7 +1963,7 @@ class LiveViewManager {
             const eventSize = parseInt(sizes[4].toString());
             // read header and header parts
             const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
-            const header = message.data.slice(sizesOffset, sizesOffset + headerLength).toString();
+            const header = message.data.subarray(sizesOffset, sizesOffset + headerLength).toString();
             let start = 0;
             let end = joinRefSize;
             const joinRef = header.slice(0, end).toString();
@@ -1842,21 +1979,24 @@ class LiveViewManager {
             console.log(`onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`);
             // adjust data index based on message length
             const dataStartIndex = sizesOffset + headerLength;
-            this.filesAdaptor.writeTempFile(tempFile, message.data.slice(dataStartIndex, message.data.length));
-            console.log("wrote temp file", tempFile, header.length, `"${header.toString()}"`);
+            this.fileSystemAdaptor.writeTempFile(randomTempFilePath, message.data.subarray(dataStartIndex, message.data.length));
+            // console.log("wrote temp file", randomTempFilePath, header.length, `"${header.toString()}"`);
             // split topic to get uploadRef
             const ref = topic.split(":")[1];
-            // find entry by uploadRef
-            // const entry = this.uploadTokens.find((e) => e.uploadRef === uploadRef);
-            // get activeUploadConfig
+            // get activeUploadConfig by this.activeUploadRef
             const activeUploadConfig = Object.values(this.uploadConfigs).find((c) => c.ref === this.activeUploadRef);
             if (activeUploadConfig) {
-                // find entry by ref
+                // find entry from topic ref
                 const entry = activeUploadConfig.entries.find((e) => e.ref === ref);
-                const tempFilePath = this.filesAdaptor.tempPath(entry.uuid);
-                entry?.setTempFile(tempFilePath);
-                this.filesAdaptor.createOrAppendFile(tempFilePath, tempFile);
-                console.log("found entry for binary upload", entry, entry?.getTempFile());
+                if (!entry) {
+                    throw Error(`Could not find entry for ref ${ref} in uploadConfig ${JSON.stringify(activeUploadConfig)}`);
+                }
+                // use fileSystemAdaptor to get path to a temp file
+                const entryTempFilePath = this.fileSystemAdaptor.tempPath(entry.uuid);
+                // create or append to entry's temp file
+                this.fileSystemAdaptor.createOrAppendFile(entryTempFilePath, randomTempFilePath);
+                // tell the entry where it's temp file is
+                entry.setTempFile(entryTempFilePath);
             }
             // TODO run diff at somepoint but not sure what would be different?
             const diffMessage = [joinRef, null, this.joinId, "diff", {}];
@@ -2369,19 +2509,40 @@ class LiveViewManager {
         };
     }
     newLiveViewSocket() {
-        return new WsLiveViewSocket(this.joinId, (newTitle) => {
+        return new WsLiveViewSocket(
+        // id
+        this.joinId, 
+        // pageTitleCallback
+        (newTitle) => {
             this.pageTitle = newTitle;
-        }, (event) => this.onPushEvent(event), async (path, params, replace) => await this.onPushPatch(path, params, replace), async (path, params, replace) => await this.onPushRedirect(path, params, replace), async (key, value) => await this.putFlash(key, value), (fn, intervalMillis) => this.repeat(fn, intervalMillis), (info) => this.onSendInfo(info), async (topic) => {
+        }, 
+        // pushEventCallback
+        (event) => this.onPushEvent(event), 
+        // pushPatchCallback
+        async (path, params, replace) => await this.onPushPatch(path, params, replace), 
+        // pushRedirectCallback
+        async (path, params, replace) => await this.onPushRedirect(path, params, replace), 
+        // putFlashCallback
+        async (key, value) => await this.putFlash(key, value), 
+        // repeatCallback
+        (fn, intervalMillis) => this.repeat(fn, intervalMillis), 
+        // sendInfoCallback
+        (info) => this.onSendInfo(info), 
+        // subscribeCallback
+        async (topic) => {
             const subId = this.pubSub.subscribe(topic, (info) => {
                 this.sendInternal(info);
             });
             this.subscriptionIds[topic] = subId;
-        }, async (name, options) => {
-            console.log("allowUpload", name, options);
+        }, 
+        // allowUploadCallback
+        async (name, options) => {
+            // console.log("allowUpload", name, options);
             this.uploadConfigs[name] = new UploadConfig(name, options);
-            return Promise.resolve();
-        }, async (configName, ref) => {
-            console.log("cancelUpload", configName, ref);
+        }, 
+        // cancelUploadCallback
+        async (configName, ref) => {
+            // console.log("cancelUpload", configName, ref);
             const uploadConfig = this.uploadConfigs[configName];
             if (uploadConfig) {
                 uploadConfig.removeEntry(ref);
@@ -2389,17 +2550,42 @@ class LiveViewManager {
             else {
                 console.warn(`Upload config ${configName} not found for cancelUpload`);
             }
-            return Promise.resolve();
-        }, async (configName, fn) => {
-            console.log("consomeUploadedEntries", configName, fn);
+        }, 
+        // consumeUploadedEntriesCallback
+        async (configName, fn) => {
+            // console.log("consomeUploadedEntries", configName, fn);
             const uploadConfig = this.uploadConfigs[configName];
             if (uploadConfig) {
-                return await Promise.all(uploadConfig.entries.map(async (entry) => await fn({ path: entry.getTempFile() }, entry)));
+                // remove entries from config before returning
+                const entries = uploadConfig.consumeEntries();
+                return await Promise.all(entries.map(async (entry) => await fn({ path: entry.getTempFile(), fileSystem: this.fileSystemAdaptor }, entry)));
+            }
+            console.warn(`Upload config ${configName} not found for consumeUploadedEntries`);
+            return [];
+        }, 
+        // uploadedEntriesCallback
+        async (configName) => {
+            // console.log("uploadedEntries", configName);
+            const completed = [];
+            const inProgress = [];
+            const uploadConfig = this.uploadConfigs[configName];
+            if (uploadConfig) {
+                uploadConfig.entries.forEach((entry) => {
+                    if (entry.done) {
+                        completed.push(entry);
+                    }
+                    else {
+                        inProgress.push(entry);
+                    }
+                });
             }
             else {
-                console.warn(`Upload config ${configName} not found for consumeUploadedEntries`);
+                console.warn(`Upload config ${configName} not found for uploadedEntries`);
             }
-            return [];
+            return {
+                completed,
+                inProgress,
+            };
         });
     }
     newLiveComponentSocket(context) {
@@ -2416,39 +2602,43 @@ class WsMessageRouter {
     pubSub;
     flashAdaptor;
     serDe;
-    filesAdapter;
+    fileSystemAdaptor;
     liveViewRootTemplate;
     constructor(router, pubSub, flashAdaptor, serDe, filesAdapter, liveViewRootTemplate) {
         this.router = router;
         this.pubSub = pubSub;
         this.flashAdaptor = flashAdaptor;
         this.serDe = serDe;
-        this.filesAdapter = filesAdapter;
+        this.fileSystemAdaptor = filesAdapter;
         this.liveViewRootTemplate = liveViewRootTemplate;
     }
+    /**
+     * Handles incoming websocket messages including binary and text messages and manages
+     * routing those messages to the correct LiveViewManager.
+     * @param connectionId the connection id of the websocket connection
+     * @param data text or binary message data
+     * @param wsAdaptor an instance of the websocket adaptor used to send messages to the client
+     * @param isBinary whether the message is a binary message
+     */
     async onMessage(connectionId, data, wsAdaptor, isBinary) {
         if (isBinary) {
-            // save binary data to disk
-            console.log("got binary data on connection", connectionId, data instanceof Buffer ? data.length : "unknown");
+            // assume binary data is an "upload_binary" type message"
             await this.pubSub.broadcast(connectionId, {
                 type: "upload_binary",
-                // TODO: size of data defaults to 64k which should be fine to broadcast
                 message: { data },
             });
             return;
         }
-        // parse string to JSON
+        // not binary so parse json to phx message
         const rawPhxMessage = JSON.parse(data.toString());
         // rawPhxMessage must be an array with 5 elements
         if (typeof rawPhxMessage === "object" && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
             const event = rawPhxMessage[PhxProtocol.event];
             const topic = rawPhxMessage[PhxProtocol.topic];
-            console.log("connectionId", connectionId, "received message", rawPhxMessage, "topic", topic, "event", event);
             try {
                 switch (event) {
                     case "phx_join":
-                        // handle phx_join seperate from other events so we can create a new
-                        // component manager and send the join message to it
+                        // phx_join event used for both LiveView joins and LiveUpload joins
                         // check prefix of topic to determine if LiveView (lv:*) or LiveViewUpload (lvu:*)
                         if (topic.startsWith("lv:")) {
                             await this.onPhxJoin(connectionId, rawPhxMessage, wsAdaptor);
@@ -2474,15 +2664,9 @@ class WsMessageRouter {
                     case "event":
                     case "live_patch":
                     case "phx_leave":
-                        // other events we can send via topic broadcast
-                        await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage });
-                        break;
                     case "allow_upload":
-                        // handle file uploads
-                        await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage });
-                        break;
                     case "progress":
-                        // handle file progress
+                        // other events we can send via topic broadcast
                         await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage });
                         break;
                     default:
@@ -2506,7 +2690,7 @@ class WsMessageRouter {
         });
     }
     async onPhxJoin(connectionId, message, wsAdaptor) {
-        // use url to route join request to component
+        // get the url or redirect url from the message payload
         const payload = message[PhxProtocol.payload];
         const { url: urlString, redirect: redirectString } = payload;
         const joinUrl = urlString || redirectString;
@@ -2514,12 +2698,13 @@ class WsMessageRouter {
             throw Error(`no url or redirect in join message ${message}`);
         }
         const url = new URL(joinUrl);
+        // route to the correct component based on the resolved url (pathname)
         const component = this.router[url.pathname];
         if (!component) {
             throw Error(`no component found for ${url}`);
         }
         // create a LiveViewManager for this connection / LiveView
-        const liveViewManager = new LiveViewManager(component, connectionId, wsAdaptor, this.serDe, this.pubSub, this.flashAdaptor, this.filesAdapter, this.liveViewRootTemplate);
+        const liveViewManager = new LiveViewManager(component, connectionId, wsAdaptor, this.serDe, this.pubSub, this.flashAdaptor, this.fileSystemAdaptor, this.liveViewRootTemplate);
         await liveViewManager.handleJoin(message);
     }
 }
@@ -2553,6 +2738,7 @@ exports.live_file_input = live_file_input;
 exports.live_img_preview = live_img_preview;
 exports.live_patch = live_patch;
 exports.live_title_tag = live_title_tag;
+exports.mime = mime;
 exports.newChangesetFactory = newChangesetFactory;
 exports.options_for_select = options_for_select;
 exports.safe = safe;

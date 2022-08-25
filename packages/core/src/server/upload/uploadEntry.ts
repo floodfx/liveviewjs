@@ -1,27 +1,71 @@
 import { nanoid } from "nanoid";
 import { UploadConfig } from ".";
+import { mime } from "../mime";
 import { PhxEventUpload } from "../socket/types";
 
+/**
+ * A file and related metadata selected for upload
+ */
 export interface UploadEntry {
+  /**
+   * Whether the file selection has been cancelled. Defaults to false.
+   */
   cancelled: boolean;
-  client_last_modified: number; // timestamp
-  client_name: string; // original filename
-  client_size: number; // bytes
-  client_type: string; // mime type
-  done: boolean; // true if the upload has been completed
-  preflighted: boolean; // true if the upload has been preflighted,
-  progress: number; // 0-100% or is it bytes?,
-  ref: string; // order of upload
-  upload_ref: string; // upload ref nanoid
-  uuid: string; // uuid
-  valid: boolean; // true if the upload has no errors valid
-  errors: string[]; // errors
+  /**
+   * The timestamp when the file was last modified from the client's file system
+   */
+  client_last_modified: number;
+  /**
+   * The name of the file from the client's file system
+   */
+  client_name: string;
+  /**
+   * The size of the file in bytes from the client's file system
+   */
+  client_size: number;
+  /**
+   * The mime type of the file from the client's file system
+   */
+  client_type: string;
+  /**
+   * True if the file has been uploaded. Defaults to false.
+   */
+  done: boolean;
+  /**
+   * True if the file has been auto-uploaded. Defaults to false.
+   */
+  preflighted: boolean;
+  /**
+   * The integer percentage of the file that has been uploaded. Defaults to 0.
+   */
+  progress: number;
+  /**
+   * The unique instance ref of the upload entry
+   */
+  ref: string;
+  /**
+   * The unique instance ref of the upload config to which this entry belongs
+   */
+  upload_ref: string;
+  /**
+   * A uuid for the file
+   */
+  uuid: string;
+  /**
+   * True if there are no errors with the file. Defaults to true.
+   */
+  valid: boolean;
+  /**
+   * Errors that have occurred during selection or upload.
+   */
+  errors: string[];
 }
 
 export class UploadEntry {
-  // keep config private
-  #config: UploadConfig;
-  #tempFile: string;
+  // private fields
+  #config: UploadConfig; // the parent upload config
+  #tempFile: string; // the temp file location where the file is stored
+
   constructor(upload: PhxEventUpload, config: UploadConfig) {
     this.cancelled = false;
     this.client_last_modified = upload.last_modified;
@@ -35,7 +79,7 @@ export class UploadEntry {
     this.upload_ref = config.ref;
     this.uuid = nanoid();
     this.errors = [];
-    this.valid = this.errors.length === 0;
+    this.valid = true;
     this.#config = config;
     this.validate();
   }
@@ -47,13 +91,39 @@ export class UploadEntry {
   }
 
   validate() {
+    this.errors = [];
+
+    // validate file size
     if (this.client_size > this.#config.maxFileSize) {
       this.errors.push("Too large");
     }
-    // TODO map mime types to extensions so we can check for valid extensions
-    // if (this.#config.accept.length > 0 && !this.#config.accept.includes(this.client_type)) {
-    //   this.errors.push("Not allowed");
-    // }
+
+    // validate mime type is allowed
+    if (this.#config.accept.length > 0) {
+      // client type is a mime type but accept list can be either a mime type or extension
+      // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
+      let allowed = false;
+      for (let i = 0; i < this.#config.accept.length; i++) {
+        const acceptItem = this.#config.accept[i];
+        if (acceptItem.startsWith(".")) {
+          // extension so look up mime type (first trim off the leading dot)
+          const mimeTypes = mime.lookupMimeType(acceptItem.slice(1));
+          if (mimeTypes.includes(this.client_type)) {
+            allowed = true;
+            break;
+          }
+        } else {
+          // mime type so check if it matches
+          if (acceptItem === this.client_type) {
+            allowed = true;
+            break;
+          }
+        }
+      }
+      if (!allowed) {
+        this.errors.push("Not allowed");
+      }
+    }
     this.valid = this.errors.length === 0;
   }
 
