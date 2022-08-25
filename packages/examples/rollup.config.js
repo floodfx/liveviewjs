@@ -10,7 +10,7 @@ export default [
   // build the common js rollup
   {
     external,
-    input: "./src/nodeRollupEntry.ts",
+    input: "./src/rollupEntry.ts",
     output: {
       file: "./build/liveviewjs-examples.js",
       format: "cjs",
@@ -26,7 +26,7 @@ export default [
   // build the esm rollup
   {
     external,
-    input: "./src/nodeRollupEntry.ts",
+    input: "./src/rollupEntry.ts",
     output: {
       file: "./build/liveviewjs-examples.mjs",
       format: "esm",
@@ -46,7 +46,7 @@ export default [
   // bundle all the *.d.ts typescript definitions into a single d.ts file
   {
     external,
-    input: "./build/rollup/nodeRollupEntry.d.ts",
+    input: "./build/rollup/rollupEntry.d.ts",
     output: {
       file: "./build/liveviewjs-examples.d.ts",
       format: "esm",

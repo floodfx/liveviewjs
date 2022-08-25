@@ -3,15 +3,8 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var liveviewjs = require('liveviewjs');
-var fs = require('fs');
-var path = require('path');
 var nanoid = require('nanoid');
 var zod = require('zod');
-
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
-
-var fs__default = /*#__PURE__*/_interopDefaultLegacy(fs);
-var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
 
 function searchByZip(zip) {
     return stores.filter((store) => store.zip === zip);
@@ -1924,58 +1917,119 @@ function expiresDecoration$1(donation) {
     }
 }
 
-const PhotoSchema = zod.z.object({
-    id: zod.z.string().default(nanoid.nanoid),
-    name: zod.z.string().optional(),
-    url: zod.z.string().optional(),
-});
-const changeset$1 = liveviewjs.newChangesetFactory(PhotoSchema);
+/**
+ * An in-memory implementation of a database that works with changesets.
+ */
+class InMemoryChangesetDB {
+    #store = {};
+    #changeset;
+    #pubSub;
+    #pubSubTopic;
+    constructor(schema, options) {
+        this.#changeset = liveviewjs.newChangesetFactory(schema);
+        this.#pubSub = options?.pubSub;
+        this.#pubSubTopic = options?.pubSubTopic;
+    }
+    changeset(existing, newAttrs, action) {
+        return this.#changeset(existing ?? {}, newAttrs ?? {}, action);
+    }
+    list() {
+        return Object.values(this.#store);
+    }
+    get(id) {
+        return this.#store[id];
+    }
+    validate(data) {
+        return this.changeset({}, data, "validate");
+    }
+    create(data) {
+        const result = this.#changeset({}, data, "create");
+        if (result.valid) {
+            const newObj = result.data;
+            // assume there will be an id field
+            this.#store[newObj.id] = newObj;
+            this.broadcast("created", newObj);
+        }
+        return result;
+    }
+    update(current, data) {
+        const result = this.#changeset(current, data, "update");
+        if (result.valid) {
+            const newObj = result.data;
+            this.#store[newObj.id] = newObj;
+            this.broadcast("updated", newObj);
+        }
+        return result;
+    }
+    delete(id) {
+        const data = this.#store[id];
+        const deleted = data !== undefined;
+        if (deleted) {
+            delete this.#store[id];
+            this.broadcast("deleted", data);
+        }
+        return deleted;
+    }
+    async broadcast(type, data) {
+        if (this.#pubSub && this.#pubSubTopic) {
+            await this.#pubSub.broadcast(this.#pubSubTopic, { type, data });
+        }
+    }
+}
 
 const photos = liveviewjs.createLiveView({
-    mount: (socket) => {
+    mount: async (socket) => {
+        if (socket.connected) {
+            // listen for changes to volunteer data
+            await socket.subscribe("photos");
+        }
+        // setup the default context
         socket.assign({
-            photos: [],
-            changeset: changeset$1({}, {}),
+            photos: photoStore.list(),
+            changeset: photoStore.changeset(),
         });
+        // configure the upload constraints
         socket.allowUpload("photos", {
-            accept: [".png", ".jpg", ".jpeg", ".pdf"],
+            accept: [".png", ".jpg", ".jpeg", ".gif"],
             maxEntries: 3,
             maxFileSize: 10 * 1024 * 1024, // 10MB
         });
     },
     handleEvent: async (event, socket) => {
-        console.log("handleEvent", event);
         switch (event.type) {
             case "validate": {
-                const photoChangeset = changeset$1({}, event, "validate");
-                console.log("validate", event, photoChangeset);
-                socket.assign({ changeset: photoChangeset });
+                socket.assign({ changeset: photoStore.validate(event) });
                 break;
             }
             case "save": {
-                const urls = await socket.consumeUploadedEntries("photos", async (meta, entry) => {
-                    console.log("save", meta, entry);
-                    // copy photos to public folder to serve them
-                    const dest = `${path__default["default"].join(__dirname, "..")}/public/${entry.uuid}`;
-                    console.log("dest", dest);
-                    fs__default["default"].copyFileSync(meta.path, dest);
-                    return dest;
+                // first get the completed file uploads and map them to urls
+                // Note: the files are guaranteed to be completed here because
+                // save is the event called after all the uploads are complete
+                const { completed } = await socket.uploadedEntries("photos");
+                // set the urls on the event (which was not set via the form)
+                event.urls = completed.map(filename);
+                // attempt to save the photo
+                const photoCreate = photoStore.create(event);
+                if (!photoCreate.valid) {
+                    // if the photo is not valid, assign the changeset and return
+                    // so that the form is re-rendered with the errors
+                    socket.assign({
+                        changeset: photoCreate,
+                    });
+                    return;
+                }
+                // Yay! We've successfully saved the photo, so we can consume (i.e. "remove")
+                // the uploaded entries from the "photos" upload config
+                await socket.consumeUploadedEntries("photos", async (meta, entry) => {
+                    // we could create thumbnails, scan for viruses, etc.
+                    // but for now move the data from the temp file (meta.path) to a public directory
+                    meta.fileSystem.createOrAppendFile(`./public/${filename(entry)}`, meta.path);
                 });
-                console.log("urls", urls);
-                event.photoUrls = urls;
-                const photoChangeset = changeset$1({}, event, "validate");
-                if (photoChangeset.valid) {
-                    console.log("saving photo", photoChangeset.data);
-                    socket.assign({
-                        changeset: changeset$1({}, {}),
-                    });
-                }
-                else {
-                    console.log("invalid photo");
-                    socket.assign({
-                        changeset: photoChangeset,
-                    });
-                }
+                // update the context with new photos and clear the form
+                socket.assign({
+                    photos: photoStore.list(),
+                    changeset: photoStore.changeset(),
+                });
                 break;
             }
             case "cancel": {
@@ -1984,8 +2038,15 @@ const photos = liveviewjs.createLiveView({
             }
         }
     },
+    // Handle broadcast events from the pub/sub subscription for the "photos" topic
+    handleInfo: (info, socket) => {
+        const { data } = info;
+        socket.assign({
+            photos: [data],
+            changeset: photoStore.changeset(),
+        });
+    },
     render: (ctx, meta) => {
-        var _a;
         const { photos, changeset } = ctx;
         const { uploads } = meta;
         return liveviewjs.html `
@@ -1995,34 +2056,71 @@ const photos = liveviewjs.createLiveView({
             phx_change: "validate",
             phx_submit: "save",
         })}
-        ${liveviewjs.text_input(changeset, "name")}
+        Album Name: ${liveviewjs.text_input(changeset, "name")}
         ${liveviewjs.error_tag(changeset, "name")}
         
         <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
           ${liveviewjs.live_file_input(uploads.photos)}
-          drag and drop files here
+          or drag and drop files here 
         </div>
-        ${(_a = uploads.photos.errors) === null || _a === void 0 ? void 0 : _a.map((error) => liveviewjs.html `<p>${error}</p>`)}
+        ${uploads.photos.errors?.map((error) => liveviewjs.html `<p class="invalid-feedback">${error}</p>`)}
         
         ${uploads.photos.entries.map((entry) => {
             return liveviewjs.html `
-            <div>
-              <div style="width: 150px; border: 1px solid black; margin: 2rem 0;">${liveviewjs.live_img_preview(entry)}</div>
-              <div>Progress: ${entry.progress}</div>
-              <a href="#" phx-click="cancel" phx-value-config_name="photos" phx-value-ref="${entry.ref}">&times;</a>
+            <div style="display: flex; align-items: center;">
+              <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${liveviewjs.live_img_preview(entry)}</div>
+              <div style="display: flex; align-items: center; margin-left: 2rem;">
+                <progress
+                  id="volume_control"
+                  style="position: relative; top: 8px; width: 150px; height: 1em;"
+                  value="${entry.progress}"
+                  max="100"></progress>
+                <span style="margin-left: 1rem;">${entry.progress}%</span>
+              </div>
+              <div style="display: flex;">
+                <a
+                  style="padding-left: 2rem;"
+                  phx-click="cancel"
+                  phx-value-config_name="photos"
+                  phx-value-ref="${entry.ref}"
+                  >🗑</a
+                >
+                ${entry.errors?.map((error) => liveviewjs.html `<p style="padding-left: 1rem;" class="invalid-feedback">${error}</p>`)}
+              </div>
             </div>
           `;
         })}
 
-        ${liveviewjs.submit("Save", { phx_disable_with: "Saving...", disabled: uploads.photos.errors.length > 0 })}
+        ${liveviewjs.submit("Upload", { phx_disable_with: "Saving...", disabled: uploads.photos.errors.length > 0 })}
       </form>
-      ${JSON.stringify(uploads.photos)}
+      
       <ul id="photo_list" phx-update="prepend">
-        ${photos.map((photo) => liveviewjs.html `<li id="${photo.id}">${photo.id}</li>`)}
+        ${photos.map((photo) => liveviewjs.html `<li id="${photo.id}">
+            ${photo.urls.map((url, i) => liveviewjs.html `
+                <h3>${photo.name}(${i})</h3>
+                <img src="${url}" />
+              `)}
+          </li>`)}
       </ul>
     `;
     },
 });
+const PhotoSchema = zod.z.object({
+    id: zod.z.string().default(nanoid.nanoid),
+    name: zod.z.string().min(1).max(100),
+    urls: zod.z.array(zod.z.string()).min(1).default([]),
+});
+const photoStore = new InMemoryChangesetDB(PhotoSchema, {
+    pubSub: new liveviewjs.SingleProcessPubSub(),
+    pubSubTopic: "photos",
+});
+// map the upload entry to a filename based on the mime type of the entry
+// concatenated with the entry's uuid
+const filename = (entry) => {
+    const exts = liveviewjs.mime.lookupExtensions(entry.client_type);
+    const ext = exts.length > 0 ? exts[0] : "bin";
+    return `${entry.uuid}.${ext}`;
+};
 
 const photoSizes = ["4x6", "5x7", "8x10", "10x13", "11x14"];
 const printLiveView = liveviewjs.createLiveView({

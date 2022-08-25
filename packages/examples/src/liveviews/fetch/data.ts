@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 // see: https://xkcd.com/json.html
 export interface XkcdData {
   month: string;
