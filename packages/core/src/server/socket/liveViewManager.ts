@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { nanoid } from "nanoid";
 import { SerDe } from "../adaptor";
-import { FilesAdapter } from "../adaptor/files";
+import { FileSystemAdaptor } from "../adaptor/files";
 import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
 import {
@@ -22,7 +22,7 @@ import { SessionData } from "../session";
 import { HtmlSafeString, Parts, safe } from "../templates";
 import { deepDiff } from "../templates/diff";
 import { UploadConfig, UploadEntry } from "../upload";
-import { Info, WsLiveViewSocket } from "./liveSocket";
+import { ConsumeUploadedEntriesMeta, Info, WsLiveViewSocket } from "./liveSocket";
 import {
   PhxAllowUploadIncoming,
   PhxBlurPayload,
@@ -101,7 +101,7 @@ export class LiveViewManager {
   private pubSub: PubSub;
   private serDe: SerDe;
   private flashAdaptor: FlashAdaptor;
-  private filesAdaptor: FilesAdapter;
+  private fileSystemAdaptor: FileSystemAdaptor;
   private uploadConfigs: { [key: string]: UploadConfig } = {};
   private activeUploadRef: string | undefined;
 
@@ -127,7 +127,7 @@ export class LiveViewManager {
     serDe: SerDe,
     pubSub: PubSub,
     flashAdaptor: FlashAdaptor,
-    fileAdapter: FilesAdapter,
+    fileAdapter: FileSystemAdaptor,
     liveViewRootTemplate?: LiveViewRootRenderer
   ) {
     this.liveView = liveView;
@@ -136,7 +136,7 @@ export class LiveViewManager {
     this.serDe = serDe;
     this.pubSub = pubSub;
     this.flashAdaptor = flashAdaptor;
-    this.filesAdaptor = fileAdapter;
+    this.fileSystemAdaptor = fileAdapter;
     this.liveViewRootTemplate = liveViewRootTemplate;
 
     // subscribe to events for a given connectionId which should only be heartbeat messages
@@ -342,7 +342,7 @@ export class LiveViewManager {
                 const entries = uploads[config.ref].map((upload) => {
                   return new UploadEntry(upload, config);
                 });
-                config.addEntries(entries);
+                config.setEntries(entries);
               }
             }
           }
@@ -583,17 +583,16 @@ export class LiveViewManager {
 
   public async onUploadBinary(message: { data: Buffer }): Promise<void> {
     try {
-      console.log("onUploadBinary handle", message.data.length);
+      //console.log("onUploadBinary handle", message.data.length);
 
-      // store data to temp file
-      const tempFile = this.filesAdaptor.tempPath(nanoid());
+      // generate a random temp file path
+      const randomTempFilePath = this.fileSystemAdaptor.tempPath(nanoid());
       // read first 5 bytes to get sizes of parts
       const sizesOffset = 5;
-      const sizes = message.data.slice(0, sizesOffset);
-      console.log("sizes", sizes);
+      const sizes = message.data.subarray(0, sizesOffset);
       const startSize = parseInt(sizes[0].toString());
       if (startSize !== 0) {
-        throw Error(`Unexpected startSize ${sizes.slice(0, 1).toString()}`);
+        throw Error(`Unexpected startSize from uploadBinary: ${sizes.subarray(0, 1).toString()}`);
       }
       const joinRefSize = parseInt(sizes[1].toString());
       const messageRefSize = parseInt(sizes[2].toString());
@@ -602,7 +601,7 @@ export class LiveViewManager {
 
       // read header and header parts
       const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
-      const header = message.data.slice(sizesOffset, sizesOffset + headerLength).toString();
+      const header = message.data.subarray(sizesOffset, sizesOffset + headerLength).toString();
       let start = 0;
       let end = joinRefSize;
       const joinRef = header.slice(0, end).toString();
@@ -621,23 +620,30 @@ export class LiveViewManager {
 
       // adjust data index based on message length
       const dataStartIndex = sizesOffset + headerLength;
-      this.filesAdaptor.writeTempFile(tempFile, message.data.slice(dataStartIndex, message.data.length));
-      console.log("wrote temp file", tempFile, header.length, `"${header.toString()}"`);
+      this.fileSystemAdaptor.writeTempFile(
+        randomTempFilePath,
+        message.data.subarray(dataStartIndex, message.data.length)
+      );
+      // console.log("wrote temp file", randomTempFilePath, header.length, `"${header.toString()}"`);
 
       // split topic to get uploadRef
       const ref = topic.split(":")[1];
-      // find entry by uploadRef
-      // const entry = this.uploadTokens.find((e) => e.uploadRef === uploadRef);
-      // get activeUploadConfig
+
+      // get activeUploadConfig by this.activeUploadRef
       const activeUploadConfig = Object.values(this.uploadConfigs).find((c) => c.ref === this.activeUploadRef);
       if (activeUploadConfig) {
-        // find entry by ref
+        // find entry from topic ref
         const entry = activeUploadConfig.entries.find((e) => e.ref === ref);
+        if (!entry) {
+          throw Error(`Could not find entry for ref ${ref} in uploadConfig ${JSON.stringify(activeUploadConfig)}`);
+        }
 
-        const tempFilePath = this.filesAdaptor.tempPath(entry!.uuid);
-        entry?.setTempFile(tempFilePath);
-        this.filesAdaptor.createOrAppendFile(tempFilePath, tempFile);
-        console.log("found entry for binary upload", entry, entry?.getTempFile());
+        // use fileSystemAdaptor to get path to a temp file
+        const entryTempFilePath = this.fileSystemAdaptor.tempPath(entry.uuid);
+        // create or append to entry's temp file
+        this.fileSystemAdaptor.createOrAppendFile(entryTempFilePath, randomTempFilePath);
+        // tell the entry where it's temp file is
+        entry.setTempFile(entryTempFilePath);
       }
 
       // TODO run diff at somepoint but not sure what would be different?
@@ -1232,48 +1238,83 @@ export class LiveViewManager {
 
   private newLiveViewSocket() {
     return new WsLiveViewSocket(
+      // id
       this.joinId,
+      // pageTitleCallback
       (newTitle: string) => {
         this.pageTitle = newTitle;
       },
+      // pushEventCallback
       (event) => this.onPushEvent(event),
+      // pushPatchCallback
       async (path, params, replace) => await this.onPushPatch(path, params, replace),
+      // pushRedirectCallback
       async (path, params, replace) => await this.onPushRedirect(path, params, replace),
+      // putFlashCallback
       async (key, value) => await this.putFlash(key, value),
+      // repeatCallback
       (fn, intervalMillis) => this.repeat(fn, intervalMillis),
+      // sendInfoCallback
       (info) => this.onSendInfo(info),
+      // subscribeCallback
       async (topic: string) => {
         const subId = this.pubSub.subscribe<AnyLiveInfo>(topic, (info: AnyLiveInfo) => {
           this.sendInternal(info);
         });
         this.subscriptionIds[topic] = subId;
       },
+      // allowUploadCallback
       async (name, options) => {
-        console.log("allowUpload", name, options);
+        // console.log("allowUpload", name, options);
         this.uploadConfigs[name] = new UploadConfig(name, options);
-        return Promise.resolve();
       },
+      // cancelUploadCallback
       async (configName, ref) => {
-        console.log("cancelUpload", configName, ref);
+        // console.log("cancelUpload", configName, ref);
         const uploadConfig = this.uploadConfigs[configName];
         if (uploadConfig) {
           uploadConfig.removeEntry(ref);
         } else {
           console.warn(`Upload config ${configName} not found for cancelUpload`);
         }
-        return Promise.resolve();
       },
-      async <T>(configName: string, fn: (meta: { path: string }, entry: UploadEntry) => Promise<T>) => {
-        console.log("consomeUploadedEntries", configName, fn);
+      // consumeUploadedEntriesCallback
+      async <T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>) => {
+        // console.log("consomeUploadedEntries", configName, fn);
         const uploadConfig = this.uploadConfigs[configName];
         if (uploadConfig) {
+          // remove entries from config before returning
+          const entries = uploadConfig.consumeEntries();
           return await Promise.all(
-            uploadConfig.entries.map(async (entry) => await fn({ path: entry.getTempFile() }, entry))
+            entries.map(
+              async (entry) => await fn({ path: entry.getTempFile(), fileSystem: this.fileSystemAdaptor }, entry)
+            )
           );
-        } else {
-          console.warn(`Upload config ${configName} not found for consumeUploadedEntries`);
         }
+        console.warn(`Upload config ${configName} not found for consumeUploadedEntries`);
         return [];
+      },
+      // uploadedEntriesCallback
+      async (configName) => {
+        // console.log("uploadedEntries", configName);
+        const completed: UploadEntry[] = [];
+        const inProgress: UploadEntry[] = [];
+        const uploadConfig = this.uploadConfigs[configName];
+        if (uploadConfig) {
+          uploadConfig.entries.forEach((entry) => {
+            if (entry.done) {
+              completed.push(entry);
+            } else {
+              inProgress.push(entry);
+            }
+          });
+        } else {
+          console.warn(`Upload config ${configName} not found for uploadedEntries`);
+        }
+        return {
+          completed,
+          inProgress,
+        };
       }
     );
   }

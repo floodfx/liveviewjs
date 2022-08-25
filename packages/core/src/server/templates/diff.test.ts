@@ -114,7 +114,7 @@ describe("test diffs", () => {
     const nextState = html`something ${"foo"} blah ${toggle ? "bar" : html`baz${toggle ? "" : subbaz}`} ${"newkey"}`;
 
     const diff = deepDiff(previousState.partsTree(), nextState.partsTree());
-    console.log("prevState", previousState.partsTree(), "nextState", nextState.partsTree(), "diff", diff);
+    // console.log("prevState", previousState.partsTree(), "nextState", nextState.partsTree(), "diff", diff);
     expect(diff).toStrictEqual({
       1: "bar",
       2: "newkey",
@@ -234,7 +234,7 @@ describe("test diffs", () => {
     const oldParts = require("../../../diffs/220323/oldView.json");
     const newParts = require("../../../diffs/220323/view.json");
     const diff = deepDiff(oldParts, newParts);
-    console.log(JSON.stringify(diff, null, 2));
+    // console.log(JSON.stringify(diff, null, 2));
     expect(diff).toMatchInlineSnapshot(`
       Object {
         "1": Object {

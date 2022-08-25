@@ -1,7 +1,7 @@
 import { BaseLiveView, LiveViewMountParams, LiveViewRouter } from "..";
 import { FlashAdaptor, SessionFlashAdaptor, WsAdaptor } from "../adaptor";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
-import { TestNodeFilesAdatptor } from "../adaptor/testFilesAdatptor";
+import { TestNodeFileSystemAdatptor } from "../adaptor/testFilesAdatptor";
 import { PubSub, SingleProcessPubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { html } from "../templates";
@@ -21,11 +21,11 @@ describe("test message router", () => {
   let ws: WsAdaptor;
   let pubSub: PubSub;
   let flashAdaptor: FlashAdaptor;
-  let filesAdaptor: TestNodeFilesAdatptor;
+  let filesAdaptor: TestNodeFileSystemAdatptor;
   beforeEach(() => {
     pubSub = new SingleProcessPubSub();
     flashAdaptor = new SessionFlashAdaptor();
-    filesAdaptor = new TestNodeFilesAdatptor();
+    filesAdaptor = new TestNodeFileSystemAdatptor();
     ws = {
       send: jest.fn(),
     };

@@ -164,7 +164,7 @@ class TestLiveView extends BaseLiveView {
     }
   }
   async render(context: AnyLiveContext, meta: LiveViewMeta): Promise<LiveViewTemplate> {
-    console.log("showLiveComponent", this.showLiveComponent);
+    // console.log("showLiveComponent", this.showLiveComponent);
     return html`
       <div>
         Test Live View

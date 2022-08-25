@@ -65,9 +65,23 @@ export const newChangesetFactory = <T>(schema: SomeZodObject): LiveViewChangeset
   return (existing: Partial<T>, newAttrs: Partial<T>, action?: string): LiveViewChangeset<T> => {
     const merged = { ...existing, ...newAttrs };
     const result = schema.safeParse(merged);
+
     let errors;
     if (result.success === false) {
+      // check if _target is present in newAttrs and if so, only include
+      // error(s) for that field
+      const target = (newAttrs as any)["_target"] ?? false;
       errors = result.error.issues.reduce((acc, issue) => {
+        // TODO recursively walk the full tree of fields for the issues
+        if (target) {
+          if (issue.path[0] === target) {
+            // @ts-ignore
+            acc[target] = issue.message;
+            return acc;
+          }
+          // do not include other fields in the errors if the target is present
+          return acc;
+        }
         // @ts-ignore
         acc[issue.path[0]] = issue.message;
         return acc;
@@ -77,6 +91,7 @@ export const newChangesetFactory = <T>(schema: SomeZodObject): LiveViewChangeset
       action,
       changes: updatedDiff(existing, merged),
       data: result.success ? result.data : merged,
+      // if action is empty then we assume no validation rules are being applied
       valid: action !== undefined ? result.success : true,
       errors,
     } as LiveViewChangeset<T>;

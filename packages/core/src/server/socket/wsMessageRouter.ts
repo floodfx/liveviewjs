@@ -1,20 +1,12 @@
 import { LiveViewRouter } from "..";
 import { SerDe } from "../adaptor";
-import { FilesAdapter } from "../adaptor/files";
+import { FileSystemAdaptor } from "../adaptor/files";
 import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
 import { LiveViewRootRenderer } from "../live";
 import { PubSub } from "../pubsub/pubSub";
 import { LiveViewManager } from "./liveViewManager";
-import {
-  PhxAllowUploadIncoming,
-  PhxHeartbeatIncoming,
-  PhxIncomingMessage,
-  PhxJoinIncoming,
-  PhxJoinUploadIncoming,
-  PhxProgressUploadIncoming,
-  PhxProtocol,
-} from "./types";
+import { PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxJoinUploadIncoming, PhxProtocol } from "./types";
 
 /**
  * LiveViewJS Router for web socket messages.  Determines if a message is a `LiveView` message and routes it
@@ -25,7 +17,7 @@ export class WsMessageRouter {
   private pubSub: PubSub;
   private flashAdaptor: FlashAdaptor;
   private serDe: SerDe;
-  private filesAdapter: FilesAdapter;
+  private fileSystemAdaptor: FileSystemAdaptor;
   private liveViewRootTemplate?: LiveViewRootRenderer;
 
   constructor(
@@ -33,41 +25,51 @@ export class WsMessageRouter {
     pubSub: PubSub,
     flashAdaptor: FlashAdaptor,
     serDe: SerDe,
-    filesAdapter: FilesAdapter,
+    filesAdapter: FileSystemAdaptor,
     liveViewRootTemplate?: LiveViewRootRenderer
   ) {
     this.router = router;
     this.pubSub = pubSub;
     this.flashAdaptor = flashAdaptor;
     this.serDe = serDe;
-    this.filesAdapter = filesAdapter;
+    this.fileSystemAdaptor = filesAdapter;
     this.liveViewRootTemplate = liveViewRootTemplate;
   }
 
-  public async onMessage(connectionId: string, data: string | unknown, wsAdaptor: WsAdaptor, isBinary?: boolean) {
+  /**
+   * Handles incoming websocket messages including binary and text messages and manages
+   * routing those messages to the correct LiveViewManager.
+   * @param connectionId the connection id of the websocket connection
+   * @param data text or binary message data
+   * @param wsAdaptor an instance of the websocket adaptor used to send messages to the client
+   * @param isBinary whether the message is a binary message
+   */
+  public async onMessage(
+    connectionId: string,
+    data: string | unknown,
+    wsAdaptor: WsAdaptor,
+    isBinary?: boolean
+  ): Promise<void> {
     if (isBinary) {
-      // save binary data to disk
-      console.log("got binary data on connection", connectionId, data instanceof Buffer ? data.length : "unknown");
+      // assume binary data is an "upload_binary" type message"
       await this.pubSub.broadcast(connectionId, {
         type: "upload_binary",
-        // TODO: size of data defaults to 64k which should be fine to broadcast
         message: { data },
       });
       return;
     }
-    // parse string to JSON
+
+    // not binary so parse json to phx message
     const rawPhxMessage: PhxIncomingMessage<unknown> = JSON.parse((data as string).toString());
 
     // rawPhxMessage must be an array with 5 elements
     if (typeof rawPhxMessage === "object" && Array.isArray(rawPhxMessage) && rawPhxMessage.length === 5) {
       const event = rawPhxMessage[PhxProtocol.event];
       const topic = rawPhxMessage[PhxProtocol.topic];
-      console.log("connectionId", connectionId, "received message", rawPhxMessage, "topic", topic, "event", event);
       try {
         switch (event) {
           case "phx_join":
-            // handle phx_join seperate from other events so we can create a new
-            // component manager and send the join message to it
+            // phx_join event used for both LiveView joins and LiveUpload joins
             // check prefix of topic to determine if LiveView (lv:*) or LiveViewUpload (lvu:*)
             if (topic.startsWith("lv:")) {
               await this.onPhxJoin(connectionId, rawPhxMessage as PhxJoinIncoming, wsAdaptor);
@@ -91,16 +93,10 @@ export class WsMessageRouter {
           case "event":
           case "live_patch":
           case "phx_leave":
+          case "allow_upload":
+          case "progress":
             // other events we can send via topic broadcast
             await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage as PhxIncomingMessage<any> });
-            break;
-          case "allow_upload":
-            // handle file uploads
-            await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage as PhxAllowUploadIncoming });
-            break;
-          case "progress":
-            // handle file progress
-            await this.pubSub.broadcast(topic, { type: event, message: rawPhxMessage as PhxProgressUploadIncoming });
             break;
           default:
             throw new Error(`unexpected protocol event ${rawPhxMessage}`);
@@ -123,7 +119,7 @@ export class WsMessageRouter {
   }
 
   private async onPhxJoin(connectionId: string, message: PhxJoinIncoming, wsAdaptor: WsAdaptor) {
-    // use url to route join request to component
+    // get the url or redirect url from the message payload
     const payload = message[PhxProtocol.payload];
     const { url: urlString, redirect: redirectString } = payload;
     const joinUrl = urlString || redirectString;
@@ -131,6 +127,8 @@ export class WsMessageRouter {
       throw Error(`no url or redirect in join message ${message}`);
     }
     const url = new URL(joinUrl);
+
+    // route to the correct component based on the resolved url (pathname)
     const component = this.router[url.pathname];
     if (!component) {
       throw Error(`no component found for ${url}`);
@@ -144,7 +142,7 @@ export class WsMessageRouter {
       this.serDe,
       this.pubSub,
       this.flashAdaptor,
-      this.filesAdapter,
+      this.fileSystemAdaptor,
       this.liveViewRootTemplate
     );
     await liveViewManager.handleJoin(message);

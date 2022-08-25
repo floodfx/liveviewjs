@@ -2,7 +2,7 @@ import { BaseLiveComponent, LiveViewTemplate } from ".";
 import { html } from "..";
 import { SessionFlashAdaptor, WsAdaptor } from "../adaptor";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
-import { TestNodeFilesAdatptor } from "../adaptor/testFilesAdatptor";
+import { TestNodeFileSystemAdatptor } from "../adaptor/testFilesAdatptor";
 import { SingleProcessPubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { LiveViewSocket } from "../socket";
@@ -102,7 +102,7 @@ function newManager(callback: (message: string) => void): LiveViewManager {
     new JsonSerDe(),
     new SingleProcessPubSub(),
     new SessionFlashAdaptor(),
-    new TestNodeFilesAdatptor()
+    new TestNodeFileSystemAdatptor()
   );
 }
 
@@ -116,7 +116,7 @@ const TestFuncLiveView = createLiveView<
   },
   handleInfo: (info, socket) => {
     if (info.type === "Tick") {
-      console.log(info.type, info.tickCount);
+      // console.log(info.type, info.tickCount);
       socket.sendInfo({ type: "Tick2" });
     }
   },

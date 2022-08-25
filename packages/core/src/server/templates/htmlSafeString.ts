@@ -165,8 +165,14 @@ export class HtmlSafeString {
               [`${index}`]: { d, s },
             };
           } else {
-            // istanbul ignore next
-            throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got:", cur[0].constructor.name);
+            // probably added an array of objects directly
+            // e.g. to the dynamic e.g. ${myArray}
+            // so just render the object as a string
+            s = cur.map((c: unknown) => String(c));
+            return {
+              ...acc,
+              [`${index}`]: s.join(""),
+            };
           }
         }
       } else {

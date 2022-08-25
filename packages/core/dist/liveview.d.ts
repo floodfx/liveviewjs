@@ -7,9 +7,22 @@ import { SomeZodObject } from 'zod';
  */
 declare type CsrfGenerator = () => string;
 
-interface FilesAdapter {
+/**
+ * Abstracts some simple file system operations.  Necessary to support
+ * both nodejs and deno since those APIs differ.
+ */
+interface FileSystemAdaptor {
+    /**
+     * Get a temporary file path from the OS with the lastPathPart as the file name.
+     */
     tempPath: (lastPathPart: string) => string;
+    /**
+     * Writes the data to the given destination path.
+     */
     writeTempFile: (dest: string, data: Buffer) => void;
+    /**
+     * Creates and/or appends data from src to dest
+     */
     createOrAppendFile: (dest: string, src: string) => void;
 }
 
@@ -201,7 +214,7 @@ declare class LiveViewManager {
     private pubSub;
     private serDe;
     private flashAdaptor;
-    private filesAdaptor;
+    private fileSystemAdaptor;
     private uploadConfigs;
     private activeUploadRef;
     private csrfToken?;
@@ -214,7 +227,7 @@ declare class LiveViewManager {
     private hasWarnedAboutMissingCsrfToken;
     private _parts;
     private _cidIndex;
-    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, fileAdapter: FilesAdapter, liveViewRootTemplate?: LiveViewRootRenderer);
+    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, fileAdapter: FileSystemAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
     /**
      * The `phx_join` event is the initial connection between the client and the server and initializes the
      * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
@@ -337,42 +350,144 @@ declare class LiveViewManager {
     private newLiveComponentSocket;
 }
 
+/**
+ * Options for creating a new upload config.
+ */
 declare type UploadConfigOptions = {
+    /**
+     * "accept" contains the unique file type specifiers that can be uploaded.
+     * See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
+     */
     accept?: string[];
+    /**
+     * the maximum number of files that can be uploaded at once. Defaults to 1.
+     */
     maxEntries?: number;
+    /**
+     * the maximum size of each file in bytes. Defaults to 10MB.
+     */
     maxFileSize?: number;
+    /**
+     * Whether to upload the selected files automatically when the user selects them.
+     * Defaults to false.
+     */
     autoUpload?: boolean;
 };
+/**
+ * The configuration and instance details for uploading files.
+ */
 interface UploadConfig {
+    /**
+     * The name of the upload config to be used in the `allowUpload` and `uploadedEntries` methods.
+     * should be unique per LiveView.
+     */
     name: string;
+    /**
+     * "accept" contains the unique file type specifiers that can be uploaded.
+     * See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
+     */
     accept: string[];
+    /**
+     * the maximum number of files that can be uploaded at once. Defaults to 1.
+     */
     maxEntries: number;
+    /**
+     * the maximum size of each file in bytes. Defaults to 10MB.
+     */
     maxFileSize: number;
+    /**
+     * Whether to upload the selected files automatically when the user selects them.
+     * Defaults to false.
+     */
     autoUpload: boolean;
+    /**
+     * The files selected for upload.
+     */
     entries: UploadEntry[];
+    /**
+     * The unique instance ref of the upload config
+     */
     ref: string;
+    /**
+     * Errors that have occurred during selection or upload.
+     */
     errors: string[];
 }
-declare class UploadConfig {
+declare class UploadConfig implements UploadConfig {
     constructor(name: string, options?: UploadConfigOptions);
-    addEntries(entries: UploadEntry[]): void;
+    /**
+     * Add entries to the config.
+     * @param entries UploadEntry[] to add to the config.
+     */
+    setEntries(entries: UploadEntry[]): void;
+    /**
+     * Remove an entry from the config.
+     * @param ref The unique ref of the UploadEntry to remove.
+     */
     removeEntry(ref: string): void;
+    /**
+     * Returns all the entries (throws if any are still uploading) and removes
+     * the entries from the config.
+     */
+    consumeEntries(): UploadEntry[];
     private validate;
 }
 
+/**
+ * A file and related metadata selected for upload
+ */
 interface UploadEntry {
+    /**
+     * Whether the file selection has been cancelled. Defaults to false.
+     */
     cancelled: boolean;
+    /**
+     * The timestamp when the file was last modified from the client's file system
+     */
     client_last_modified: number;
+    /**
+     * The name of the file from the client's file system
+     */
     client_name: string;
+    /**
+     * The size of the file in bytes from the client's file system
+     */
     client_size: number;
+    /**
+     * The mime type of the file from the client's file system
+     */
     client_type: string;
+    /**
+     * True if the file has been uploaded. Defaults to false.
+     */
     done: boolean;
+    /**
+     * True if the file has been auto-uploaded. Defaults to false.
+     */
     preflighted: boolean;
+    /**
+     * The integer percentage of the file that has been uploaded. Defaults to 0.
+     */
     progress: number;
+    /**
+     * The unique instance ref of the upload entry
+     */
     ref: string;
+    /**
+     * The unique instance ref of the upload config to which this entry belongs
+     */
     upload_ref: string;
+    /**
+     * A uuid for the file
+     */
     uuid: string;
+    /**
+     * True if there are no errors with the file. Defaults to true.
+     */
     valid: boolean;
+    /**
+     * Errors that have occurred during selection or upload.
+     */
     errors: string[];
 }
 declare class UploadEntry {
@@ -384,7 +499,23 @@ declare class UploadEntry {
     getTempFile(): string;
 }
 
+/**
+ *  Type that enables Info events to be passed as plain strings
+ */
 declare type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
+/**
+ * The type passed to the `consumeUploadedEntries` callback's "meta" parameter
+ */
+declare type ConsumeUploadedEntriesMeta = {
+    /**
+     * The location of the file on the server
+     */
+    path: string;
+    /**
+     * The FileSystemAdaptor for the platform (node or deno)
+     */
+    fileSystem: FileSystemAdaptor;
+};
 /**
  * Main interface to update state, interact, message, and otherwise
  * manage the lifecycle of a `LiveView`.
@@ -494,9 +625,14 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
     /**
      * Consume the uploaded files for a given UploadConfig (by name) and ref.
      */
-    consumeUploadedEntries<T>(configName: string, fn: (meta: {
-        path: string;
-    }, entry: UploadEntry) => Promise<T>): Promise<T[]>;
+    consumeUploadedEntries<T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>): Promise<T[]>;
+    /**
+     * Get the uploaded files for a given UploadConfig (by name) and ref
+     */
+    uploadedEntries(configName: string): Promise<{
+        completed: UploadEntry[];
+        inProgress: UploadEntry[];
+    }>;
 }
 declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> implements LiveViewSocket<TContext, TInfo> {
     abstract connected: boolean;
@@ -516,9 +652,11 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
     subscribe(topic: string): Promise<void>;
     allowUpload(name: string, options?: UploadConfigOptions): Promise<void>;
     cancelUpload(configName: string, ref: string): Promise<void>;
-    consumeUploadedEntries<T>(configName: string, fn: (meta: {
-        path: string;
-    }, entry: UploadEntry) => Promise<T>): Promise<T[]>;
+    consumeUploadedEntries<T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>): Promise<T[]>;
+    uploadedEntries(configName: string): Promise<{
+        completed: UploadEntry[];
+        inProgress: UploadEntry[];
+    }>;
     updateContextWithTempAssigns(): void;
 }
 /**
@@ -542,6 +680,8 @@ declare class HttpLiveViewSocket<TContext extends LiveContext = AnyLiveContext, 
 }
 /**
  * Full inmplementation used once a `LiveView` is mounted to a websocket.
+ * In practice, this uses callbacks defined in the LiveViewManager that
+ * capture state and manipulate it in the context of that LiveViewManager instance.
  */
 declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> extends BaseLiveViewSocket<TContext, TInfo> {
     readonly id: string;
@@ -557,9 +697,11 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     private allowUploadCallback;
     private cancelUploadCallback;
     private consumeUploadedEntriesCallback;
-    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void, allowUploadCallback: (name: string, options?: UploadConfigOptions) => void, cancelUploadCallback: (configName: string, ref: string) => void, consumeUploadedEntriesCallback: <T>(configName: string, fn: (meta: {
-        path: string;
-    }, entry: UploadEntry) => Promise<T>) => Promise<T[]>);
+    private uploadedEntriesCallback;
+    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void, allowUploadCallback: (name: string, options?: UploadConfigOptions) => void, cancelUploadCallback: (configName: string, ref: string) => void, consumeUploadedEntriesCallback: <T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>) => Promise<T[]>, uploadedEntriesCallback: (configName: string) => Promise<{
+        completed: UploadEntry[];
+        inProgress: UploadEntry[];
+    }>);
     putFlash(key: string, value: string): Promise<void>;
     pageTitle(newPageTitle: string): void;
     pushEvent(pushEvent: AnyLivePushEvent): void;
@@ -570,9 +712,11 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     subscribe(topic: string): Promise<void>;
     allowUpload(name: string, options?: UploadConfigOptions | undefined): Promise<void>;
     cancelUpload(configName: string, ref: string): Promise<void>;
-    consumeUploadedEntries<T>(configName: string, fn: (meta: {
-        path: string;
-    }, entry: UploadEntry) => Promise<T>): Promise<T[]>;
+    consumeUploadedEntries<T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>): Promise<T[]>;
+    uploadedEntries(configName: string): Promise<{
+        completed: UploadEntry[];
+        inProgress: UploadEntry[];
+    }>;
 }
 
 /**
@@ -584,9 +728,17 @@ declare class WsMessageRouter {
     private pubSub;
     private flashAdaptor;
     private serDe;
-    private filesAdapter;
+    private fileSystemAdaptor;
     private liveViewRootTemplate?;
-    constructor(router: LiveViewRouter, pubSub: PubSub, flashAdaptor: FlashAdaptor, serDe: SerDe, filesAdapter: FilesAdapter, liveViewRootTemplate?: LiveViewRootRenderer);
+    constructor(router: LiveViewRouter, pubSub: PubSub, flashAdaptor: FlashAdaptor, serDe: SerDe, filesAdapter: FileSystemAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
+    /**
+     * Handles incoming websocket messages including binary and text messages and manages
+     * routing those messages to the correct LiveViewManager.
+     * @param connectionId the connection id of the websocket connection
+     * @param data text or binary message data
+     * @param wsAdaptor an instance of the websocket adaptor used to send messages to the client
+     * @param isBinary whether the message is a binary message
+     */
     onMessage(connectionId: string, data: string | unknown, wsAdaptor: WsAdaptor, isBinary?: boolean): Promise<void>;
     onClose(connectionId: string): Promise<void>;
     private onPhxJoin;
@@ -1364,6 +1516,23 @@ declare type LiveViewChangesetFactory<T> = (existing: Partial<T>, newAttrs: Part
  */
 declare const newChangesetFactory: <T>(schema: SomeZodObject) => LiveViewChangesetFactory<T>;
 
+declare type MimeSource = "apache" | "iana" | "nginx";
+/**
+ * A class for looking up mime type extensions built on top of the mime-db.
+ */
+declare class Mime {
+    constructor();
+    /**
+     * Given a mime type, return the string[] of extensions associated with it.
+     * @param mimeType the string mime type to lookup
+     * @returns the string[] of extensions associated with the mime type or an empty array if none are found.
+     */
+    lookupExtensions(mimeType: string): string[];
+    lookupMimeType(ext: string): string[];
+    load(): Promise<void>;
+}
+declare const mime: Mime;
+
 /**
  * Interface for LiveViewServerAdaptors to implement for a given runtime and web server.
  * e.g. NodeExpressServerAdaptor or DenoOakServerAdaptor
@@ -1373,4 +1542,4 @@ interface LiveViewServerAdaptor<TMiddlewareInterface> {
     wsRouter(): WsMessageRouter;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, CsrfGenerator, Event, FilesAdapter, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, MimeSource, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, mime, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
