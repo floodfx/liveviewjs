@@ -124,21 +124,6 @@ declare const paginateLiveView: liveviewjs.LiveView<{
     perPage: string;
 }, liveviewjs.AnyLiveInfo>;
 
-declare const PhotoSchema: z.ZodObject<{
-    id: z.ZodDefault<z.ZodString>;
-    name: z.ZodOptional<z.ZodString>;
-    url: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
-    name?: string | undefined;
-    url?: string | undefined;
-    id: string;
-}, {
-    id?: string | undefined;
-    name?: string | undefined;
-    url?: string | undefined;
-}>;
-declare type Photo = z.infer<typeof PhotoSchema>;
-
 declare type Context = {
     photos: Photo[];
     changeset: LiveViewChangeset<Photo>;
@@ -149,13 +134,27 @@ declare type Events = {
 } | {
     type: "save";
     name: string;
-    photoUrls: string[];
+    urls: string[];
 } | {
     type: "cancel";
     config_name: string;
     ref: string;
 };
 declare const photos: liveviewjs.LiveView<Context, Events, liveviewjs.AnyLiveInfo>;
+declare const PhotoSchema: z.ZodObject<{
+    id: z.ZodDefault<z.ZodString>;
+    name: z.ZodString;
+    urls: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    name: string;
+    urls: string[];
+}, {
+    id?: string | undefined;
+    urls?: string[] | undefined;
+    name: string;
+}>;
+declare type Photo = z.infer<typeof PhotoSchema>;
 
 declare type PhotoSize = "4x6" | "5x7" | "8x10" | "10x13" | "11x14";
 declare const printLiveView: liveviewjs.LiveView<{

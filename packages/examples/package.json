@@ -16,14 +16,13 @@
     "dist/liveviewjs-examples.browser.js.map"
   ],
   "scripts": {
-    "rollup": "rollup -c",
-    "copy-build-to-dist": "mkdir -p dist; cp build/liveviewjs-examples.* dist",
-    "dist": "npm run clean; npm run rollup; npm run copy-build-to-dist; npm run browser-bundle",
-    "prepublish": "npm run dist",
-    "build": "tsc",
-    "check": "tsc --noEmit",
-    "clean": "rm -rf build",
-    "browser-bundle": "esbuild src/browser/index.ts --minify --bundle --sourcemap --outfile=dist/liveviewjs-examples.browser.js"
+    "clean":         "rm -rf build; rm -rf dist",
+    "build":         "rollup -c",
+    "browser-build": "esbuild src/browser/index.ts --minify --bundle --sourcemap --outfile=dist/liveviewjs-examples.browser.js",
+    "copy-to-dist":  "mkdir -p dist; cp build/liveviewjs-examples.* dist",
+    "dist":          "npm run build; npm run copy-to-dist; npm run browser-build",
+    "prepublish":    "npm run dist",
+    "format":        "prettier --write '**/*.{ts,js,json,html,css}'"
   },
   "keywords": [
     "liveviewjs",
@@ -37,15 +36,13 @@
   "dependencies": {
     "liveviewjs": "*",
     "nanoid": "^3.2.0",
-    "node-fetch": "^2.6.7",
     "zod": "^3.17.3"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.0.2",
     "@rollup/plugin-node-resolve": "^13.1.3",
     "@rollup/plugin-typescript": "^8.3.1",
-    "@types/node": "^17.0.25",
-    "@types/node-fetch": "^2.6.0",
+    "@types/node": "^18.7.8",
     "@types/nprogress": "^0.2.0",
     "@types/phoenix": "^1.5.4",
     "@types/phoenix_live_view": "^0.15.1",
@@ -61,6 +58,6 @@
   },
   "engines": {
     "npm": ">=8.5.0",
-    "node": ">=17.8.0"
+    "node": ">=18.0.0"
   }
 }
