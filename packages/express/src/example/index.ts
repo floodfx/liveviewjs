@@ -18,7 +18,7 @@ import session, { MemoryStore } from "express-session";
 import { Server } from "http";
 import { LiveViewRouter, SessionFlashAdaptor, SingleProcessPubSub } from "liveviewjs";
 import { nanoid } from "nanoid";
-import { NodeFilesAdatptor } from "src/node/filesAdaptor";
+import { NodeFileSystemAdatptor } from "src/node/fsAdaptor";
 import { WebSocketServer } from "ws";
 import { NodeJwtSerDe } from "../node/jwtSerDe";
 import { NodeExpressLiveViewServer } from "../node/server";
@@ -92,7 +92,7 @@ const liveView = new NodeExpressLiveViewServer(
   pageRenderer,
   { title: "Express Demo", suffix: " · LiveViewJS" },
   new SessionFlashAdaptor(),
-  new NodeFilesAdatptor(),
+  new NodeFileSystemAdatptor(),
   rootRenderer
 );
 
