@@ -3,6 +3,9 @@ import os from "os";
 import path from "path";
 import { FileSystemAdaptor } from "./files";
 
+/**
+ * A nodejs file system adaptor for testing.
+ */
 export class TestNodeFileSystemAdatptor implements FileSystemAdaptor {
   tempPath(lastPathPart: string): string {
     return path.join(os.tmpdir(), lastPathPart);
