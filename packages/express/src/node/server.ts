@@ -1,6 +1,6 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import {
-  FilesAdapter,
+  FileSystemAdaptor,
   FlashAdaptor,
   handleHttpLiveView,
   HttpRequestAdaptor,
@@ -21,7 +21,7 @@ export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestH
   private serDe: SerDe;
   private flashAdapter: FlashAdaptor;
   private pubSub: PubSub;
-  private filesAdapter: FilesAdapter;
+  private fileSystem: FileSystemAdaptor;
   private pageRenderer: LiveViewPageRenderer;
   private pageTitleDefaults: PageTitleDefaults;
   private rootRenderer?: LiveViewRootRenderer;
@@ -44,14 +44,14 @@ export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestH
     pageRenderer: LiveViewPageRenderer,
     pageTitleDefaults: PageTitleDefaults,
     flashAdaptor: FlashAdaptor,
-    filesAdapter: FilesAdapter,
+    fileSystemAdaptor: FileSystemAdaptor,
     rootRenderer?: LiveViewRootRenderer
   ) {
     this.router = router;
     this.serDe = serDe;
     this.flashAdapter = flashAdaptor;
     this.pubSub = pubSub;
-    this.filesAdapter = filesAdapter;
+    this.fileSystem = fileSystemAdaptor;
     this.pageRenderer = pageRenderer;
     this.pageTitleDefaults = pageTitleDefaults;
     this.rootRenderer = rootRenderer;
@@ -107,7 +107,7 @@ export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestH
       this.pubSub,
       this.flashAdapter,
       this.serDe,
-      this.filesAdapter,
+      this.fileSystem,
       this.rootRenderer
     );
   }

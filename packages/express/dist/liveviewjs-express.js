@@ -80,12 +80,12 @@ class NodeExpressLiveViewServer {
      * @param flashAdaptor
      * @param rootRenderer (optional) another renderer that can sit between the root template and the rendered LiveView
      */
-    constructor(router, serDe, pubSub, pageRenderer, pageTitleDefaults, flashAdaptor, filesAdapter, rootRenderer) {
+    constructor(router, serDe, pubSub, pageRenderer, pageTitleDefaults, flashAdaptor, fileSystemAdaptor, rootRenderer) {
         this.router = router;
         this.serDe = serDe;
         this.flashAdapter = flashAdaptor;
         this.pubSub = pubSub;
-        this.filesAdapter = filesAdapter;
+        this.fileSystem = fileSystemAdaptor;
         this.pageRenderer = pageRenderer;
         this.pageTitleDefaults = pageTitleDefaults;
         this.rootRenderer = rootRenderer;
@@ -123,7 +123,7 @@ class NodeExpressLiveViewServer {
         };
     }
     wsRouter() {
-        return new liveviewjs.WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.filesAdapter, this.rootRenderer);
+        return new liveviewjs.WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.fileSystem, this.rootRenderer);
     }
 }
 /**
