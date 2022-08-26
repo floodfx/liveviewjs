@@ -1,10 +1,12 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "baseBranch": "origin/main",
   "pipeline": {
+    "format": {    
+    },
     "dist": {
       "dependsOn": ["^dist", "test"],
-      "outputs": ["dist/**", "build/**"]
+      "outputs": ["dist/**", "build/**"],
+      "inputs": ["src/**/*.ts"]
     },
     "test": {
       "outputs": ["coverage/**"],
@@ -12,7 +14,7 @@
     },
     "publish": {
       "dependsOn": ["test", "dist"],
-      "outputs": []
+      "cache": false
     }
   }
 }
