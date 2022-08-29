@@ -1,10 +1,10 @@
 import { html } from "..";
-import { BaseLiveView, LiveView, LiveViewMountParams, LiveViewTemplate } from "../live";
+import { BaseLiveView, createLiveView, LiveView, LiveViewMountParams, LiveViewTemplate } from "../live";
 import { SessionData } from "../session";
 import { HttpLiveViewSocket, LiveViewSocket, WsLiveViewSocket } from "./liveSocket";
 
 describe("test LiveViewSocket", () => {
-  let socket;
+  let wsSocket: WsLiveViewSocket;
   let component: LiveView;
   let pageTitleCallback: jest.Mock<any, any>;
   let pushEventCallback = jest.fn();
@@ -33,15 +33,15 @@ describe("test LiveViewSocket", () => {
     cancelUploadCallback = jest.fn();
     consumeUploadedEntriesCallback = jest.fn();
     uploadedEntriesCallback = jest.fn();
-    socket = new WsLiveViewSocket(
+    wsSocket = new WsLiveViewSocket(
       "id",
       pageTitleCallback,
       pushEventCallback,
       pushPatchCallback,
       pushRedirectCallback,
       putFlashCallback,
-      sendCallback,
       repeatCallback,
+      sendCallback,
       subscribeCallback,
       allowUploadCallback,
       cancelUploadCallback,
@@ -79,43 +79,14 @@ describe("test LiveViewSocket", () => {
   });
 
   it("ws mount returns context", async () => {
-    const socket = new WsLiveViewSocket(
-      "id",
-      pageTitleCallback,
-      pushEventCallback,
-      pushPatchCallback,
-      pushRedirectCallback,
-      putFlashCallback,
-      sendCallback,
-      repeatCallback,
-      subscribeCallback,
-      allowUploadCallback,
-      cancelUploadCallback,
-      consumeUploadedEntriesCallback,
-      uploadedEntriesCallback
-    );
-    await component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
-    expect(socket.context.foo).toEqual("bar");
+    await component.mount(wsSocket, {}, { _csrf_token: "csrf", _mounts: -1 });
+    expect(wsSocket.context.foo).toEqual("bar");
   });
 
   it("calls all callbacks", async () => {
     component = new TestLVPushAndSend();
-    const socket = new WsLiveViewSocket(
-      "id",
-      pageTitleCallback,
-      pushEventCallback,
-      pushPatchCallback,
-      pushRedirectCallback,
-      putFlashCallback,
-      repeatCallback,
-      sendCallback,
-      subscribeCallback,
-      allowUploadCallback,
-      cancelUploadCallback,
-      consumeUploadedEntriesCallback,
-      uploadedEntriesCallback
-    );
-    component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
+
+    component.mount(wsSocket, {}, { _csrf_token: "csrf", _mounts: -1 });
 
     expect(pageTitleCallback).toHaveBeenCalledTimes(1);
     expect(pushEventCallback).toHaveBeenCalledTimes(1);
@@ -126,30 +97,18 @@ describe("test LiveViewSocket", () => {
     expect(sendCallback).toHaveBeenCalledTimes(2);
     expect(subscribeCallback).toHaveBeenCalledTimes(1);
     expect(allowUploadCallback).toHaveBeenCalledTimes(0);
+    expect(cancelUploadCallback).toHaveBeenCalledTimes(0);
+    expect(consumeUploadedEntriesCallback).toHaveBeenCalledTimes(0);
+    expect(uploadedEntriesCallback).toHaveBeenCalledTimes(0);
   });
 
   it("tempAssign works to clear assigns", () => {
-    const socket = new WsLiveViewSocket(
-      "id",
-      pageTitleCallback,
-      pushEventCallback,
-      pushPatchCallback,
-      pushRedirectCallback,
-      putFlashCallback,
-      sendCallback,
-      repeatCallback,
-      subscribeCallback,
-      allowUploadCallback,
-      cancelUploadCallback,
-      consumeUploadedEntriesCallback,
-      uploadedEntriesCallback
-    );
-    component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
-    socket.assign({ foo: "bar" });
-    socket.tempAssign({ foo: "" });
-    expect(socket.context.foo).toEqual("bar");
-    socket.updateContextWithTempAssigns();
-    expect(socket.context.foo).toEqual("");
+    component.mount(wsSocket, {}, { _csrf_token: "csrf", _mounts: -1 });
+    wsSocket.assign({ foo: "bar" });
+    wsSocket.tempAssign({ foo: "" });
+    expect(wsSocket.context.foo).toEqual("bar");
+    wsSocket.updateContextWithTempAssigns();
+    expect(wsSocket.context.foo).toEqual("");
   });
 
   it("pushRedirect works in mount and handleParams in HTTP request", () => {
@@ -161,6 +120,45 @@ describe("test LiveViewSocket", () => {
     c.handleParams(new URL("http://example.com"), socket);
     expect(socket.redirect).toEqual({ to: "/new/path?param=handleParams", replace: true });
     expect(socket.context.redirectedIn).toEqual("handleParams");
+  });
+
+  it("allowUpload works in mount in HTTP", () => {
+    const socket = new HttpLiveViewSocket("id");
+    const lv = createLiveView({
+      mount: (socket) => {
+        socket.allowUpload("myUploadName");
+      },
+      render: () => {
+        return html``;
+      },
+    });
+    lv.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
+    expect(socket.uploadConfigs).toHaveProperty("myUploadName");
+    expect(socket.uploadConfigs["myUploadName"].entries).toEqual([]);
+  });
+
+  it("upload callbacks are connected in WS", async () => {
+    const lv = createLiveView({
+      mount: (socket) => {
+        socket.allowUpload("myUploadName");
+      },
+      handleEvent: async (event, socket) => {
+        // call the rest of the upload callbacks
+        await socket.cancelUpload("myUploadName", "myref");
+        await socket.uploadedEntries("myUploadName");
+        await socket.consumeUploadedEntries("myUploadName", async () => {});
+      },
+      render: () => {
+        return html``;
+      },
+    });
+
+    lv.mount(wsSocket, {}, { _csrf_token: "csrf", _mounts: -1 });
+    await lv.handleEvent({ type: "foo" }, wsSocket);
+    expect(allowUploadCallback).toHaveBeenCalledTimes(1);
+    expect(cancelUploadCallback).toHaveBeenCalledTimes(1);
+    expect(consumeUploadedEntriesCallback).toHaveBeenCalledTimes(1);
+    expect(uploadedEntriesCallback).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -193,7 +191,7 @@ class TestLVPushAndSend extends BaseLiveView<TestLVPushAndSendContext> {
     socket.pushRedirect("/new/path", new URLSearchParams({ param: String(1) }));
     socket.pushRedirect("/new/path", new URLSearchParams({ param: String(1) }), true);
     socket.putFlash("info", "Helpful message");
-    socket.repeat(() => {}, 1000);
+    socket.repeat(() => {}, 10000);
     socket.sendInfo({ type: "my_event" });
     socket.sendInfo("my_event");
     socket.subscribe("topic");

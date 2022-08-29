@@ -15,7 +15,8 @@ export class SessionFlashAdaptor implements FlashAdaptor {
   }
 
   popFlash(session: SessionData, key: string): Promise<string | undefined> {
-    if (!session.__flash) {
+    // istanbul ignore next
+    if (session.__flash === undefined) {
       // istanbul ignore next
       session.__flash = {};
     }
@@ -34,7 +35,8 @@ export class SessionFlashAdaptor implements FlashAdaptor {
   }
 
   clearFlash(session: SessionData, key: string): Promise<void> {
-    if (!session.__flash) {
+    // istanbul ignore next
+    if (session.__flash === undefined) {
       // istanbul ignore next
       session.__flash = {};
     }

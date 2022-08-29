@@ -230,6 +230,13 @@ describe("test diffs", () => {
     expect(diffArrays2(oldArray, newArray).length).toBe(0);
   });
 
+  it("diffs arrays with same number parts but different contents returns true", () => {
+    const oldArray = [{ 0: 1, s: ["1", "2", "3"] }];
+    const newArray = [{ 0: 1, s: ["1", "2", "4"] }];
+    expect(diffArrays(oldArray, newArray)).toBe(true);
+    expect(diffArrays2(oldArray, newArray).length).toBe(1);
+  });
+
   it.skip("diffs this", () => {
     const oldParts = require("../../../diffs/220323/oldView.json");
     const newParts = require("../../../diffs/220323/view.json");

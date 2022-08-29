@@ -262,7 +262,7 @@ describe("test liveview manager", () => {
       {
         type: "form",
         event: "eventName",
-        value: { value: "eventValue" },
+        value: "eventValue",
         uploads: {},
       },
     ];

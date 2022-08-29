@@ -69,11 +69,11 @@ abstract class BaseLiveComponentSocket<
 
   constructor(id: string, context: TContext) {
     this.id = id;
-    this._context = context;
+    this._context = context ?? ({} as TContext);
   }
 
   get context(): TContext {
-    return this._context || ({} as TContext);
+    return this._context;
   }
 
   assign(context: Partial<TContext>) {

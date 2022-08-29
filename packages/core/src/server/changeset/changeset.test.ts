@@ -28,6 +28,14 @@ describe("test changeset", () => {
     expect(actionChangeset.errors!.name).toBeDefined();
   });
 
+  it("changeset with _target attribute returns only errors for that target", async () => {
+    const actionChangeset = changeset({}, { _target: "name" } as any, "some_action");
+    expect(actionChangeset.valid).toBe(false);
+    expect(actionChangeset.errors).toBeDefined();
+    expect(actionChangeset.errors!.age).not.toBeDefined();
+    expect(actionChangeset.errors!.name).toBeDefined();
+  });
+
   it("changeset data use zod result vs merged data depending on success", async () => {
     // @ts-ignore - allow additional properties to be added
     const successChangeset = changeset({ age: 10 }, { name: "foo", something: "bar" }, "some_action");

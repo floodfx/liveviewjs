@@ -5,12 +5,14 @@ import { TestNodeFileSystemAdatptor } from "../adaptor/testFilesAdatptor";
 import { PubSub, SingleProcessPubSub } from "../pubsub";
 import { SessionData } from "../session";
 import { html } from "../templates";
+import { BinaryUploadSerDe } from "../upload/binaryUploadSerDe";
 import {
   PhxClickPayload,
   PhxFlash,
   PhxHeartbeatIncoming,
   PhxIncomingMessage,
   PhxJoinIncoming,
+  PhxJoinUploadIncoming,
   PhxLivePatchIncoming,
   PhxMessage,
 } from "./types";
@@ -19,15 +21,17 @@ import { WsMessageRouter } from "./wsMessageRouter";
 describe("test message router", () => {
   let mr: WsMessageRouter;
   let ws: WsAdaptor;
+  let send: jest.Mock;
   let pubSub: PubSub;
   let flashAdaptor: FlashAdaptor;
   let filesAdaptor: TestNodeFileSystemAdatptor;
   beforeEach(() => {
+    send = jest.fn();
     pubSub = new SingleProcessPubSub();
     flashAdaptor = new SessionFlashAdaptor();
     filesAdaptor = new TestNodeFileSystemAdatptor();
     ws = {
-      send: jest.fn(),
+      send,
     };
     mr = new WsMessageRouter(router, pubSub, flashAdaptor, new JsonSerDe(), filesAdaptor);
   });
@@ -56,6 +60,7 @@ describe("test message router", () => {
     const phx_join = newPhxJoin("my csrf token", {});
     try {
       await mr.onMessage("1234", JSON.stringify(phx_join), ws);
+      expect(ws.send).toHaveBeenCalledTimes(0);
     } catch (e: any) {
       fail("should not throw");
     }
@@ -68,6 +73,40 @@ describe("test message router", () => {
     } catch (e: any) {
       fail("should not throw");
     }
+  });
+
+  it("onMessage phx_join_upload event", async () => {
+    const phx_join_upload = [
+      "4",
+      "4",
+      "lvu:0",
+      "phx_join",
+      {
+        token: "token",
+      },
+    ] as PhxJoinUploadIncoming;
+    const phx_join = newPhxJoin("my csrf token", { url: "http://localhost:4444/test" });
+    // must join first
+    await mr.onMessage("1234", JSON.stringify(phx_join), ws);
+    await mr.onMessage("1234", JSON.stringify(phx_join_upload), ws);
+    expect(ws.send).toHaveBeenCalledTimes(2);
+  });
+
+  it("onMessage upload_binary event", async () => {
+    // must join first
+    const phx_join = newPhxJoin("my csrf token", { url: "http://localhost:4444/test" });
+    await mr.onMessage("1234", JSON.stringify(phx_join), ws);
+
+    // now upload binary
+    const data = await new BinaryUploadSerDe().serialize({
+      joinRef: "joinRef",
+      messageRef: "msgRef",
+      topic: `lvu:0`,
+      event: "binary_upload",
+      data: Buffer.alloc(100),
+    });
+    await mr.onMessage("1234", data, ws, true); // sends 2 replies
+    expect(ws.send).toHaveBeenCalledTimes(3);
   });
 
   it("onMessage valid heartbeat", async () => {

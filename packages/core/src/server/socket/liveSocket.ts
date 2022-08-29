@@ -123,16 +123,26 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
   /**
    * Allows uploads for the given `LiveView` and sets options for what
    * files can be uploaded.
+   * @param name the name of the upload
+   * @param options the options for the upload (optional)
    */
   allowUpload(name: string, options?: UploadConfigOptions): Promise<void>;
 
   /**
    * Cancels the file upload for a given UploadConfig (by name) and ref.
+   * @param name the name of the upload from which to cancel
+   * @param ref the ref of the upload entry to cancel
    */
   cancelUpload(configName: string, ref: string): Promise<void>;
 
   /**
-   * Consume the uploaded files for a given UploadConfig (by name) and ref.
+   * Consume the uploaded files for a given UploadConfig (by name). This
+   * should only be called after the form's "save" event has occurred which
+   * guarantees all the files for the upload have been fully uploaded.
+   * @param name the name of the upload from which to consume
+   * @param fn the callback to run for each entry
+   * @returns an array of promises based on the return type of the callback function
+   * @throws if any of the entries are not fully uploaded (i.e. completed)
    */
   consumeUploadedEntries<T>(
     configName: string,
@@ -140,7 +150,12 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
   ): Promise<T[]>;
 
   /**
-   * Get the uploaded files for a given UploadConfig (by name) and ref
+   * Returns two sets of files that are being uploaded, those `completed` and
+   * those `inProgress` for a given UploadConfig (by name).  Unlike `consumeUploadedEntries`,
+   * this does not require the form's "save" event to have occurred and will not
+   * throw if any of the entries are not fully uploaded.
+   * @param name the name of the upload from which to get the entries
+   * @returns an object with `completed` and `inProgress` entries
    */
   uploadedEntries(configName: string): Promise<{
     completed: UploadEntry[];

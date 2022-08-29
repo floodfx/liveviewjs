@@ -52,7 +52,12 @@ export type AllowUploadEntry = {
 };
 
 export type PhxAllowUploadIncoming = PhxIncomingMessage<{ ref: string; entries: AllowUploadEntry[] }>;
-export type PhxJoinUploadIncoming = PhxIncomingMessage<{ token: string }>;
+export type PhxJoinUploadIncoming = PhxIncomingMessage<{
+  // this is the string returned from the AllowUpload response
+  // right now it is a json string of the AllowUploadEntry but
+  // perhaps it should be something else like a jwt token?
+  token: string;
+}>;
 export type PhxProgressUploadIncoming = PhxIncomingMessage<{
   event: string | null;
   ref: string;
@@ -100,7 +105,7 @@ export type PhxEventUpload = {
 };
 
 export interface PhxEventUploads {
-  uploads: {
+  uploads?: {
     [key: string]: PhxEventUpload[];
   };
 }
@@ -113,7 +118,7 @@ export type PhxClickPayload = PhxEventPayload<"click", { value: string }>;
 export type PhxLVClearFlashPayload = PhxEventPayload<"click", { key: string }, "lv:clear-flash">;
 
 //{"type":"form","event":"update","value":"seats=3&_target=seats","uploads":{}}
-export type PhxFormPayload = PhxEventPayload<"form", { value: string }> & PhxEventUploads;
+export type PhxFormPayload = PhxEventPayload<"form", string> & PhxEventUploads;
 
 // See https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values
 // for all the string values for the key that kicked off the event
