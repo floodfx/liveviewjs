@@ -16,10 +16,10 @@ class BaseLiveComponentSocket {
     _context;
     constructor(id, context) {
         this.id = id;
-        this._context = context;
+        this._context = context ?? {};
     }
     get context() {
-        return this._context || {};
+        return this._context;
     }
     assign(context) {
         this._context = {
@@ -144,8 +144,8 @@ class UploadConfig {
         this.errors = [];
     }
     /**
-     * Add entries to the config.
-     * @param entries UploadEntry[] to add to the config.
+     * Set the entries for the config.
+     * @param entries UploadEntry[] to set
      */
     setEntries(entries) {
         this.entries = [...entries];
@@ -167,10 +167,6 @@ class UploadConfig {
      * the entries from the config.
      */
     consumeEntries() {
-        const inProgress = this.entries.some((entry) => !entry.done);
-        if (inProgress) {
-            throw new Error("Cannot consume entries while uploads are still in progress");
-        }
         const entries = [...this.entries];
         this.entries = [];
         this.validate();
@@ -196,17 +192,15 @@ class UploadConfig {
  * the CDN and use that to map from mime-types to extensions.
  */
 const MIME_DB_URL = "https://cdn.jsdelivr.net/gh/jshttp/mime-db@master/db.json";
-let db;
-let extensions = {};
-let loaded = false;
 /**
  * A class for looking up mime type extensions built on top of the mime-db.
  */
 class Mime {
+    db;
+    extensions = {};
+    #loaded = false;
     constructor() {
-        if (!loaded) {
-            this.load();
-        }
+        this.load();
     }
     /**
      * Given a mime type, return the string[] of extensions associated with it.
@@ -214,35 +208,47 @@ class Mime {
      * @returns the string[] of extensions associated with the mime type or an empty array if none are found.
      */
     lookupExtensions(mimeType) {
-        return db[mimeType]?.extensions || [];
+        return this.db[mimeType]?.extensions || [];
     }
+    /**
+     * Given an extension (without the leading dot), return the string[] of mime types associated with it.
+     * @param ext the extension (without leading dot) to lookup
+     * @returns the string[] of mime types associated with the extension or an empty array if none are found.
+     */
     lookupMimeType(ext) {
-        return extensions[ext] || [];
+        return this.extensions[ext] || [];
+    }
+    get loaded() {
+        return this.#loaded;
     }
     async load() {
-        if (loaded)
+        if (this.loaded)
             return;
-        loaded = true;
         try {
             const res = await fetch(MIME_DB_URL);
+            // istanbul ignore next
             if (!res.ok) {
+                // istanbul ignore next
                 throw new Error(`Failed to load mime-db: ${res.status} ${res.statusText}`);
             }
-            db = await res.json();
+            this.db = await res.json();
             // build a reverse lookup table for extensions to mime types
-            Object.keys(db).forEach((mimeType, i) => {
+            Object.keys(this.db).forEach((mimeType, i) => {
                 const exts = this.lookupExtensions(mimeType);
                 exts.forEach((ext) => {
-                    if (!extensions[ext]) {
-                        extensions[ext] = [];
+                    if (!this.extensions[ext]) {
+                        this.extensions[ext] = [];
                     }
-                    extensions[ext].push(mimeType);
+                    this.extensions[ext].push(mimeType);
                 });
             });
+            this.#loaded = true;
         }
         catch (e) {
+            // istanbul ignore next
             console.error(e);
-            loaded = false;
+            // istanbul ignore next
+            this.#loaded = false;
         }
     }
 }
@@ -276,10 +282,11 @@ class UploadEntry {
     }
     validate() {
         this.errors = [];
+        // validate file size
         if (this.client_size > this.#config.maxFileSize) {
             this.errors.push("Too large");
         }
-        // TODO map mime types to extensions so we can check for valid extensions
+        // validate mime type is allowed
         if (this.#config.accept.length > 0) {
             // client type is a mime type but accept list can be either a mime type or extension
             // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
@@ -825,8 +832,6 @@ class HtmlSafeString {
                             ...acc,
                             [`${index}`]: s.join(""),
                         };
-                        // istanbul ignore next
-                        // throw new Error("Expected HtmlSafeString or Promise<HtmlSafeString> but got:", cur[0].constructor.name);
                     }
                 }
             }
@@ -890,6 +895,11 @@ const error_tag = (changeset, key, options) => {
     return html ``;
 };
 
+/**
+ * Creates the html for a file input that can be used to upload files to the server.
+ * @param uploadConfig the upload config to use for the file input
+ * @returns the html for the file input
+ */
 function live_file_input(uploadConfig) {
     const { name, accept, maxEntries, ref, entries } = uploadConfig;
     const multiple = maxEntries > 1 ? "multiple" : "";
@@ -908,13 +918,13 @@ function live_file_input(uploadConfig) {
       type="file"
       name="${name}"
       accept="${accept.join(",")}"
-      ${multiple}
       data-phx-active-refs="${activeRefs}"
       data-phx-done-refs="${doneRefs}"
       data-phx-preflighted-refs="${preflightedRefs}"
       data-phx-update="ignore"
       data-phx-upload-ref="${ref}"
-      phx-hook="Phoenix.LiveFileUpload" />
+      phx-hook="Phoenix.LiveFileUpload"
+      ${multiple} />
   `;
 }
 
@@ -1360,7 +1370,8 @@ class SessionFlashAdaptor {
         return Promise.resolve(session.__flash[key]);
     }
     popFlash(session, key) {
-        if (!session.__flash) {
+        // istanbul ignore next
+        if (session.__flash === undefined) {
             // istanbul ignore next
             session.__flash = {};
         }
@@ -1377,7 +1388,8 @@ class SessionFlashAdaptor {
         return Promise.resolve();
     }
     clearFlash(session, key) {
-        if (!session.__flash) {
+        // istanbul ignore next
+        if (session.__flash === undefined) {
             // istanbul ignore next
             session.__flash = {};
         }
@@ -1493,6 +1505,68 @@ class SingleProcessPubSub {
         await eventEmitter.removeListener(topic, subscriber);
         // remove subscriber from subscribers
         delete this.subscribers[subscriberId];
+    }
+}
+
+class BinaryUploadSerDe {
+    async deserialize(data) {
+        // read first 5 bytes to get sizes of parts
+        const sizesOffset = 5;
+        // @ts-ignore - subarray is not defined on Buffer (not true!)
+        const sizes = data.subarray(0, sizesOffset);
+        const startSize = parseInt(sizes[0].toString());
+        // istanbul ignore next
+        if (startSize !== 0) {
+            // istanbul ignore next
+            throw Error(`Unexpected startSize from uploadBinary: ${sizes.subarray(0, 1).toString()}`);
+        }
+        const joinRefSize = parseInt(sizes[1].toString());
+        const messageRefSize = parseInt(sizes[2].toString());
+        const topicSize = parseInt(sizes[3].toString());
+        const eventSize = parseInt(sizes[4].toString());
+        // console.log("sizes", startSize, joinRefSize, messageRefSize, topicSize, eventSize);
+        // read header and header parts
+        const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
+        const header = data.subarray(sizesOffset, sizesOffset + headerLength).toString();
+        let start = 0;
+        let end = joinRefSize;
+        const joinRef = header.slice(0, end).toString();
+        start += joinRefSize;
+        end += messageRefSize;
+        const messageRef = header.slice(start, end).toString();
+        start += messageRefSize;
+        end += topicSize;
+        const topic = header.slice(start, end).toString();
+        start += topicSize;
+        end += eventSize;
+        const event = header.slice(start, end).toString();
+        // console.log(`onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`);
+        // adjust data index based on message length
+        const dataStartIndex = sizesOffset + headerLength;
+        // get rest of data
+        // @ts-ignore - subarray is not defined on Buffer (not true!)
+        const rest = data.subarray(dataStartIndex);
+        // @ts-ignore - getting Buffer not equal to Buffer from types definition
+        return {
+            joinRef,
+            messageRef,
+            topic,
+            event,
+            data: Buffer.from(rest),
+        };
+    }
+    async serialize(value) {
+        const { joinRef, messageRef, topic, event, data } = value;
+        const joinRefSize = Buffer.byteLength(joinRef);
+        const messageRefSize = Buffer.byteLength(messageRef);
+        const topicSize = Buffer.byteLength(topic);
+        const eventSize = Buffer.byteLength(event);
+        const dataLength = data.length;
+        const headerLength = joinRefSize + messageRefSize + topicSize + eventSize;
+        const sizes = Buffer.from([0, joinRefSize, messageRefSize, topicSize, eventSize]);
+        const header = Buffer.from(`${joinRef}${messageRef}${topic}${event}`);
+        const buffer = Buffer.concat([sizes, header, data], sizes.length + headerLength + dataLength);
+        return buffer;
     }
 }
 
@@ -1875,10 +1949,8 @@ class LiveViewManager {
         try {
             const payload = message[PhxProtocol.payload];
             const { ref, entries } = payload;
-            console.log("onAllowUpload handle", ref, entries);
+            // console.log("onAllowUpload handle", ref, entries);
             this.activeUploadRef = ref;
-            // get old render tree and new render tree for diffing
-            // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
             let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
             // wrap in root template if there is one
             view = await this.maybeWrapInRootTemplate(view);
@@ -1893,17 +1965,19 @@ class LiveViewManager {
             // TODO allow configuration settings for server
             const config = {
                 chunk_size: 64000,
-                max_entries: 3,
-                max_file_size: 10000000,
+                max_entries: 10,
+                max_file_size: 10 * 1024 * 1024, // 10MB
             };
             const entriesReply = {
                 ref,
             };
             entries.forEach(async (entry) => {
                 try {
-                    entriesReply[entry.ref] = JSON.stringify(entry); //await this.serDe.serialize(entry);
+                    // this reply ends up been the "token" for the onPhxJoinUpload
+                    entriesReply[entry.ref] = JSON.stringify(entry);
                 }
                 catch (e) {
+                    // istanbul ignore next
                     console.error("Error serializing entry", e);
                 }
             });
@@ -1931,9 +2005,8 @@ class LiveViewManager {
             const topic = message[PhxProtocol.topic];
             const payload = message[PhxProtocol.payload];
             const { token } = payload;
-            console.log("onPhxJoinUpload handle", topic, token);
-            // add token to queue
-            // this.uploadTokens.push({ uploadRef: this.activeUploadRef!, token, message });
+            // TODO? send more than ack?
+            // perhaps we should check this token matches the entry sent earlier?
             const replyPayload = {
                 response: {},
                 status: "ok",
@@ -1947,39 +2020,11 @@ class LiveViewManager {
     }
     async onUploadBinary(message) {
         try {
-            console.log("onUploadBinary handle", message.data.length);
+            //console.log("onUploadBinary handle", message.data.length);
             // generate a random temp file path
             const randomTempFilePath = this.fileSystemAdaptor.tempPath(nanoid.nanoid());
-            // read first 5 bytes to get sizes of parts
-            const sizesOffset = 5;
-            const sizes = message.data.subarray(0, sizesOffset);
-            const startSize = parseInt(sizes[0].toString());
-            if (startSize !== 0) {
-                throw Error(`Unexpected startSize from uploadBinary: ${sizes.subarray(0, 1).toString()}`);
-            }
-            const joinRefSize = parseInt(sizes[1].toString());
-            const messageRefSize = parseInt(sizes[2].toString());
-            const topicSize = parseInt(sizes[3].toString());
-            const eventSize = parseInt(sizes[4].toString());
-            // read header and header parts
-            const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
-            const header = message.data.subarray(sizesOffset, sizesOffset + headerLength).toString();
-            let start = 0;
-            let end = joinRefSize;
-            const joinRef = header.slice(0, end).toString();
-            start += joinRefSize;
-            end += messageRefSize;
-            const messageRef = header.slice(start, end).toString();
-            start += messageRefSize;
-            end += topicSize;
-            const topic = header.slice(start, end).toString();
-            start += topicSize;
-            end += eventSize;
-            const event = header.slice(start, end).toString();
-            console.log(`onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`);
-            // adjust data index based on message length
-            const dataStartIndex = sizesOffset + headerLength;
-            this.fileSystemAdaptor.writeTempFile(randomTempFilePath, message.data.subarray(dataStartIndex, message.data.length));
+            const { joinRef, messageRef, topic, event, data } = await new BinaryUploadSerDe().deserialize(message.data);
+            this.fileSystemAdaptor.writeTempFile(randomTempFilePath, data);
             // console.log("wrote temp file", randomTempFilePath, header.length, `"${header.toString()}"`);
             // split topic to get uploadRef
             const ref = topic.split(":")[1];
@@ -1989,6 +2034,7 @@ class LiveViewManager {
                 // find entry from topic ref
                 const entry = activeUploadConfig.entries.find((e) => e.ref === ref);
                 if (!entry) {
+                    // istanbul ignore next
                     throw Error(`Could not find entry for ref ${ref} in uploadConfig ${JSON.stringify(activeUploadConfig)}`);
                 }
                 // use fileSystemAdaptor to get path to a temp file
@@ -2005,7 +2051,6 @@ class LiveViewManager {
                 const config = this.uploadConfigs[key];
                 // match upload config on the active upload ref
                 if (config.ref === this.activeUploadRef) {
-                    console.log("matched upload config", key, config);
                     // check if ref progress > 0
                     config.entries.forEach((entry) => {
                         if (entry.ref === ref) {
@@ -2037,8 +2082,8 @@ class LiveViewManager {
     async onProgressUpload(message) {
         try {
             const payload = message[PhxProtocol.payload];
-            const { event, ref, entry_ref, progress } = payload;
-            console.log("onProgressUpload handle", event, ref, entry_ref, progress);
+            const { ref, entry_ref, progress } = payload;
+            // console.log("onProgressUpload handle", ref, entry_ref, progress);
             // iterate through uploadConfigs and find the one that matches the ref
             const uploadConfig = Object.values(this.uploadConfigs).find((config) => config.ref === ref);
             if (uploadConfig) {
@@ -2051,10 +2096,9 @@ class LiveViewManager {
                 this.uploadConfigs[uploadConfig.name] = uploadConfig;
             }
             else {
-                console.error("Could not find upload config for ref", ref);
+                // istanbul ignore next
+                console.error("Received progress upload but could not find upload config for ref", ref);
             }
-            // get old render tree and new render tree for diffing
-            // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
             let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
             // wrap in root template if there is one
             view = await this.maybeWrapInRootTemplate(view);
@@ -2415,7 +2459,7 @@ class LiveViewManager {
                 await liveComponent.mount(lcSocket);
                 await liveComponent.update(lcSocket);
                 newView = await liveComponent.render(lcSocket.context, { myself });
-                console.dir(newView);
+                // console.dir(newView);
                 // store state for subsequent loads
                 this.statefulLiveComponents[compoundId] = {
                     context: lcSocket.context,
@@ -2548,6 +2592,7 @@ class LiveViewManager {
                 uploadConfig.removeEntry(ref);
             }
             else {
+                // istanbul ignore next
                 console.warn(`Upload config ${configName} not found for cancelUpload`);
             }
         }, 
@@ -2556,7 +2601,11 @@ class LiveViewManager {
             // console.log("consomeUploadedEntries", configName, fn);
             const uploadConfig = this.uploadConfigs[configName];
             if (uploadConfig) {
-                // remove entries from config before returning
+                const inProgress = uploadConfig.entries.some((entry) => !entry.done);
+                if (inProgress) {
+                    throw new Error("Cannot consume entries while uploads are still in progress");
+                }
+                // noting is in progress so we can consume
                 const entries = uploadConfig.consumeEntries();
                 return await Promise.all(entries.map(async (entry) => await fn({ path: entry.getTempFile(), fileSystem: this.fileSystemAdaptor }, entry)));
             }
@@ -2580,6 +2629,7 @@ class LiveViewManager {
                 });
             }
             else {
+                // istanbul ignore next
                 console.warn(`Upload config ${configName} not found for uploadedEntries`);
             }
             return {
@@ -2651,6 +2701,7 @@ class WsMessageRouter {
                             });
                         }
                         else {
+                            // istanbul ignore next
                             throw new Error(`Unknown phx_join prefix: ${topic}`);
                         }
                         break;

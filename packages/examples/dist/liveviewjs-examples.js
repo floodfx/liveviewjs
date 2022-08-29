@@ -1917,65 +1917,95 @@ function expiresDecoration$1(donation) {
     }
 }
 
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __classPrivateFieldGet(receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+}
+
+function __classPrivateFieldSet(receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+}
+
+var _InMemoryChangesetDB_store, _InMemoryChangesetDB_changeset, _InMemoryChangesetDB_pubSub, _InMemoryChangesetDB_pubSubTopic;
 /**
  * An in-memory implementation of a database that works with changesets.
  */
 class InMemoryChangesetDB {
-    #store = {};
-    #changeset;
-    #pubSub;
-    #pubSubTopic;
     constructor(schema, options) {
-        this.#changeset = liveviewjs.newChangesetFactory(schema);
-        this.#pubSub = options?.pubSub;
-        this.#pubSubTopic = options?.pubSubTopic;
+        _InMemoryChangesetDB_store.set(this, {});
+        _InMemoryChangesetDB_changeset.set(this, void 0);
+        _InMemoryChangesetDB_pubSub.set(this, void 0);
+        _InMemoryChangesetDB_pubSubTopic.set(this, void 0);
+        __classPrivateFieldSet(this, _InMemoryChangesetDB_changeset, liveviewjs.newChangesetFactory(schema), "f");
+        __classPrivateFieldSet(this, _InMemoryChangesetDB_pubSub, options === null || options === void 0 ? void 0 : options.pubSub, "f");
+        __classPrivateFieldSet(this, _InMemoryChangesetDB_pubSubTopic, options === null || options === void 0 ? void 0 : options.pubSubTopic, "f");
     }
     changeset(existing, newAttrs, action) {
-        return this.#changeset(existing ?? {}, newAttrs ?? {}, action);
+        return __classPrivateFieldGet(this, _InMemoryChangesetDB_changeset, "f").call(this, existing !== null && existing !== void 0 ? existing : {}, newAttrs !== null && newAttrs !== void 0 ? newAttrs : {}, action);
     }
     list() {
-        return Object.values(this.#store);
+        return Object.values(__classPrivateFieldGet(this, _InMemoryChangesetDB_store, "f"));
     }
     get(id) {
-        return this.#store[id];
+        return __classPrivateFieldGet(this, _InMemoryChangesetDB_store, "f")[id];
     }
     validate(data) {
         return this.changeset({}, data, "validate");
     }
     create(data) {
-        const result = this.#changeset({}, data, "create");
+        const result = __classPrivateFieldGet(this, _InMemoryChangesetDB_changeset, "f").call(this, {}, data, "create");
         if (result.valid) {
             const newObj = result.data;
             // assume there will be an id field
-            this.#store[newObj.id] = newObj;
+            __classPrivateFieldGet(this, _InMemoryChangesetDB_store, "f")[newObj.id] = newObj;
             this.broadcast("created", newObj);
         }
         return result;
     }
     update(current, data) {
-        const result = this.#changeset(current, data, "update");
+        const result = __classPrivateFieldGet(this, _InMemoryChangesetDB_changeset, "f").call(this, current, data, "update");
         if (result.valid) {
             const newObj = result.data;
-            this.#store[newObj.id] = newObj;
+            __classPrivateFieldGet(this, _InMemoryChangesetDB_store, "f")[newObj.id] = newObj;
             this.broadcast("updated", newObj);
         }
         return result;
     }
     delete(id) {
-        const data = this.#store[id];
+        const data = __classPrivateFieldGet(this, _InMemoryChangesetDB_store, "f")[id];
         const deleted = data !== undefined;
         if (deleted) {
-            delete this.#store[id];
+            delete __classPrivateFieldGet(this, _InMemoryChangesetDB_store, "f")[id];
             this.broadcast("deleted", data);
         }
         return deleted;
     }
     async broadcast(type, data) {
-        if (this.#pubSub && this.#pubSubTopic) {
-            await this.#pubSub.broadcast(this.#pubSubTopic, { type, data });
+        if (__classPrivateFieldGet(this, _InMemoryChangesetDB_pubSub, "f") && __classPrivateFieldGet(this, _InMemoryChangesetDB_pubSubTopic, "f")) {
+            await __classPrivateFieldGet(this, _InMemoryChangesetDB_pubSub, "f").broadcast(__classPrivateFieldGet(this, _InMemoryChangesetDB_pubSubTopic, "f"), { type, data });
         }
     }
 }
+_InMemoryChangesetDB_store = new WeakMap(), _InMemoryChangesetDB_changeset = new WeakMap(), _InMemoryChangesetDB_pubSub = new WeakMap(), _InMemoryChangesetDB_pubSubTopic = new WeakMap();
 
 const photos = liveviewjs.createLiveView({
     mount: async (socket) => {
@@ -2047,6 +2077,7 @@ const photos = liveviewjs.createLiveView({
         });
     },
     render: (ctx, meta) => {
+        var _a;
         const { photos, changeset } = ctx;
         const { uploads } = meta;
         return liveviewjs.html `
@@ -2063,9 +2094,10 @@ const photos = liveviewjs.createLiveView({
           ${liveviewjs.live_file_input(uploads.photos)}
           or drag and drop files here 
         </div>
-        ${uploads.photos.errors?.map((error) => liveviewjs.html `<p class="invalid-feedback">${error}</p>`)}
+        ${(_a = uploads.photos.errors) === null || _a === void 0 ? void 0 : _a.map((error) => liveviewjs.html `<p class="invalid-feedback">${error}</p>`)}
         
         ${uploads.photos.entries.map((entry) => {
+            var _a;
             return liveviewjs.html `
             <div style="display: flex; align-items: center;">
               <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${liveviewjs.live_img_preview(entry)}</div>
@@ -2077,7 +2109,7 @@ const photos = liveviewjs.createLiveView({
                   max="100"></progress>
                 <span style="margin-left: 1rem;">${entry.progress}%</span>
               </div>
-              <div style="display: flex;">
+              <div style="display: flex; align-items: center;">
                 <a
                   style="padding-left: 2rem;"
                   phx-click="cancel"
@@ -2085,7 +2117,7 @@ const photos = liveviewjs.createLiveView({
                   phx-value-ref="${entry.ref}"
                   >🗑</a
                 >
-                ${entry.errors?.map((error) => liveviewjs.html `<p style="padding-left: 1rem;" class="invalid-feedback">${error}</p>`)}
+                ${(_a = entry.errors) === null || _a === void 0 ? void 0 : _a.map((error) => liveviewjs.html `<p style="padding-left: 1rem;" class="invalid-feedback">${error}</p>`)}
               </div>
             </div>
           `;
