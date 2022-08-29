@@ -137,7 +137,7 @@ declare type PhxEventUpload = {
     size: number;
 };
 interface PhxEventUploads {
-    uploads: {
+    uploads?: {
         [key: string]: PhxEventUpload[];
     };
 }
@@ -147,9 +147,7 @@ declare type PhxClickPayload = PhxEventPayload<"click", {
 declare type PhxLVClearFlashPayload = PhxEventPayload<"click", {
     key: string;
 }, "lv:clear-flash">;
-declare type PhxFormPayload = PhxEventPayload<"form", {
-    value: string;
-}> & PhxEventUploads;
+declare type PhxFormPayload = PhxEventPayload<"form", string> & PhxEventUploads;
 declare type PhxKeyUpPayload = PhxEventPayload<"keyup", {
     key: string;
     value?: string;
@@ -374,7 +372,7 @@ declare type UploadConfigOptions = {
     autoUpload?: boolean;
 };
 /**
- * The configuration and instance details for uploading files.
+ * The configuration and entry related details for uploading files.
  */
 interface UploadConfig {
     /**
@@ -416,8 +414,8 @@ interface UploadConfig {
 declare class UploadConfig implements UploadConfig {
     constructor(name: string, options?: UploadConfigOptions);
     /**
-     * Add entries to the config.
-     * @param entries UploadEntry[] to add to the config.
+     * Set the entries for the config.
+     * @param entries UploadEntry[] to set
      */
     setEntries(entries: UploadEntry[]): void;
     /**
@@ -616,18 +614,33 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
     /**
      * Allows uploads for the given `LiveView` and sets options for what
      * files can be uploaded.
+     * @param name the name of the upload
+     * @param options the options for the upload (optional)
      */
     allowUpload(name: string, options?: UploadConfigOptions): Promise<void>;
     /**
      * Cancels the file upload for a given UploadConfig (by name) and ref.
+     * @param name the name of the upload from which to cancel
+     * @param ref the ref of the upload entry to cancel
      */
     cancelUpload(configName: string, ref: string): Promise<void>;
     /**
-     * Consume the uploaded files for a given UploadConfig (by name) and ref.
+     * Consume the uploaded files for a given UploadConfig (by name). This
+     * should only be called after the form's "save" event has occurred which
+     * guarantees all the files for the upload have been fully uploaded.
+     * @param name the name of the upload from which to consume
+     * @param fn the callback to run for each entry
+     * @returns an array of promises based on the return type of the callback function
+     * @throws if any of the entries are not fully uploaded (i.e. completed)
      */
     consumeUploadedEntries<T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>): Promise<T[]>;
     /**
-     * Get the uploaded files for a given UploadConfig (by name) and ref
+     * Returns two sets of files that are being uploaded, those `completed` and
+     * those `inProgress` for a given UploadConfig (by name).  Unlike `consumeUploadedEntries`,
+     * this does not require the form's "save" event to have occurred and will not
+     * throw if any of the entries are not fully uploaded.
+     * @param name the name of the upload from which to get the entries
+     * @returns an object with `completed` and `inProgress` entries
      */
     uploadedEntries(configName: string): Promise<{
         completed: UploadEntry[];
@@ -788,6 +801,11 @@ interface ErrorTagOptions {
 }
 declare const error_tag: <T>(changeset: LiveViewChangeset<T>, key: keyof T, options?: ErrorTagOptions) => HtmlSafeString;
 
+/**
+ * Creates the html for a file input that can be used to upload files to the server.
+ * @param uploadConfig the upload config to use for the file input
+ * @returns the html for the file input
+ */
 declare function live_file_input(uploadConfig: UploadConfig): HtmlSafeString;
 
 declare function live_img_preview(entry: UploadEntry): HtmlSafeString;
@@ -1404,9 +1422,9 @@ declare type IdGenerator = () => string;
  * session data from the initial http request to the websocket connection.  You should use a strategy that
  * cannot be tampered with such as signed JWT tokens or other cryptographically safe serialization/deserializations.
  */
-interface SerDe {
-    serialize<T>(data: T): Promise<string>;
-    deserialize<T>(data: string): Promise<T>;
+interface SerDe<T = any, F = string> {
+    serialize(data: T): Promise<F>;
+    deserialize(data: F): Promise<T>;
 }
 
 /**
@@ -1517,10 +1535,35 @@ declare type LiveViewChangesetFactory<T> = (existing: Partial<T>, newAttrs: Part
 declare const newChangesetFactory: <T>(schema: SomeZodObject) => LiveViewChangesetFactory<T>;
 
 declare type MimeSource = "apache" | "iana" | "nginx";
+interface MimeDB {
+    [key: string]: {
+        /**
+         * Where the mime type is defined. If not set, it's probably a custom media type.
+         */
+        source?: string;
+        /**
+         * Known extensions associated with this mime type
+         */
+        extensions: string[];
+        /**
+         * Whether a file of this type can be gzipped.
+         */
+        compressible?: boolean;
+        /**
+         * The default charset associated with this type, if any.
+         */
+        charset?: string;
+    };
+}
 /**
  * A class for looking up mime type extensions built on top of the mime-db.
  */
 declare class Mime {
+    #private;
+    db: MimeDB;
+    extensions: {
+        [key: string]: string[];
+    };
     constructor();
     /**
      * Given a mime type, return the string[] of extensions associated with it.
@@ -1528,7 +1571,13 @@ declare class Mime {
      * @returns the string[] of extensions associated with the mime type or an empty array if none are found.
      */
     lookupExtensions(mimeType: string): string[];
+    /**
+     * Given an extension (without the leading dot), return the string[] of mime types associated with it.
+     * @param ext the extension (without leading dot) to lookup
+     * @returns the string[] of mime types associated with the extension or an empty array if none are found.
+     */
     lookupMimeType(ext: string): string[];
+    get loaded(): boolean;
     load(): Promise<void>;
 }
 declare const mime: Mime;
