@@ -28,18 +28,15 @@ interface MimeDB {
   };
 }
 
-let db: MimeDB;
-let extensions: { [key: string]: string[] } = {};
-let loaded = false;
-
 /**
  * A class for looking up mime type extensions built on top of the mime-db.
  */
 class Mime {
+  db: MimeDB;
+  extensions: { [key: string]: string[] } = {};
+  #loaded: boolean = false;
   constructor() {
-    if (!loaded) {
-      this.load();
-    }
+    this.load();
   }
 
   /**
@@ -48,36 +45,49 @@ class Mime {
    * @returns the string[] of extensions associated with the mime type or an empty array if none are found.
    */
   lookupExtensions(mimeType: string): string[] {
-    return db[mimeType]?.extensions || [];
+    return this.db[mimeType]?.extensions || [];
   }
 
+  /**
+   * Given an extension (without the leading dot), return the string[] of mime types associated with it.
+   * @param ext the extension (without leading dot) to lookup
+   * @returns the string[] of mime types associated with the extension or an empty array if none are found.
+   */
   lookupMimeType(ext: string): string[] {
-    return extensions[ext] || [];
+    return this.extensions[ext] || [];
+  }
+
+  get loaded() {
+    return this.#loaded;
   }
 
   async load() {
-    if (loaded) return;
-    loaded = true;
+    if (this.loaded) return;
     try {
       const res = await fetch(MIME_DB_URL);
+      // istanbul ignore next
       if (!res.ok) {
+        // istanbul ignore next
         throw new Error(`Failed to load mime-db: ${res.status} ${res.statusText}`);
       }
-      db = await res.json();
+      this.db = await res.json();
 
       // build a reverse lookup table for extensions to mime types
-      Object.keys(db).forEach((mimeType, i) => {
+      Object.keys(this.db).forEach((mimeType, i) => {
         const exts = this.lookupExtensions(mimeType);
         exts.forEach((ext) => {
-          if (!extensions[ext]) {
-            extensions[ext] = [];
+          if (!this.extensions[ext]) {
+            this.extensions[ext] = [];
           }
-          extensions[ext].push(mimeType);
+          this.extensions[ext].push(mimeType);
         });
       });
+      this.#loaded = true;
     } catch (e) {
+      // istanbul ignore next
       console.error(e);
-      loaded = false;
+      // istanbul ignore next
+      this.#loaded = false;
     }
   }
 }

@@ -2,6 +2,7 @@ import {
   AnyLiveContext,
   BaseLiveComponent,
   BaseLiveView,
+  createLiveView,
   LiveComponentMeta,
   LiveViewMeta,
   LiveViewMountParams,
@@ -78,6 +79,24 @@ describe("test http adaptor", () => {
       idGen,
       csrfGen,
       new TestLiveView(redirectM, redirectHP, showLiveComponent),
+      adaptor,
+      (pageTitleDefault, csrfToken, content) => {
+        return html`<main>${content}</main>`;
+      }
+    );
+
+    expect(view).toMatchSnapshot();
+  });
+
+  it("shows live stateless component", async () => {
+    const redirectM = false;
+    const redirectHP = false;
+    const showLiveComponent = true;
+    const adaptor = new TestHttpAdaptor();
+    const view = await handleHttpLiveView(
+      idGen,
+      csrfGen,
+      testEmptyParamLC,
       adaptor,
       (pageTitleDefault, csrfToken, content) => {
         return html`<main>${content}</main>`;
@@ -175,3 +194,9 @@ class TestLiveView extends BaseLiveView {
     `;
   }
 }
+
+const testEmptyParamLC = createLiveView({
+  render: async (ctx, meta) => {
+    return html`<div>${await meta.live_component(new TestLiveComponent())}</div>`;
+  },
+});

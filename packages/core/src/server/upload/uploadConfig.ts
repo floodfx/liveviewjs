@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { UploadEntry } from ".";
 
 /**
- * The configuration and instance details for uploading files.
+ * The configuration and entry related details for uploading files.
  */
 export interface UploadConfig {
   /**
@@ -104,10 +104,6 @@ export class UploadConfig implements UploadConfig {
    * the entries from the config.
    */
   consumeEntries() {
-    const inProgress = this.entries.some((entry) => !entry.done);
-    if (inProgress) {
-      throw new Error("Cannot consume entries while uploads are still in progress");
-    }
     const entries = [...this.entries];
     this.entries = [];
     this.validate();

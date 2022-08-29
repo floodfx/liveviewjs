@@ -16,7 +16,7 @@
   "scripts": {
     "clean":        "rm -rf build; rm -rf dist",
     "build":        "rollup -c",
-    "copy-to-dist": "mkdir dist; cp build/liveview.js dist; cp build/liveview.mjs dist; cp build/liveview.d.ts dist",        
+    "copy-to-dist": "mkdir dist; cp build/liveview.js dist; cp build/liveview.mjs dist; cp build/liveview.d.ts dist",
     "dist":         "npm run build; npm run copy-to-dist",
     "prepublish":   "npm run dist",
     "test":         "jest --expand",
@@ -41,7 +41,7 @@
     "@rollup/plugin-node-resolve": "^13.1.3",
     "@rollup/plugin-typescript": "^8.3.1",
     "@types/jest": "^27.4.1",
-    "@types/node": "^18.7.8",
+    "@types/node": "^18.7.13",
     "@types/supertest": "^2.0.11",
     "jest": "^28.1.1",
     "jest-mock-extended": "^2.0.6",

@@ -6,6 +6,7 @@ import { FileSystemAdaptor } from "./files";
 /**
  * A nodejs file system adaptor for testing.
  */
+// istanbul ignore next
 export class TestNodeFileSystemAdatptor implements FileSystemAdaptor {
   tempPath(lastPathPart: string): string {
     return path.join(os.tmpdir(), lastPathPart);

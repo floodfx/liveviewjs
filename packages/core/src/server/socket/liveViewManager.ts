@@ -22,6 +22,7 @@ import { SessionData } from "../session";
 import { HtmlSafeString, Parts, safe } from "../templates";
 import { deepDiff } from "../templates/diff";
 import { UploadConfig, UploadEntry } from "../upload";
+import { BinaryUploadSerDe } from "../upload/binaryUploadSerDe";
 import { ConsumeUploadedEntriesMeta, Info, WsLiveViewSocket } from "./liveSocket";
 import {
   PhxAllowUploadIncoming,
@@ -172,7 +173,7 @@ export class LiveViewManager {
       this.csrfToken = payloadParams._csrf_token;
 
       // attempt to deserialize session
-      this.session = await this.serDe.deserialize<SessionData>(payloadSession);
+      this.session = await this.serDe.deserialize(payloadSession);
       // if session csrfToken does not match payload csrfToken, reject join
       if (this.session._csrf_token !== this.csrfToken) {
         console.error("Rejecting join due to mismatched csrfTokens", this.session._csrf_token, this.csrfToken);
@@ -499,11 +500,9 @@ export class LiveViewManager {
       const payload = message[PhxProtocol.payload];
 
       const { ref, entries } = payload;
-      console.log("onAllowUpload handle", ref, entries);
+      // console.log("onAllowUpload handle", ref, entries);
       this.activeUploadRef = ref;
 
-      // get old render tree and new render tree for diffing
-      // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
       let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
       // wrap in root template if there is one
@@ -521,9 +520,9 @@ export class LiveViewManager {
 
       // TODO allow configuration settings for server
       const config = {
-        chunk_size: 64000,
-        max_entries: 3,
-        max_file_size: 10000000,
+        chunk_size: 64000, // 64kb
+        max_entries: 10,
+        max_file_size: 10 * 1024 * 1024, // 10MB
       };
 
       const entriesReply: { [key: string]: string } = {
@@ -531,8 +530,10 @@ export class LiveViewManager {
       };
       entries.forEach(async (entry) => {
         try {
-          entriesReply[entry.ref] = JSON.stringify(entry); //await this.serDe.serialize(entry);
+          // this reply ends up been the "token" for the onPhxJoinUpload
+          entriesReply[entry.ref] = JSON.stringify(entry);
         } catch (e) {
+          // istanbul ignore next
           console.error("Error serializing entry", e);
         }
       });
@@ -565,9 +566,8 @@ export class LiveViewManager {
       const payload = message[PhxProtocol.payload];
 
       const { token } = payload;
-      console.log("onPhxJoinUpload handle", topic, token);
-      // add token to queue
-      // this.uploadTokens.push({ uploadRef: this.activeUploadRef!, token, message });
+      // TODO? send more than ack?
+      // perhaps we should check this token matches the entry sent earlier?
 
       const replyPayload = {
         response: {},
@@ -587,43 +587,10 @@ export class LiveViewManager {
 
       // generate a random temp file path
       const randomTempFilePath = this.fileSystemAdaptor.tempPath(nanoid());
-      // read first 5 bytes to get sizes of parts
-      const sizesOffset = 5;
-      const sizes = message.data.subarray(0, sizesOffset);
-      const startSize = parseInt(sizes[0].toString());
-      if (startSize !== 0) {
-        throw Error(`Unexpected startSize from uploadBinary: ${sizes.subarray(0, 1).toString()}`);
-      }
-      const joinRefSize = parseInt(sizes[1].toString());
-      const messageRefSize = parseInt(sizes[2].toString());
-      const topicSize = parseInt(sizes[3].toString());
-      const eventSize = parseInt(sizes[4].toString());
 
-      // read header and header parts
-      const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
-      const header = message.data.subarray(sizesOffset, sizesOffset + headerLength).toString();
-      let start = 0;
-      let end = joinRefSize;
-      const joinRef = header.slice(0, end).toString();
-      start += joinRefSize;
-      end += messageRefSize;
-      const messageRef = header.slice(start, end).toString();
-      start += messageRefSize;
-      end += topicSize;
-      const topic = header.slice(start, end).toString();
-      start += topicSize;
-      end += eventSize;
-      const event = header.slice(start, end).toString();
-      console.log(
-        `onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`
-      );
+      const { joinRef, messageRef, topic, event, data } = await new BinaryUploadSerDe().deserialize(message.data);
 
-      // adjust data index based on message length
-      const dataStartIndex = sizesOffset + headerLength;
-      this.fileSystemAdaptor.writeTempFile(
-        randomTempFilePath,
-        message.data.subarray(dataStartIndex, message.data.length)
-      );
+      this.fileSystemAdaptor.writeTempFile(randomTempFilePath, data);
       // console.log("wrote temp file", randomTempFilePath, header.length, `"${header.toString()}"`);
 
       // split topic to get uploadRef
@@ -635,6 +602,7 @@ export class LiveViewManager {
         // find entry from topic ref
         const entry = activeUploadConfig.entries.find((e) => e.ref === ref);
         if (!entry) {
+          // istanbul ignore next
           throw Error(`Could not find entry for ref ${ref} in uploadConfig ${JSON.stringify(activeUploadConfig)}`);
         }
 
@@ -687,8 +655,8 @@ export class LiveViewManager {
     try {
       const payload = message[PhxProtocol.payload];
 
-      const { event, ref, entry_ref, progress } = payload;
-      console.log("onProgressUpload handle", event, ref, entry_ref, progress);
+      const { ref, entry_ref, progress } = payload;
+      // console.log("onProgressUpload handle", ref, entry_ref, progress);
 
       // iterate through uploadConfigs and find the one that matches the ref
       const uploadConfig = Object.values(this.uploadConfigs).find((config) => config.ref === ref);
@@ -701,11 +669,10 @@ export class LiveViewManager {
         });
         this.uploadConfigs[uploadConfig.name] = uploadConfig;
       } else {
-        console.error("Could not find upload config for ref", ref);
+        // istanbul ignore next
+        console.error("Received progress upload but could not find upload config for ref", ref);
       }
 
-      // get old render tree and new render tree for diffing
-      // const oldView = await this.liveView.render(previousContext, this.defaultLiveViewMeta());
       let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
 
       // wrap in root template if there is one
@@ -1129,7 +1096,7 @@ export class LiveViewManager {
         await liveComponent.mount(lcSocket);
         await liveComponent.update(lcSocket);
         newView = await liveComponent.render(lcSocket.context, { myself });
-        console.dir(newView);
+        // console.dir(newView);
 
         // store state for subsequent loads
         this.statefulLiveComponents[compoundId] = {
@@ -1275,6 +1242,7 @@ export class LiveViewManager {
         if (uploadConfig) {
           uploadConfig.removeEntry(ref);
         } else {
+          // istanbul ignore next
           console.warn(`Upload config ${configName} not found for cancelUpload`);
         }
       },
@@ -1283,7 +1251,11 @@ export class LiveViewManager {
         // console.log("consomeUploadedEntries", configName, fn);
         const uploadConfig = this.uploadConfigs[configName];
         if (uploadConfig) {
-          // remove entries from config before returning
+          const inProgress = uploadConfig.entries.some((entry) => !entry.done);
+          if (inProgress) {
+            throw new Error("Cannot consume entries while uploads are still in progress");
+          }
+          // noting is in progress so we can consume
           const entries = uploadConfig.consumeEntries();
           return await Promise.all(
             entries.map(
@@ -1309,6 +1281,7 @@ export class LiveViewManager {
             }
           });
         } else {
+          // istanbul ignore next
           console.warn(`Upload config ${configName} not found for uploadedEntries`);
         }
         return {

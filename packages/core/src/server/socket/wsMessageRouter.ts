@@ -80,6 +80,7 @@ export class WsMessageRouter {
                 message: rawPhxMessage as PhxJoinUploadIncoming,
               });
             } else {
+              // istanbul ignore next
               throw new Error(`Unknown phx_join prefix: ${topic}`);
             }
             break;

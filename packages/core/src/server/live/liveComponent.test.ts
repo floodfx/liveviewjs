@@ -15,6 +15,13 @@ describe("test BaseLiveComponent", () => {
     expect(socket.context.foo).toEqual("");
   });
 
+  it("mount handles empty context", () => {
+    const component = new TestLiveComponent();
+    const socket = new HttpLiveComponentSocket("foo", undefined as unknown as TestLVContext);
+    component.mount(socket);
+    expect(socket.context.foo).toEqual(undefined);
+  });
+
   it("mount returns context using factory component", () => {
     const component = testLiveComponent;
     const socket = new HttpLiveComponentSocket<TestLVContext>("foo", { foo: "" });
@@ -92,6 +99,9 @@ interface TestLVContext {
 }
 
 const testLiveComponent = createLiveComponent({
+  handleEvent(event, socket) {
+    // console.log("testEvent", socket.context);
+  },
   render: (context: { foo: string }) => html`<div>${context.foo}</div>`,
 });
 

@@ -53,3 +53,15 @@ exports[`test http adaptor shows live component 1`] = `
     </div>
   </main>"
 `;
+
+exports[`test http adaptor shows live stateless component 1`] = `
+"<main>
+    <div
+      data-phx-main=\\"true\\"
+      data-phx-session=\\"{&quot;__flash&quot;:{&quot;test&quot;:&quot;test message&quot;},&quot;_csrf_token&quot;:&quot;csrf&quot;}\\"
+      data-phx-static=\\"\\"
+      id=\\"phx-id\\">
+      <div><div>Test Live Component: 1</div></div>
+    </div>
+  </main>"
+`;

@@ -3,7 +3,7 @@
  * session data from the initial http request to the websocket connection.  You should use a strategy that
  * cannot be tampered with such as signed JWT tokens or other cryptographically safe serialization/deserializations.
  */
-export interface SerDe {
-  serialize<T>(data: T): Promise<string>;
-  deserialize<T>(data: string): Promise<T>;
+export interface SerDe<T = any, F = string> {
+  serialize(data: T): Promise<F>;
+  deserialize(data: F): Promise<T>;
 }

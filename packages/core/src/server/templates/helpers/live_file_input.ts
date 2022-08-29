@@ -1,6 +1,11 @@
 import { UploadConfig } from "../../upload/uploadConfig";
 import { html, HtmlSafeString } from "../htmlSafeString";
 
+/**
+ * Creates the html for a file input that can be used to upload files to the server.
+ * @param uploadConfig the upload config to use for the file input
+ * @returns the html for the file input
+ */
 export function live_file_input(uploadConfig: UploadConfig): HtmlSafeString {
   const { name, accept, maxEntries, ref, entries } = uploadConfig;
   const multiple = maxEntries > 1 ? "multiple" : "";
@@ -19,12 +24,12 @@ export function live_file_input(uploadConfig: UploadConfig): HtmlSafeString {
       type="file"
       name="${name}"
       accept="${accept.join(",")}"
-      ${multiple}
       data-phx-active-refs="${activeRefs}"
       data-phx-done-refs="${doneRefs}"
       data-phx-preflighted-refs="${preflightedRefs}"
       data-phx-update="ignore"
       data-phx-upload-ref="${ref}"
-      phx-hook="Phoenix.LiveFileUpload" />
+      phx-hook="Phoenix.LiveFileUpload"
+      ${multiple} />
   `;
 }
