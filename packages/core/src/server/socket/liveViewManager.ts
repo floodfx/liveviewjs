@@ -621,7 +621,6 @@ export class LiveViewManager {
         const config = this.uploadConfigs[key];
         // match upload config on the active upload ref
         if (config.ref === this.activeUploadRef) {
-          console.log("matched upload config", key, config);
           // check if ref progress > 0
           config.entries.forEach((entry) => {
             if (entry.ref === ref) {
