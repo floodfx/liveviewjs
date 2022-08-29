@@ -16,17 +16,17 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { InMemoryChangesetDB } from "../../datastore/InMemory";
 
-type Context = {
+type PhotosContext = {
   photos: Photo[];
   changeset: LiveViewChangeset<Photo>;
 };
 
-type Events =
+type PhotosEvents =
   | { type: "validate"; name: string }
   | { type: "save"; name: string; urls: string[] }
   | { type: "cancel"; config_name: string; ref: string };
 
-export const photos = createLiveView<Context, Events>({
+export const photos = createLiveView<PhotosContext, PhotosEvents>({
   mount: async (socket) => {
     if (socket.connected) {
       // listen for changes to volunteer data

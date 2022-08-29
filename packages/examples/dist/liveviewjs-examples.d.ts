@@ -12,14 +12,14 @@ interface Store {
     hours: string;
 }
 
-interface Context$1 {
+interface Context {
     zip: string;
     city: string;
     stores: Store[];
     matches: string[];
     loading: boolean;
 }
-declare type Events$1 = {
+declare type Events = {
     type: "zip-search";
     zip: string;
 } | {
@@ -40,7 +40,7 @@ declare type Infos = {
  * Example of a search box with autocomplete.  Start typing a city in the search box
  * and a list of matching cities wiill appear.
  */
-declare const autocompleteLiveView: liveviewjs.LiveView<Context$1, Events$1, Infos>;
+declare const autocompleteLiveView: liveviewjs.LiveView<Context, Events, Infos>;
 
 /**
  * A basic counter that increments and decrements a number.
@@ -130,11 +130,11 @@ declare const paginateLiveView: liveviewjs.LiveView<{
     perPage: string;
 }, liveviewjs.AnyLiveInfo>;
 
-declare type Context = {
+declare type PhotosContext = {
     photos: Photo[];
     changeset: LiveViewChangeset<Photo>;
 };
-declare type Events = {
+declare type PhotosEvents = {
     type: "validate";
     name: string;
 } | {
@@ -146,7 +146,7 @@ declare type Events = {
     config_name: string;
     ref: string;
 };
-declare const photos: liveviewjs.LiveView<Context, Events, liveviewjs.AnyLiveInfo>;
+declare const photos: liveviewjs.LiveView<PhotosContext, PhotosEvents, liveviewjs.AnyLiveInfo>;
 declare const PhotoSchema: z.ZodObject<{
     id: z.ZodDefault<z.ZodString>;
     name: z.ZodString;
