@@ -1532,7 +1532,7 @@ const xkcdLiveView = createLiveView({
         // num should be between 1 and max
         const { max } = socket.context;
         const num = Number(url.searchParams.get("num"));
-        const which = num === NaN ? undefined : num;
+        const which = isNaN(num) ? undefined : num;
         const comic = await fetchXkcd(which, max);
         socket.assign({
             comic,
