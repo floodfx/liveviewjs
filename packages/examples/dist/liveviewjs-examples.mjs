@@ -1,6 +1,6 @@
 
 /// <reference types="./liveviewjs-examples.d.ts" />
-import { createLiveView, html, createLiveComponent, JS, options_for_select, live_patch, join, newChangesetFactory, form_for, text_input, error_tag, live_file_input, live_img_preview, submit, SingleProcessPubSub, mime, telephone_input } from 'liveviewjs';
+import { createLiveView, html, createLiveComponent, live_patch, safe, JS, options_for_select, join, newChangesetFactory, form_for, text_input, error_tag, live_file_input, live_img_preview, submit, SingleProcessPubSub, mime, telephone_input } from 'liveviewjs';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
@@ -1319,12 +1319,12 @@ function ratingToStars(rating) {
     return stars.join("");
 }
 // generate a random number between min and max
-const random = (min, max) => {
+const random$1 = (min, max) => {
     return () => Math.floor(Math.random() * (max - min + 1)) + min;
 };
-const randomSalesAmount = random(100, 1000);
-const randomNewOrders = random(5, 20);
-const randomRating = random(1, 5);
+const randomSalesAmount = random$1(100, 1000);
+const randomNewOrders = random$1(5, 20);
+const randomRating = random$1(1, 5);
 
 // These numbers are completely made up!
 const vehicleTypeValues = ["gas", "electric", "hybrid", "dontHave"];
@@ -1493,6 +1493,102 @@ const decarbLiveView = createLiveView({
     `;
     },
 });
+
+function randomXkcdNum(max) {
+    return Math.floor(Math.random() * max) + 1;
+}
+function isValidXkcd(num, max) {
+    return num >= 1 && num <= max;
+}
+async function fetchXkcd(num, max) {
+    let url = "https://xkcd.com/info.0.json";
+    if (num && max && isValidXkcd(num, max)) {
+        url = `https://xkcd.com/${num}/info.0.json`;
+    }
+    const response = await fetch(url);
+    const data = await response.json();
+    return data;
+}
+
+/**
+ * Example that loads a today's comic from xkcd.com and allows paginating and loading
+ * random comics from the same site.
+ */
+const xkcdLiveView = createLiveView({
+    // initialize the context
+    mount: async (socket) => {
+        // get today's comic from xkcd
+        const comic = await fetchXkcd();
+        // pull out today's number and use it as the max
+        const max = comic.num;
+        socket.pageTitle(`Xkcd: ${comic.title}`);
+        socket.assign({
+            comic,
+            max,
+        });
+    },
+    // handle url data and update the context accordingly
+    handleParams: async (url, socket) => {
+        // num should be between 1 and max
+        const { max } = socket.context;
+        const num = Number(url.searchParams.get("num"));
+        const which = num === NaN ? undefined : num;
+        const comic = await fetchXkcd(which, max);
+        socket.assign({
+            comic,
+            num,
+        });
+    },
+    // update the LiveView based on the context
+    render: (context, meta) => {
+        const { comic, num, max } = context;
+        return html `
+      <h1>Xkcd</h1>
+      <div>
+        <nav>${prev(max, num)} ${next(max, num)} ${random(max)} ${today()}</nav>
+      </div>
+      <div>
+        <h2>${num ? `#${num}` : `Today's (#${comic.num})`}</h2>
+        <h3>${comic.title}</h3>
+      </div>
+      <div>
+        <img src="${safe(comic.img)}" alt="${comic.alt}" />
+        <pre style="white-space:pre-line;">${comic.transcript}</pre>
+      </div>
+    `;
+    },
+});
+// helper to create a button to go to the previous comic using `live_patch`
+function prev(max, num) {
+    if (num && isValidXkcd(num - 1, max)) {
+        return live_patch(html `<button>Previous</button>`, {
+            to: { path: "/asyncfetch", params: { num: String(num - 1) } },
+        });
+    }
+    return html ``;
+}
+// helper to create a button to go to the next comic using `live_patch`
+function next(max, num) {
+    if (num && isValidXkcd(num + 1, max)) {
+        return live_patch(html `<button>Next</button>`, {
+            to: { path: "/asyncfetch", params: { num: String(num + 1) } },
+        });
+    }
+    return html ``;
+}
+// helper to create a button to go to a randoms comic using `live_patch`
+function random(max) {
+    const num = randomXkcdNum(max);
+    return live_patch(html `<button>Random</button>`, {
+        to: { path: "/asyncfetch", params: { num: String(num) } },
+    });
+}
+// helper to create a button to go to today's comic using `live_patch`
+function today() {
+    return live_patch(html `<button>Today</button>`, {
+        to: { path: "/asyncfetch" },
+    });
+}
 
 /**
  * Example of a LiveView using JS Commands
@@ -2838,4 +2934,4 @@ const routeDetails = [
     },
 ];
 
-export { autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photos, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView };
+export { autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photos, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
