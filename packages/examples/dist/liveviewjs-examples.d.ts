@@ -79,6 +79,12 @@ declare const decarbLiveView: liveviewjs.LiveView<{
     footprintData?: FootprintData | undefined;
 }, AnyLiveEvent, FootprintUpdateInfo>;
 
+/**
+ * Example that loads a today's comic from xkcd.com and allows paginating and loading
+ * random comics from the same site.
+ */
+declare const xkcdLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, liveviewjs.AnyLiveEvent, liveviewjs.AnyLiveInfo>;
+
 declare type MyContext = {
     count: number;
 };
@@ -282,4 +288,4 @@ interface RouteDetails {
 }
 declare const routeDetails: RouteDetails[];
 
-export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photos, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView };
+export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photos, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };

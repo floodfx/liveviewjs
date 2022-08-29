@@ -2,6 +2,7 @@ export * from "./liveviews/autoComplete";
 export * from "./liveviews/counter";
 export * from "./liveviews/dashboard";
 export * from "./liveviews/decarbonize";
+export * from "./liveviews/fetch";
 export * from "./liveviews/jsCommands";
 export * from "./liveviews/liveSearch";
 export * from "./liveviews/pagination";
