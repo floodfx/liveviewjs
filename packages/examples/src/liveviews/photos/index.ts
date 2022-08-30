@@ -110,10 +110,16 @@ export const photos = createLiveView<PhotosContext, PhotosEvents>({
       })}
         Album Name: ${text_input<Photo>(changeset, "name")}
         ${error_tag<Photo>(changeset, "name")}
+
+        
         
         <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
           ${live_file_input(uploads.photos)}
           or drag and drop files here 
+        </div>
+        <div style="font-size: 10px; padding-bottom: 3rem">
+          Add up to ${uploads.photos.maxEntries} photos
+          (max ${uploads.photos.maxFileSize / (1024 * 1024)} MB each)
         </div>
         ${uploads.photos.errors?.map((error) => html`<p class="invalid-feedback">${error}</p>`)}
         
