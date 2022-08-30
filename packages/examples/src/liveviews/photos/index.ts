@@ -111,8 +111,6 @@ export const photos = createLiveView<PhotosContext, PhotosEvents>({
         Album Name: ${text_input<Photo>(changeset, "name")}
         ${error_tag<Photo>(changeset, "name")}
 
-        
-        
         <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
           ${live_file_input(uploads.photos)}
           or drag and drop files here 

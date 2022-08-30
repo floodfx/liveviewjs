@@ -42,15 +42,11 @@ declare type Infos = {
  */
 declare const autocompleteLiveView: liveviewjs.LiveView<Context, Events, Infos>;
 
-/**
- * A basic counter that increments and decrements a number.
- */
 declare const counterLiveView: liveviewjs.LiveView<{
     count: number;
 }, {
-    type: "increment";
-} | {
-    type: "decrement";
+    amount?: number | undefined;
+    type: "increment" | "decrement";
 }, liveviewjs.AnyLiveInfo>;
 
 /**

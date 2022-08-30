@@ -3,8 +3,8 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var liveviewjs = require('liveviewjs');
-var nanoid = require('nanoid');
 var zod = require('zod');
+var nanoid = require('nanoid');
 
 function searchByZip(zip) {
     return stores.filter((store) => store.zip === zip);
@@ -1224,6 +1224,11 @@ function renderLoading$1() {
 /**
  * A basic counter that increments and decrements a number.
  */
+const convertToInt = zod.z.preprocess((val) => parseInt(val), zod.z.number());
+const CounterEventSchema = zod.z.object({
+    type: zod.z.literal("increment").or(zod.z.literal("decrement")),
+    amount: convertToInt.optional(),
+});
 const counterLiveView = liveviewjs.createLiveView({
     mount: (socket) => {
         // init state, set count to 0
@@ -1232,12 +1237,14 @@ const counterLiveView = liveviewjs.createLiveView({
     handleEvent: (event, socket) => {
         // handle increment and decrement events
         const { count } = socket.context;
-        switch (event.type) {
+        console.log("event", event);
+        const { amount, type } = CounterEventSchema.parse(event);
+        switch (type) {
             case "increment":
-                socket.assign({ count: count + 1 });
+                socket.assign({ count: count + (amount !== null && amount !== void 0 ? amount : 1) });
                 break;
             case "decrement":
-                socket.assign({ count: count - 1 });
+                socket.assign({ count: count - (amount !== null && amount !== void 0 ? amount : 1) });
                 break;
         }
     },
@@ -1249,6 +1256,10 @@ const counterLiveView = liveviewjs.createLiveView({
         <h1>Count is: ${count}</h1>
         <button phx-click="decrement">-</button>
         <button phx-click="increment">+</button>
+        <div>
+          <button phx-click="decrement" phx-value-amount="10">-10</button>
+          <button phx-click="increment" phx-value-amount="10">+10</button>
+        </div>
       </div>
     `;
     },
