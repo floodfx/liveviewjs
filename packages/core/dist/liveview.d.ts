@@ -1117,7 +1117,7 @@ interface LiveEvent {
     type: string;
 }
 interface AnyLiveEvent extends LiveEvent {
-    [key: string]: string | number | boolean | (string | number | boolean)[];
+    [key: string]: any;
 }
 interface LiveInfo {
     type: string;
