@@ -39,6 +39,11 @@ export const pageRenderer: LiveViewPageRenderer = (
           src="https://cdn.deno.land/liveviewjs/versions/0.3.0/raw/packages/examples/dist/liveviewjs-examples.browser.js"></script>
         <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css" />
+        <style>
+          .invalid-feedback {
+            color: red;
+          }
+        </style>
       </head>
       <body>
         <p><a href="/">← Back</a><br /><br /></p>

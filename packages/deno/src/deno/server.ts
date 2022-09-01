@@ -1,17 +1,17 @@
-import { nanoid, handleHttpLiveView, Context, WsMessageRouter } from "../deps.ts";
+import { DenoJwtSerDe } from "../deno/jwtSerDe.ts";
 import type {
-  HttpRequestAdaptor,
-  LiveViewRouter,
-  PageTitleDefaults,
-  SerDe,
-  PubSub,
   FlashAdaptor,
-  SessionData,
-  LiveViewServerAdaptor,
+  HttpRequestAdaptor,
   LiveViewPageRenderer,
   LiveViewRootRenderer,
+  LiveViewRouter,
+  LiveViewServerAdaptor,
+  PageTitleDefaults,
+  PubSub,
+  SerDe,
+  SessionData,
 } from "../deps.ts";
-import { DenoJwtSerDe } from "../deno/jwtSerDe.ts";
+import { Context, handleHttpLiveView, nanoid, WsMessageRouter } from "../deps.ts";
 
 export class DenoOakLiveViewServer
   implements
@@ -25,6 +25,7 @@ export class DenoOakLiveViewServer
   private pubSub: PubSub;
   private pageRenderer: LiveViewPageRenderer;
   private pageTitleDefaults: PageTitleDefaults;
+  private fileSystem: FileSystemAdaptor;
   private rootRenderer?: LiveViewRootRenderer;
 
   /**
@@ -43,12 +44,14 @@ export class DenoOakLiveViewServer
     pageRenderer: LiveViewPageRenderer,
     pageTitleDefaults: PageTitleDefaults,
     flashAdaptor: FlashAdaptor,
+    fileSystem: FileSystemAdaptor,
     rootRenderer?: LiveViewRootRenderer
   ) {
     this.router = router;
     this.serDe = serDe;
     this.flashAdapter = flashAdaptor;
     this.pubSub = pubSub;
+    this.fileSystem = fileSystem;
     this.pageRenderer = pageRenderer;
     this.pageTitleDefaults = pageTitleDefaults;
     this.rootRenderer = rootRenderer;
@@ -100,7 +103,14 @@ export class DenoOakLiveViewServer
   }
 
   wsRouter() {
-    return new WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.rootRenderer);
+    return new WsMessageRouter(
+      this.router,
+      this.pubSub,
+      this.flashAdapter,
+      this.serDe,
+      this.fileSystem,
+      this.rootRenderer
+    );
   }
 }
 
