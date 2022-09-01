@@ -1,6 +1,6 @@
 {
   "name": "@liveviewjs/examples",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Example LiveViews showing how LiveViewJS used by Express and Deno server examples",
   "exports": {
     "require": "./dist/liveviewjs-examples.js",
@@ -16,13 +16,13 @@
     "dist/liveviewjs-examples.browser.js.map"
   ],
   "scripts": {
-    "clean":         "rm -rf build; rm -rf dist",
-    "build":         "rollup -c",
+    "clean": "rm -rf build; rm -rf dist",
+    "build": "rollup -c",
     "browser-build": "esbuild src/browser/index.ts --minify --bundle --sourcemap --outfile=dist/liveviewjs-examples.browser.js",
-    "copy-to-dist":  "mkdir -p dist; cp build/liveviewjs-examples.* dist",
-    "dist":          "npm run build; npm run copy-to-dist; npm run browser-build",
-    "prepublish":    "npm run dist",
-    "format":        "prettier --write '**/*.{ts,js,json,html,css}'"
+    "copy-to-dist": "mkdir -p dist; cp build/liveviewjs-examples.* dist",
+    "dist": "npm run build; npm run copy-to-dist; npm run browser-build",
+    "prepublish": "npm run dist",
+    "format": "prettier --write '**/*.{ts,js,json,html,css}'"
   },
   "keywords": [
     "liveviewjs",

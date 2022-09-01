@@ -1,6 +1,6 @@
 {
   "name": "@liveviewjs/express",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Library for easy integration of LiveView into Express.js applications",
   "exports": {
     "require": "./dist/liveviewjs-express.js",
@@ -14,13 +14,13 @@
     "dist/liveviewjs-express.mjs"
   ],
   "scripts": {
-    "start":        "ts-node ./src/example/autorun.ts",
-    "clean":        "rm -rf build; rm -rf dist",
-    "build":        "rollup -c",
+    "start": "ts-node ./src/example/autorun.ts",
+    "clean": "rm -rf build; rm -rf dist",
+    "build": "rollup -c",
     "copy-to-dist": "mkdir -p dist; cp build/liveviewjs-express.* dist",
-    "dist":         "npm run build; npm run copy-to-dist",
-    "prepublish":   "npm run clean; npm run dist",
-    "format":       "prettier --write '**/*.{ts,js,json,html,css}'"
+    "dist": "npm run build; npm run copy-to-dist",
+    "prepublish": "npm run clean; npm run dist",
+    "format": "prettier --write '**/*.{ts,js,json,html,css}'"
   },
   "keywords": [
     "liveviewjs",
