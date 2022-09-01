@@ -6,7 +6,8 @@
     "docs",
     "packages/core",
     "packages/examples",
-    "packages/express"
+    "packages/express",
+    "apps/liveviewjs.com"
   ],
   "keywords": [
     "liveviewjs",
