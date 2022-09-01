@@ -1,6 +1,6 @@
 {
   "name": "liveviewjs",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "LiveViewJS brings the power of LiveView to Typescript and Javascript developers and applications.",
   "exports": {
     "require": "./dist/liveview.js",
@@ -14,13 +14,13 @@
     "dist/liveview.mjs"
   ],
   "scripts": {
-    "clean":        "rm -rf build; rm -rf dist",
-    "build":        "rollup -c",
+    "clean": "rm -rf build; rm -rf dist",
+    "build": "rollup -c",
     "copy-to-dist": "mkdir dist; cp build/liveview.js dist; cp build/liveview.mjs dist; cp build/liveview.d.ts dist",
-    "dist":         "npm run build; npm run copy-to-dist",
-    "prepublish":   "npm run dist",
-    "test":         "jest --expand",
-    "format":       "prettier --write '**/*.{ts,js,json,html,css}'"
+    "dist": "npm run build; npm run copy-to-dist",
+    "prepublish": "npm run dist",
+    "test": "jest --expand",
+    "format": "prettier --write '**/*.{ts,js,json,html,css}'"
   },
   "keywords": [
     "liveviewjs",
