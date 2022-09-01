@@ -3,8 +3,8 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var liveviewjs = require('liveviewjs');
-var zod = require('zod');
 var nanoid = require('nanoid');
+var zod = require('zod');
 
 function searchByZip(zip) {
     return stores.filter((store) => store.zip === zip);
@@ -1224,11 +1224,6 @@ function renderLoading$1() {
 /**
  * A basic counter that increments and decrements a number.
  */
-const convertToInt = zod.z.preprocess((val) => parseInt(val), zod.z.number());
-const CounterEventSchema = zod.z.object({
-    type: zod.z.literal("increment").or(zod.z.literal("decrement")),
-    amount: convertToInt.optional(),
-});
 const counterLiveView = liveviewjs.createLiveView({
     mount: (socket) => {
         // init state, set count to 0
@@ -1237,14 +1232,12 @@ const counterLiveView = liveviewjs.createLiveView({
     handleEvent: (event, socket) => {
         // handle increment and decrement events
         const { count } = socket.context;
-        console.log("event", event);
-        const { amount, type } = CounterEventSchema.parse(event);
-        switch (type) {
+        switch (event.type) {
             case "increment":
-                socket.assign({ count: count + (amount !== null && amount !== void 0 ? amount : 1) });
+                socket.assign({ count: count + 1 });
                 break;
             case "decrement":
-                socket.assign({ count: count - (amount !== null && amount !== void 0 ? amount : 1) });
+                socket.assign({ count: count - 1 });
                 break;
         }
     },
@@ -1256,10 +1249,6 @@ const counterLiveView = liveviewjs.createLiveView({
         <h1>Count is: ${count}</h1>
         <button phx-click="decrement">-</button>
         <button phx-click="increment">+</button>
-        <div>
-          <button phx-click="decrement" phx-value-amount="10">-10</button>
-          <button phx-click="increment" phx-value-amount="10">+10</button>
-        </div>
       </div>
     `;
     },
@@ -1555,16 +1544,20 @@ const xkcdLiveView = liveviewjs.createLiveView({
     // update the LiveView based on the context
     render: (context, meta) => {
         const { comic, num, max } = context;
+        const { pathname } = meta.url;
         return liveviewjs.html `
       <h1>Xkcd</h1>
       <div>
-        <nav>${prev(max, num)} ${next(max, num)} ${random(max)} ${today()}</nav>
+        <!-- navigation buttons -->
+        <nav>${prev(pathname, max, num)} ${next(pathname, max, num)} ${random(pathname, max)} ${today(pathname)}</nav>
       </div>
       <div>
+        <!-- summary & title -->
         <h2>${num ? `#${num}` : `Today's (#${comic.num})`}</h2>
         <h3>${comic.title}</h3>
       </div>
       <div>
+        <!-- the comic -->
         <img src="${liveviewjs.safe(comic.img)}" alt="${comic.alt}" />
         <pre style="white-space:pre-line;">${comic.transcript}</pre>
       </div>
@@ -1572,34 +1565,34 @@ const xkcdLiveView = liveviewjs.createLiveView({
     },
 });
 // helper to create a button to go to the previous comic using `live_patch`
-function prev(max, num) {
+function prev(path, max, num) {
     if (num && isValidXkcd(num - 1, max)) {
         return liveviewjs.live_patch(liveviewjs.html `<button>Previous</button>`, {
-            to: { path: "/asyncfetch", params: { num: String(num - 1) } },
+            to: { path, params: { num: String(num - 1) } },
         });
     }
     return liveviewjs.html ``;
 }
 // helper to create a button to go to the next comic using `live_patch`
-function next(max, num) {
+function next(path, max, num) {
     if (num && isValidXkcd(num + 1, max)) {
         return liveviewjs.live_patch(liveviewjs.html `<button>Next</button>`, {
-            to: { path: "/asyncfetch", params: { num: String(num + 1) } },
+            to: { path, params: { num: String(num + 1) } },
         });
     }
     return liveviewjs.html ``;
 }
 // helper to create a button to go to a randoms comic using `live_patch`
-function random(max) {
+function random(path, max) {
     const num = randomXkcdNum(max);
     return liveviewjs.live_patch(liveviewjs.html `<button>Random</button>`, {
-        to: { path: "/asyncfetch", params: { num: String(num) } },
+        to: { path, params: { num: String(num) } },
     });
 }
 // helper to create a button to go to today's comic using `live_patch`
-function today() {
+function today(path) {
     return liveviewjs.live_patch(liveviewjs.html `<button>Today</button>`, {
-        to: { path: "/asyncfetch" },
+        to: { path },
     });
 }
 
@@ -2114,10 +2107,10 @@ class InMemoryChangesetDB {
 }
 _InMemoryChangesetDB_store = new WeakMap(), _InMemoryChangesetDB_changeset = new WeakMap(), _InMemoryChangesetDB_pubSub = new WeakMap(), _InMemoryChangesetDB_pubSubTopic = new WeakMap();
 
-const photos = liveviewjs.createLiveView({
+const photosLiveView = liveviewjs.createLiveView({
     mount: async (socket) => {
         if (socket.connected) {
-            // listen for changes to volunteer data
+            // listen to photos topic
             await socket.subscribe("photos");
         }
         // setup the default context
@@ -2135,6 +2128,7 @@ const photos = liveviewjs.createLiveView({
     handleEvent: async (event, socket) => {
         switch (event.type) {
             case "validate": {
+                // just validate the changeset
                 socket.assign({ changeset: photoStore.validate(event) });
                 break;
             }
@@ -2171,6 +2165,7 @@ const photos = liveviewjs.createLiveView({
             }
             case "cancel": {
                 const { config_name, ref } = event;
+                // remove the uploaded entry from the upload config
                 socket.cancelUpload(config_name, ref);
             }
         }
@@ -2183,6 +2178,7 @@ const photos = liveviewjs.createLiveView({
             changeset: photoStore.changeset(),
         });
     },
+    // Render the view
     render: (ctx, meta) => {
         var _a;
         const { photos, changeset } = ctx;
@@ -2197,8 +2193,6 @@ const photos = liveviewjs.createLiveView({
         Album Name: ${liveviewjs.text_input(changeset, "name")}
         ${liveviewjs.error_tag(changeset, "name")}
 
-        
-        
         <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
           ${liveviewjs.live_file_input(uploads.photos)}
           or drag and drop files here 
@@ -2216,7 +2210,6 @@ const photos = liveviewjs.createLiveView({
               <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${liveviewjs.live_img_preview(entry)}</div>
               <div style="display: flex; align-items: center; margin-left: 2rem;">
                 <progress
-                  id="volume_control"
                   style="position: relative; top: 8px; width: 150px; height: 1em;"
                   value="${entry.progress}"
                   max="100"></progress>
@@ -2250,22 +2243,26 @@ const photos = liveviewjs.createLiveView({
     `;
     },
 });
+// Define the shape of the Photo type
 const PhotoSchema = zod.z.object({
     id: zod.z.string().default(nanoid.nanoid),
     name: zod.z.string().min(1).max(100),
     urls: zod.z.array(zod.z.string()).min(1).default([]),
 });
+// InMemory DB for photos that publishes changes to the "photos" topic
 const photoStore = new InMemoryChangesetDB(PhotoSchema, {
     pubSub: new liveviewjs.SingleProcessPubSub(),
     pubSubTopic: "photos",
 });
-// map the upload entry to a filename based on the mime type of the entry
-// concatenated with the entry's uuid
-const filename = (entry) => {
+/**
+ * `filename` maps the upload entry to a filename based on the mime type of the entry
+ * concatenated with the entry's uuid
+ */
+function filename(entry) {
     const exts = liveviewjs.mime.lookupExtensions(entry.client_type);
     const ext = exts.length > 0 ? exts[0] : "bin";
     return `${entry.uuid}.${ext}`;
-};
+}
 
 const photoSizes = ["4x6", "5x7", "8x10", "10x13", "11x14"];
 const printLiveView = liveviewjs.createLiveView({
@@ -2959,7 +2956,7 @@ exports.dashboardLiveView = dashboardLiveView;
 exports.decarbLiveView = decarbLiveView;
 exports.jsCmdsLiveView = jsCmdsLiveView;
 exports.paginateLiveView = paginateLiveView;
-exports.photos = photos;
+exports.photosLiveView = photosLiveView;
 exports.printLiveView = printLiveView;
 exports.routeDetails = routeDetails;
 exports.searchLiveView = searchLiveView;

@@ -1,8 +1,8 @@
 
 /// <reference types="./liveviewjs-examples.d.ts" />
 import { createLiveView, html, createLiveComponent, live_patch, safe, JS, options_for_select, join, newChangesetFactory, form_for, text_input, error_tag, live_file_input, live_img_preview, submit, SingleProcessPubSub, mime, telephone_input } from 'liveviewjs';
-import { z } from 'zod';
 import { nanoid } from 'nanoid';
+import { z } from 'zod';
 
 function searchByZip(zip) {
     return stores.filter((store) => store.zip === zip);
@@ -1222,11 +1222,6 @@ function renderLoading$1() {
 /**
  * A basic counter that increments and decrements a number.
  */
-const convertToInt = z.preprocess((val) => parseInt(val), z.number());
-const CounterEventSchema = z.object({
-    type: z.literal("increment").or(z.literal("decrement")),
-    amount: convertToInt.optional(),
-});
 const counterLiveView = createLiveView({
     mount: (socket) => {
         // init state, set count to 0
@@ -1235,14 +1230,12 @@ const counterLiveView = createLiveView({
     handleEvent: (event, socket) => {
         // handle increment and decrement events
         const { count } = socket.context;
-        console.log("event", event);
-        const { amount, type } = CounterEventSchema.parse(event);
-        switch (type) {
+        switch (event.type) {
             case "increment":
-                socket.assign({ count: count + (amount !== null && amount !== void 0 ? amount : 1) });
+                socket.assign({ count: count + 1 });
                 break;
             case "decrement":
-                socket.assign({ count: count - (amount !== null && amount !== void 0 ? amount : 1) });
+                socket.assign({ count: count - 1 });
                 break;
         }
     },
@@ -1254,10 +1247,6 @@ const counterLiveView = createLiveView({
         <h1>Count is: ${count}</h1>
         <button phx-click="decrement">-</button>
         <button phx-click="increment">+</button>
-        <div>
-          <button phx-click="decrement" phx-value-amount="10">-10</button>
-          <button phx-click="increment" phx-value-amount="10">+10</button>
-        </div>
       </div>
     `;
     },
@@ -1553,16 +1542,20 @@ const xkcdLiveView = createLiveView({
     // update the LiveView based on the context
     render: (context, meta) => {
         const { comic, num, max } = context;
+        const { pathname } = meta.url;
         return html `
       <h1>Xkcd</h1>
       <div>
-        <nav>${prev(max, num)} ${next(max, num)} ${random(max)} ${today()}</nav>
+        <!-- navigation buttons -->
+        <nav>${prev(pathname, max, num)} ${next(pathname, max, num)} ${random(pathname, max)} ${today(pathname)}</nav>
       </div>
       <div>
+        <!-- summary & title -->
         <h2>${num ? `#${num}` : `Today's (#${comic.num})`}</h2>
         <h3>${comic.title}</h3>
       </div>
       <div>
+        <!-- the comic -->
         <img src="${safe(comic.img)}" alt="${comic.alt}" />
         <pre style="white-space:pre-line;">${comic.transcript}</pre>
       </div>
@@ -1570,34 +1563,34 @@ const xkcdLiveView = createLiveView({
     },
 });
 // helper to create a button to go to the previous comic using `live_patch`
-function prev(max, num) {
+function prev(path, max, num) {
     if (num && isValidXkcd(num - 1, max)) {
         return live_patch(html `<button>Previous</button>`, {
-            to: { path: "/asyncfetch", params: { num: String(num - 1) } },
+            to: { path, params: { num: String(num - 1) } },
         });
     }
     return html ``;
 }
 // helper to create a button to go to the next comic using `live_patch`
-function next(max, num) {
+function next(path, max, num) {
     if (num && isValidXkcd(num + 1, max)) {
         return live_patch(html `<button>Next</button>`, {
-            to: { path: "/asyncfetch", params: { num: String(num + 1) } },
+            to: { path, params: { num: String(num + 1) } },
         });
     }
     return html ``;
 }
 // helper to create a button to go to a randoms comic using `live_patch`
-function random(max) {
+function random(path, max) {
     const num = randomXkcdNum(max);
     return live_patch(html `<button>Random</button>`, {
-        to: { path: "/asyncfetch", params: { num: String(num) } },
+        to: { path, params: { num: String(num) } },
     });
 }
 // helper to create a button to go to today's comic using `live_patch`
-function today() {
+function today(path) {
     return live_patch(html `<button>Today</button>`, {
-        to: { path: "/asyncfetch" },
+        to: { path },
     });
 }
 
@@ -2112,10 +2105,10 @@ class InMemoryChangesetDB {
 }
 _InMemoryChangesetDB_store = new WeakMap(), _InMemoryChangesetDB_changeset = new WeakMap(), _InMemoryChangesetDB_pubSub = new WeakMap(), _InMemoryChangesetDB_pubSubTopic = new WeakMap();
 
-const photos = createLiveView({
+const photosLiveView = createLiveView({
     mount: async (socket) => {
         if (socket.connected) {
-            // listen for changes to volunteer data
+            // listen to photos topic
             await socket.subscribe("photos");
         }
         // setup the default context
@@ -2133,6 +2126,7 @@ const photos = createLiveView({
     handleEvent: async (event, socket) => {
         switch (event.type) {
             case "validate": {
+                // just validate the changeset
                 socket.assign({ changeset: photoStore.validate(event) });
                 break;
             }
@@ -2169,6 +2163,7 @@ const photos = createLiveView({
             }
             case "cancel": {
                 const { config_name, ref } = event;
+                // remove the uploaded entry from the upload config
                 socket.cancelUpload(config_name, ref);
             }
         }
@@ -2181,6 +2176,7 @@ const photos = createLiveView({
             changeset: photoStore.changeset(),
         });
     },
+    // Render the view
     render: (ctx, meta) => {
         var _a;
         const { photos, changeset } = ctx;
@@ -2195,8 +2191,6 @@ const photos = createLiveView({
         Album Name: ${text_input(changeset, "name")}
         ${error_tag(changeset, "name")}
 
-        
-        
         <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
           ${live_file_input(uploads.photos)}
           or drag and drop files here 
@@ -2214,7 +2208,6 @@ const photos = createLiveView({
               <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${live_img_preview(entry)}</div>
               <div style="display: flex; align-items: center; margin-left: 2rem;">
                 <progress
-                  id="volume_control"
                   style="position: relative; top: 8px; width: 150px; height: 1em;"
                   value="${entry.progress}"
                   max="100"></progress>
@@ -2248,22 +2241,26 @@ const photos = createLiveView({
     `;
     },
 });
+// Define the shape of the Photo type
 const PhotoSchema = z.object({
     id: z.string().default(nanoid),
     name: z.string().min(1).max(100),
     urls: z.array(z.string()).min(1).default([]),
 });
+// InMemory DB for photos that publishes changes to the "photos" topic
 const photoStore = new InMemoryChangesetDB(PhotoSchema, {
     pubSub: new SingleProcessPubSub(),
     pubSubTopic: "photos",
 });
-// map the upload entry to a filename based on the mime type of the entry
-// concatenated with the entry's uuid
-const filename = (entry) => {
+/**
+ * `filename` maps the upload entry to a filename based on the mime type of the entry
+ * concatenated with the entry's uuid
+ */
+function filename(entry) {
     const exts = mime.lookupExtensions(entry.client_type);
     const ext = exts.length > 0 ? exts[0] : "bin";
     return `${entry.uuid}.${ext}`;
-};
+}
 
 const photoSizes = ["4x6", "5x7", "8x10", "10x13", "11x14"];
 const printLiveView = createLiveView({
@@ -2951,4 +2948,4 @@ const routeDetails = [
     },
 ];
 
-export { autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photos, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
+export { autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
