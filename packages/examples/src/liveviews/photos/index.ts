@@ -29,7 +29,7 @@ type PhotosEvents =
 export const photos = createLiveView<PhotosContext, PhotosEvents>({
   mount: async (socket) => {
     if (socket.connected) {
-      // listen for changes to volunteer data
+      // listen to photos topic
       await socket.subscribe("photos");
     }
     // setup the default context
@@ -39,7 +39,7 @@ export const photos = createLiveView<PhotosContext, PhotosEvents>({
     });
     // configure the upload constraints
     socket.allowUpload("photos", {
-      accept: [".png", ".jpg", ".jpeg", ".gif"],
+      accept: [".png", ".jpg", ".jpeg", ".gif"], // only allow images
       maxEntries: 3,
       maxFileSize: 10 * 1024 * 1024, // 10MB
     });
@@ -47,6 +47,7 @@ export const photos = createLiveView<PhotosContext, PhotosEvents>({
   handleEvent: async (event, socket) => {
     switch (event.type) {
       case "validate": {
+        // just validate the changeset
         socket.assign({ changeset: photoStore.validate(event) });
         break;
       }
@@ -85,6 +86,7 @@ export const photos = createLiveView<PhotosContext, PhotosEvents>({
       }
       case "cancel": {
         const { config_name, ref } = event;
+        // remove the uploaded entry from the upload config
         socket.cancelUpload(config_name, ref);
       }
     }
@@ -97,7 +99,7 @@ export const photos = createLiveView<PhotosContext, PhotosEvents>({
       changeset: photoStore.changeset(),
     });
   },
-
+  // Render the view
   render: (ctx, meta) => {
     const { photos, changeset } = ctx;
     const { uploads } = meta;
@@ -168,23 +170,28 @@ export const photos = createLiveView<PhotosContext, PhotosEvents>({
   },
 });
 
+// Define the shape of the Photo type
 const PhotoSchema = z.object({
   id: z.string().default(nanoid),
   name: z.string().min(1).max(100),
   urls: z.array(z.string()).min(1).default([]),
 });
 
+// Infer the type from the schema
 type Photo = z.infer<typeof PhotoSchema>;
 
+// InMemory DB for photos that publishes changes to the "photos" topic
 const photoStore = new InMemoryChangesetDB<Photo>(PhotoSchema, {
   pubSub: new SingleProcessPubSub(),
   pubSubTopic: "photos",
 });
 
-// map the upload entry to a filename based on the mime type of the entry
-// concatenated with the entry's uuid
-const filename = (entry: UploadEntry) => {
+/**
+ * `filename` maps the upload entry to a filename based on the mime type of the entry
+ * concatenated with the entry's uuid
+ */
+function filename(entry: UploadEntry) {
   const exts = mime.lookupExtensions(entry.client_type);
   const ext = exts.length > 0 ? exts[0] : "bin";
   return `${entry.uuid}.${ext}`;
-};
+}
