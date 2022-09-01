@@ -16,7 +16,6 @@ export class NodeFileSystemAdatptor implements FileSystemAdaptor {
     fs.writeFileSync(dest, data);
   }
   createOrAppendFile(dest: string, src: string) {
-    const fullDest = path.resolve(dest);
     fs.appendFileSync(dest, fs.readFileSync(src));
   }
 }

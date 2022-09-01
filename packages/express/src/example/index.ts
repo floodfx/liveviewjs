@@ -5,13 +5,14 @@ import {
   decarbLiveView,
   jsCmdsLiveView,
   paginateLiveView,
-  photos,
+  photosLiveView,
   printLiveView,
   searchLiveView,
   serversLiveView,
   sortLiveView,
   volumeLiveView,
   volunteerLiveView,
+  xkcdLiveView,
 } from "@liveviewjs/examples";
 import express, { NextFunction, Request, Response } from "express";
 import session, { MemoryStore } from "express-session";
@@ -44,8 +45,9 @@ const router: LiveViewRouter = {
   "/volunteers": volunteerLiveView,
   "/counter": counterLiveView,
   "/jscmds": jsCmdsLiveView,
+  "/photos": photosLiveView,
+  "/xkcd": xkcdLiveView,
   "/hello": helloLiveView,
-  "/photos": photos,
 };
 
 // configure your express app
