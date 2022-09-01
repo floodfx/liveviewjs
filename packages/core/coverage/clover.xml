@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1661887741079" clover="3.2.0">
-  <project timestamp="1661887741079" name="All files">
+<coverage generated="1661998282524" clover="3.2.0">
+  <project timestamp="1661998282524" name="All files">
     <metrics statements="977" coveredstatements="977" conditionals="335" coveredconditionals="316" methods="212" coveredmethods="195" elements="1524" coveredelements="1488" complexity="0" loc="977" ncloc="977" packages="10" files="37" classes="37"/>
     <package name="server">
       <metrics statements="10" coveredstatements="10" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
@@ -1006,13 +1006,14 @@
         <metrics statements="36" coveredstatements="36" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="2"/>
         <line num="11" count="9" type="stmt"/>
         <line num="14" count="6" type="stmt"/>
+        <line num="15" count="6" type="stmt"/>
         <line num="16" count="6" type="stmt"/>
-        <line num="17" count="6" type="stmt"/>
+        <line num="22" count="6" type="stmt"/>
         <line num="23" count="6" type="stmt"/>
         <line num="24" count="6" type="stmt"/>
         <line num="25" count="6" type="stmt"/>
-        <line num="26" count="6" type="stmt"/>
-        <line num="31" count="6" type="stmt"/>
+        <line num="30" count="6" type="stmt"/>
+        <line num="32" count="6" type="stmt"/>
         <line num="33" count="6" type="stmt"/>
         <line num="34" count="6" type="stmt"/>
         <line num="35" count="6" type="stmt"/>
@@ -1025,10 +1026,12 @@
         <line num="42" count="6" type="stmt"/>
         <line num="43" count="6" type="stmt"/>
         <line num="44" count="6" type="stmt"/>
-        <line num="45" count="6" type="stmt"/>
-        <line num="49" count="6" type="stmt"/>
-        <line num="53" count="6" type="stmt"/>
-        <line num="55" count="6" type="stmt"/>
+        <line num="48" count="6" type="stmt"/>
+        <line num="51" count="6" type="stmt"/>
+        <line num="52" count="6" type="stmt"/>
+        <line num="61" count="3" type="stmt"/>
+        <line num="62" count="3" type="stmt"/>
+        <line num="63" count="3" type="stmt"/>
         <line num="64" count="3" type="stmt"/>
         <line num="65" count="3" type="stmt"/>
         <line num="66" count="3" type="stmt"/>
@@ -1037,9 +1040,6 @@
         <line num="69" count="3" type="stmt"/>
         <line num="70" count="3" type="stmt"/>
         <line num="71" count="3" type="stmt"/>
-        <line num="72" count="3" type="stmt"/>
-        <line num="73" count="3" type="stmt"/>
-        <line num="74" count="3" type="stmt"/>
       </file>
       <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/packages/core/src/server/upload/index.ts">
         <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>

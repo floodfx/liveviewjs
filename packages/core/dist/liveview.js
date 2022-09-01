@@ -1512,7 +1512,6 @@ class BinaryUploadSerDe {
     async deserialize(data) {
         // read first 5 bytes to get sizes of parts
         const sizesOffset = 5;
-        // @ts-ignore - subarray is not defined on Buffer (not true!)
         const sizes = data.subarray(0, sizesOffset);
         const startSize = parseInt(sizes[0].toString());
         // istanbul ignore next
@@ -1544,15 +1543,13 @@ class BinaryUploadSerDe {
         // adjust data index based on message length
         const dataStartIndex = sizesOffset + headerLength;
         // get rest of data
-        // @ts-ignore - subarray is not defined on Buffer (not true!)
         const rest = data.subarray(dataStartIndex);
-        // @ts-ignore - getting Buffer not equal to Buffer from types definition
         return {
             joinRef,
             messageRef,
             topic,
             event,
-            data: Buffer.from(rest),
+            data: rest,
         };
     }
     async serialize(value) {
