@@ -1,9 +1,11 @@
+import { DenoFileSystemAdaptor } from "../deno/fsAdaptor.ts";
 import { DenoJwtSerDe } from "../deno/jwtSerDe.ts";
 import { DenoOakLiveViewServer } from "../deno/server.ts";
 import { DenoWsAdaptor } from "../deno/wsAdaptor.ts";
 import {
   Application,
   autocompleteLiveView,
+  Buffer,
   counterLiveView,
   dashboardLiveView,
   decarbLiveView,
@@ -11,15 +13,18 @@ import {
   LiveViewRouter,
   nanoid,
   paginateLiveView,
+  photosLiveView,
   printLiveView,
   Router,
   searchLiveView,
+  send,
   serversLiveView,
   SessionFlashAdaptor,
   SingleProcessPubSub,
   sortLiveView,
   volumeLiveView,
   volunteerLiveView,
+  xkcdLiveView,
 } from "../deps.ts";
 import { indexHandler } from "./indexHandler.ts";
 import { pageRenderer, rootRenderer } from "./liveViewRenderers.ts";
@@ -38,6 +43,8 @@ const lvRouter: LiveViewRouter = {
   "/volunteers": volunteerLiveView,
   "/counter": counterLiveView,
   "/jscmds": jsCmdsLiveView,
+  "/photos": photosLiveView,
+  "/xkcd": xkcdLiveView,
 };
 
 // configure your oak app
@@ -58,6 +65,7 @@ const liveView = new DenoOakLiveViewServer(
   pageRenderer,
   { title: "Deno Demo", suffix: " · LiveViewJS" },
   new SessionFlashAdaptor(),
+  new DenoFileSystemAdaptor(),
   rootRenderer
 );
 
@@ -73,8 +81,12 @@ router.get("/live/websocket", async (ctx) => {
   const ws = await ctx.upgrade();
   const connectionId = nanoid();
   ws.onmessage = async (message) => {
+    const isBinary = message.data instanceof ArrayBuffer;
+    // prob a better way to take ArrayBuffer and turn it into a Buffer
+    // but this works for now
+    const data = isBinary ? new Buffer(message.data) : message.data;
     // pass websocket messages to LiveViewJS
-    await liveViewRouter.onMessage(connectionId, message.data, new DenoWsAdaptor(ws));
+    await liveViewRouter.onMessage(connectionId, data, new DenoWsAdaptor(ws), isBinary);
   };
   ws.onclose = async () => {
     // pass websocket close events to LiveViewJS
@@ -84,6 +96,14 @@ router.get("/live/websocket", async (ctx) => {
 
 // setup index route
 router.get("/", indexHandler);
+
+// serve image files from public
+router.get("/(.*).(png|jpg|jpeg|gif)", async (ctx) => {
+  const path = ctx.request.url.pathname;
+  await send(ctx, path, {
+    root: "./public/",
+  });
+});
 
 // add oak router to app
 app.use(router.routes());
