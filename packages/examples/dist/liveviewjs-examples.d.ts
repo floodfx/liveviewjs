@@ -42,11 +42,15 @@ declare type Infos = {
  */
 declare const autocompleteLiveView: liveviewjs.LiveView<Context, Events, Infos>;
 
+/**
+ * A basic counter that increments and decrements a number.
+ */
 declare const counterLiveView: liveviewjs.LiveView<{
     count: number;
 }, {
-    amount?: number | undefined;
-    type: "increment" | "decrement";
+    type: "increment";
+} | {
+    type: "decrement";
 }, liveviewjs.AnyLiveInfo>;
 
 /**
@@ -142,7 +146,7 @@ declare type PhotosEvents = {
     config_name: string;
     ref: string;
 };
-declare const photos: liveviewjs.LiveView<PhotosContext, PhotosEvents, liveviewjs.AnyLiveInfo>;
+declare const photosLiveView: liveviewjs.LiveView<PhotosContext, PhotosEvents, liveviewjs.AnyLiveInfo>;
 declare const PhotoSchema: z.ZodObject<{
     id: z.ZodDefault<z.ZodString>;
     name: z.ZodString;
@@ -284,4 +288,4 @@ interface RouteDetails {
 }
 declare const routeDetails: RouteDetails[];
 
-export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photos, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
+export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };

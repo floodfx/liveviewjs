@@ -26,7 +26,7 @@ type PhotosEvents =
   | { type: "save"; name: string; urls: string[] }
   | { type: "cancel"; config_name: string; ref: string };
 
-export const photos = createLiveView<PhotosContext, PhotosEvents>({
+export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
   mount: async (socket) => {
     if (socket.connected) {
       // listen to photos topic
@@ -129,7 +129,6 @@ export const photos = createLiveView<PhotosContext, PhotosEvents>({
               <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${live_img_preview(entry)}</div>
               <div style="display: flex; align-items: center; margin-left: 2rem;">
                 <progress
-                  id="volume_control"
                   style="position: relative; top: 8px; width: 150px; height: 1em;"
                   value="${entry.progress}"
                   max="100"></progress>
