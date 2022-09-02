@@ -10,11 +10,11 @@ export const iosLiveView = createLiveView({
     console.log("event", event);
     switch (event.type) {
       case "toggle-favorite":
-        favorites[event.name as Cat] = !favorites[event.name as Cat];
+        favorites[event.name] = !favorites[event.name];
         break;
     }
   },
-  render: (ctx) => {
+  render: () => {
     return html` <list>
       ${cats.map((cat) => {
         return html`
@@ -50,8 +50,6 @@ const cats = [
   "Siegfried",
   "Truman",
   "Washy",
-] as const;
+];
 
-type Cat = typeof cats[number];
-
-const favorites = {} as Record<Cat, boolean>;
+const favorites: Record<string, boolean> = {};
