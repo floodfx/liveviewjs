@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "start": "ts-node ./src/example/autorun.ts",
+    "start_ios": "ts-node ./src/example/autorun_ios.ts",
     "clean": "rm -rf build; rm -rf dist",
     "build": "rollup -c",
     "copy-to-dist": "mkdir -p dist; cp build/liveviewjs-express.* dist",
