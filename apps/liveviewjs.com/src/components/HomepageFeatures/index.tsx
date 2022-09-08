@@ -10,47 +10,46 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Easy to Use',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    title: 'Simple, powerful, scalable paradigm',
+    Svg: require('@site/static/img/features/simple.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Create "single page app" user experiences with the ease of server-rendered HTML.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    title: 'Native Real-time & multi-player support',
+    Svg: require('@site/static/img/features/multiplayer.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Easily update the UI of any or all connected users with built-in support for Pub/Sub. 
       </>
     ),
   },
   {
-    title: 'Powered by React',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    title: 'No boilerplate & no reinventing the wheel',
+    Svg: require('@site/static/img/features/nirvana.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        No "client-side routing" or "state management";
+        no REST or GraphQL APIs; No BS, just GSD-nirvana.
       </>
     ),
   },
+  
 ];
 
 function Feature({title, Svg, description}: FeatureItem) {
   return (
-    <div className={clsx('col col--4')}>
-      <div className="text--center">
-        <Svg className={styles.featureSvg} role="img" />
-      </div>
-      <div className="text--center padding-horiz--md">
-        <h3>{title}</h3>
-        <p>{description}</p>
-      </div>
+    <div className='grid grid-cols-1 justify-center'>
+        <div className='flex justify-center'>
+          <Svg className={styles.featureSvg} role="img" />
+        </div>
+        <h3 className='text-center text-2xl font-brand text-brand'>{title}</h3>
+        <div  className='flex justify-center'>
+          <p className="text-center mt-4 md:w-full w-3/4">{description}</p>      
+        </div> 
     </div>
   );
 }
@@ -59,7 +58,7 @@ export default function HomepageFeatures(): JSX.Element {
   return (
     <section className={styles.features}>
       <div className="container">
-        <div className="row">
+        <div className="grid grid-cols-1 md:grid-cols-3 justify-center gap-y-10 md:gap-x-12">
           {FeatureList.map((props, idx) => (
             <Feature key={idx} {...props} />
           ))}
