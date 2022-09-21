@@ -1,0 +1,8 @@
+{
+  "label": "Quick Starts",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Run the examples and build your first LiveView"
+  }
+}

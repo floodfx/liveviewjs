@@ -17,8 +17,8 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="mt-4 button button--secondary button--lg"
-            to="/docs/intro">
-             Start 5 minute tour &rarr;
+            to="/docs/category/quick-starts">
+             Quick Start &rarr;
           </Link>
         </div>
       </div>
@@ -40,8 +40,8 @@ export default function Home(): JSX.Element {
           <div className="flex justify-center">
             <Link
               className="button button--secondary button--lg"
-              to="/docs/intro">
-              Get Started &rarr;
+              to="/docs/category/overview">
+              Learn More &rarr;
             </Link>
           </div>
         </section>

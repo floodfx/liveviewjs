@@ -1,0 +1,8 @@
+{
+  "label": "JS Commands",
+  "position": 11,
+  "link": {
+    "type": "generated-index",
+    "description": "Additional utilities for more dynamic, client-side experiences"
+  }
+}
