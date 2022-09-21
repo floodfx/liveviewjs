@@ -8,8 +8,8 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'LiveViewJS',
   tagline: 'Simple yet powerful framework for LiveViews in NodeJS and Deno',
-  url: 'https://floodfx.github.io',
-  baseUrl: '/liveviewjs/',
+  url: 'https://www.liveviewjs.com',
+  baseUrl: '/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
