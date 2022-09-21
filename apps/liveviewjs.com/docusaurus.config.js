@@ -57,11 +57,11 @@ const config = {
         items: [
           {
             type: 'doc',
-            docId: 'intro',
+            docId: 'overview/introduction',
             position: 'left',
-            label: 'Tutorial',
+            label: 'Documentation',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
+          // {to: '/blog', label: 'Blog', position: 'left'},
           {
             href: 'https://github.com/floodfx/liveviewjs',
             label: 'GitHub',
@@ -76,9 +76,13 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Tutorial',
-                to: '/docs/intro',
+                label: 'Intro',
+                to: '/docs/overview/introduction',
               },
+              // {
+              //   label: 'Quick Starts',
+              //   to: '/docs/category/quick-starts',
+              // },
             ],
           },
           {
@@ -97,10 +101,10 @@ const config = {
           {
             title: 'More',
             items: [
-              {
-                label: 'Blog',
-                to: '/blog',
-              },
+              // {
+              //   label: 'Blog',
+              //   to: '/blog',
+              // },
               {
                 label: 'GitHub',
                 href: 'https://github.com/floodfx/liveviewjs',

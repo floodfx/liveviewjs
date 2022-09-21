@@ -1,0 +1,8 @@
+{
+  "label": "LiveViewSocket",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "description": "The swiss army knife of LiveViewJS that connects the dots across a LiveView lifecycle."
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "label": "Real-time / Multi-player",
+  "position": 9,
+  "link": {
+    "type": "generated-index",
+    "description": "Easy real-time, multi-player support with LiveViewJS Pub/Sub"
+  }
+}

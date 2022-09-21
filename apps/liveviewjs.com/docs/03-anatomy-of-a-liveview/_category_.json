@@ -1,0 +1,8 @@
+{
+  "label": "Anatomy of a LiveView",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Deep dive into the LiveView API and lifecycle functions"
+  }
+}
