@@ -12,7 +12,7 @@ We've already reviewed the form event bindings that are available in LiveViewJS.
 * `phx-change` - This event is sent to the server along with all the form values when any form input is changed.  
 * `phx-submit` - This event is sent to the server when the form is submitted alog with all the form values.  
 
-Feel free to review form events in more detail in the [User Events and Bindings](/docs/06-user-events-slash-bindings) section.
+Feel free to review form events in more detail in the [User Events and Bindings](/docs/user-events-slash-bindings/overview) section.
 
 ## Changesets
 We have not yet discussed the concept of a "changeset" in LiveViewJS.  At a high level a changeset is a way to parse and validate that incoming JSON data maps to the expected constraints. You will see it is a very powerful concept that allows you to build and validate complex forms with ease.
