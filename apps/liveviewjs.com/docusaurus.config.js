@@ -113,7 +113,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Donnie Flood. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Donnie Flood`,
       },
       prism: {
         theme: lightCodeTheme,
