@@ -62,7 +62,7 @@ Yes, it "looks" like a React/Vue/Svelt UI but the main differences are:
   * Using the new state, the server then renders a new view and calculates any diffs
   * Those diffs are shipped back to the client where they are automatically applied
 
-Pretty cool eh?  We think so too!  While this counter isn't particularly useful it gives you a quick intro to how LiveViews work and what they look like both as code and in the browser.  We've got a lot more to show you about **LiveViewJS** including: built in real-time / multi-player support, built-in form validation with changesets, built-in file uploads with image previews and drag and drop support, and more!  
+Pretty cool eh?  We think so too!  While this counter LiveView isn't particularly useful it gives you a quick intro to how LiveViews work and what they look like both as code and in the browser.  We've got a lot more to show you about **LiveViewJS** including: built in real-time / multi-player support, built-in form validation with changesets, built-in file uploads with image previews and drag and drop support, and more!  
 
 But first, a bit more about LiveViews...
 
