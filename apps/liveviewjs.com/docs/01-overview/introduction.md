@@ -10,7 +10,61 @@ The LiveView approach allows developers to build applications with rich user exp
 ## What is a LiveView?
 A LiveView is a server-rendered HTML page that connects to the server via a persistent web socket.  The web socket allows the client to send user events to the server and the server to send diffs in response. **LiveViewJS** is a LiveView framework that handles the complex part of this (handling websockets, diffing changes, appling DOM updates, etc) so that you can focus on building your application.
 
-We'll obviously show you lots of examples and get into the details of how LiveViews and **LiveViewJS** works as you go through the documentation. 
+Here's the typical "counter" example written as a LiveView in **LiveViewJS**:
+```ts
+import { createLiveView, html } from "liveviewjs";
+
+/**
+ * A basic counter that increments and decrements a number.
+ */
+export const counterLiveView = createLiveView<
+  { count: number }, // Define LiveView Context (a.k.a state)
+  { type: "increment" } | { type: "decrement" } // Define LiveView Events
+>({
+  mount: (socket) => {
+    // init state, set count to 0
+    socket.assign({ count: 0 });
+  },
+  handleEvent: (event, socket) => {
+    // handle increment and decrement events
+    const { count } = socket.context;
+    switch (event.type) {
+      case "increment":
+        socket.assign({ count: count + 1 });
+        break;
+      case "decrement":
+        socket.assign({ count: count - 1 });
+        break;
+    }
+  },
+  render: (context) => {
+    // render the view based on the state
+    const { count } = context;
+    return html`
+      <div>
+        <h1>Count is: ${count}</h1>
+        <button phx-click="decrement">-</button>
+        <button phx-click="increment">+</button>
+      </div>
+    `;
+  },
+});
+```
+
+And here is what that LiveView looks like in a browser:
+![LiveView Counter Example Screen Recording](/img/screenshots/liveviewjs_counter_liveview_rec.gif)
+
+Yes, it "looks" like a React/Vue/Svelt UI but the main differences are:
+  * This page was first rendered as plain HTML (not a bundle of JS)
+  * The client is automatically connected to a server via a websocket
+  * The click events are automatically being shipped to the server
+  * The server then runs the business logic to update the state
+  * Using the new state, the server then renders a new view and calculates any diffs
+  * Those diffs are shipped back to the client where they are automatically applied
+
+Pretty cool eh?  We think so too!  While this counter isn't particularly useful it gives you a quick intro to how LiveViews work and what they look like both as code and in the browser.  We've got a lot more to show you about **LiveViewJS** including: built in real-time / multi-player support, built-in form validation with changesets, built-in file uploads with image previews and drag and drop support, and more!  
+
+But first, a bit more about LiveViews...
 
 ## LiveView is already proven technology
 [Phoenix LiveView](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html) is already extremely popular in the Elixir community and has been used to build production applications for years.  It powers delightful user experiences and is battle-tested both in terms of performance and reliability and in terms of developer productivity.
