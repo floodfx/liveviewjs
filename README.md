@@ -4,4 +4,4 @@
 
 *An HTML-first, GSD-focused library for building LiveViews in NodeJS and Deno*
 
-Documentation: [LiveViewJS.com](http://liveviewjs.com)
+Documentation: [LiveViewJS.com](https://www.liveviewjs.com)
