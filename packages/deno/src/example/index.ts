@@ -1,33 +1,29 @@
-import { DenoFileSystemAdaptor } from "../deno/fsAdaptor.ts";
-import { DenoJwtSerDe } from "../deno/jwtSerDe.ts";
 import { DenoOakLiveViewServer } from "../deno/server.ts";
-import { DenoWsAdaptor } from "../deno/wsAdaptor.ts";
 import {
   Application,
   autocompleteLiveView,
-  Buffer,
+  booksLiveView,
   counterLiveView,
   dashboardLiveView,
   decarbLiveView,
+  helloToggleEmojiLiveView,
   jsCmdsLiveView,
   LiveViewRouter,
-  nanoid,
   paginateLiveView,
   photosLiveView,
   printLiveView,
   Router,
+  rtCounterLiveView,
   searchLiveView,
   send,
   serversLiveView,
-  SessionFlashAdaptor,
-  SingleProcessPubSub,
   sortLiveView,
   volumeLiveView,
   volunteerLiveView,
   xkcdLiveView,
 } from "../deps.ts";
 import { indexHandler } from "./indexHandler.ts";
-import { pageRenderer, rootRenderer } from "./liveViewRenderers.ts";
+import { liveHtmlTemplate, wrapperTemplate } from "./liveTemplates.ts";
 
 // map request paths to LiveViews
 const lvRouter: LiveViewRouter = {
@@ -45,6 +41,9 @@ const lvRouter: LiveViewRouter = {
   "/jscmds": jsCmdsLiveView,
   "/photos": photosLiveView,
   "/xkcd": xkcdLiveView,
+  "/rtcounter": rtCounterLiveView,
+  "/books": booksLiveView,
+  "/helloToggle": helloToggleEmojiLiveView,
 };
 
 // configure your oak app
@@ -60,45 +59,23 @@ app.use(async (ctx, next) => {
 // initialize the LiveViewServer
 const liveView = new DenoOakLiveViewServer(
   lvRouter,
-  new DenoJwtSerDe(),
-  new SingleProcessPubSub(),
-  pageRenderer,
+  liveHtmlTemplate,
   { title: "Deno Demo", suffix: " · LiveViewJS" },
-  new SessionFlashAdaptor(),
-  new DenoFileSystemAdaptor(),
-  rootRenderer
+  { wrapperTemplate: wrapperTemplate }
 );
 
-// setup the LiveViewJS middleware
+// setup the LiveViewJS HTTP middleware
 app.use(liveView.httpMiddleware());
 
-// initialize the LiveViewJS websocket message router
-const liveViewRouter = liveView.wsRouter();
-
 // in Deno, websocket requests come in over http and get "upgraded" to web socket requests
-router.get("/live/websocket", async (ctx) => {
-  // upgrade the request to a websocket connection
-  const ws = await ctx.upgrade();
-  const connectionId = nanoid();
-  ws.onmessage = async (message) => {
-    const isBinary = message.data instanceof ArrayBuffer;
-    // prob a better way to take ArrayBuffer and turn it into a Buffer
-    // but this works for now
-    const data = isBinary ? new Buffer(message.data) : message.data;
-    // pass websocket messages to LiveViewJS
-    await liveViewRouter.onMessage(connectionId, data, new DenoWsAdaptor(ws), isBinary);
-  };
-  ws.onclose = async () => {
-    // pass websocket close events to LiveViewJS
-    await liveViewRouter.onClose(connectionId);
-  };
-});
+// so we add the wsMiddleware to this http route
+router.get("/live/websocket", liveView.wsMiddleware());
 
 // setup index route
 router.get("/", indexHandler);
 
-// serve image files from public
-router.get("/(.*).(png|jpg|jpeg|gif)", async (ctx) => {
+// serve images or js files
+router.get("/(.*).(png|jpg|jpeg|gif|js|js.map)", async (ctx) => {
   const path = ctx.request.url.pathname;
   await send(ctx, path, {
     root: "./public/",

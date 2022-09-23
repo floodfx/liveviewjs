@@ -4,57 +4,85 @@ import {
   FlashAdaptor,
   handleHttpLiveView,
   HttpRequestAdaptor,
-  LiveViewPageRenderer,
-  LiveViewRootRenderer,
+  LiveTitleOptions,
+  LiveViewHtmlPageTemplate,
   LiveViewRouter,
   LiveViewServerAdaptor,
-  PageTitleDefaults,
+  LiveViewWrapperTemplate,
   PubSub,
   SerDe,
   SessionData,
+  SessionFlashAdaptor,
+  SingleProcessPubSub,
   WsMessageRouter,
 } from "liveviewjs";
 import { nanoid } from "nanoid";
+import { WebSocketServer } from "ws";
+import { NodeFileSystemAdatptor as NodeFileSystemAdaptor } from "./fsAdaptor";
+import { NodeJwtSerDe } from "./jwtSerDe";
+import { NodeWsAdaptor } from "./wsAdaptor";
 
-export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler> {
+interface NodeExpressLiveViewServerOptions {
+  serDe?: SerDe;
+  serDeSigningSecret?: string;
+  pubSub?: PubSub;
+  flashAdaptor?: FlashAdaptor;
+  fileSystemAdaptor?: FileSystemAdaptor;
+  wrapperTemplate?: LiveViewWrapperTemplate;
+}
+
+export class NodeExpressLiveViewServer
+  implements LiveViewServerAdaptor<RequestHandler, (wsServer: WebSocketServer) => Promise<void>>
+{
   private router: LiveViewRouter;
   private serDe: SerDe;
   private flashAdapter: FlashAdaptor;
   private pubSub: PubSub;
   private fileSystem: FileSystemAdaptor;
-  private pageRenderer: LiveViewPageRenderer;
-  private pageTitleDefaults: PageTitleDefaults;
-  private rootRenderer?: LiveViewRootRenderer;
+  private htmlPageTemplate: LiveViewHtmlPageTemplate;
+  private liveTitleOptions: LiveTitleOptions;
+  private wrapperTemplate?: LiveViewWrapperTemplate;
+  private _wsRouter: WsMessageRouter;
 
-  /**
-   * Middleware for Express that determines if a request is for a LiveView
-   * and if so, handles the request.  If not, it calls the next middleware.
-   * @param router a function to access the LiveViewRouter which is used to match the request path against
-   * @param serDe a function that embeds the LiveView HTML into to and forms a complete HTML page
-   * @param pubSub the secret used by the reuest adaptor to sign the session data
-   * @param pageRenderer the secret used by the reuest adaptor to sign the session data
-   * @param pageTitleDefaults (optional) a PageTitleDefaults object that is fed into the rootTemplateRenderer
-   * @param flashAdaptor
-   * @param rootRenderer (optional) another renderer that can sit between the root template and the rendered LiveView
-   */
   constructor(
     router: LiveViewRouter,
-    serDe: SerDe,
-    pubSub: PubSub,
-    pageRenderer: LiveViewPageRenderer,
-    pageTitleDefaults: PageTitleDefaults,
-    flashAdaptor: FlashAdaptor,
-    fileSystemAdaptor: FileSystemAdaptor,
-    rootRenderer?: LiveViewRootRenderer
+    htmlPageTemplate: LiveViewHtmlPageTemplate,
+    liveTitleOptions: LiveTitleOptions,
+    options?: NodeExpressLiveViewServerOptions
   ) {
     this.router = router;
-    this.serDe = serDe;
-    this.flashAdapter = flashAdaptor;
-    this.pubSub = pubSub;
-    this.fileSystem = fileSystemAdaptor;
-    this.pageRenderer = pageRenderer;
-    this.pageTitleDefaults = pageTitleDefaults;
-    this.rootRenderer = rootRenderer;
+    this.serDe = options?.serDe ?? new NodeJwtSerDe(options?.serDeSigningSecret ?? nanoid());
+    this.flashAdapter = options?.flashAdaptor ?? new SessionFlashAdaptor();
+    this.pubSub = options?.pubSub ?? new SingleProcessPubSub();
+    this.fileSystem = options?.fileSystemAdaptor ?? new NodeFileSystemAdaptor();
+    this.htmlPageTemplate = htmlPageTemplate;
+    this.liveTitleOptions = liveTitleOptions;
+    this.wrapperTemplate = options?.wrapperTemplate;
+    this._wsRouter = new WsMessageRouter(
+      this.router,
+      this.pubSub,
+      this.flashAdapter,
+      this.serDe,
+      this.fileSystem,
+      this.wrapperTemplate
+    );
+  }
+
+  wsMiddleware(): (wsServer: WebSocketServer) => Promise<void> {
+    return async (wsServer: WebSocketServer) => {
+      // send websocket requests to the LiveViewJS message router
+      wsServer.on("connection", (ws) => {
+        const connectionId = nanoid();
+        ws.on("message", async (message, isBinary) => {
+          // pass websocket messages to LiveViewJS
+          await this._wsRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
+        });
+        ws.on("close", async () => {
+          // pass websocket close events to LiveViewJS
+          await this._wsRouter.onClose(connectionId);
+        });
+      });
+    };
   }
 
   httpMiddleware(): RequestHandler {
@@ -78,9 +106,9 @@ export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestH
           nanoid,
           liveview,
           adaptor,
-          this.pageRenderer,
-          this.pageTitleDefaults,
-          this.rootRenderer
+          this.htmlPageTemplate,
+          this.liveTitleOptions,
+          this.wrapperTemplate
         );
 
         // check if LiveView calls for a redirect and if so, do it
@@ -102,14 +130,7 @@ export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestH
   }
 
   wsRouter() {
-    return new WsMessageRouter(
-      this.router,
-      this.pubSub,
-      this.flashAdapter,
-      this.serDe,
-      this.fileSystem,
-      this.rootRenderer
-    );
+    return this._wsRouter;
   }
 }
 

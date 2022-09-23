@@ -1,60 +1,102 @@
 import { DenoJwtSerDe } from "../deno/jwtSerDe.ts";
-import type {
+import {
+  Context,
+  FileSystemAdaptor,
   FlashAdaptor,
+  handleHttpLiveView,
   HttpRequestAdaptor,
-  LiveViewPageRenderer,
-  LiveViewRootRenderer,
+  LiveTitleOptions,
+  LiveViewHtmlPageTemplate,
   LiveViewRouter,
   LiveViewServerAdaptor,
-  PageTitleDefaults,
+  LiveViewWrapperTemplate,
+  nanoid,
   PubSub,
   SerDe,
   SessionData,
+  SessionFlashAdaptor,
+  SingleProcessPubSub,
+  WsMessageRouter,
 } from "../deps.ts";
-import { Context, handleHttpLiveView, nanoid, WsMessageRouter } from "../deps.ts";
+import { DenoFileSystemAdaptor } from "./fsAdaptor.ts";
+import { DenoWsAdaptor } from "./wsAdaptor.ts";
 
-export class DenoOakLiveViewServer
-  implements
-    LiveViewServerAdaptor<
-      (ctx: Context<Record<string, any>, Record<string, any>>, next: () => Promise<unknown>) => Promise<void>
-    >
-{
+interface DenoOakLiveViewServerOptions {
+  serDe?: SerDe;
+  pubSub?: PubSub;
+  flashAdaptor?: FlashAdaptor;
+  fileSystemAdaptor?: FileSystemAdaptor;
+  wrapperTemplate?: LiveViewWrapperTemplate;
+}
+
+type DenoMiddleware = (
+  ctx: Context<Record<string, any>, Record<string, any>>,
+  next: () => Promise<unknown>
+) => Promise<void>;
+
+export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddleware, DenoMiddleware> {
   private router: LiveViewRouter;
   private serDe: SerDe;
   private flashAdapter: FlashAdaptor;
   private pubSub: PubSub;
-  private pageRenderer: LiveViewPageRenderer;
-  private pageTitleDefaults: PageTitleDefaults;
+  private liveHtmlTemplate: LiveViewHtmlPageTemplate;
+  private liveTitleOptions: LiveTitleOptions;
   private fileSystem: FileSystemAdaptor;
-  private rootRenderer?: LiveViewRootRenderer;
+  private wrapperTemplate?: LiveViewWrapperTemplate;
+  private _wsRouter: WsMessageRouter;
 
   /**
    * @param router
    * @param serDe
    * @param pubSub
-   * @param pageRenderer
-   * @param pageTitleDefaults
+   * @param liveHtmlTemplate
+   * @param liveTitleDefaults
    * @param flashAdaptor
    * @param rootRenderer (optional) another renderer that can sit between the root template and the rendered LiveView
    */
   constructor(
     router: LiveViewRouter,
-    serDe: SerDe,
-    pubSub: PubSub,
-    pageRenderer: LiveViewPageRenderer,
-    pageTitleDefaults: PageTitleDefaults,
-    flashAdaptor: FlashAdaptor,
-    fileSystem: FileSystemAdaptor,
-    rootRenderer?: LiveViewRootRenderer
+    liveHtmlTemplate: LiveViewHtmlPageTemplate,
+    liveTitleDefaults: LiveTitleOptions,
+    options?: DenoOakLiveViewServerOptions
   ) {
     this.router = router;
-    this.serDe = serDe;
-    this.flashAdapter = flashAdaptor;
-    this.pubSub = pubSub;
-    this.fileSystem = fileSystem;
-    this.pageRenderer = pageRenderer;
-    this.pageTitleDefaults = pageTitleDefaults;
-    this.rootRenderer = rootRenderer;
+    this.serDe = options?.serDe ?? new DenoJwtSerDe();
+    this.flashAdapter = options?.flashAdaptor ?? new SessionFlashAdaptor();
+    this.pubSub = options?.pubSub ?? new SingleProcessPubSub();
+    this.fileSystem = options?.fileSystemAdaptor ?? new DenoFileSystemAdaptor();
+    this.liveHtmlTemplate = liveHtmlTemplate;
+    this.liveTitleOptions = liveTitleDefaults;
+    this.wrapperTemplate = options?.wrapperTemplate;
+    this._wsRouter = new WsMessageRouter(
+      this.router,
+      this.pubSub,
+      this.flashAdapter,
+      this.serDe,
+      this.fileSystem,
+      this.wrapperTemplate
+    );
+  }
+
+  wsMiddleware(): (ctx: Context<Record<string, any>, Record<string, any>>) => Promise<void> {
+    return async (ctx: Context<Record<string, any>, Record<string, any>>) => {
+      // upgrade the request to a websocket connection
+      const ws = await ctx.upgrade();
+      const connectionId = nanoid();
+
+      ws.onmessage = async (message) => {
+        const isBinary = message.data instanceof ArrayBuffer;
+        // prob a better way to take ArrayBuffer and turn it into a Buffer
+        // but this works for now
+        const data = isBinary ? new Buffer(message.data) : message.data;
+        // pass websocket messages to LiveViewJS
+        await this._wsRouter.onMessage(connectionId, data, new DenoWsAdaptor(ws), isBinary);
+      };
+      ws.onclose = async () => {
+        // pass websocket close events to LiveViewJS
+        await this._wsRouter.onClose(connectionId);
+      };
+    };
   }
 
   httpMiddleware(): (
@@ -81,9 +123,9 @@ export class DenoOakLiveViewServer
           nanoid,
           liveview,
           adaptor,
-          this.pageRenderer,
-          this.pageTitleDefaults,
-          this.rootRenderer
+          this.liveHtmlTemplate,
+          this.liveTitleOptions,
+          this.wrapperTemplate
         );
 
         // check if LiveView calls for a redirect and if so, do it
@@ -103,14 +145,7 @@ export class DenoOakLiveViewServer
   }
 
   wsRouter() {
-    return new WsMessageRouter(
-      this.router,
-      this.pubSub,
-      this.flashAdapter,
-      this.serDe,
-      this.fileSystem,
-      this.rootRenderer
-    );
+    return this._wsRouter;
   }
 }
 
