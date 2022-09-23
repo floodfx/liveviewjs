@@ -9,3 +9,4 @@ diffs/
 build/
 *.tgz
 .turbo
+.todo.md
