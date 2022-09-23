@@ -3,7 +3,7 @@ import { SerDe } from "../adaptor";
 import { FileSystemAdaptor } from "../adaptor/files";
 import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
-import { LiveViewRootRenderer } from "../live";
+import { LiveViewWrapperTemplate } from "../live";
 import { PubSub } from "../pubsub/pubSub";
 import { LiveViewManager } from "./liveViewManager";
 import { PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxJoinUploadIncoming, PhxProtocol } from "./types";
@@ -18,7 +18,7 @@ export class WsMessageRouter {
   private flashAdaptor: FlashAdaptor;
   private serDe: SerDe;
   private fileSystemAdaptor: FileSystemAdaptor;
-  private liveViewRootTemplate?: LiveViewRootRenderer;
+  private liveViewRootTemplate?: LiveViewWrapperTemplate;
 
   constructor(
     router: LiveViewRouter,
@@ -26,7 +26,7 @@ export class WsMessageRouter {
     flashAdaptor: FlashAdaptor,
     serDe: SerDe,
     filesAdapter: FileSystemAdaptor,
-    liveViewRootTemplate?: LiveViewRootRenderer
+    liveViewRootTemplate?: LiveViewWrapperTemplate
   ) {
     this.router = router;
     this.pubSub = pubSub;

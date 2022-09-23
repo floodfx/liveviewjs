@@ -3,14 +3,14 @@ import {
   HttpLiveComponentSocket,
   LiveComponent,
   LiveView,
-  LiveViewPageRenderer,
-  LiveViewRootRenderer,
+  LiveViewHtmlPageTemplate,
   LiveViewTemplate,
+  LiveViewWrapperTemplate,
 } from "../live";
 import { SessionData } from "../session";
 import { HttpLiveViewSocket } from "../socket/liveSocket";
 import { html, safe } from "../templates";
-import { PageTitleDefaults } from "../templates/helpers/page_title";
+import { LiveTitleOptions } from "../templates/helpers/live_title";
 import { CsrfGenerator } from "./csrfGen";
 import { IdGenerator } from "./idGen";
 import { SerDe } from "./serDe";
@@ -60,9 +60,9 @@ export const handleHttpLiveView = async (
   csrfGenerator: CsrfGenerator,
   liveView: LiveView,
   adaptor: HttpRequestAdaptor,
-  pageRenderer: LiveViewPageRenderer,
-  pageTitleDefaults?: PageTitleDefaults,
-  rootRenderer?: LiveViewRootRenderer
+  pageRenderer: LiveViewHtmlPageTemplate,
+  pageTitleDefaults?: LiveTitleOptions,
+  rootRenderer?: LiveViewWrapperTemplate
 ) => {
   const { getSessionData, getRequestUrl, onRedirect } = adaptor;
   // new LiveViewId for each request
