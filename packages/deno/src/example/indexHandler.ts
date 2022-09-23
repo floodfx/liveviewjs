@@ -1,10 +1,11 @@
-import { Context, routeDetails } from "../deps.ts";
+// deno-lint-ignore-file no-explicit-any
 import type { RouteDetails } from "../deps.ts";
+import { Context, routeDetails } from "../deps.ts";
 
 /**
  * Oak Handler for Demo index route
  */
-export const indexHandler = (ctx: Context<Record<string, any>, Record<string, any>>, next: () => Promise<unknown>) => {
+export const indexHandler = (ctx: Context<Record<string, any>, Record<string, any>>, _next: () => Promise<unknown>) => {
   // build route detail elements
   const routesContent = routeDetails.map((route: RouteDetails) => {
     return `
