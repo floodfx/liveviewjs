@@ -1,14 +1,17 @@
 // @liveviewjs/examples
 export {
   autocompleteLiveView,
+  booksLiveView,
   counterLiveView,
   dashboardLiveView,
   decarbLiveView,
+  helloToggleEmojiLiveView,
   jsCmdsLiveView,
   paginateLiveView,
   photosLiveView,
   printLiveView,
   routeDetails,
+  rtCounterLiveView,
   searchLiveView,
   serversLiveView,
   sortLiveView,
@@ -17,10 +20,10 @@ export {
   xkcdLiveView,
 } from "@liveviewjs/examples"; // see import_map.json
 export type { RouteDetails } from "@liveviewjs/examples"; // see import_map.json
-// Buffer for binary data
-export { Buffer } from "https://deno.land/std/node/buffer.ts";
 // http server
 export type { serve } from "https://deno.land/std@0.128.0/http/server.ts";
+// Buffer for binary data
+export { Buffer } from "https://deno.land/std@0.128.0/node/buffer.ts";
 // jwt
 export { create, verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 export type { Payload } from "https://deno.land/x/djwt@v2.4/mod.ts";
@@ -40,12 +43,12 @@ export type {
   FileSystemAdaptor,
   FlashAdaptor,
   HttpRequestAdaptor,
-  LiveViewPageRenderer,
-  LiveViewRootRenderer,
+  LiveTitleOptions,
+  LiveViewHtmlPageTemplate,
   LiveViewRouter,
   LiveViewServerAdaptor,
   LiveViewTemplate,
-  PageTitleDefaults,
+  LiveViewWrapperTemplate,
   PubSub,
   SerDe,
   SessionData,

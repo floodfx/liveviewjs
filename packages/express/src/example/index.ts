@@ -1,12 +1,15 @@
 import {
   autocompleteLiveView,
+  booksLiveView,
   counterLiveView,
   dashboardLiveView,
   decarbLiveView,
+  helloToggleEmojiLiveView,
   jsCmdsLiveView,
   paginateLiveView,
   photosLiveView,
   printLiveView,
+  rtCounterLiveView,
   searchLiveView,
   serversLiveView,
   sortLiveView,
@@ -17,19 +20,11 @@ import {
 import express, { NextFunction, Request, Response } from "express";
 import session, { MemoryStore } from "express-session";
 import { Server } from "http";
-import { LiveViewRouter, SessionFlashAdaptor, SingleProcessPubSub } from "liveviewjs";
-import { nanoid } from "nanoid";
-import { NodeFileSystemAdatptor } from "src/node/fsAdaptor";
+import { LiveViewRouter } from "liveviewjs";
 import { WebSocketServer } from "ws";
-import { NodeJwtSerDe } from "../node/jwtSerDe";
 import { NodeExpressLiveViewServer } from "../node/server";
-import { NodeWsAdaptor } from "../node/wsAdaptor";
 import { indexHandler } from "./indexHandler";
-import { helloLiveView } from "./liveview/hello";
-import { pageRenderer, rootRenderer } from "./liveViewRenderers";
-
-// you'd want to set this to some secure, random string in production
-const signingSecret = "MY_VERY_SECRET_KEY";
+import { htmlPageTemplate, wrapperTemplate } from "./liveTemplates";
 
 // map request paths to LiveViews
 const router: LiveViewRouter = {
@@ -47,8 +42,13 @@ const router: LiveViewRouter = {
   "/jscmds": jsCmdsLiveView,
   "/photos": photosLiveView,
   "/xkcd": xkcdLiveView,
-  "/hello": helloLiveView,
+  "/rtcounter": rtCounterLiveView,
+  "/books": booksLiveView,
+  "/helloToggle": helloToggleEmojiLiveView,
 };
+
+// you'd want to set this to some secure, random string in production
+const signingSecret = "MY_VERY_SECRET_KEY";
 
 // configure your express app
 const app = express();
@@ -89,13 +89,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // initialize the LiveViewServer
 const liveView = new NodeExpressLiveViewServer(
   router,
-  new NodeJwtSerDe(signingSecret),
-  new SingleProcessPubSub(),
-  pageRenderer,
+  htmlPageTemplate,
   { title: "Express Demo", suffix: " · LiveViewJS" },
-  new SessionFlashAdaptor(),
-  new NodeFileSystemAdatptor(),
-  rootRenderer
+  {
+    serDeSigningSecret: signingSecret,
+    wrapperTemplate: wrapperTemplate,
+  }
 );
 
 // setup the LiveViewJS middleware
@@ -114,20 +113,8 @@ const wsServer = new WebSocketServer({
 httpServer.on("request", app);
 
 // initialize the LiveViewJS websocket message router
-const liveViewRouter = liveView.wsRouter();
-
-// send websocket requests to the LiveViewJS message router
-wsServer.on("connection", (ws) => {
-  const connectionId = nanoid();
-  ws.on("message", async (message, isBinary) => {
-    // pass websocket messages to LiveViewJS
-    await liveViewRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
-  });
-  ws.on("close", async () => {
-    // pass websocket close events to LiveViewJS
-    await liveViewRouter.onClose(connectionId);
-  });
-});
+const liveViewWsMiddleware = liveView.wsMiddleware();
+liveViewWsMiddleware(wsServer);
 
 // listen for requests
 const port = process.env.PORT || 4001;
