@@ -5,6 +5,7 @@
   "workspaces": [
     "docs",
     "packages/core",
+    "packages/deno",
     "packages/examples",
     "packages/express",
     "apps/liveviewjs.com"
