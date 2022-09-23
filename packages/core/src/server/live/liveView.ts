@@ -1,7 +1,7 @@
 import { LiveComponent, LiveViewTemplate } from ".";
 import { SessionData } from "../session";
 import { LiveViewSocket } from "../socket/liveSocket";
-import { PageTitleDefaults } from "../templates";
+import { LiveTitleOptions } from "../templates";
 import { UploadConfig } from "../upload/uploadConfig";
 
 export interface LiveContext {
@@ -226,8 +226,8 @@ export const createLiveView = <
  * the passed in `csrfToken` and  required that it embeds the passed in `LiveViewTemplate`
  * content.
  */
-export type LiveViewPageRenderer = (
-  pageTitleDefault: PageTitleDefaults,
+export type LiveViewHtmlPageTemplate = (
+  pageTitleDefault: LiveTitleOptions,
   csrfToken: string,
   content: LiveViewTemplate
 ) => LiveViewTemplate | Promise<LiveViewTemplate>;
@@ -238,7 +238,7 @@ export type LiveViewPageRenderer = (
  * messages and other common UI elements.  It is required that this renderer embeds the
  * passed in `LiveViewTemplate` content.
  */
-export type LiveViewRootRenderer = (
+export type LiveViewWrapperTemplate = (
   sessionData: SessionData,
   content: LiveViewTemplate
 ) => LiveViewTemplate | Promise<LiveViewTemplate>;

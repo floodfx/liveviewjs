@@ -4,7 +4,7 @@ import { html, SessionData } from "..";
 import { FileSystemAdaptor, FlashAdaptor, SerDe, SessionFlashAdaptor, WsAdaptor } from "../adaptor";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
 import { TestNodeFileSystemAdatptor } from "../adaptor/testFilesAdatptor";
-import { createLiveView, LiveView, LiveViewMountParams, LiveViewRootRenderer } from "../live";
+import { createLiveView, LiveView, LiveViewMountParams, LiveViewWrapperTemplate } from "../live";
 import { PubSub, SingleProcessPubSub } from "../pubsub";
 import { LiveViewSocket } from "../socket";
 import { UploadConfig } from "../upload";
@@ -376,7 +376,7 @@ type NewMgrOpts = {
   serDe?: SerDe;
   fileSystemAdaptor?: FileSystemAdaptor;
   wsAdaptor?: WsAdaptor;
-  LiveViewRootRenderer?: LiveViewRootRenderer;
+  LiveViewRootRenderer?: LiveViewWrapperTemplate;
   liveView?: LiveView;
   cid?: string;
 };
