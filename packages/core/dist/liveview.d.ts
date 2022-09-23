@@ -234,7 +234,7 @@ declare class LiveViewManager {
     private hasWarnedAboutMissingCsrfToken;
     private _parts;
     private _cidIndex;
-    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, fileAdapter: FileSystemAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
+    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, fileAdapter: FileSystemAdaptor, liveViewRootTemplate?: LiveViewWrapperTemplate);
     /**
      * The `phx_join` event is the initial connection between the client and the server and initializes the
      * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
@@ -567,16 +567,15 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      */
     pageTitle(newPageTitle: string): void;
     /**
-     * Pushes data from the server to the client with the given event name and
-     * params.  Requires a client `Hook` to be defined and to be listening for
-     * the event via `this.handleEvent` callback.
+     * Pushes and event (possibly with data) from the server to the client.  Requires
+     * either a `window.addEventListener` defined for that event or a client `Hook`
+     * to be defined and to be listening for the event via `this.handleEvent` callback.
      *
-     * @param event the name of the event to push to the client
-     * @param params the data to pass to the client
+     * @param pushEvent the event to push to the client
      */
     pushEvent(pushEvent: AnyLivePushEvent): void;
     /**
-     * Updates the browser's URL with the given path and query parameters.
+     * Updates the LiveView's browser URL with the given path and query parameters.
      *
      * @param path the path whose query params are being updated
      * @param params the query params to update the path with
@@ -584,9 +583,10 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      */
     pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     /**
-     * Shutdowns the current `LiveView` and load another `LiveView` in its place without reloading the
-     * whole page (i.e. making a full HTTP request).  Can be used to remount the current `LiveView` if
-     * need be. Use `pushPatch` to update the current `LiveView` without unloading and remounting.
+     * Shutdowns the current `LiveView`and loads another `LiveView`in its place
+     * without reloading the whole page (i.e. making a full HTTP request).  Can be
+     * used to remount the current `LiveView`if need be. Use `pushPatch` to update the
+     * current `LiveView`without unloading and remounting.
      *
      * @param path the path whose query params are being updated
      * @param params the query params to update the path with
@@ -608,27 +608,27 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      */
     repeat(fn: () => void, intervalMillis: number): void;
     /**
-     * Send info internally to the server which initiates a `LiveView.handleInfo` invocation.
+     * Send an internal event (a.k.a "Info") to the LiveView's `handleInfo` method
      *
      * @param event the event to send to `handleInfo`
      */
     sendInfo(info: Info<TInfos>): void;
     /**
-     * Subscribes to the given topic using pub/sub.  Data published to this topic
-     * will be received by the `LiveView` instance via `handleInfo`.
+     * Subscribe to the given topic using pub/sub. Events published to this topic
+     * will be delivered to `handleInfo`.
      *
-     * @param topic the topic to subscribe this `LiveView` to
+     * @param topic the topic to subscribe this `LiveView`to
      */
     subscribe(topic: string): Promise<void>;
     /**
-     * Allows uploads for the given `LiveView` and sets options for what
-     * files can be uploaded.
+     * Allows file uploads for the given `LiveView`and configures the upload
+     * options (filetypes, size, etc).
      * @param name the name of the upload
      * @param options the options for the upload (optional)
      */
     allowUpload(name: string, options?: UploadConfigOptions): Promise<void>;
     /**
-     * Cancels the file upload for a given UploadConfig (by name) and ref.
+     * Cancels the file upload for a given UploadConfig by config name and file ref.
      * @param name the name of the upload from which to cancel
      * @param ref the ref of the upload entry to cancel
      */
@@ -752,7 +752,7 @@ declare class WsMessageRouter {
     private serDe;
     private fileSystemAdaptor;
     private liveViewRootTemplate?;
-    constructor(router: LiveViewRouter, pubSub: PubSub, flashAdaptor: FlashAdaptor, serDe: SerDe, filesAdapter: FileSystemAdaptor, liveViewRootTemplate?: LiveViewRootRenderer);
+    constructor(router: LiveViewRouter, pubSub: PubSub, flashAdaptor: FlashAdaptor, serDe: SerDe, filesAdapter: FileSystemAdaptor, liveViewRootTemplate?: LiveViewWrapperTemplate);
     /**
      * Handles incoming websocket messages including binary and text messages and manages
      * routing those messages to the correct LiveViewManager.
@@ -828,6 +828,12 @@ interface LiveViewPatchHelperOptions {
 }
 declare const live_patch: (anchorBody: HtmlSafeString | string, options: LiveViewPatchHelperOptions) => HtmlSafeString;
 
+interface LiveTitleOptions {
+    prefix?: string;
+    suffix?: string;
+    title: string;
+}
+
 interface LiveTitleTagOptions {
     prefix?: string;
     suffix?: string;
@@ -837,12 +843,6 @@ declare const live_title_tag: (title: string, options?: LiveTitleTagOptions) => 
 declare type Options = string[] | Record<string, string>;
 declare type Selected = string | string[];
 declare const options_for_select: (options: Options, selected?: Selected) => HtmlSafeString;
-
-interface PageTitleDefaults {
-    prefix?: string;
-    suffix?: string;
-    title: string;
-}
 
 interface SubmitOptions {
     phx_disable_with?: string;
@@ -1252,14 +1252,14 @@ declare const createLiveView: <TContext extends LiveContext = AnyLiveContext, TE
  * the passed in `csrfToken` and  required that it embeds the passed in `LiveViewTemplate`
  * content.
  */
-declare type LiveViewPageRenderer = (pageTitleDefault: PageTitleDefaults, csrfToken: string, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
+declare type LiveViewHtmlPageTemplate = (pageTitleDefault: LiveTitleOptions, csrfToken: string, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
 /**
  * Define a renderer that can embed a rendered `LiveView` and is given access to the
  * session data.  Often used to as a common container for `LiveView`s that adds "flash"
  * messages and other common UI elements.  It is required that this renderer embeds the
  * passed in `LiveViewTemplate` content.
  */
-declare type LiveViewRootRenderer = (sessionData: SessionData, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
+declare type LiveViewWrapperTemplate = (sessionData: SessionData, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
 
 interface LiveComponentMeta {
     /**
@@ -1475,7 +1475,7 @@ interface HttpRequestAdaptor {
  * @param liveViewTemplateRenderer optional @{LiveViewTemplate} used for adding additional content to the LiveView (typically reused across all LiveViews)
  * @returns the HTML for the HTTP server to return to the client
  */
-declare const handleHttpLiveView: (idGenerator: IdGenerator, csrfGenerator: CsrfGenerator, liveView: LiveView, adaptor: HttpRequestAdaptor, pageRenderer: LiveViewPageRenderer, pageTitleDefaults?: PageTitleDefaults, rootRenderer?: LiveViewRootRenderer) => Promise<string | undefined>;
+declare const handleHttpLiveView: (idGenerator: IdGenerator, csrfGenerator: CsrfGenerator, liveView: LiveView, adaptor: HttpRequestAdaptor, pageRenderer: LiveViewHtmlPageTemplate, pageTitleDefaults?: LiveTitleOptions, rootRenderer?: LiveViewWrapperTemplate) => Promise<string | undefined>;
 
 /**
  * Naive implementation of flash adaptor that uses "__flash" property on session data
@@ -1595,9 +1595,9 @@ declare const mime: Mime;
  * Interface for LiveViewServerAdaptors to implement for a given runtime and web server.
  * e.g. NodeExpressServerAdaptor or DenoOakServerAdaptor
  */
-interface LiveViewServerAdaptor<TMiddlewareInterface> {
-    httpMiddleware(): TMiddlewareInterface;
-    wsRouter(): WsMessageRouter;
+interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
+    httpMiddleware(): THttpMiddleware;
+    wsMiddleware(): TWsMiddleware;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewPageRenderer, LiveViewRootRenderer, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, MimeSource, PageTitleDefaults, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, mime, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, mime, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };

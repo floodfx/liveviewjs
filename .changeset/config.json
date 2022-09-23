@@ -2,10 +2,10 @@
   "$schema": "https://unpkg.com/@changesets/config@2.0.1/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
-  "linked": [["liveviewjs", "@liveviewjs/examples", "@liveviewjs/express"]],
+  "fixed": [["liveviewjs", "@liveviewjs/examples", "@liveviewjs/express"]],
+  "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": ["@liveviewjs/deno-client", "liveviewjs-com"]
 }
