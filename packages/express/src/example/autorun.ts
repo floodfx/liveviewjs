@@ -29,6 +29,35 @@ function build_failure(error: unknown) {
   maybe_stop_child();
 }
 
+// Build / watch the client code
+esbuild
+  .build({
+    entryPoints: ["src/client/index.ts"],
+    outdir: "public/js",
+    bundle: true,
+    format: "esm",
+    platform: "browser",
+    sourcemap: true,
+    watch: {
+      onRebuild(error) {
+        if (error) {
+          console.error("client rebuild failed");
+          console.error(error);
+        } else {
+          console.log(chalk.green("client build succeeded"));
+        }
+      },
+    },
+  })
+  .then((result) => {
+    if (result.errors.length > 0) {
+      console.error(result.errors);
+    } else {
+      console.log(chalk.green("client build succeeded"));
+    }
+  });
+
+// Build / watch the server code
 esbuild
   .build({
     entryPoints: ["src/example/index.ts"],
