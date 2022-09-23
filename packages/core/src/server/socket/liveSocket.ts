@@ -66,16 +66,15 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    */
   pageTitle(newPageTitle: string): void;
   /**
-   * Pushes data from the server to the client with the given event name and
-   * params.  Requires a client `Hook` to be defined and to be listening for
-   * the event via `this.handleEvent` callback.
+   * Pushes and event (possibly with data) from the server to the client.  Requires
+   * either a `window.addEventListener` defined for that event or a client `Hook`
+   * to be defined and to be listening for the event via `this.handleEvent` callback.
    *
-   * @param event the name of the event to push to the client
-   * @param params the data to pass to the client
+   * @param pushEvent the event to push to the client
    */
   pushEvent(pushEvent: AnyLivePushEvent): void;
   /**
-   * Updates the browser's URL with the given path and query parameters.
+   * Updates the LiveView's browser URL with the given path and query parameters.
    *
    * @param path the path whose query params are being updated
    * @param params the query params to update the path with
@@ -83,9 +82,10 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    */
   pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
   /**
-   * Shutdowns the current `LiveView` and load another `LiveView` in its place without reloading the
-   * whole page (i.e. making a full HTTP request).  Can be used to remount the current `LiveView` if
-   * need be. Use `pushPatch` to update the current `LiveView` without unloading and remounting.
+   * Shutdowns the current `LiveView`and loads another `LiveView`in its place
+   * without reloading the whole page (i.e. making a full HTTP request).  Can be
+   * used to remount the current `LiveView`if need be. Use `pushPatch` to update the
+   * current `LiveView`without unloading and remounting.
    *
    * @param path the path whose query params are being updated
    * @param params the query params to update the path with
@@ -107,29 +107,29 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    */
   repeat(fn: () => void, intervalMillis: number): void;
   /**
-   * Send info internally to the server which initiates a `LiveView.handleInfo` invocation.
+   * Send an internal event (a.k.a "Info") to the LiveView's `handleInfo` method
    *
    * @param event the event to send to `handleInfo`
    */
   sendInfo(info: Info<TInfos>): void;
   /**
-   * Subscribes to the given topic using pub/sub.  Data published to this topic
-   * will be received by the `LiveView` instance via `handleInfo`.
+   * Subscribe to the given topic using pub/sub. Events published to this topic
+   * will be delivered to `handleInfo`.
    *
-   * @param topic the topic to subscribe this `LiveView` to
+   * @param topic the topic to subscribe this `LiveView`to
    */
   subscribe(topic: string): Promise<void>;
 
   /**
-   * Allows uploads for the given `LiveView` and sets options for what
-   * files can be uploaded.
+   * Allows file uploads for the given `LiveView`and configures the upload
+   * options (filetypes, size, etc).
    * @param name the name of the upload
    * @param options the options for the upload (optional)
    */
   allowUpload(name: string, options?: UploadConfigOptions): Promise<void>;
 
   /**
-   * Cancels the file upload for a given UploadConfig (by name) and ref.
+   * Cancels the file upload for a given UploadConfig by config name and file ref.
    * @param name the name of the upload from which to cancel
    * @param ref the ref of the upload entry to cancel
    */
