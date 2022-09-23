@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.7.0
+
+### Minor Changes
+
+- 9137425: Some renaming and minor API changes
+
 ## 0.6.0
 
 ### Minor Changes

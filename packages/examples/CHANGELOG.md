@@ -1,5 +1,13 @@
 # @liveviewjs/examples
 
+## 0.7.0
+
+### Patch Changes
+
+- 905f050: Move browser compilation to Express and Deno and some other additional LiveView examples
+- Updated dependencies [9137425]
+  - liveviewjs@0.7.0
+
 ## 0.6.0
 
 ### Minor Changes
