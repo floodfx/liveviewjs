@@ -1,7 +1,14 @@
-import { SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, PubSub, LiveViewPageRenderer, PageTitleDefaults, FlashAdaptor, FileSystemAdaptor, LiveViewRootRenderer, WsMessageRouter, WsAdaptor } from 'liveviewjs';
+/// <reference types="node" />
+import { FileSystemAdaptor, SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, LiveViewHtmlPageTemplate, LiveTitleOptions, WsMessageRouter, PubSub, FlashAdaptor, LiveViewWrapperTemplate, WsAdaptor } from 'liveviewjs';
 import { RedisClientOptions } from '@node-redis/client';
 import { RequestHandler } from 'express';
-import { WebSocket } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
+
+declare class NodeFileSystemAdatptor implements FileSystemAdaptor {
+    tempPath(lastPathPart: string): string;
+    writeTempFile(dest: string, data: Buffer): void;
+    createOrAppendFile(dest: string, src: string): void;
+}
 
 /**
  * Session data serializer/deserializer for Node using JWT tokens.
@@ -28,27 +35,26 @@ declare class RedisPubSub implements Subscriber, Publisher {
     unsubscribe(topic: string, subscriberId: string): Promise<void>;
 }
 
-declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler> {
+interface NodeExpressLiveViewServerOptions {
+    serDe?: SerDe;
+    serDeSigningSecret?: string;
+    pubSub?: PubSub;
+    flashAdaptor?: FlashAdaptor;
+    fileSystemAdaptor?: FileSystemAdaptor;
+    wrapperTemplate?: LiveViewWrapperTemplate;
+}
+declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler, (wsServer: WebSocketServer) => Promise<void>> {
     private router;
     private serDe;
     private flashAdapter;
     private pubSub;
     private fileSystem;
-    private pageRenderer;
-    private pageTitleDefaults;
-    private rootRenderer?;
-    /**
-     * Middleware for Express that determines if a request is for a LiveView
-     * and if so, handles the request.  If not, it calls the next middleware.
-     * @param router a function to access the LiveViewRouter which is used to match the request path against
-     * @param serDe a function that embeds the LiveView HTML into to and forms a complete HTML page
-     * @param pubSub the secret used by the reuest adaptor to sign the session data
-     * @param pageRenderer the secret used by the reuest adaptor to sign the session data
-     * @param pageTitleDefaults (optional) a PageTitleDefaults object that is fed into the rootTemplateRenderer
-     * @param flashAdaptor
-     * @param rootRenderer (optional) another renderer that can sit between the root template and the rendered LiveView
-     */
-    constructor(router: LiveViewRouter, serDe: SerDe, pubSub: PubSub, pageRenderer: LiveViewPageRenderer, pageTitleDefaults: PageTitleDefaults, flashAdaptor: FlashAdaptor, fileSystemAdaptor: FileSystemAdaptor, rootRenderer?: LiveViewRootRenderer);
+    private htmlPageTemplate;
+    private liveTitleOptions;
+    private wrapperTemplate?;
+    private _wsRouter;
+    constructor(router: LiveViewRouter, htmlPageTemplate: LiveViewHtmlPageTemplate, liveTitleOptions: LiveTitleOptions, options?: NodeExpressLiveViewServerOptions);
+    wsMiddleware(): (wsServer: WebSocketServer) => Promise<void>;
     httpMiddleware(): RequestHandler;
     wsRouter(): WsMessageRouter;
 }
@@ -63,4 +69,4 @@ declare class NodeWsAdaptor implements WsAdaptor {
     send(message: string, errorHandler?: (err: any) => void): void;
 }
 
-export { NodeExpressLiveViewServer, NodeJwtSerDe, NodeWsAdaptor, RedisPubSub };
+export { NodeExpressLiveViewServer, NodeFileSystemAdatptor, NodeJwtSerDe, NodeWsAdaptor, RedisPubSub };
