@@ -1,10 +1,30 @@
 
 /// <reference types="./liveview.d.ts" />
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createClient } from 'redis';
-import { handleHttpLiveView, WsMessageRouter } from 'liveviewjs';
+import { SessionFlashAdaptor, SingleProcessPubSub, WsMessageRouter, handleHttpLiveView } from 'liveviewjs';
 import { nanoid } from 'nanoid';
+
+class NodeFileSystemAdatptor {
+    tempPath(lastPathPart) {
+        // ensure the temp directory exists
+        const tempDir = path.join(os.tmpdir(), "com.liveviewjs.files");
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir);
+        }
+        return path.join(tempDir, lastPathPart);
+    }
+    writeTempFile(dest, data) {
+        fs.writeFileSync(dest, data);
+    }
+    createOrAppendFile(dest, src) {
+        fs.appendFileSync(dest, fs.readFileSync(src));
+    }
+}
 
 /**
  * Session data serializer/deserializer for Node using JWT tokens.
@@ -61,27 +81,47 @@ class RedisPubSub {
     }
 }
 
+/**
+ * Node specific adaptor to enabled the WsMessageRouter to send messages back
+ * to the client via WebSockets.
+ */
+class NodeWsAdaptor {
+    constructor(ws) {
+        this.ws = ws;
+    }
+    send(message, errorHandler) {
+        this.ws.send(message, errorHandler);
+    }
+}
+
 class NodeExpressLiveViewServer {
-    /**
-     * Middleware for Express that determines if a request is for a LiveView
-     * and if so, handles the request.  If not, it calls the next middleware.
-     * @param router a function to access the LiveViewRouter which is used to match the request path against
-     * @param serDe a function that embeds the LiveView HTML into to and forms a complete HTML page
-     * @param pubSub the secret used by the reuest adaptor to sign the session data
-     * @param pageRenderer the secret used by the reuest adaptor to sign the session data
-     * @param pageTitleDefaults (optional) a PageTitleDefaults object that is fed into the rootTemplateRenderer
-     * @param flashAdaptor
-     * @param rootRenderer (optional) another renderer that can sit between the root template and the rendered LiveView
-     */
-    constructor(router, serDe, pubSub, pageRenderer, pageTitleDefaults, flashAdaptor, fileSystemAdaptor, rootRenderer) {
+    constructor(router, htmlPageTemplate, liveTitleOptions, options) {
+        var _a, _b, _c, _d, _e;
         this.router = router;
-        this.serDe = serDe;
-        this.flashAdapter = flashAdaptor;
-        this.pubSub = pubSub;
-        this.fileSystem = fileSystemAdaptor;
-        this.pageRenderer = pageRenderer;
-        this.pageTitleDefaults = pageTitleDefaults;
-        this.rootRenderer = rootRenderer;
+        this.serDe = (_a = options === null || options === void 0 ? void 0 : options.serDe) !== null && _a !== void 0 ? _a : new NodeJwtSerDe((_b = options === null || options === void 0 ? void 0 : options.serDeSigningSecret) !== null && _b !== void 0 ? _b : nanoid());
+        this.flashAdapter = (_c = options === null || options === void 0 ? void 0 : options.flashAdaptor) !== null && _c !== void 0 ? _c : new SessionFlashAdaptor();
+        this.pubSub = (_d = options === null || options === void 0 ? void 0 : options.pubSub) !== null && _d !== void 0 ? _d : new SingleProcessPubSub();
+        this.fileSystem = (_e = options === null || options === void 0 ? void 0 : options.fileSystemAdaptor) !== null && _e !== void 0 ? _e : new NodeFileSystemAdatptor();
+        this.htmlPageTemplate = htmlPageTemplate;
+        this.liveTitleOptions = liveTitleOptions;
+        this.wrapperTemplate = options === null || options === void 0 ? void 0 : options.wrapperTemplate;
+        this._wsRouter = new WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.fileSystem, this.wrapperTemplate);
+    }
+    wsMiddleware() {
+        return async (wsServer) => {
+            // send websocket requests to the LiveViewJS message router
+            wsServer.on("connection", (ws) => {
+                const connectionId = nanoid();
+                ws.on("message", async (message, isBinary) => {
+                    // pass websocket messages to LiveViewJS
+                    await this._wsRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
+                });
+                ws.on("close", async () => {
+                    // pass websocket close events to LiveViewJS
+                    await this._wsRouter.onClose(connectionId);
+                });
+            });
+        };
     }
     httpMiddleware() {
         return async (req, res, next) => {
@@ -97,7 +137,7 @@ class NodeExpressLiveViewServer {
                     return;
                 }
                 // defer to liveviewjs to handle the request
-                const rootViewHtml = await handleHttpLiveView(nanoid, nanoid, liveview, adaptor, this.pageRenderer, this.pageTitleDefaults, this.rootRenderer);
+                const rootViewHtml = await handleHttpLiveView(nanoid, nanoid, liveview, adaptor, this.htmlPageTemplate, this.liveTitleOptions, this.wrapperTemplate);
                 // check if LiveView calls for a redirect and if so, do it
                 if (adaptor.redirect) {
                     res.redirect(adaptor.redirect);
@@ -116,7 +156,7 @@ class NodeExpressLiveViewServer {
         };
     }
     wsRouter() {
-        return new WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.fileSystem, this.rootRenderer);
+        return this._wsRouter;
     }
 }
 /**
@@ -151,17 +191,4 @@ class ExpressRequestAdaptor {
     }
 }
 
-/**
- * Node specific adaptor to enabled the WsMessageRouter to send messages back
- * to the client via WebSockets.
- */
-class NodeWsAdaptor {
-    constructor(ws) {
-        this.ws = ws;
-    }
-    send(message, errorHandler) {
-        this.ws.send(message, errorHandler);
-    }
-}
-
-export { NodeExpressLiveViewServer, NodeJwtSerDe, NodeWsAdaptor, RedisPubSub };
+export { NodeExpressLiveViewServer, NodeFileSystemAdatptor, NodeJwtSerDe, NodeWsAdaptor, RedisPubSub };
