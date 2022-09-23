@@ -17,8 +17,8 @@ import { z } from "zod";
 import { InMemoryChangesetDB } from "../../datastore/InMemory";
 
 type PhotosContext = {
-  photos: Photo[];
-  changeset: LiveViewChangeset<Photo>;
+  photoGroups: PhotoGroup[];
+  changeset: LiveViewChangeset<PhotoGroup>;
 };
 
 type PhotosEvents =
@@ -30,12 +30,12 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
   mount: async (socket) => {
     if (socket.connected) {
       // listen to photos topic
-      await socket.subscribe("photos");
+      await socket.subscribe(photoGroupTopic);
     }
     // setup the default context
     socket.assign({
-      photos: photoStore.list(),
-      changeset: photoStore.changeset(),
+      photoGroups: photoGroupStore.list(),
+      changeset: photoGroupStore.changeset(),
     });
     // configure the upload constraints
     socket.allowUpload("photos", {
@@ -48,7 +48,7 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
     switch (event.type) {
       case "validate": {
         // just validate the changeset
-        socket.assign({ changeset: photoStore.validate(event) });
+        socket.assign({ changeset: photoGroupStore.validate(event) });
         break;
       }
       case "save": {
@@ -61,7 +61,7 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
         event.urls = completed.map(filename);
 
         // attempt to save the photo
-        const photoCreate = photoStore.create(event);
+        const photoCreate = photoGroupStore.create(event);
         if (!photoCreate.valid) {
           // if the photo is not valid, assign the changeset and return
           // so that the form is re-rendered with the errors
@@ -79,110 +79,127 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
         });
         // update the context with new photos and clear the form
         socket.assign({
-          photos: photoStore.list(),
-          changeset: photoStore.changeset(),
+          photoGroups: photoGroupStore.list(),
+          changeset: photoGroupStore.changeset(),
         });
         break;
       }
       case "cancel": {
-        const { config_name, ref } = event;
+        const { ref } = event;
         // remove the uploaded entry from the upload config
-        socket.cancelUpload(config_name, ref);
+        socket.cancelUpload("photos", ref);
+        break;
       }
     }
   },
-  // Handle broadcast events from the pub/sub subscription for the "photos" topic
+  // Handle broadcast events from the pub/sub subscription for the "photoGroup" topic
   handleInfo: (info, socket) => {
     const { data } = info;
     socket.assign({
-      photos: [data],
-      changeset: photoStore.changeset(),
+      photoGroups: [data],
+      changeset: photoGroupStore.changeset(),
     });
   },
   // Render the view
   render: (ctx, meta) => {
-    const { photos, changeset } = ctx;
+    const { photoGroups, changeset } = ctx;
     const { uploads } = meta;
     return html`
-      <h2>My Photos</h2>
-      ${form_for<Photo>("#", meta.csrfToken, {
+      <h2>My Photo Groups</h2>
+
+      <!-- Render the form -->
+      ${form_for<PhotoGroup>("#", meta.csrfToken, {
         id: "photo-form",
         phx_change: "validate",
         phx_submit: "save",
       })}
-        Album Name: ${text_input<Photo>(changeset, "name")}
-        ${error_tag<Photo>(changeset, "name")}
+        <!-- photo group name input -->
+        <div>
+          Photo Group Name: 
+          ${text_input<PhotoGroup>(changeset, "name")}
+          ${error_tag<PhotoGroup>(changeset, "name")}
+        </div>
 
-        <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
-          ${live_file_input(uploads.photos)}
-          or drag and drop files here 
+        <div>
+          <!-- file input / drag and drop -->
+          <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
+            ${live_file_input(uploads.photos)}
+            or drag and drop files here 
+          </div>        
+          <!-- help text -->
+          <div style="font-size: 10px; padding-bottom: 3rem">
+            Add up to ${uploads.photos.maxEntries} photos
+            (max ${uploads.photos.maxFileSize / (1024 * 1024)} MB each)
+          </div>
         </div>
-        <div style="font-size: 10px; padding-bottom: 3rem">
-          Add up to ${uploads.photos.maxEntries} photos
-          (max ${uploads.photos.maxFileSize / (1024 * 1024)} MB each)
-        </div>
-        ${uploads.photos.errors?.map((error) => html`<p class="invalid-feedback">${error}</p>`)}
         
-        ${uploads.photos.entries.map((entry) => {
-          return html`
-            <div style="display: flex; align-items: center;">
-              <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${live_img_preview(entry)}</div>
-              <div style="display: flex; align-items: center; margin-left: 2rem;">
-                <progress
-                  style="position: relative; top: 8px; width: 150px; height: 1em;"
-                  value="${entry.progress}"
-                  max="100"></progress>
-                <span style="margin-left: 1rem;">${entry.progress}%</span>
-              </div>
-              <div style="display: flex; align-items: center;">
-                <a
-                  style="padding-left: 2rem;"
-                  phx-click="cancel"
-                  phx-value-config_name="photos"
-                  phx-value-ref="${entry.ref}"
-                  >🗑</a
-                >
-                ${entry.errors?.map(
-                  (error) => html`<p style="padding-left: 1rem;" class="invalid-feedback">${error}</p>`
-                )}
-              </div>
-            </div>
-          `;
-        })}
+        <!-- any errors from the upload -->
+        ${uploads.photos.errors?.map((error) => html`<p class="invalid-feedback">${error}</p>`)}
 
+        <!-- render the preview, progress, and cancel button of the selected files -->
+        ${uploads.photos.entries.map(renderEntry)}
+
+        <!-- submit button -->
         ${submit("Upload", { phx_disable_with: "Saving...", disabled: uploads.photos.errors.length > 0 })}
       </form>
       
-      <ul id="photo_list" phx-update="prepend">
-        ${photos.map(
-          (photo) => html`<li id="${photo.id}">
-            ${photo.urls.map(
-              (url, i) => html`
-                <h3>${photo.name}(${i})</h3>
-                <img src="${url}" />
-              `
-            )}
-          </li>`
-        )}
+      <!-- render the photo groups -->
+      <ul id="photo_groups_list" phx-update="prepend">
+        ${photoGroups.map(renderPhotoGroup)}          
       </ul>
     `;
   },
 });
 
+// Render a preview of the uploaded file with progress bar and cancel button
+function renderEntry(entry: UploadEntry) {
+  return html`
+    <div style="display: flex; align-items: center;">
+      <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${live_img_preview(entry)}</div>
+      <div style="display: flex; align-items: center; margin-left: 2rem;">
+        <progress
+          style="position: relative; top: 8px; width: 150px; height: 1em;"
+          value="${entry.progress}"
+          max="100"></progress>
+        <span style="margin-left: 1rem;">${entry.progress}%</span>
+      </div>
+      <div style="display: flex; align-items: center;">
+        <a style="padding-left: 2rem;" phx-click="cancel" phx-value-ref="${entry.ref}">🗑</a>
+        ${entry.errors?.map((error) => html`<p style="padding-left: 1rem;" class="invalid-feedback">${error}</p>`)}
+      </div>
+    </div>
+  `;
+}
+
+// Render a photo group with a list of photos
+function renderPhotoGroup(photoGroup: PhotoGroup) {
+  return html`<li id="${photoGroup.id}">
+    ${photoGroup.urls.map(
+      (url, i) => html`
+        <h3>${photoGroup.name}(${i + 1})</h3>
+        <img src="${url}" />
+      `
+    )}
+  </li>`;
+}
+
 // Define the shape of the Photo type
-const PhotoSchema = z.object({
+const PhotoGroupSchema = z.object({
   id: z.string().default(nanoid),
   name: z.string().min(1).max(100),
   urls: z.array(z.string()).min(1).default([]),
 });
 
 // Infer the type from the schema
-type Photo = z.infer<typeof PhotoSchema>;
+type PhotoGroup = z.infer<typeof PhotoGroupSchema>;
 
-// InMemory DB for photos that publishes changes to the "photos" topic
-const photoStore = new InMemoryChangesetDB<Photo>(PhotoSchema, {
+// Pubsub topic for photos
+const photoGroupTopic = "photoGroup";
+
+// InMemory DB for photoGroup that publishes changes to the "photos" topic
+const photoGroupStore = new InMemoryChangesetDB<PhotoGroup>(PhotoGroupSchema, {
   pubSub: new SingleProcessPubSub(),
-  pubSubTopic: "photos",
+  pubSubTopic: photoGroupTopic,
 });
 
 /**

@@ -1,6 +1,6 @@
 
 /// <reference types="./liveviewjs-examples.d.ts" />
-import { createLiveView, html, createLiveComponent, live_patch, safe, JS, options_for_select, join, newChangesetFactory, form_for, text_input, error_tag, live_file_input, live_img_preview, submit, SingleProcessPubSub, mime, telephone_input } from 'liveviewjs';
+import { createLiveView, html, newChangesetFactory, SingleProcessPubSub, form_for, text_input, error_tag, submit, createLiveComponent, live_patch, safe, JS, options_for_select, join, live_file_input, live_img_preview, mime, telephone_input } from 'liveviewjs';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
@@ -1093,22 +1093,16 @@ const listCities = [
 const autocompleteLiveView = createLiveView({
     // initialize the context
     mount: (socket) => {
-        const zip = "";
         const city = "";
         const stores = [];
         const matches = [];
         const loading = false;
-        socket.assign({ zip, city, stores, matches, loading });
+        socket.assign({ city, stores, matches, loading });
     },
     // handle events from the user
     handleEvent: (event, socket) => {
         let city;
         switch (event.type) {
-            case "zip-search":
-                const { zip } = event;
-                socket.sendInfo({ type: "run_zip_search", zip });
-                socket.assign({ zip, loading: true, stores: [], matches: [] });
-                break;
             case "city-search":
                 city = event.city;
                 socket.sendInfo({ type: "run_city_search", city });
@@ -1126,15 +1120,6 @@ const autocompleteLiveView = createLiveView({
         const { type } = info;
         let stores = [];
         switch (type) {
-            case "run_zip_search":
-                const { zip } = info;
-                stores = searchByZip(zip);
-                socket.assign({
-                    zip,
-                    stores,
-                    loading: false,
-                });
-                break;
             case "run_city_search":
                 const { city } = info;
                 stores = searchByCity(city);
@@ -1147,45 +1132,32 @@ const autocompleteLiveView = createLiveView({
     },
     // update the LiveView based on the context
     render: (context) => {
+        const { loading, city, matches, stores } = context;
         return html `
       <h1>Find a Store</h1>
       <div id="search">
-        <form phx-submit="zip-search">
-          <input
-            type="text"
-            name="zip"
-            value="${context.zip}"
-            placeholder="Zip Code"
-            autofocus
-            autocomplete="off"
-            ${context.loading ? "readonly" : ""} />
-
-          <button type="submit">📫🔎</button>
-        </form>
-
         <form phx-submit="city-search" phx-change="suggest-city">
           <input
             type="text"
             name="city"
-            value="${context.city}"
+            value="${city}"
             placeholder="City"
             autocomplete="off"
             list="matches"
-            phx-debounce="1000"
+            phx-debounce="200"
             ${context.loading ? "readonly" : ""} />
 
           <button type="submit">🏙🔎</button>
+          <div style="font-size: 10px">(Only Denver has results)</div>
         </form>
 
-        <datalist id="matches">
-          ${context.matches.map((match) => html `<option value="${match}">${match}</option>`)}
-        </datalist>
+        <datalist id="matches">${matches.map((match) => html `<option value="${match}">${match}</option>`)}</datalist>
 
-        ${context.loading ? renderLoading$1() : ""}
+        ${loading ? renderLoading$1() : ""}
 
         <div class="stores">
           <ul>
-            ${context.stores.map((store) => renderStore$1(store))}
+            ${stores.map((store) => renderStore$1(store))}
           </ul>
         </div>
       </div>
@@ -1219,6 +1191,125 @@ function renderLoading$1() {
     return html `<div class="loader">Loading...</div>`;
 }
 
+// Create the zod BookSchema
+const BookSchema = z.object({
+    id: z.string().default(nanoid),
+    name: z.string().min(2).max(100),
+    author: z.string().min(2).max(100),
+    checked_out: z.boolean().default(false),
+});
+// in memory data store for Books
+const booksDB = {};
+// Book LiveViewChangesetFactory
+const bookCSF = newChangesetFactory(BookSchema);
+// Pub/Sub for publishing changes
+const pubSub$2 = new SingleProcessPubSub();
+const booksLiveView = createLiveView({
+    mount: async (socket) => {
+        if (socket.connected) {
+            socket.subscribe("books");
+        }
+        socket.assign({
+            books: Object.values(booksDB),
+            changeset: bookCSF({}, {}), // empty changeset
+        });
+    },
+    handleEvent: (event, socket) => {
+        switch (event.type) {
+            case "validate":
+                // validate the form data
+                socket.assign({
+                    changeset: bookCSF({}, event, "validate"),
+                });
+                break;
+            case "save":
+                // attempt to create the volunteer from the form data
+                const saveChangeset = bookCSF({}, event, "save");
+                let changeset = saveChangeset;
+                if (saveChangeset.valid) {
+                    // save the book to the in memory data store
+                    const newBook = saveChangeset.data;
+                    booksDB[newBook.id] = newBook;
+                    // since book was saved, reset the changeset to empty
+                    changeset = bookCSF({}, {});
+                }
+                // update context
+                socket.assign({
+                    books: Object.values(booksDB),
+                    changeset,
+                });
+                pubSub$2.broadcast("books", { type: "updated" });
+                break;
+            case "toggle-checkout":
+                // lookup book by id
+                const book = booksDB[event.id];
+                if (book) {
+                    // update book
+                    book.checked_out = !book.checked_out;
+                    booksDB[book.id] = book;
+                    // update context
+                    socket.assign({
+                        books: Object.values(booksDB),
+                    });
+                    pubSub$2.broadcast("books", { type: "updated" });
+                }
+                break;
+        }
+    },
+    handleInfo: (info, socket) => {
+        if (info.type === "updated") {
+            socket.assign({
+                books: Object.values(booksDB),
+            });
+        }
+    },
+    render: (context, meta) => {
+        const { changeset, books } = context;
+        const { csrfToken } = meta;
+        return html `
+      <h1>My Library</h1>
+      
+      <div id="bookForm">
+        ${form_for("#", csrfToken, {
+            phx_submit: "save",
+            phx_change: "validate",
+        })}
+          
+          <div class="field">
+            ${text_input(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
+            ${error_tag(changeset, "name")}
+          </div>
+
+          <div class="field">
+            ${text_input(changeset, "author", { placeholder: "Author", autocomplete: "off", phx_debounce: 1000 })}
+            ${error_tag(changeset, "author")}
+          </div>
+
+          ${submit("Add Book", { phx_disable_with: "Saving..." })}
+        </form>
+      </div>
+
+      <div id="books">
+        ${books.map(renderBook)}
+      </div>
+    `;
+    },
+});
+function renderBook(b) {
+    const color = b.checked_out ? `color: #ccc;` : ``;
+    const emoji = b.checked_out ? `📖[checked out]` : `📚[available]`;
+    return html `
+    <div id="${b.id}" style="margin-top: 1rem; ${color}">
+      ${emoji} <span>${b.name}</span> by <span>${b.author}</span>
+      <div>
+        <button phx-click="toggle-checkout" phx-value-id="${b.id}" phx-disable-with="Updating...">
+          ${b.checked_out ? "Return" : "Check Out"}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 /**
  * A basic counter that increments and decrements a number.
  */
@@ -1238,6 +1329,52 @@ const counterLiveView = createLiveView({
                 socket.assign({ count: count - 1 });
                 break;
         }
+    },
+    render: async (context) => {
+        // render the view based on the state
+        const { count } = context;
+        return html `
+      <div>
+        <h1>Count is: ${count}</h1>
+        <button phx-click="decrement">-</button>
+        <button phx-click="increment">+</button>
+      </div>
+    `;
+    },
+});
+
+// An in-memory count simulating state outside of the LiveView
+let count = 0;
+// Use a single process pub/sub implementation (for simplicity)
+const pubSub$1 = new SingleProcessPubSub();
+/**
+ * A basic counter that increments and decrements a number.
+ */
+const rtCounterLiveView = createLiveView({
+    mount: (socket) => {
+        // init state, set count to current count
+        socket.assign({ count });
+        // subscribe to counter events
+        socket.subscribe("counter");
+    },
+    handleEvent: (event, socket) => {
+        // handle increment and decrement events
+        const { count } = socket.context;
+        switch (event.type) {
+            case "increment":
+                // broadcast the new count
+                pubSub$1.broadcast("counter", { count: count + 1 });
+                break;
+            case "decrement":
+                // broadcast the new count
+                pubSub$1.broadcast("counter", { count: count - 1 });
+                break;
+        }
+    },
+    handleInfo: (info, socket) => {
+        // receive updates from pubsub and update the context
+        count = info.count;
+        socket.assign({ count });
     },
     render: async (context) => {
         // render the view based on the state
@@ -1593,6 +1730,23 @@ function today(path) {
         to: { path },
     });
 }
+
+const helloToggleEmojiLiveView = createLiveView({
+    mount: (socket) => {
+        socket.assign({ useEmoji: false });
+    },
+    handleEvent(event, socket) {
+        socket.assign({ useEmoji: !socket.context.useEmoji });
+    },
+    render: (context) => {
+        const msg = context.useEmoji ? "👋 🌎" : "Hello World";
+        return html `
+      ${msg}
+      <br />
+      <button phx-click="toggle">Toggle Message</button>
+    `;
+    },
+});
 
 /**
  * Example of a LiveView using JS Commands
@@ -2045,7 +2199,7 @@ function __classPrivateFieldSet(receiver, state, value, kind, f) {
 
 var _InMemoryChangesetDB_store, _InMemoryChangesetDB_changeset, _InMemoryChangesetDB_pubSub, _InMemoryChangesetDB_pubSubTopic;
 /**
- * An in-memory implementation of a database that works with changesets.
+ * An in-memory implementation of a database that works with changesets and pub/sub.
  */
 class InMemoryChangesetDB {
     constructor(schema, options) {
@@ -2109,12 +2263,12 @@ const photosLiveView = createLiveView({
     mount: async (socket) => {
         if (socket.connected) {
             // listen to photos topic
-            await socket.subscribe("photos");
+            await socket.subscribe(photoGroupTopic);
         }
         // setup the default context
         socket.assign({
-            photos: photoStore.list(),
-            changeset: photoStore.changeset(),
+            photoGroups: photoGroupStore.list(),
+            changeset: photoGroupStore.changeset(),
         });
         // configure the upload constraints
         socket.allowUpload("photos", {
@@ -2127,7 +2281,7 @@ const photosLiveView = createLiveView({
         switch (event.type) {
             case "validate": {
                 // just validate the changeset
-                socket.assign({ changeset: photoStore.validate(event) });
+                socket.assign({ changeset: photoGroupStore.validate(event) });
                 break;
             }
             case "save": {
@@ -2138,7 +2292,7 @@ const photosLiveView = createLiveView({
                 // set the urls on the event (which was not set via the form)
                 event.urls = completed.map(filename);
                 // attempt to save the photo
-                const photoCreate = photoStore.create(event);
+                const photoCreate = photoGroupStore.create(event);
                 if (!photoCreate.valid) {
                     // if the photo is not valid, assign the changeset and return
                     // so that the form is re-rendered with the errors
@@ -2156,101 +2310,119 @@ const photosLiveView = createLiveView({
                 });
                 // update the context with new photos and clear the form
                 socket.assign({
-                    photos: photoStore.list(),
-                    changeset: photoStore.changeset(),
+                    photoGroups: photoGroupStore.list(),
+                    changeset: photoGroupStore.changeset(),
                 });
                 break;
             }
             case "cancel": {
-                const { config_name, ref } = event;
+                const { ref } = event;
                 // remove the uploaded entry from the upload config
-                socket.cancelUpload(config_name, ref);
+                socket.cancelUpload("photos", ref);
+                break;
             }
         }
     },
-    // Handle broadcast events from the pub/sub subscription for the "photos" topic
+    // Handle broadcast events from the pub/sub subscription for the "photoGroup" topic
     handleInfo: (info, socket) => {
         const { data } = info;
         socket.assign({
-            photos: [data],
-            changeset: photoStore.changeset(),
+            photoGroups: [data],
+            changeset: photoGroupStore.changeset(),
         });
     },
     // Render the view
     render: (ctx, meta) => {
         var _a;
-        const { photos, changeset } = ctx;
+        const { photoGroups, changeset } = ctx;
         const { uploads } = meta;
         return html `
-      <h2>My Photos</h2>
+      <h2>My Photo Groups</h2>
+
+      <!-- Render the form -->
       ${form_for("#", meta.csrfToken, {
             id: "photo-form",
             phx_change: "validate",
             phx_submit: "save",
         })}
-        Album Name: ${text_input(changeset, "name")}
-        ${error_tag(changeset, "name")}
+        <!-- photo group name input -->
+        <div>
+          Photo Group Name: 
+          ${text_input(changeset, "name")}
+          ${error_tag(changeset, "name")}
+        </div>
 
-        <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
-          ${live_file_input(uploads.photos)}
-          or drag and drop files here 
+        <div>
+          <!-- file input / drag and drop -->
+          <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
+            ${live_file_input(uploads.photos)}
+            or drag and drop files here 
+          </div>        
+          <!-- help text -->
+          <div style="font-size: 10px; padding-bottom: 3rem">
+            Add up to ${uploads.photos.maxEntries} photos
+            (max ${uploads.photos.maxFileSize / (1024 * 1024)} MB each)
+          </div>
         </div>
-        <div style="font-size: 10px; padding-bottom: 3rem">
-          Add up to ${uploads.photos.maxEntries} photos
-          (max ${uploads.photos.maxFileSize / (1024 * 1024)} MB each)
-        </div>
-        ${(_a = uploads.photos.errors) === null || _a === void 0 ? void 0 : _a.map((error) => html `<p class="invalid-feedback">${error}</p>`)}
         
-        ${uploads.photos.entries.map((entry) => {
-            var _a;
-            return html `
-            <div style="display: flex; align-items: center;">
-              <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${live_img_preview(entry)}</div>
-              <div style="display: flex; align-items: center; margin-left: 2rem;">
-                <progress
-                  style="position: relative; top: 8px; width: 150px; height: 1em;"
-                  value="${entry.progress}"
-                  max="100"></progress>
-                <span style="margin-left: 1rem;">${entry.progress}%</span>
-              </div>
-              <div style="display: flex; align-items: center;">
-                <a
-                  style="padding-left: 2rem;"
-                  phx-click="cancel"
-                  phx-value-config_name="photos"
-                  phx-value-ref="${entry.ref}"
-                  >🗑</a
-                >
-                ${(_a = entry.errors) === null || _a === void 0 ? void 0 : _a.map((error) => html `<p style="padding-left: 1rem;" class="invalid-feedback">${error}</p>`)}
-              </div>
-            </div>
-          `;
-        })}
+        <!-- any errors from the upload -->
+        ${(_a = uploads.photos.errors) === null || _a === void 0 ? void 0 : _a.map((error) => html `<p class="invalid-feedback">${error}</p>`)}
 
+        <!-- render the preview, progress, and cancel button of the selected files -->
+        ${uploads.photos.entries.map(renderEntry)}
+
+        <!-- submit button -->
         ${submit("Upload", { phx_disable_with: "Saving...", disabled: uploads.photos.errors.length > 0 })}
       </form>
       
-      <ul id="photo_list" phx-update="prepend">
-        ${photos.map((photo) => html `<li id="${photo.id}">
-            ${photo.urls.map((url, i) => html `
-                <h3>${photo.name}(${i})</h3>
-                <img src="${url}" />
-              `)}
-          </li>`)}
+      <!-- render the photo groups -->
+      <ul id="photo_groups_list" phx-update="prepend">
+        ${photoGroups.map(renderPhotoGroup)}          
       </ul>
     `;
     },
 });
+// Render a preview of the uploaded file with progress bar and cancel button
+function renderEntry(entry) {
+    var _a;
+    return html `
+    <div style="display: flex; align-items: center;">
+      <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${live_img_preview(entry)}</div>
+      <div style="display: flex; align-items: center; margin-left: 2rem;">
+        <progress
+          style="position: relative; top: 8px; width: 150px; height: 1em;"
+          value="${entry.progress}"
+          max="100"></progress>
+        <span style="margin-left: 1rem;">${entry.progress}%</span>
+      </div>
+      <div style="display: flex; align-items: center;">
+        <a style="padding-left: 2rem;" phx-click="cancel" phx-value-ref="${entry.ref}">🗑</a>
+        ${(_a = entry.errors) === null || _a === void 0 ? void 0 : _a.map((error) => html `<p style="padding-left: 1rem;" class="invalid-feedback">${error}</p>`)}
+      </div>
+    </div>
+  `;
+}
+// Render a photo group with a list of photos
+function renderPhotoGroup(photoGroup) {
+    return html `<li id="${photoGroup.id}">
+    ${photoGroup.urls.map((url, i) => html `
+        <h3>${photoGroup.name}(${i + 1})</h3>
+        <img src="${url}" />
+      `)}
+  </li>`;
+}
 // Define the shape of the Photo type
-const PhotoSchema = z.object({
+const PhotoGroupSchema = z.object({
     id: z.string().default(nanoid),
     name: z.string().min(1).max(100),
     urls: z.array(z.string()).min(1).default([]),
 });
-// InMemory DB for photos that publishes changes to the "photos" topic
-const photoStore = new InMemoryChangesetDB(PhotoSchema, {
+// Pubsub topic for photos
+const photoGroupTopic = "photoGroup";
+// InMemory DB for photoGroup that publishes changes to the "photos" topic
+const photoGroupStore = new InMemoryChangesetDB(PhotoGroupSchema, {
     pubSub: new SingleProcessPubSub(),
-    pubSubTopic: "photos",
+    pubSubTopic: photoGroupTopic,
 });
 /**
  * `filename` maps the upload entry to a filename based on the mime type of the entry
@@ -2948,4 +3120,4 @@ const routeDetails = [
     },
 ];
 
-export { autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
+export { autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };

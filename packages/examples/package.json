@@ -11,16 +11,13 @@
   "files": [
     "dist/liveviewjs-examples.js",
     "dist/liveviewjs-examples.d.ts",
-    "dist/liveviewjs-examples.mjs",
-    "dist/liveviewjs-examples.browser.js",
-    "dist/liveviewjs-examples.browser.js.map"
+    "dist/liveviewjs-examples.mjs"
   ],
   "scripts": {
     "clean": "rm -rf build; rm -rf dist",
     "build": "rollup -c",
-    "browser-build": "esbuild src/browser/index.ts --minify --bundle --sourcemap --outfile=dist/liveviewjs-examples.browser.js",
     "copy-to-dist": "mkdir -p dist; cp build/liveviewjs-examples.* dist",
-    "dist": "npm run build; npm run copy-to-dist; npm run browser-build",
+    "dist": "npm run build; npm run copy-to-dist",
     "prepublish": "npm run dist",
     "format": "prettier --write '**/*.{ts,js,json,html,css}'"
   },
