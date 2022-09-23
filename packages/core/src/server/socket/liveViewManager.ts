@@ -13,8 +13,8 @@ import {
   LiveContext,
   LiveView,
   LiveViewMeta,
-  LiveViewRootRenderer,
   LiveViewTemplate,
+  LiveViewWrapperTemplate,
   WsLiveComponentSocket,
 } from "../live";
 import { PubSub } from "../pubsub";
@@ -115,7 +115,7 @@ export class LiveViewManager {
   private pageTitleChanged: boolean = false;
 
   private socket: WsLiveViewSocket;
-  private liveViewRootTemplate?: LiveViewRootRenderer;
+  private liveViewRootTemplate?: LiveViewWrapperTemplate;
   private hasWarnedAboutMissingCsrfToken = false;
 
   private _parts: Parts | undefined;
@@ -129,7 +129,7 @@ export class LiveViewManager {
     pubSub: PubSub,
     flashAdaptor: FlashAdaptor,
     fileAdapter: FileSystemAdaptor,
-    liveViewRootTemplate?: LiveViewRootRenderer
+    liveViewRootTemplate?: LiveViewWrapperTemplate
   ) {
     this.liveView = liveView;
     this.connectionId = connectionId;
@@ -1034,7 +1034,7 @@ export class LiveViewManager {
    * @param liveComponent
    * @param params
    */
-  private async liveComponentProcessor<TContext>(
+  private async liveComponentProcessor<TContext extends LiveContext>(
     liveComponent: LiveComponent<TContext>,
     params: Partial<TContext & { id?: number | string }> = {} as TContext
   ): Promise<LiveViewTemplate> {
@@ -1191,11 +1191,11 @@ export class LiveViewManager {
   defaultLiveViewMeta(): LiveViewMeta {
     return {
       csrfToken: this.csrfToken,
-      live_component: async <Context>(
-        liveComponent: LiveComponent<Context>,
-        params?: Partial<Context & { id: string | number }>
+      live_component: async <TContext extends LiveContext = AnyLiveContext>(
+        liveComponent: LiveComponent<TContext>,
+        params?: Partial<TContext & { id: string | number }>
       ): Promise<LiveViewTemplate> => {
-        return await this.liveComponentProcessor<Context>(liveComponent, params);
+        return await this.liveComponentProcessor<TContext>(liveComponent, params);
       },
       url: this.url,
       uploads: this.uploadConfigs,
@@ -1291,7 +1291,7 @@ export class LiveViewManager {
     );
   }
 
-  private newLiveComponentSocket<Context>(context: Context) {
+  private newLiveComponentSocket<TContext extends LiveContext = AnyLiveContext>(context: TContext) {
     return new WsLiveComponentSocket(
       this.joinId,
       context,
