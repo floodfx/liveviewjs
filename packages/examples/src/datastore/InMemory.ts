@@ -7,7 +7,7 @@ type InMemoryChangesetDBOptions = {
 };
 
 /**
- * An in-memory implementation of a database that works with changesets.
+ * An in-memory implementation of a database that works with changesets and pub/sub.
  */
 export class InMemoryChangesetDB<T> {
   #store: Record<string, T> = {};
