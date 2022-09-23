@@ -1,32 +1,29 @@
-import {
-  html,
-  LiveViewPageRenderer,
-  LiveViewRootRenderer,
+import type {
+  LiveTitleOptions,
+  LiveViewHtmlPageTemplate,
   LiveViewTemplate,
-  live_title_tag,
-  PageTitleDefaults,
-  safe,
+  LiveViewWrapperTemplate,
   SessionData,
-  SessionFlashAdaptor,
-} from "liveviewjs";
+} from "../deps.ts";
+import { html, live_title_tag, safe, SessionFlashAdaptor } from "../deps.ts";
 
 /**
  * Render function for the "root" of the LiveView.  Expected that this function will
  * embed the LiveView inside and contain the necessary HTML tags to make the LiveView
  * work including the client javascript.
- * @param pageTitleDefaults the PageTitleDefauls that should be used for the title tag especially if it is a `live_title_tag`
+ * @param liveTitleOptions the PageTitleDefauls that should be used for the title tag especially if it is a `live_title_tag`
  * @param csrfToken the CSRF token value that should be embedded into a <meta/> tag named "csrf-token". LiveViewJS uses this to validate socket requests
  * @param liveViewContent the content rendered by the LiveView
  * @returns a LiveViewTemplate that can be rendered by the LiveViewJS server
  */
-export const pageRenderer: LiveViewPageRenderer = (
-  pageTitleDefaults: PageTitleDefaults,
+export const liveHtmlTemplate: LiveViewHtmlPageTemplate = (
+  liveTitleOptions: LiveTitleOptions,
   csrfToken: string,
   liveViewContent: LiveViewTemplate
 ): LiveViewTemplate => {
-  const pageTitle = pageTitleDefaults?.title ?? "";
-  const pageTitlePrefix = pageTitleDefaults?.prefix ?? "";
-  const pageTitleSuffix = pageTitleDefaults?.suffix ?? "";
+  const pageTitle = liveTitleOptions?.title ?? "";
+  const pageTitlePrefix = liveTitleOptions?.prefix ?? "";
+  const pageTitleSuffix = liveTitleOptions?.suffix ?? "";
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -36,10 +33,7 @@ export const pageRenderer: LiveViewPageRenderer = (
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="csrf-token" content="${csrfToken}" />
         ${live_title_tag(pageTitle, { prefix: pageTitlePrefix, suffix: pageTitleSuffix })}
-        <script
-          defer
-          type="text/javascript"
-          src="https://cdn.deno.land/liveviewjs/versions/0.3.0/raw/packages/examples/dist/liveviewjs-examples.browser.js"></script>
+        <script defer type="text/javascript" src="/js/index.js"></script>
         <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css" />
         <style>
@@ -62,7 +56,7 @@ export const pageRenderer: LiveViewPageRenderer = (
  * @param liveViewContent the content rendered by the LiveView
  * @returns a LiveViewTemplate to be embedded in the root template
  */
-export const rootRenderer: LiveViewRootRenderer = async (
+export const wrapperTemplate: LiveViewWrapperTemplate = async (
   session: SessionData,
   liveViewContent: LiveViewTemplate
 ): Promise<LiveViewTemplate> => {
