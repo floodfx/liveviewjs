@@ -1,5 +1,5 @@
 import * as liveviewjs from 'liveviewjs';
-import { AnyLiveEvent, LiveViewChangeset } from 'liveviewjs';
+import { LiveViewChangeset, AnyLiveEvent } from 'liveviewjs';
 import { z } from 'zod';
 
 interface Store {
@@ -13,16 +13,12 @@ interface Store {
 }
 
 interface Context {
-    zip: string;
     city: string;
     stores: Store[];
     matches: string[];
     loading: boolean;
 }
 declare type Events = {
-    type: "zip-search";
-    zip: string;
-} | {
     type: "city-search";
     city: string;
 } | {
@@ -30,9 +26,6 @@ declare type Events = {
     city: string;
 };
 declare type Infos = {
-    type: "run_zip_search";
-    zip: string;
-} | {
     type: "run_city_search";
     city: string;
 };
@@ -41,6 +34,39 @@ declare type Infos = {
  * and a list of matching cities wiill appear.
  */
 declare const autocompleteLiveView: liveviewjs.LiveView<Context, Events, Infos>;
+
+declare const BookSchema: z.ZodObject<{
+    id: z.ZodDefault<z.ZodString>;
+    name: z.ZodString;
+    author: z.ZodString;
+    checked_out: z.ZodDefault<z.ZodBoolean>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    name: string;
+    author: string;
+    checked_out: boolean;
+}, {
+    id?: string | undefined;
+    checked_out?: boolean | undefined;
+    name: string;
+    author: string;
+}>;
+declare type Book = z.infer<typeof BookSchema>;
+declare const booksLiveView: liveviewjs.LiveView<{
+    books: Book[];
+    changeset: LiveViewChangeset<Book>;
+}, {
+    type: "save";
+    name: string;
+    author: string;
+} | {
+    type: "validate";
+    name: string;
+    author: string;
+} | {
+    type: "toggle-checkout";
+    id: string;
+}, liveviewjs.AnyLiveInfo>;
 
 /**
  * A basic counter that increments and decrements a number.
@@ -52,6 +78,20 @@ declare const counterLiveView: liveviewjs.LiveView<{
 } | {
     type: "decrement";
 }, liveviewjs.AnyLiveInfo>;
+
+/**
+ * A basic counter that increments and decrements a number.
+ */
+declare const rtCounterLiveView: liveviewjs.LiveView<{
+    count: number;
+}, {
+    type: "increment";
+} | {
+    type: "decrement";
+}, {
+    type: "counter";
+    count: number;
+}>;
 
 /**
  * Dashboard that automatically refreshes every second or when a user hits refresh.
@@ -84,6 +124,8 @@ declare const decarbLiveView: liveviewjs.LiveView<{
  * random comics from the same site.
  */
 declare const xkcdLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, liveviewjs.AnyLiveEvent, liveviewjs.AnyLiveInfo>;
+
+declare const helloToggleEmojiLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, liveviewjs.AnyLiveEvent, liveviewjs.AnyLiveInfo>;
 
 declare type MyContext = {
     count: number;
@@ -131,8 +173,8 @@ declare const paginateLiveView: liveviewjs.LiveView<{
 }, liveviewjs.AnyLiveInfo>;
 
 declare type PhotosContext = {
-    photos: Photo[];
-    changeset: LiveViewChangeset<Photo>;
+    photoGroups: PhotoGroup[];
+    changeset: LiveViewChangeset<PhotoGroup>;
 };
 declare type PhotosEvents = {
     type: "validate";
@@ -147,7 +189,7 @@ declare type PhotosEvents = {
     ref: string;
 };
 declare const photosLiveView: liveviewjs.LiveView<PhotosContext, PhotosEvents, liveviewjs.AnyLiveInfo>;
-declare const PhotoSchema: z.ZodObject<{
+declare const PhotoGroupSchema: z.ZodObject<{
     id: z.ZodDefault<z.ZodString>;
     name: z.ZodString;
     urls: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
@@ -160,7 +202,7 @@ declare const PhotoSchema: z.ZodObject<{
     urls?: string[] | undefined;
     name: string;
 }>;
-declare type Photo = z.infer<typeof PhotoSchema>;
+declare type PhotoGroup = z.infer<typeof PhotoGroupSchema>;
 
 declare type PhotoSize = "4x6" | "5x7" | "8x10" | "10x13" | "11x14";
 declare const printLiveView: liveviewjs.LiveView<{
@@ -246,8 +288,8 @@ declare const VolunteerSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     id: string;
     name: string;
-    phone: string;
     checked_out: boolean;
+    phone: string;
 }, {
     id?: string | undefined;
     checked_out?: boolean | undefined;
@@ -288,4 +330,4 @@ interface RouteDetails {
 }
 declare const routeDetails: RouteDetails[];
 
-export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, counterLiveView, dashboardLiveView, decarbLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
+export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
