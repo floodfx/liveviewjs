@@ -6,14 +6,14 @@ sidebar_position: 1
 
 LiveViewJS is an open-source framework for "LiveView"-based, full-stack applications in NodeJS and Deno.
 
-The LiveView approach allows developers to build applications with rich user experiences like React, Vue, etc but **with
-far less code and complexity, and far more speed and efficiency**.
+The LiveView approach allows developers to build applications with rich user experiences like React, Vue, etc, but **with
+far less code and complexity and far more speed and efficiency**.
 
 ## What is a LiveView?
 
 A LiveView is a server-rendered HTML page that connects to the server via a persistent web socket. The web socket allows
 the client to send user events to the server and the server to send diffs in response. **LiveViewJS** is a LiveView
-framework that handles the complex part of this (handling websockets, diffing changes, appling DOM updates, etc) so that
+framework that handles the complex part of this (handling websockets, diffing changes, applying DOM updates, etc.) so that
 you can focus on building your application.
 
 Here's the typical "counter" example written as a LiveView in **LiveViewJS**:
@@ -65,14 +65,14 @@ Yes, it "looks" like a React/Vue/Svelt UI but the main differences are:
 
 - This page was first rendered as plain HTML (not a bundle of JS)
 - The client is automatically connected to a server via a websocket
-- The click events are automatically being shipped to the server
+- The click events are automatically shipped to the server
 - The server then runs the business logic to update the state
 - Using the new state, the server then renders a new view and calculates any diffs
-- Those diffs are shipped back to the client where they are automatically applied
+- Those diffs are shipped back to the client, where they are automatically applied
 
-Pretty cool eh? We think so too! While this counter LiveView isn't particularly useful it gives you a quick intro to how
+Pretty cool eh? We think so too! While this counter LiveView isn't particularly useful, it gives you a quick intro to how
 LiveViews work and what they look like both as code and in the browser. We've got a lot more to show you about
-**LiveViewJS** including: built in real-time / multi-player support, built-in form validation with changesets, built-in
+**LiveViewJS** including: built-in real-time / multi-player support, built-in form validation with changesets, built-in
 file uploads with image previews and drag and drop support, and more!
 
 But first, a bit more about LiveViews...
@@ -80,8 +80,7 @@ But first, a bit more about LiveViews...
 ## LiveView is already proven technology
 
 [Phoenix LiveView](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html) is already extremely popular in the
-Elixir community and has been used to build production applications for years. It powers delightful user experiences and
-is battle-tested both in terms of performance and reliability and in terms of developer productivity.
+Elixir community and has been used to build production applications for years. It powers delightful user experiences and is battle-tested in terms of performance, reliability, and developer productivity.
 
 Here is a quote from the author and inventor of LiveView, [Chris McCord](http://chrismccord.com/) from
 ["how we got to liveview"](https://fly.io/blog/how-we-got-to-liveview/):
@@ -105,12 +104,12 @@ Here is a quote from the author and inventor of LiveView, [Chris McCord](http://
   client and server. User events are sent to the server and optimized diffs are sent back to the client. All this
   happens extremely fast and transparently to user and developer.
 - **No need to build REST or GraphQL APIs** - Full-stack applications usually have front-end and back-end code bases
-  which adds a ton of complexity, effort, and context switching. The LiveView paradigm merges front-end and back-end
+  adding complexity, effort, and context switching. The LiveView paradigm merges front-end and back-end
   into a single abstraction layer which greatly increases productivity.
-- **Roubust, battle-tested browser libraries** - **LiveViewJS** uses the exact same browser libraries as Phoenix
+- **Robust, battle-tested browser libraries** - **LiveViewJS** uses the exact same browser libraries as Phoenix
   LiveView which has 10s of thousands of production applications serving millions of users. This isn't some new,
   unproven technology.
-- **No client/server state synchronization challenges** - State syncrhonization between client and server is super
+- **No client/server state synchronization challenges** - State synchronization between client and server is super
   complex for traditional SPAs. LiveViews do not have to worry about the challenges inherent in state synchronization
   because the server is always the source of truth and client updates are pushed to the client.
 - **No client-side routing** - No need to use a library like React Router or Vue Router. LiveViews route like multi-page
@@ -131,7 +130,7 @@ Here is a quote from the author and inventor of LiveView, [Chris McCord](http://
 
 The Phoenix project's backend is written in Elixir and runs on the ErlangVM. **LiveViewJS** is a protocol compliant,
 implementation of Phoenix LiveView but written in Typescript and runs on NodeJS and Deno. **We want to bring the magic
-and productivity of LiveView to the NodeJS and Deno ecosystems** and are obviously huge fans of Phoenix LIveView and the
+and productivity of LiveView to the NodeJS and Deno ecosystems** and are obviously huge fans of Phoenix LiveView and the
 team that invented it. We believe in it so much that we think more developers should have access to the programming
 paradigm it enables.
 
