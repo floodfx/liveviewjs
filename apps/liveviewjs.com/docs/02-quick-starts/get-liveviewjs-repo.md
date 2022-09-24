@@ -18,7 +18,7 @@ Either use `git clone` or `degit` to get the **LiveViewJS** GitHub repository.
 
 ```bash
 # clone the LiveViewJS repo
-git clone git@github.com:floodfx/liveviewjs.git
+git clone https://github.com/floodfx/liveviewjs.git
 ```
 
 ### OR fetch with `degit`:

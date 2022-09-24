@@ -3,7 +3,7 @@
 *An anti-SPA, HTML-first, GSD-focused library for building LiveViews in NodeJS and Deno*
 
 ### LiveView Paradigm
-The LiveView model is simple.  When a user makes an HTTP request, the server renders an HTML page.  That page then connects to the server via a persistent web socket.  From there, user-initiated events (clicks, form input, key events, focus/blur events) are sent over the web socket to the server in very small packets.  When the server receives the events, it runs the business logic for that LiveView, calculates the new rendered HTML, and then sends *only the diffs* to the client.  The client automatically updates the page with the diffs.  The server can also send diffs back to the client based on events on the server or received from other clients (think chat, or other pub/sub scenarios).  
+The LiveView model is simple.  When a user makes an HTTP request, the server renders an HTML page.  That page then connects to the server via a persistent web socket.  From there, user-initiated events (clicks, form input, key events, focus/blur events) are sent over the web socket to the server in very small packets.  When the server receives the events, it runs the business logic for that LiveView, calculates the new rendered HTML, and then sends *only the diffs* to the client.  The client automatically updates the page with the diffs.  The server can also send diffs back to the client based on events on the server or received from other clients (think chat, or other pub/sub scenarios).
 
 This paradigm was invented by the developers of the [Phoenix Framework](https://www.phoenixframework.org/) and is widely used (and battle-tested) by tens of thousands of [Elixir](https://elixir-lang.org/) developers and projects. LiveViewJS is an implementation of the Phoenix backend in Typescript / JavaScript.  For the client-side code, we use the exact same code/libraries that Phoenix uses.
 
@@ -67,7 +67,7 @@ LiveViewJS works on both NodeJS and Deno and can be added to your application on
 ### Run the LiveViewJS Examples in 30 seconds
 ```bash
 # clone the LiveViewJS repo
-git clone git@github.com:floodfx/liveviewjs.git
+git clone https://github.com/floodfx/liveviewjs.git
 ```
 If you want to run examples for NodeJS (on Express), you can do it like this:
 ```bash
@@ -88,10 +88,10 @@ cd ../examples
 ```
 
 ### Anatomy of a LiveView
-The LiveViewJS API is extremely simple but very flexible.  There are 5 methods that make up the LiveView lifecycle: `mount`, `handleParams`, `handleEvent`, `handleInfo`, and `render`.  The `render` method is the only "required" method.  The other methods are optional but typically `mount` and `handleEvent` are also defined in order to setup the context (i.e. state) of the LiveView and handle user input.  
+The LiveViewJS API is extremely simple but very flexible.  There are 5 methods that make up the LiveView lifecycle: `mount`, `handleParams`, `handleEvent`, `handleInfo`, and `render`.  The `render` method is the only "required" method.  The other methods are optional but typically `mount` and `handleEvent` are also defined in order to setup the context (i.e. state) of the LiveView and handle user input.
 
  * `mount` is called both when the `LiveView` is rendered for the HTTP request and upon the first time the `LiveView` is mounted (i.e. connected) via the websocket.  This is where you should load data and set the initial context of the `LiveView`
- * `handleParams` is called on initial loading of the `LiveView` (one-time, after `mount`) as well as on events that manipulate the URL of the `LiveView`. This is where you should handle any context (i.e. state) changes that are based on the `LiveView`'s URL parameters.  
+ * `handleParams` is called on initial loading of the `LiveView` (one-time, after `mount`) as well as on events that manipulate the URL of the `LiveView`. This is where you should handle any context (i.e. state) changes that are based on the `LiveView`'s URL parameters.
  * `handleEvent` is called when events are initiated by the user interactions with the `LiveView`. Things like "clicks", "key events", "form input", and "focus/blur" events are all handled by this method. More details on "bindings" for user events below.
  * `handleInfo` handles server-side events which we call "info" that are initiated from `handleEvent` or other pub/sub subscriptions. Asynchronous processes are often sent to `handleInfo` via a `handleEvent` (e.g. run a search query).  More details below.
  * `render` is the only required method which provides the HTML and CSS that is rendered to the client. All of the other methods manupulate the "context" (i.e. state) of the `LiveView` and the resulting context is passed to the `render` method to determine the HTML and CSS that is rendered to the client.
@@ -106,11 +106,11 @@ There are 4 main types of user events that a LiveView can listen to and respond 
   * Key events
   * Focus events
 
-To listen for user events there are a set of "bindings" (a.k.a. attributes) that you add to the HTML elements in your `LiveView` returned by the `render` method. 
+To listen for user events there are a set of "bindings" (a.k.a. attributes) that you add to the HTML elements in your `LiveView` returned by the `render` method.
 
 #### Click Events
 User clicks are the most common type of user event and there are two types of click bindings:
-  * `phx-click` - Add this binding to an HTML element (e.g. `<... phx-click="myEvent" ...>`) and when a user clicks on the element the event (i.e. value of the attribute) will be sent to the server. 
+  * `phx-click` - Add this binding to an HTML element (e.g. `<... phx-click="myEvent" ...>`) and when a user clicks on the element the event (i.e. value of the attribute) will be sent to the server.
   * `phx-click-away` - This binding is similar to `phx-click` except that an event will occur when the user clicks outside of the element.
 
 **Click binding example** - send the `increment` event to the server when the user clicks on the "+" button
@@ -120,8 +120,8 @@ User clicks are the most common type of user event and there are two types of cl
 
 #### Form Events
 Form events are triggered by the user interacting with form inputs.  There are two types of form bindings:
-  * `phx-change` - When a user changes the value of a form element, the event named by the `phx-change` attribute will be sent to the server along with all the form values. This is typically used for form validation purposes prior to form submission.  
-  * `phx-submit` - This binding is initiated when a user submits a form and the event named by the `phx-submit` attribute will be sent to the server along with all the form values. 
+  * `phx-change` - When a user changes the value of a form element, the event named by the `phx-change` attribute will be sent to the server along with all the form values. This is typically used for form validation purposes prior to form submission.
+  * `phx-submit` - This binding is initiated when a user submits a form and the event named by the `phx-submit` attribute will be sent to the server along with all the form values.
 
 Forms are typically used in conjunction with [`LiveViewChangeset`](docs/changesets.md)s to provide validation rules (based on [zod](https://github.com/colinhacks/zod)) and various template helpers like `form_for`, `text_input`, `error_tag`.  These are designed to work together to make form validation and submission easy and powerful.  We'll dive into more details later on.  For now here is an example of a form with `phx-change` and `phx-submit` bindings:
 ```html
@@ -197,7 +197,7 @@ Deboucing and throttling events is a very common need and to support these use-c
 The `LiveViewSocket` object is a major part of the LiveViewJS API and LiveView lifecycle.  It is passed into each of the non-`render` lifecycle methods (`mount`, `handleParams`, `handleEvent`, `handleInfo`) and provides functionality to manipulate the state of the LiveView, send messages internally, subscribe to pub/sub topics, and many other useful functionality.  Here is some of the functionality provided by the `LiveViewSocket`:
 
 #### Updating State
-`socket.assign` and `socket.context` are the work-horse methods for manipulating and reading the state of the LiveView.  The `assign` method is used to update the state of the LiveView and the `context` property is used to read the state of the LiveView.  
+`socket.assign` and `socket.context` are the work-horse methods for manipulating and reading the state of the LiveView.  The `assign` method is used to update the state of the LiveView and the `context` property is used to read the state of the LiveView.
 ```ts
 // Update the context (i.e. current state) of the `LiveView`
 socket.assign({ foo: "bar" })
@@ -216,9 +216,9 @@ When creating a `LiveView` developers can provide a type annotation for `TContex
 // You can define the "shape" of the TContext by annotating the createLiveView function
 const myLiveView = createLiveView<{foo: string}>(
   mount: (socket) => {
-    socket.assign({ foo: "bar" }); 
+    socket.assign({ foo: "bar" });
     ...
-    socket.assign({ baz: "qux" }); // type error no "baz" property in context    
+    socket.assign({ baz: "qux" }); // type error no "baz" property in context
   }
   ...
 )
@@ -231,18 +231,18 @@ interface MyContext { foo: string };
 const myLiveView = createLiveView<MyContext>(...)
 ```
 
-The state of a `LiveView` is persisted across page loads on the server-side (in memory by default).  For this reason, there is a method called `socket.tempAssign` which allows a developer to tell LiveViewJS to reset a context property to a given value after the render lifecycle.  Typically this is used for large objects or collections that don't change often and therefore probabaly don't need to be stored in memory (e.g. collection of users or messages, etc).  
+The state of a `LiveView` is persisted across page loads on the server-side (in memory by default).  For this reason, there is a method called `socket.tempAssign` which allows a developer to tell LiveViewJS to reset a context property to a given value after the render lifecycle.  Typically this is used for large objects or collections that don't change often and therefore probabaly don't need to be stored in memory (e.g. collection of users or messages, etc).
 ```ts
 // first assign a large object to the context
 socket.assign({ photos: [
-  ...// 10s, 100s, 1000s, of photos 
-]}); 
+  ...// 10s, 100s, 1000s, of photos
+]});
 // use tempAssign to tell LiveViewJS to clear the photos array after this render cycle
 socket.tempAssign({ photos: [] });
 ```
 
 #### Send "Internal" Info
-`socket.sendInfo` enables a `LiveView` to send message to itself which is useful for executing actions that are asynchronous.  Messages sent via `socket.sendInfo` are received by the `handleInfo` method after the render lifecycle has completed.  (In other words, `handleInfo` is called after the `render` call which will result in another `render` after `handleInfo` completes.)  A typical pattern for events that run asynchronous processes is to show a loading indicator when the user initiates the event, then execute the process in the background, and update the UI when the process finishes. 
+`socket.sendInfo` enables a `LiveView` to send message to itself which is useful for executing actions that are asynchronous.  Messages sent via `socket.sendInfo` are received by the `handleInfo` method after the render lifecycle has completed.  (In other words, `handleInfo` is called after the `render` call which will result in another `render` after `handleInfo` completes.)  A typical pattern for events that run asynchronous processes is to show a loading indicator when the user initiates the event, then execute the process in the background, and update the UI when the process finishes.
 
 When creating your `LiveView` you can provide the typing for `TInfo` which describes the "shape" of the possible info messages.  e.g.
 ```ts
@@ -261,7 +261,7 @@ const myLiveView = createLiveView<MyContext, MyEvents, MyInfo>(
       socket.assign({ loading: true, results: [], query: event.query });
       // send internal message to run the search process
       socket.sendInfo({ type: "run_search", query: event.query })
-    } 
+    }
   }
   ...
   handleInfo: (info, socket) => {
@@ -284,13 +284,13 @@ socket.sendInfo("refresh");
 ```
 
 #### Push Methods
-There are various methods for "pushing" from the server to the client.  
- * `socket.pushPatch` is used to push an update of the browser URL (i.e. the path and parameters) from the server 
+There are various methods for "pushing" from the server to the client.
+ * `socket.pushPatch` is used to push an update of the browser URL (i.e. the path and parameters) from the server
  * `socket.pushRedirect` can be used to shutdown the current `LiveView` and load another `LiveView` without a full HTML refresh or can be used to reload the current `LiveView` if need be
  * `socket.pushEvent` can be used to send data to a client "Hook" (see below) which can be used to update client-side state / UI without reloading.  This is useful for libraries that themselves render client-side such as charting or mapping libraries.
 
 #### Page Title and Flash Messages
-`socket.pageTitle` updates the html `<title>` tag for the current page.  This is useful for changing the title as needed.  It requires the use of the `live_title` html helper in your `LiveViewPageRenderer`.  
+`socket.pageTitle` updates the html `<title>` tag for the current page.  This is useful for changing the title as needed.  It requires the use of the `live_title` html helper in your `LiveViewPageRenderer`.
 
 `socket.putFlash` Displaying messages at the top of a page to the user is often called "flash".  `putFlash` adds a string key/value pair to the `SessionData` object available in your `LiveViewRootRenderer` where you can access it and render the messages as you see fit.  Adding a `phx-click="lv:clear-flash"` attribute to your "flash" component will automtically clear the flash message (i.e. remove the key/value pair from the `SessionData` object and initiate a re-render).
 
@@ -301,14 +301,14 @@ There are various methods for "pushing" from the server to the client.
 `socket.subscribe` creates a subscription to a given topic.  Info published on that topic will be passed to the `handleInfo` method of the subscribing `LiveView`.  This is an easy way to listen for events like object mutations, chat messaging, and any other real-time events that may interest your users.  More on Pub/Sub below.
 
 ### Pub/Sub
-LiveView uses the "Pub/Sub" model underneath to process and deliver messages. Pub/Sub is short for "Publisher" / "Subscriber" in which a service that wants to publish can create a *topic* and other services that want to listen to events on that *topic* can subscribe.  
+LiveView uses the "Pub/Sub" model underneath to process and deliver messages. Pub/Sub is short for "Publisher" / "Subscriber" in which a service that wants to publish can create a *topic* and other services that want to listen to events on that *topic* can subscribe.
 
 #### Subscribing
-`socket.subscribe` takes a string which is the name of the topic to which you are subscribing this LiveView. When you subscribe to a topic, updates to that topic are sent to the `handleInfo` method of your LiveView.  
+`socket.subscribe` takes a string which is the name of the topic to which you are subscribing this LiveView. When you subscribe to a topic, updates to that topic are sent to the `handleInfo` method of your LiveView.
 ```ts
 const myLiveView = createLiveView(
   mount: async (socket) => {
-    // typically want to check the websocket is connected, that is, 
+    // typically want to check the websocket is connected, that is,
     // this isn't an http request
     if (socket.connected) {
       // listen for events on the "my_stuff" topic
@@ -325,11 +325,11 @@ const myLiveView = createLiveView(
 ```
 
 #### Broadcasting
-To broadcast to a topic, you call the `broadcast` method on the implementation (see below) of the PubSub provider. Publishing can and does happen outside of the LiveView implementation for example as part of a data source class or otherwise where it makes sense for your use case.  
+To broadcast to a topic, you call the `broadcast` method on the implementation (see below) of the PubSub provider. Publishing can and does happen outside of the LiveView implementation for example as part of a data source class or otherwise where it makes sense for your use case.
 ```ts
 import { SingleProcessPubSub } from 'liveviewjs';
 // or import { RedisPubSub } from '@liveviewjs/express
-// or import { BroadcastChannelPubSub } from '@liveviewjs/deno` 
+// or import { BroadcastChannelPubSub } from '@liveviewjs/deno`
 ...
 // setup your client if necessary (Redis details for example)
 const pubSub = new SingleProcessPubSub();
@@ -343,7 +343,7 @@ pubSub.publish("my_stuff", { type: "some_event", foo: "bar" });
 See the `Volunteers` example for a more complete showcase.
 
 #### Configuring Pub/Sub Implementation
-LiveViewJS provides three different implementations out of the box for Pub/Sub: `SingleProcessPubSub`, `RedisPubSub`, and `BroadcastChannelPubSub`.  `SingleProcessPubSub` is shipped as part of the `liveviewjs` core library.  `RedisPubSub` is shipped with the `@liveviewjs/express` library and `BroadcastChannelPubSub` is part of the Deno library. `SingleProcessPubSub` only supports Pub/Sub within a single process and is built on top of the `EventEmitter` APIs.  `RedisPubSub` and `BroadcastChannelPubSub` enable developers to support Pub/Sub across multiple server instances.  
+LiveViewJS provides three different implementations out of the box for Pub/Sub: `SingleProcessPubSub`, `RedisPubSub`, and `BroadcastChannelPubSub`.  `SingleProcessPubSub` is shipped as part of the `liveviewjs` core library.  `RedisPubSub` is shipped with the `@liveviewjs/express` library and `BroadcastChannelPubSub` is part of the Deno library. `SingleProcessPubSub` only supports Pub/Sub within a single process and is built on top of the `EventEmitter` APIs.  `RedisPubSub` and `BroadcastChannelPubSub` enable developers to support Pub/Sub across multiple server instances.
 
 Part of configuring the server is passing in an instance of the Pub/Sub implementation:
 ```ts
@@ -368,7 +368,7 @@ const liveViewServer = new NodeExpressLiveViewServer(
 
 
 ### Client-side Javascript
-LiveViewJS pages require some client-side javascript to be loaded in the HTML page to parse the `phx-*` attributes,  connect to the server (via websocket), apply the diffs, and handle user interactions.  
+LiveViewJS pages require some client-side javascript to be loaded in the HTML page to parse the `phx-*` attributes,  connect to the server (via websocket), apply the diffs, and handle user interactions.
 
 #### Default Client-side JS via CDN:
 You can load the default LiveViewJS client-side by adding the following to your LiveViewJS template:
@@ -414,7 +414,7 @@ liveSocket.connect();
 
 
 #### "Hooks" (not the React kind) for anything else
-Sometimes you need to do something that is not supported by any of the existing user event bindings or that requires hooking into a client event. LiveView has "Hooks" for these types of situations.  
+Sometimes you need to do something that is not supported by any of the existing user event bindings or that requires hooking into a client event. LiveView has "Hooks" for these types of situations.
 
 **Note**: The term "Hooks" comes from Phoenix/LiveView which this project is based on and whose client library we are built on. It is in no way related to React Hooks. It is unfortunate that "Hooks" is overloaded but we don't find it very confusing considering how different LiveView is from React.
 
