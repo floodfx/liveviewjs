@@ -119,7 +119,7 @@ Like all software, this is a work in progress. If you have any feedback, please 
 
 ## To Run the example server
 Check out the full LiveViewJS repository:
-`git clone git@github.com:floodfx/liveviewjs.git`
+`git clone https://github.com/floodfx/liveviewjs.git`
 
 `cd` to this package:
 `cd packages/express`
