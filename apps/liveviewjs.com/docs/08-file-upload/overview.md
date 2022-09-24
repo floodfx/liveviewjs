@@ -92,7 +92,7 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
           });
           return;
         }
-        // Yay! We've successfully saved the photo, so we can consume (i.e. "remove")
+        // Yay! We've successfully saved the photo, so we can consume (i.e.,  "remove")
         // the uploaded entries from the "photos" upload config
         await socket.consumeUploadedEntries("photos", async (meta, entry) => {
           // we could create thumbnails, scan for viruses, etc.
@@ -136,7 +136,7 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
       })}
         <!-- photo group name input -->
         <div>
-          Photo Group Name: 
+          Photo Group Name:
           ${text_input<PhotoGroup>(changeset, "name")}
           ${error_tag<PhotoGroup>(changeset, "name")}
         </div>
@@ -145,15 +145,15 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
           <!-- file input / drag and drop -->
           <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
             ${live_file_input(uploads.photos)}
-            or drag and drop files here 
-          </div>        
+            or drag and drop files here
+          </div>
           <!-- help text -->
           <div style="font-size: 10px; padding-bottom: 3rem">
             Add up to ${uploads.photos.maxEntries} photos
             (max ${uploads.photos.maxFileSize / (1024 * 1024)} MB each)
           </div>
         </div>
-        
+
         <!-- any errors from the upload -->
         ${uploads.photos.errors?.map((error) => html`<p class="invalid-feedback">${error}</p>`)}
 
@@ -163,10 +163,10 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
         <!-- submit button -->
         ${submit("Upload", { phx_disable_with: "Saving...", disabled: uploads.photos.errors.length > 0 })}
       </form>
-      
+
       <!-- render the photo groups -->
       <ul id="photo_groups_list" phx-update="prepend">
-        ${photoGroups.map(renderPhotoGroup)}          
+        ${photoGroups.map(renderPhotoGroup)}
       </ul>
     `;
   },
@@ -420,7 +420,7 @@ handleEvent: (event, socket) => {
       });
       return;
     }
-    // Yay! We've successfully saved the photo, so we can consume (i.e. "remove")
+    // Yay! We've successfully saved the photo, so we can consume (i.e.,  "remove")
     // the uploaded entries from the "photos" upload config
     await socket.consumeUploadedEntries("photos", async (meta, entry) => {
       // we could create thumbnails, scan for viruses, etc.

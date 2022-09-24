@@ -159,7 +159,7 @@ impact the `valid` property of the `LiveViewChangeset` returned by the `LiveView
 string is NOT set** the `valid` property will always return `true`. **If the action string IS set** the `valid` property
 will return `true` if the data is valid and `false` if the data is invalid.
 
-:::note We pass "empty" (i.e. no action string) changesets to form helpers in the `render` function otherwise there
+:::note We pass "empty" (i.e.,  no action string) changesets to form helpers in the `render` function otherwise there
 would be errors on the form when the page is first loaded. "Empty" changesets are always valid. :::
 
 ## Next Steps

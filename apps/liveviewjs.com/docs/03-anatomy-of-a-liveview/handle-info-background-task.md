@@ -23,7 +23,7 @@ export const dashboardLiveView = createLiveView<
 >({
   mount: (socket) => {
     if (socket.connected) {
-      // only start repeating if the socket is connected (i.e. websocket is connected)
+      // only start repeating if the socket is connected (i.e.,  websocket is connected)
       socket.repeat(() => {
         // send the tick event to `handleInfo` every second
         socket.sendInfo({ type: "tick" });

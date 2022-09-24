@@ -114,7 +114,7 @@ Like all software, this is a work in progress. If you have any feedback, please 
 
  - index.ts - the ExpressJS server
  - indexHandler.ts - shows an index html page with links to all the examples
- - liveViewRenderers.ts - defines the page layout and root layouts for all the LiveViews (i.e. implements the `LiveViewPageRenderer` and the `LiveViewRootRenderer` interfaces)
+ - liveViewRenderers.ts - defines the page layout and root layouts for all the LiveViews (i.e.,  implements the `LiveViewPageRenderer` and the `LiveViewRootRenderer` interfaces)
 
 
 ## To Run the example server

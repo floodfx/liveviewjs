@@ -22,7 +22,7 @@ export const searchLiveView = createLiveView<
   // Define LiveView Infos
   { type: "doSearch"; search: string }
 >({
-  // Setup / initialize the LiveView Context (i.e. set search to "" and results to [])
+  // Setup / initialize the LiveView Context (i.e.,  set search to "" and results to [])
   mount: (socket) => {
     socket.assign({ search: "", results: [] });
   },
@@ -88,7 +88,7 @@ function renderResults(results: string[], loading: boolean) {
   `handleEvent` method is called with the `search` event.
 - The `handleEvent` method then updates the `context` with the search text, sets `loading` to `true`, and sends a
   `doSearch` info event to the `handleInfo` method.
-- The `handleInfo` method then performs the search asynchronously (i.e. _it doesn't block rendering from the
+- The `handleInfo` method then performs the search asynchronously (i.e.,  _it doesn't block rendering from the
   `handleEvent`_).
 - When the search is completed `handleInfo` and updates the results in the context and sets `loading` to `false`.
   Updating the context causes the `render` method to be called again, which renders the search results.

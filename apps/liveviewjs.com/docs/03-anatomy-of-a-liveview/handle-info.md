@@ -7,7 +7,7 @@ sidebar_position: 6
 `handleInfo` is how server-side events (a.k.a `Info`) are handled. These server-side events are initiated by processes
 that are happening on the server for example: database updates, background jobs, pub/sub messages, or some other
 asynchronous process. Just like `handleEvent` and `handleParams`, `handleInfo` is automatically passed the `info` event
-(i.e. server event) along with the `socket` and can use it to manipulate the `context` of the LiveView or otherwise
+(i.e.,  server event) along with the `socket` and can use it to manipulate the `context` of the LiveView or otherwise
 respond to the `info` messages it receives.
 
 ## `handleInfo` Signature

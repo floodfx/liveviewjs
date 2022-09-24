@@ -20,8 +20,8 @@ LiveView `render` method.
 
 User clicks are the most common type of user event and there are two types of click bindings:
 
-- `phx-click` - Add this binding to an HTML element (e.g. `<... phx-click="myEvent" ...>`) and when a user clicks on the
-  element the event (i.e. value of the attribute) will be sent to the server.
+- `phx-click` - Add this binding to an HTML element (e.g.,  `<... phx-click="myEvent" ...>`) and when a user clicks on the
+  element the event (i.e.,  value of the attribute) will be sent to the server.
 - `phx-click-away` - This binding is similar to `phx-click` except that an event will occur when the user clicks outside
   of the element.
 

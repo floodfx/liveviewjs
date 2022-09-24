@@ -19,8 +19,8 @@ server round trip. These functions are:
 - `hide` - Hide an element including optional transition classes
 - `toggle` - Toggle the visibility of an element
 - `dispatch` - Dispatch a DOM event from an element
-- `transition` - Apply transition classes to an element (i.e. animate it)
-- `push` - Push an event to the LiveView server (i.e. trigger a server round trip)
+- `transition` - Apply transition classes to an element (i.e.,  animate it)
+- `push` - Push an event to the LiveView server (i.e.,  trigger a server round trip)
 
 ## JS Command Syntax
 
@@ -40,9 +40,9 @@ render() {
 }
 ```
 
-## "Chainable" (i.e. fluent) Syntax
+## "Chainable" (i.e.,  fluent) Syntax
 
-JS Commands are "chainable" (i.e. fluent) so you can chain multiple commands together as needed and they will be
+JS Commands are "chainable" (i.e.,  fluent) so you can chain multiple commands together as needed and they will be
 executed in the order they are called:
 
 ```typescript

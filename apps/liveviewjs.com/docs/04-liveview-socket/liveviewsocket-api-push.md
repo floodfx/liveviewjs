@@ -13,11 +13,11 @@ the LiveView.
 | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pushEvent(pushEvent: AnyLivePushEvent): void;`                                                  | Pushes and event (possibly with data) from the server to the client. Requires either a `window.addEventListener` defined for that event or a client `Hook` to be defined and to be listening for the event via `this.handleEvent` callback.                                         |
 | `pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;`    | Updates the LiveView's browser URL with the given path and query parameters.                                                                                                                                                                                                        |
-| `pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;` | Shutdowns the current LiveView and loads another LiveView in its place without reloading the whole page (i.e. making a full HTTP request). Can be used to remount the current LiveView if need be. Use `pushPatch` to update the current LiveView without unloading and remounting. |
+| `pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;` | Shutdowns the current LiveView and loads another LiveView in its place without reloading the whole page (i.e.,  making a full HTTP request). Can be used to remount the current LiveView if need be. Use `pushPatch` to update the current LiveView without unloading and remounting. |
 
 ## Pushing Events
 
-An event is any JSON object with a `type: string` property and optionally any other key/value pairs. e.g.:
+An event is any JSON object with a `type: string` property and optionally any other key/value pairs. e.g., :
 
 ```ts
 {
@@ -69,7 +69,7 @@ The `LiveViewSocket` has two methods for updating the URL of the LiveView:
 
 - `pushPatch` - Updates the LiveView's browser URL with the given path and query parameters.
 - `pushRedirect` - Shutdowns the current LiveView and loads another LiveView in its place without reloading the whole
-  page (i.e. making a full HTTP request). Can be used to remount the current LiveView if need be.
+  page (i.e., making a full HTTP request). Can be used to remount the current LiveView if need be.
 
 ### `pushPatch` Example
 
@@ -89,4 +89,4 @@ socket.pushRedirect("/foo", new URLSearchParams({ bar: "baz" }));
 ```
 
 `pushRedirect` will cause the current LiveView to be shutdown and a new LiveView to be loaded at the given path and
-query parameters **without reloading the whole page** (i.e. making a full HTTP request).
+query parameters **without reloading the whole page** (i.e., making a full HTTP request).
