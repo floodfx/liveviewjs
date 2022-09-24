@@ -6,7 +6,7 @@ import commonjs from "@rollup/plugin-commonjs";
 
 const packageName = "express";
 
-const external = ["express", "express-session","jsonwebtoken","liveviewjs","nanoid","redis","ws", "zod"];
+const external = ["express", "express-session", "jsonwebtoken", "liveviewjs", "nanoid", "redis", "ws", "zod"];
 
 export default [
   // build the commonjs module

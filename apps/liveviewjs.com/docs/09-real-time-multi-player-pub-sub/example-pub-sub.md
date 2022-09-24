@@ -4,7 +4,8 @@ sidebar_position: 2
 
 # Example Pub/Sub LiveView
 
-We're going to extend our counter example from [learning the LiveView API](/docs/anatomy-of-a-liveview/liveview-api) to use Pub/Sub which will make it a real-time, multi-player counter.  Here is the code with the Pub/Sub changes highlighted:
+We're going to extend our counter example from [learning the LiveView API](/docs/anatomy-of-a-liveview/liveview-api) to
+use Pub/Sub which will make it a real-time, multi-player counter. Here is the code with the Pub/Sub changes highlighted:
 
 ```ts title="realtimeCounterLiveView.ts" {3-6,14,17-20,27-28,31-32,36-40}
 import { createLiveView, html, SingleProcessPubSub } from "liveviewjs";
@@ -62,10 +63,17 @@ export const rtCounterLiveView = createLiveView<
 ```
 
 ## How it works
- * This works just like the `counter.ts` example except we're using Pub/Sub to broadcast the new count to all connected clients and subscribe to updates from other clients.
- * When a client clicks the increment or decrement button, we broadcast the new count to all connected clients using `pubSub.broadcast`.
- * The **LiveViewJS** framework automatically routes messages from `pubSub.broadcast` to the `handleInfo` function for any LiveView subscribed to the topic. 
- * In this case, `handleInfo` receives the new count and updates the LiveView context which re-renders the view.
+
+- This works just like the `counter.ts` example except we're using Pub/Sub to broadcast the new count to all connected
+  clients and subscribe to updates from other clients.
+- When a client clicks the increment or decrement button, we broadcast the new count to all connected clients using
+  `pubSub.broadcast`.
+- The **LiveViewJS** framework automatically routes messages from `pubSub.broadcast` to the `handleInfo` function for
+  any LiveView subscribed to the topic.
+- In this case, `handleInfo` receives the new count and updates the LiveView context which re-renders the view.
 
 ## It's that easy!
-In ~10 lines of code we've built a real-time, multi-player counter!  Sure a real-time counter isn't particularly useful but shows you how easy it is to create real-time, multi-player applications with very little code and very little effort.
+
+In ~10 lines of code we've built a real-time, multi-player counter! Sure a real-time counter isn't particularly useful
+but shows you how easy it is to create real-time, multi-player applications with very little code and very little
+effort.

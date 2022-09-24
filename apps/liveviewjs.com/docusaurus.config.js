@@ -1,46 +1,46 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+const lightCodeTheme = require("prism-react-renderer/themes/github");
+const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'LiveViewJS',
-  tagline: 'Simple yet powerful framework for LiveViews in NodeJS and Deno',
-  url: 'https://www.liveviewjs.com',
-  baseUrl: '/',
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
-  favicon: 'img/favicon.ico',
+  title: "LiveViewJS",
+  tagline: "Simple yet powerful framework for LiveViews in NodeJS and Deno",
+  url: "https://www.liveviewjs.com",
+  baseUrl: "/",
+  onBrokenLinks: "throw",
+  onBrokenMarkdownLinks: "warn",
+  favicon: "img/favicon.ico",
   trailingSlash: false,
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'floodfx', // Usually your GitHub org/user name.
-  projectName: 'liveviewjs', // Usually your repo name.
+  organizationName: "floodfx", // Usually your GitHub org/user name.
+  projectName: "liveviewjs", // Usually your repo name.
 
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
   // to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: "en",
+    locales: ["en"],
   },
 
   presets: [
     [
-      'classic',
+      "classic",
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
-          sidebarPath: require.resolve('./sidebars.js'),          
+          sidebarPath: require.resolve("./sidebars.js"),
         },
         blog: {
           showReadingTime: true,
         },
         theme: {
-          customCss: require.resolve('./src/css/custom.css'),
+          customCss: require.resolve("./src/css/custom.css"),
         },
       }),
     ],
@@ -50,35 +50,35 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       navbar: {
-        title: 'LiveViewJS',
+        title: "LiveViewJS",
         logo: {
-          alt: 'LiveViewJS Logo',
-          src: 'img/logo.svg',
+          alt: "LiveViewJS Logo",
+          src: "img/logo.svg",
         },
         items: [
           {
-            type: 'doc',
-            docId: 'overview/introduction',
-            position: 'left',
-            label: 'Documentation',
+            type: "doc",
+            docId: "overview/introduction",
+            position: "left",
+            label: "Documentation",
           },
           // {to: '/blog', label: 'Blog', position: 'left'},
           {
-            href: 'https://github.com/floodfx/liveviewjs',
-            label: 'GitHub',
-            position: 'right',
+            href: "https://github.com/floodfx/liveviewjs",
+            label: "GitHub",
+            position: "right",
           },
         ],
       },
       footer: {
-        style: 'dark',
+        style: "dark",
         links: [
           {
-            title: 'Docs',
+            title: "Docs",
             items: [
               {
-                label: 'Intro',
-                to: '/docs/overview/introduction',
+                label: "Intro",
+                to: "/docs/overview/introduction",
               },
               // {
               //   label: 'Quick Starts',
@@ -87,28 +87,28 @@ const config = {
             ],
           },
           {
-            title: 'Community',
+            title: "Community",
             items: [
               {
-                label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/liveviewjs',
+                label: "Stack Overflow",
+                href: "https://stackoverflow.com/questions/tagged/liveviewjs",
               },
               {
-                label: 'Twitter',
-                href: 'https://twitter.com/liveviewjs',
+                label: "Twitter",
+                href: "https://twitter.com/liveviewjs",
               },
             ],
           },
           {
-            title: 'More',
+            title: "More",
             items: [
               // {
               //   label: 'Blog',
               //   to: '/blog',
               // },
               {
-                label: 'GitHub',
-                href: 'https://github.com/floodfx/liveviewjs',
+                label: "GitHub",
+                href: "https://github.com/floodfx/liveviewjs",
               },
             ],
           },

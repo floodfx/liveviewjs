@@ -4,7 +4,8 @@ sidebar_position: 7
 
 # Raw `LiveViewSocket` API
 
-For your reference, below is the raw Typescript for the `LiveViewSocket` interface (copied from [here](https://github.com/floodfx/liveviewjs/blob/main/packages/core/src/server/socket/liveSocket.ts)):
+For your reference, below is the raw Typescript for the `LiveViewSocket` interface (copied from
+[here](https://github.com/floodfx/liveviewjs/blob/main/packages/core/src/server/socket/liveSocket.ts)):
 
 ```ts title="packages/core/src/server/socket/liveSocket.ts"
 /**

@@ -4,9 +4,15 @@ sidebar_position: 3
 
 # LiveView API - `mount`
 
-`mount` is called by the **LiveViewJS** runtime when your LiveView is first mounted ([over HTTP and Websocket](/docs/lifecycle-of-a-liveview/intro)). `mount` is where you initialize the context (i.e. state) of your LiveView (using `socket.assign`) and otherwise configure the LiveView. The [webserver integrations](/docs/webserver-integration/overview) automatically make session data available via the `session` which can be useful if you need to use data from the user's session.  Don't worry about `params` for now, we'll cover that later.
+`mount` is called by the **LiveViewJS** runtime when your LiveView is first mounted
+([over HTTP and Websocket](/docs/lifecycle-of-a-liveview/intro)). `mount` is where you initialize the context (i.e.
+state) of your LiveView (using `socket.assign`) and otherwise configure the LiveView. The
+[webserver integrations](/docs/webserver-integration/overview) automatically make session data available via the
+`session` which can be useful if you need to use data from the user's session. Don't worry about `params` for now, we'll
+cover that later.
 
 ## `mount` Signature
+
 ```ts
 mount(
   socket: LiveViewSocket<TContext, TInfos>,
@@ -15,14 +21,16 @@ mount(
 ): void | Promise<void>;
 ```
 
-As you can see in the `counterLiveView.ts` below, `mount` initializes the `count` to `0` (and doesn't use the `session` or `params`):
+As you can see in the `counterLiveView.ts` below, `mount` initializes the `count` to `0` (and doesn't use the `session`
+or `params`):
+
 ```ts title="counterLiveView.ts" {9-12}
 import { createLiveView, html } from "liveviewjs";
 /**
  * A basic counter that increments and decrements a number.
  */
 export const counterLiveView = createLiveView<
-  { count: number },  // Define LiveView Context / State
+  { count: number }, // Define LiveView Context / State
   { type: "increment" } | { type: "decrement" } // Define LiveView Events
 >({
   // Setup / initialize the LiveView Context (i.e. set count to 0)
@@ -55,6 +63,5 @@ export const counterLiveView = createLiveView<
 });
 ```
 
-:::info
-  The `LiveViewSocket` is passed into all methods except for `render`.  `LiveViewSocket` is the swiss army knife of LiveViewJS. We will cover it's [API in more detail](/docs/liveview-socket/liveviewsocket-api) shortly.
-:::
+:::info The `LiveViewSocket` is passed into all methods except for `render`. `LiveViewSocket` is the swiss army knife of
+LiveViewJS. We will cover it's [API in more detail](/docs/liveview-socket/liveviewsocket-api) shortly. :::
