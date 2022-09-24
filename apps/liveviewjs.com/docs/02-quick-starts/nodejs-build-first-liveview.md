@@ -27,7 +27,7 @@ browser.
 
 ## Setup a new Route
 
-Let's add a route to this LiveView so we can see it in our browser. Edit `packages/express/src/example/index.ts` and
+Let's add a route to this LiveView to see it in our browser. Edit `packages/express/src/example/index.ts` and
 make the following highlighted changes:
 
 ```ts title="packages/express/src/example/index.ts" {3,7}
@@ -67,16 +67,16 @@ ExperimentalWarning: The Fetch API is an experimental feature. This feature coul
 (Use `node --trace-warnings ...` to show where the warning was created)
 ```
 
-The feature we are using is the built in `fetch` method. Feel free to ignore this warning. :::
+The feature we are using is the built-in `fetch` method. Feel free to ignore this warning. :::
 
 ## See the LiveView in Action
 
-Point your browser to [http://localhost:4001/hello](http://localhost:4001/hello) and you should see something like the
+Point your browser to [http://localhost:4001/hello](http://localhost:4001/hello), and you should see something like the
 following: ![LiveViewJS Hello World Screenshot](/img/screenshots/liveviewjs_hello_liveview.png)
 
 ## Next Steps
 
-Ok we got our first LiveView running but it isn't very interactive. Let's make it more interesting by adding a button
+Ok, we got our first LiveView running but it isn't very interactive. Let's make it more interesting by adding a button
 that toggles between using text and emojis to say hello. Update the `hello.ts` file to the following:
 
 ```ts title="packages/express/src/example/liveview/hello.ts"

@@ -12,7 +12,7 @@ to get a feel for the user experience of a LiveView. Let's get started!
 
 [Node.js](https://nodejs.org/en/download/) version 18.x or above.
 
-:::note We rely on the NodeJS Fetch API which is only available in 18+. :::
+:::note We rely on the NodeJS Fetch API, which is only available in 18+. :::
 
 If you haven't already, [download the **LiveViewJS** repo](get-liveviewjs-repo).
 
