@@ -4,8 +4,7 @@ sidebar_position: 6
 
 # LiveViewSocket API - Misc
 
-There are a few other methods and properties that are available on the `LiveViewSocket` object that we haven't covered
-yet.
+A few other methods and properties are available on the LiveViewSocket object that we haven't covered yet.
 
 ## LiveViewSocket Properties and Methods
 
@@ -26,7 +25,7 @@ created. It is useful for debugging and logging purposes.
 
 The `connected` property is a boolean that indicates whether the LiveView is connected to a websocket or not. If the
 LiveView is connected to a websocket, then the value will be `true`. If the LiveView is not connected to a websocket
-(i.e. executing an HTTP request), then the value will be `false`. This is useful for executing logic based on whether
+(i.e.,  executing an HTTP request), then the value will be `false`. This is useful for executing logic based on whether
 the LiveView has completed the initial websocket connection or not. For example:
 
 ```ts
@@ -43,7 +42,7 @@ if (socket.connected) {
 LiveViewJS provides a `live_title_tag` helper that enables LiveViews to update the `<title>` tag of the page
 dynamically. This is useful for LiveViews that need to update the page title based on the current state of the LiveView.
 For example, a LiveView may want to update the title to include the details of the item being viewed. The `pageTitle`
-method works in partnership with the `live_title_tag` to enabled dynamic page titles. `live_title_tag` is usually used
+method works in partnership with the `live_title_tag` to enable dynamic page titles. `live_title_tag` is usually used
 in the `LiveViewHtmlPageTemplate` template. For example:
 
 ```ts {14}

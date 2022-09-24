@@ -40,7 +40,7 @@ renders:
 the LiveView changes. `handleParams` allows developers to access the full `URL` of the LiveView including the `host`,
 `path`, `hash`, `pathname`, etc, and then update the `context` of the `socket` or otherwise respond to data in the `URL`.
 
-:::note Worth noting that the http server (e.g. express or oak) handles the routing of the browser to this LiveView. This
+:::note Worth noting that the http server (e.g.,  express or oak) handles the routing of the browser to this LiveView. This
 means that changes in the `URL` for `handleParams` are typically search parameters or hash changes. Changing the host
 and/or path of a URL will typically mean the server routes you to a different LiveView (if one exists at that host and
 path). :::

@@ -58,7 +58,7 @@ const myLiveView = createLiveView<MyContext, MyEvents, MyInfo>(
 )
 ```
 
-`socket.sendInfo` can just take a type as a string for cases where there isn't additional information passed along with
+`socket.sendInfo` can take a type as a string for cases where there isn't additional information passed along with
 the message.
 
 ```ts
@@ -72,4 +72,4 @@ socket.sendInfo("refresh");
 delivered to `handleInfo`. This is useful for cases where a LiveView needs to receive updates from another process or
 user.
 
-You can provide the type annotation for messages you expect to receive from a pub/sub topic as well to.
+You can provide the type annotation for messages you expect to receive from a pub/sub topic as well.

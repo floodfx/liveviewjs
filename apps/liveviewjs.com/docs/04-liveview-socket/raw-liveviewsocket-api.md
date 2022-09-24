@@ -12,10 +12,10 @@ For your reference, below is the raw Typescript for the `LiveViewSocket` interfa
  * Main interface to update state, interact, message, and otherwise
  * manage the lifecycle of a `LiveView`.
  *
- * The `LiveView` API (i.e. `mount`, `handleParams`, `handleInfo`, `handleEvent`)
+ * The `LiveView` API (i.e.,  `mount`, `handleParams`, `handleInfo`, `handleEvent`)
  * are all passed `LiveViewSocket` which provide access to the current `LiveView`
  * context (via `context`) as well as various methods update the `LiveView` including
- * `assign` which updates the `LiveView`'s context (i.e. state).
+ * `assign` which updates the `LiveView`'s context (i.e.,  state).
  */
 export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos extends LiveInfo = AnyLiveInfo> {
   /**
@@ -28,11 +28,11 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    */
   readonly connected: boolean;
   /**
-   * The current context (i.e. state) of the `LiveView`
+   * The current context (i.e.,  state) of the `LiveView`
    */
   readonly context: TContext;
   /**
-   * `assign` is used to update the context (i.e. state) of the `LiveComponent`
+   * `assign` is used to update the context (i.e.,  state) of the `LiveComponent`
    * @param context a `Partial` of the LiveView's context to update
    */
   assign(context: Partial<TContext>): void;
@@ -69,7 +69,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
   pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
   /**
    * Shutdowns the current `LiveView`and loads another `LiveView`in its place
-   * without reloading the whole page (i.e. making a full HTTP request).  Can be
+   * without reloading the whole page (i.e.,  making a full HTTP request).  Can be
    * used to remount the current `LiveView`if need be. Use `pushPatch` to update the
    * current `LiveView`without unloading and remounting.
    *
@@ -128,7 +128,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    * @param name the name of the upload from which to consume
    * @param fn the callback to run for each entry
    * @returns an array of promises based on the return type of the callback function
-   * @throws if any of the entries are not fully uploaded (i.e. completed)
+   * @throws if any of the entries are not fully uploaded (i.e.,  completed)
    */
   consumeUploadedEntries<T>(
     configName: string,

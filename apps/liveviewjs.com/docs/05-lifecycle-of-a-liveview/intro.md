@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Lifecycle of a LiveView
 
-We are going to look at the lifecycle of LiveViews in detail to see when each LiveView method (e.g. `mount`,
+We are going to look at the lifecycle of LiveViews in detail to see when each LiveView method (e.g.,  `mount`,
 `handleEvent`, `render`, etc) are called during the lifecycle so you can better understand how to use them.
 
 ## HTTP and Websocket
@@ -16,8 +16,8 @@ There are two major parts of a lifecycle:
 
 ### HTTP Request Phase
 
-Just like any other web page, all LiveViews start with a HTTP request to a URL (e.g. `GET /my-liveview`) and this route
-is served by a webserver (e.g. Express). If that route is a LiveView route, the webserver hands off the request to the
+Just like any other web page, all LiveViews start with a HTTP request to a URL (e.g.,  `GET /my-liveview`) and this route
+is served by a webserver (e.g.,  Express). If that route is a LiveView route, the webserver hands off the request to the
 **LiveViewJS** library for processing.
 
 The **LiveViewJS** library then creates a new LiveView instance and starts the HTTP request phase which consists of:

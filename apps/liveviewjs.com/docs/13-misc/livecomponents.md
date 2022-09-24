@@ -96,7 +96,7 @@ export interface LiveComponentSocket<
    */
   id: string;
   /**
-   * Whether the websocket is connected (i.e. http request or joined via websocket)
+   * Whether the websocket is connected (i.e.,  http request or joined via websocket)
    * true if connected to a websocket, false for http request
    */
   connected: boolean;
@@ -109,7 +109,7 @@ export interface LiveComponentSocket<
    */
   sendParentInfo(info: Info<TInfo>): void;
   /**
-   * `assign` is used to update the `Context` (i.e. state) of the `LiveComponent`
+   * `assign` is used to update the `Context` (i.e.,  state) of the `LiveComponent`
    */
   assign(context: Partial<TContext>): void;
   /**

@@ -90,4 +90,4 @@ a different type) all you need to do is broadcast a message to a topic that the 
 Let's say you have an event that is happening outside of the LiveViewJS. All you have to do is connect that event with
 the **LiveViewJS** by broadcasting a message to a topic that the **LiveViewJS** is subscribed to. This means you either
 need to use the `PubSub` implementation (with the same configuration) in that different code or you need to use the same
-pub/sub backend (e.g. Redis or BroadcastChannel).
+pub/sub backend (e.g.,  Redis or BroadcastChannel).

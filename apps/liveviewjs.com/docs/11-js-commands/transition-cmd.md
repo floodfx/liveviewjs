@@ -11,7 +11,7 @@ new JS().transition(transition: Transition, options?: TransitionOptions)
 ```
 
 - `transition` - The string of classes to apply to the element, or a 3-tuple containing the transition class, the class
-  to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300",
+  to apply to start the transition, and the class to apply to end the transition. e.g.,  ["ease-out duration-300",
   "opacity-100", "opacity-0"]
 - `options` - Options for the command (optional)
   - `to` - An optional css selector to identify the element from which to transition. Defaults to the element that the

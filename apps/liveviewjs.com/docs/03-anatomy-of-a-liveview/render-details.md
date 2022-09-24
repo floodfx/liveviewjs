@@ -26,7 +26,7 @@ export const counterLiveView = createLiveView<
   { count: number }, // Define LiveView Context / State
   { type: "increment" } | { type: "decrement" } // Define LiveView Events
 >({
-  // Setup / initialize the LiveView Context (i.e. set count to 0)
+  // Setup / initialize the LiveView Context (i.e.,  set count to 0)
   mount: (socket) => {
     socket.assign({ count: 0 });
   },

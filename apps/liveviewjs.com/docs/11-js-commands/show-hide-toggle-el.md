@@ -20,7 +20,7 @@ new JS().show(options?: ShowOptions)
     to.
   - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
   - `transition` - The string of classes to apply before showing the element, or a 3-tuple containing the transition
-    class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out
+    class, the class to apply to start the transition, and the class to apply to end the transition. e.g.,  ["ease-out
     duration-300", "opacity-0", "opacity-100"]
   - `display` - The display type to apply to the element. Defaults to "block"
 
@@ -54,7 +54,7 @@ new JS().hide(options?: ShowOptions)
   - `to` - A css selector to identify the element to hide. Defaults to the element that the JS Command is attached to.
   - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
   - `transition` - The string of classes to apply before hiding the element, or a 3-tuple containing the transition
-    class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out
+    class, the class to apply to start the transition, and the class to apply to end the transition. e.g.,  ["ease-out
     duration-300", "opacity-100", "opacity-0"]
 
 Examples
@@ -87,10 +87,10 @@ new JS().toggle(options?: ToggleOptions)
   - `to` - A css selector to identify the element to toggle. Defaults to the element that the JS Command is attached to.
   - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
   - `in` - The string of classes to apply when toggling to visible, or a 3-tuple containing the transition class, the
-    class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300",
+    class to apply to start the transition, and the class to apply to end the transition. e.g.,  ["ease-out duration-300",
     "opacity-0", "opacity-100"]
   - `out` - The string of classes to apply when toggling to hidden, or a 3-tuple containing the transition class, the
-    class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300",
+    class to apply to start the transition, and the class to apply to end the transition. e.g.,  ["ease-out duration-300",
     "opacity-100", "opacity-0"]
   - `display` - The display type to apply to the element when toggling to visible. Defaults to "block"
 
