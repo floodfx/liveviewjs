@@ -36,11 +36,11 @@ renders:
 
 ## `handleParams` Method
 
-`handleParams` is automatically called by **LiveViewJS** on the initial load of a LiveView as well as anytime the URL of
+`handleParams` is automatically called by **LiveViewJS** on the initial load of a LiveView, as well as anytime the URL of
 the LiveView changes. `handleParams` allows developers to access the full `URL` of the LiveView including the `host`,
-`path`, `hash`, `pathname`, etc and then update the `context` of the `socket` or otherwise respond to data in the `URL`.
+`path`, `hash`, `pathname`, etc, and then update the `context` of the `socket` or otherwise respond to data in the `URL`.
 
-:::note Worth noting that the http server (e.g. express or oak) handles the routing of the brower to this LiveView. This
+:::note Worth noting that the http server (e.g. express or oak) handles the routing of the browser to this LiveView. This
 means that changes in the `URL` for `handleParams` are typically search parameters or hash changes. Changing the host
 and/or path of a URL will typically mean the server routes you to a different LiveView (if one exists at that host and
 path). :::
@@ -51,5 +51,5 @@ path). :::
 handleParams(url: URL, socket: LiveViewSocket<TContext, TInfos>): void | Promise<void>;
 ```
 
-:::info The `URL` passed to the `handleParams` method is the standard `URL` object not a **LiveViewJS** specific `URL`
+:::info The `URL` passed to the `handleParams` method is the standard `URL` object, not a **LiveViewJS** specific `URL`
 object. See the [MDN URL documentation](https://developer.mozilla.org/en-US/docs/Web/API/URL) for more information. :::

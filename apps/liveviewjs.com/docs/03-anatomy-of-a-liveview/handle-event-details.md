@@ -4,10 +4,10 @@ sidebar_position: 4
 
 # LiveView API - `handleEvent`
 
-`handleEvent` is called automatically by the **LiveViewJS** framework when the a user action causes the browser to send
-an event to the server (e.g. clicks, keyboard input, form updates, focus/blur, etc). (More details on
+`handleEvent` is called automatically by the **LiveViewJS** framework when a user action causes the browser to send
+an event to the server (e.g., clicks, keyboard input, form updates, focus/blur, etc.). (More details on
 [User Events](/docs/user-events-slash-bindings/overview)). The `handleEvent` function is responsible for updating the
-`context` (i.e. state) of the LiveView based on the event.
+`context` (i.e., state) of the LiveView based on the event.
 
 ## `handleEvent` Signature
 
@@ -16,7 +16,7 @@ handleEvent(event: TEvents, socket: LiveViewSocket<TContext, TInfos>): void | Pr
 ```
 
 The example `handleEvent` function below receives the `event` and the `socket` and updates the `count` in the `socket`'s
-context based on the `event`'s `type`. In otherwords, it adds 1 when to `count` when it receive the `increment` event
+context based on the `event`'s `type`. In other words, it adds 1 when to `count` when it receives the `increment` event
 and subtracts 1 when it receives the `decrement` event:
 
 ```ts title="counterLiveView.ts" {13-24}

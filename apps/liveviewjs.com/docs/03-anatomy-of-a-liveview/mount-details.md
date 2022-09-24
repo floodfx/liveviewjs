@@ -8,7 +8,7 @@ sidebar_position: 3
 ([over HTTP and Websocket](/docs/lifecycle-of-a-liveview/intro)). `mount` is where you initialize the context (i.e.
 state) of your LiveView (using `socket.assign`) and otherwise configure the LiveView. The
 [webserver integrations](/docs/webserver-integration/overview) automatically make session data available via the
-`session` which can be useful if you need to use data from the user's session. Don't worry about `params` for now, we'll
+`session` which can be useful if you need to use data from the user's session. Don't worry about `params` for now. We'll
 cover that later.
 
 ## `mount` Signature
@@ -64,4 +64,4 @@ export const counterLiveView = createLiveView<
 ```
 
 :::info The `LiveViewSocket` is passed into all methods except for `render`. `LiveViewSocket` is the swiss army knife of
-LiveViewJS. We will cover it's [API in more detail](/docs/liveview-socket/liveviewsocket-api) shortly. :::
+LiveViewJS. We will cover its [API in more detail](/docs/liveview-socket/liveviewsocket-api) shortly. :::
