@@ -27,7 +27,7 @@ browser.
 
 ## Setup a new Route
 
-Let's add a route to this LiveView so we can see it in our browser. Edit `packages/deno/src/example/index.ts` and make
+Let's add a route to this LiveView to see it in our browser. Edit `packages/deno/src/example/index.ts` and make
 the following highlighted changes:
 
 ```ts title="packages/deno/src/example/index.ts" {3,7}
@@ -94,5 +94,5 @@ should look something like this:
 ## Great start!
 
 You've just created your first LiveView and added it to your webserver! There is a lot more to learn about
-**LiveViewJS** but you are well on your way. We recommend you continue to the
+**LiveViewJS**, but you are well on your way. We recommend you continue to the
 [Anatomy of a LiveView](/docs/category/anatomy-of-a-liveview) section to start to learn more about how LiveViews work.
