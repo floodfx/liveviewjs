@@ -4,7 +4,7 @@ sidebar_position: 7
 
 # User Initiated Event with `handleInfo`
 
-Search is a common use case where a user initiated event might be handled by `handleInfo`.  
+Search is a common use case where a user initiated event might be handled by `handleInfo`.
 
 ## Example Search LiveView
 
@@ -16,11 +16,11 @@ import {searchUsers} from "../services/searchUsers";
  */
 export const searchLiveView = createLiveView<
   // Define LiveView Context / State
-  { search: string; results: string[], loading: boolean },  
+  { search: string; results: string[], loading: boolean },
   // Define LiveView Events
-  { type: "search"; search: string } 
+  { type: "search"; search: string }
   // Define LiveView Infos
-  { type: "doSearch"; search: string } 
+  { type: "doSearch"; search: string }
 >({
   // Setup / initialize the LiveView Context (i.e. set search to "" and results to [])
   mount: (socket) => {
@@ -61,7 +61,7 @@ export const searchLiveView = createLiveView<
           value=${search}
           phx-change="search"
         />
-        ${renderResults(results, loading)}              
+        ${renderResults(results, loading)}
       </div>
     `;
   },
@@ -83,15 +83,20 @@ function renderResults(results: string[], loading: boolean) {
 ```
 
 ## How it works
- * The LiveView renders a form that allows a user to search for a user by name.  When the user submits the form the `handleEvent` method is called with the `search` event.  
- * The `handleEvent` method then updates the `context` with the search text, sets `loading` to `true`, and sends an `doSearch` info event to the `handleInfo` method.
- * The `handleInfo` method then performs the search asynchronously (i.e. *it doesn't block rendering from the `handleEvent`*).  
-* When the search is completed `handleInfo` and updates the results in the context and sets `loading` to `false`.  Updating the context causes the `render` method to be called again which renders the search results.
+
+- The LiveView renders a form that allows a user to search for a user by name. When the user submits the form the
+  `handleEvent` method is called with the `search` event.
+- The `handleEvent` method then updates the `context` with the search text, sets `loading` to `true`, and sends an
+  `doSearch` info event to the `handleInfo` method.
+- The `handleInfo` method then performs the search asynchronously (i.e. _it doesn't block rendering from the
+  `handleEvent`_).
+- When the search is completed `handleInfo` and updates the results in the context and sets `loading` to `false`.
+  Updating the context causes the `render` method to be called again which renders the search results.
 
 ## `handleInfo` Use Cases
+
 There are three main use cases for `handleInfo`:
- * Handling a asyncrhonous process initiated from a user event without blocking the UI
- * Handling a asyncrhonous process initiated from a background process
- * Handling a pub/sub message 
 
-
+- Handling a asyncrhonous process initiated from a user event without blocking the UI
+- Handling a asyncrhonous process initiated from a background process
+- Handling a pub/sub message

@@ -12,17 +12,17 @@ Removing base styles ensures docusaurus' base styles work
 @tailwind utilities;
 
 @font-face {
-  font-family: 'LibreFranklin';
-  src: url('../../static/fonts/LibreFranklin-VariableFont_wght.ttf') format('truetype');
-       font-display: swap;
-       font-style: normal;
+  font-family: "LibreFranklin";
+  src: url("../../static/fonts/LibreFranklin-VariableFont_wght.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
 }
 
 @font-face {
-  font-family: 'LibreFranklin';
-  src: url('../../static/fonts/LibreFranklin-Italic-VariableFont_wght.ttf') format('truetype');
-       font-display: swap;
-       font-style: italic;
+  font-family: "LibreFranklin";
+  src: url("../../static/fonts/LibreFranklin-Italic-VariableFont_wght.ttf") format("truetype");
+  font-display: swap;
+  font-style: italic;
 }
 
 /* You can override the default Infima variables here. */
@@ -40,30 +40,30 @@ Removing base styles ensures docusaurus' base styles work
 }
 
 h1 {
-  font-family: 'LibreFranklin', sans-serif;
+  font-family: "LibreFranklin", sans-serif;
 }
 h2 {
-  font-family: 'LibreFranklin', sans-serif;
+  font-family: "LibreFranklin", sans-serif;
 }
 h3 {
-  font-family: 'LibreFranklin', sans-serif;
+  font-family: "LibreFranklin", sans-serif;
 }
 h4 {
-  font-family: 'LibreFranklin', sans-serif;
+  font-family: "LibreFranklin", sans-serif;
 }
 
 .navbar__title {
-  font-family: 'LibreFranklin', sans-serif;
+  font-family: "LibreFranklin", sans-serif;
   font-weight: medium;
   font-style: normal;
   font-size: 2rem;
   line-height: 1.5;
-  letter-spacing: 0.05em; 
-  color: rgba(12, 175, 186, 1); 
+  letter-spacing: 0.05em;
+  color: rgba(12, 175, 186, 1);
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --ifm-color-primary: rgba(12, 175, 186, 1);
   --ifm-color-primary-dark: rgba(12, 175, 186, 1);
   --ifm-color-primary-darker: rgba(12, 175, 186, 1);

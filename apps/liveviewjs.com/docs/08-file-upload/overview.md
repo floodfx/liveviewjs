@@ -4,16 +4,21 @@ sidebar_position: 1
 
 # Overview
 
-File uploads are another common feature of web applications. **LiveViewJS** provides built in support for file uploads, image previews, upload progress, drag and drop, error handling, and more.  Handling file uploads can be intimidating, but **LiveViewJS** makes it easy.
+File uploads are another common feature of web applications. **LiveViewJS** provides built in support for file uploads,
+image previews, upload progress, drag and drop, error handling, and more. Handling file uploads can be intimidating, but
+**LiveViewJS** makes it easy.
 
 ## Learn by Example
-We're going to start with a complete example and then walk through the code. The example LiveView allows you to create a new photo album with a name and up to 3 photos.
 
-:::info
-  This example is available as part of the `packages/examples` directory in the [LiveViewJS repository](https://github.com/floodfx/liveviewjs) and runs on both the Express (NodeJS) and Oak (Deno) servers.
-:::
+We're going to start with a complete example and then walk through the code. The example LiveView allows you to create a
+new photo album with a name and up to 3 photos.
+
+:::info This example is available as part of the `packages/examples` directory in the
+[LiveViewJS repository](https://github.com/floodfx/liveviewjs) and runs on both the Express (NodeJS) and Oak (Deno)
+servers. :::
 
 ## Example LiveView Code
+
 ```ts
 import {
   createLiveView,
@@ -234,7 +239,10 @@ function filename(entry: UploadEntry) {
 Let's review each part in more detail to understand what's going on.
 
 ## Configure the upload
-First, we need to tell LiveView that we want to upload files and we use the `socket.allowUpload` method in `mount` to do so:
+
+First, we need to tell LiveView that we want to upload files and we use the `socket.allowUpload` method in `mount` to do
+so:
+
 ```ts
 mount: (socket) => {
 ...
@@ -247,13 +255,19 @@ mount: (socket) => {
 ...
 }
 ```
-The `allowUpload` method takes a `config_name` and an `UploadConfig` object. The `config_name` is used to identify the upload config elsewhere in the LiveView lifecycle methods. More details on [config options](upload-config-options).
+
+The `allowUpload` method takes a `config_name` and an `UploadConfig` object. The `config_name` is used to identify the
+upload config elsewhere in the LiveView lifecycle methods. More details on [config options](upload-config-options).
 
 ## User Interface
+
 There is a lot going on in our LiveView's `render` function so let's walk through that.
 
 ### Setup the Form
-As usual, we start by rendering the form with the `form_for` helper and set the `phx-change` and `phx-submit` events to `validate` and `save` respectively. 
+
+As usual, we start by rendering the form with the `form_for` helper and set the `phx-change` and `phx-submit` events to
+`validate` and `save` respectively.
+
 ```ts
 ...
 ${form_for<PhotoGroup>("#", meta.csrfToken, {
@@ -263,28 +277,38 @@ ${form_for<PhotoGroup>("#", meta.csrfToken, {
   })}
 ...
 ```
+
 We will look at the `handleEvent` method later to see how especially the `save` event is handled.
 
 ### File Input and Drag and Drop
-Next, we need a place for the user to choose files for upload. We use the `live_file_input` helper to render the file input and the `phx-drop-target` attribute to make the element a drop target for files. The `phx-drop-target` attribute takes a `ref` which is used to identify the upload config in the LiveView lifecycle methods. You'll notice we are referencing the `uploads.photos` config we configured in `mount` earlier.
+
+Next, we need a place for the user to choose files for upload. We use the `live_file_input` helper to render the file
+input and the `phx-drop-target` attribute to make the element a drop target for files. The `phx-drop-target` attribute
+takes a `ref` which is used to identify the upload config in the LiveView lifecycle methods. You'll notice we are
+referencing the `uploads.photos` config we configured in `mount` earlier.
+
 ```ts
 ...
 <!-- file input / drag and drop -->
 <div phx-drop-target="${uploads.photos.ref}" style="border: 2px dashed #ccc; padding: 10px; margin: 10px 0;">
   ${live_file_input(uploads.photos)}
-  or drag and drop files here 
-</div>  
+  or drag and drop files here
+</div>
 ...
 ```
-:::info
-  🤯 We just added a drag and drop target to our user interface with a single attribute (i.e. `phx-drop-target="${uploads.photos.ref}"`)! Pretty cool, right!? Thanks Phoenix LiveView team!! 🙌
-:::
 
-:::caution
-  The `live_file_input` helper goes beyond just rendering the file input, it also adds some required attributes to the file input and works with the rest of **LiveViewJS** to handle uploads. You should always use it rather than rendering the file input yourself.
-:::
+:::info 🤯 We just added a drag and drop target to our user interface with a single attribute (i.e.
+`phx-drop-target="${uploads.photos.ref}"`)! Pretty cool, right!? Thanks Phoenix LiveView team!! 🙌 :::
+
+:::caution The `live_file_input` helper goes beyond just rendering the file input, it also adds some required attributes
+to the file input and works with the rest of **LiveViewJS** to handle uploads. You should always use it rather than
+rendering the file input yourself. :::
+
 ### Dynamic Help Text
-A very nice aspect of having the upload config available in `render` is it allows us to dynamically render help text based on the upload config:
+
+A very nice aspect of having the upload config available in `render` is it allows us to dynamically render help text
+based on the upload config:
+
 ```ts
 ...
 Add up to ${uploads.photos.maxEntries} photos
@@ -293,27 +317,39 @@ Add up to ${uploads.photos.maxEntries} photos
 ```
 
 ### Show preview, progress, and cancel for entries
-When a user selects (or drags and drops) files for upload, the `meta.uploads` object is automatically updated with those entries (and any errors for the upload or entries).  We can use the `upload.entries` (and `upload.errors`) to show the user what will be uploaded or what errors in their selections.
+
+When a user selects (or drags and drops) files for upload, the `meta.uploads` object is automatically updated with those
+entries (and any errors for the upload or entries). We can use the `upload.entries` (and `upload.errors`) to show the
+user what will be uploaded or what errors in their selections.
+
 ```ts
 ...
 <!-- render the preview, progress, and cancel button of the selected files -->
 ${uploads.photos.entries.map(renderEntry)}
 ...
 ```
-The `renderEntry` function shows the image preview using `live_img_preview` and the progress of the upload using a `progress` element. We also render a cancel button using the `phx-click` event to cancel the upload.
 
-:::info
-  🤯 Since we are allowing images only, we can use the `live_img_preview` helper to render a preview of the image before it is uploaded.  Again, pretty amazing that we get an image preview for free! Thanks Phoenix LiveView team!! 🙌
+The `renderEntry` function shows the image preview using `live_img_preview` and the progress of the upload using a
+`progress` element. We also render a cancel button using the `phx-click` event to cancel the upload.
+
+:::info 🤯 Since we are allowing images only, we can use the `live_img_preview` helper to render a preview of the image
+before it is uploaded. Again, pretty amazing that we get an image preview for free! Thanks Phoenix LiveView team!! 🙌
 :::
 
 ### Show errors as well
-We configured the file uploads to only allow certain image file types, limited the number of files to 3, and limited the file size to 10MB. If the user selects files that don't meet these constraints, the `uploads` object will be updated with the errors for the given config. We can use the `upload.photos.errors` to show the user what errors they have made for the upload config and `entry.errors` to show the errors for a given entry.
+
+We configured the file uploads to only allow certain image file types, limited the number of files to 3, and limited the
+file size to 10MB. If the user selects files that don't meet these constraints, the `uploads` object will be updated
+with the errors for the given config. We can use the `upload.photos.errors` to show the user what errors they have made
+for the upload config and `entry.errors` to show the errors for a given entry.
+
 ```ts
 ...
 <!-- render the errors for the upload config -->
 ${uploads.photos.errors?.map((error) => html`<p class="invalid-feedback">${error}</p>`)}
 ...
 ```
+
 ```ts
 ...
 <!-- render the errors for the entry -->
@@ -321,13 +357,19 @@ ${entry.errors?.map((error) => html`<p class="invalid-feedback">${error}</p>`)}
 ...
 ```
 
-Whew, we've got some pretty amazing functionality in our UI and we haven't even uploaded any files yet! Let's look at the LiveView lifecycle methods to see how we handle the uploads.
+Whew, we've got some pretty amazing functionality in our UI and we haven't even uploaded any files yet! Let's look at
+the LiveView lifecycle methods to see how we handle the uploads.
 
 ## `handleEvent` Cases
+
 `handleEvent` has two main events that it is handling for us: `cancel`, and `save`. Let's look at each of these in turn.
 
 ### `cancel` event
-A user may want to remove an entry from the setup of files they have selected.  Perhaps the file is too large or the wrong type or they've simply changed their mind. Our `renderEntry` function renders a cancel button next to each entry that fires off the `cancel` event enabling the user to remove the entry from the upload. 
+
+A user may want to remove an entry from the setup of files they have selected. Perhaps the file is too large or the
+wrong type or they've simply changed their mind. Our `renderEntry` function renders a cancel button next to each entry
+that fires off the `cancel` event enabling the user to remove the entry from the upload.
+
 ```ts
 ...
 handleEvent: (event, socket) => {
@@ -342,18 +384,19 @@ handleEvent: (event, socket) => {
 }
 ...
 ```
-:::note
-  A user can cancel an upload anytime before the `socket.consumeUploadedEntries` method is called. 
-:::
+
+:::note A user can cancel an upload anytime before the `socket.consumeUploadedEntries` method is called. :::
 
 ### `save` event
-The `save` event is automatically fired when the user submits the form. In the case of file uploads, this event is not sent to the `handleEvent` method until after all the files have been fully uploaded. 
 
-:::info
-  The upload progress for each entry will automatically be updated and the `render` method will be executed as they are uploaded allowing us to show the user the progress of the upload.
-:::
+The `save` event is automatically fired when the user submits the form. In the case of file uploads, this event is not
+sent to the `handleEvent` method until after all the files have been fully uploaded.
+
+:::info The upload progress for each entry will automatically be updated and the `render` method will be executed as
+they are uploaded allowing us to show the user the progress of the upload. :::
 
 Let's look at the `save` event handler:
+
 ```ts
 ...
 handleEvent: (event, socket) => {
@@ -396,13 +439,17 @@ handleEvent: (event, socket) => {
 ```
 
 It's pretty well commented but to summarize:
-1. We get the completed uploads from the `photos` upload config. (Note: the files are guaranteed to be completed here because `save` is the event called only after all the uploads are complete).
+
+1. We get the completed uploads from the `photos` upload config. (Note: the files are guaranteed to be completed here
+   because `save` is the event called only after all the uploads are complete).
 2. We map each entry to a url and add the `urls` to the `event` (which will become the `photoGroup`).
-3. We attempt to save the `photoGroup` and check if the changeset is valid. If not, we return here to show the errors rather than `consumeUploadedEntries`.
-4. If the changeset is valid, we `consumeUploadedEntries` which will move the files from the temp directory to the public directory and importantly, remove these files from the upload config.
+3. We attempt to save the `photoGroup` and check if the changeset is valid. If not, we return here to show the errors
+   rather than `consumeUploadedEntries`.
+4. If the changeset is valid, we `consumeUploadedEntries` which will move the files from the temp directory to the
+   public directory and importantly, remove these files from the upload config.
 5. Finally, We update the `context` and clear the form.
 
 ## Conclusion
-Thanks for sticking with us through that.  It was long and detailed and hopefully it was helpful.  We think **LiveViewJS** provides some pretty amazing out of the box support for file uploads.
 
-
+Thanks for sticking with us through that. It was long and detailed and hopefully it was helpful. We think **LiveViewJS**
+provides some pretty amazing out of the box support for file uploads.

@@ -4,20 +4,28 @@ sidebar_position: 2
 
 # Add/Remove Class Commands
 
-Add or remove css classes including optional transition classes from an element using the `add_class` and `remove_class` commands.
+Add or remove css classes including optional transition classes from an element using the `add_class` and `remove_class`
+commands.
 
 ## Add Class Command
-The `add_class` command adds one or more css classes to an element.  
+
+The `add_class` command adds one or more css classes to an element.
+
 ```typescript
 new JS().add_class(names: string, options?: ClassOptions)
-``` 
-* `names` - A string of space separated css class names to add to the element
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to add the class to.  Defaults to the element that the JS Command is attached to.
-  * `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200   
-  * `transition` - The string of classes to apply before adding the classes, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+```
+
+- `names` - A string of space separated css class names to add to the element
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to add the class to. Defaults to the element that the JS Command is
+    attached to.
+  - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
+  - `transition` - The string of classes to apply before adding the classes, or a 3-tuple containing the transition
+    class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out
+    duration-300", "opacity-0", "opacity-100"]
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -34,17 +42,24 @@ Examples
 ```
 
 ## Remove Class Command
-The `remove_class` command removes one or more css classes from an element.  
+
+The `remove_class` command removes one or more css classes from an element.
+
 ```typescript
 new JS().remove_class(names: string, options?: ClassOptions)
-``` 
-* `names` - A string of space separated css class names to remove from the element
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to remove the class from.  Defaults to the element that the JS Command is attached to.
-  * `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200   
-  * `transition` - The string of classes to apply before removing the classes, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+```
+
+- `names` - A string of space separated css class names to remove from the element
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to remove the class from. Defaults to the element that the JS Command
+    is attached to.
+  - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
+  - `transition` - The string of classes to apply before removing the classes, or a 3-tuple containing the transition
+    class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out
+    duration-300", "opacity-0", "opacity-100"]
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 

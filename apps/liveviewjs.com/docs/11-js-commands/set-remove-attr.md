@@ -7,15 +7,20 @@ sidebar_position: 3
 Set or remove an attribute from an HTML element using the `set_attribute` and `remove_attribute` commands.
 
 ## Set Attribute Command
-The `set_attribute` command add or updates a single attribute on the target element.  
+
+The `set_attribute` command add or updates a single attribute on the target element.
+
 ```typescript
 new JS().set_attribute(attr: [string, string], options?: AttributeOptions)
-``` 
-* `attr` - the 2-tuple of the attribute name and value to set
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to set the attribute on.  Defaults to the element that the JS Command is attached to.  
+```
+
+- `attr` - the 2-tuple of the attribute name and value to set
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to set the attribute on. Defaults to the element that the JS Command
+    is attached to.
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -31,15 +36,20 @@ Examples
 ```
 
 ## Remove Attribute Command
-The `remove_attribute` command removes a single attribute from the target element.  
+
+The `remove_attribute` command removes a single attribute from the target element.
+
 ```typescript
 new JS().remove_attribute(attr: string, options?: AttributeOptions)
-``` 
-* `attr` - the attribute name to remove
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to remove the attribute from.  Defaults to the element that the JS Command is attached to.  
+```
+
+- `attr` - the attribute name to remove
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to remove the attribute from. Defaults to the element that the JS
+    Command is attached to.
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
