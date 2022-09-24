@@ -12,7 +12,7 @@ Like all software, this is a work in progress. If you have any feedback, please 
 ## Contributing is ❤️
 
 We welcome questions, comments, documentation, and code contributions. If you'd like to contribute, please feel free to
-open an issure or a pull request. We'll do our best to respond quickly and get it merged!
+open an issue or a pull request. We'll do our best to respond quickly and get it merged!
 
 ## Sponsorship is ⛽️
 
