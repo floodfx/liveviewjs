@@ -60,13 +60,13 @@ return the latest order, sales, and review data from a database, feed, API, etc.
 - The LiveView renders a dashboard that refreshes every second with the latest order, sales, and review data.
 - `mount` kicks off the `repeat` function that sends a `tick` event to `handleInfo` every second.
 - The `handleInfo` method then fetches the data asynchronously and updates the context with the latest data.
-- When the latest data is successfully fetched, the `context` is updated which causes the `render` method to be called
-  again pushing the latest data to the client.
+- When the latest data is successfully fetched, the `context` is updated, which causes the `render` method to be called
+  again, pushing the latest data to the client.
 
 ## `handleInfo` Use Cases
 
 There are three main use cases for `handleInfo`:
 
-- Handling a asyncrhonous process initiated from a user event without blocking the UI
-- Handling a asyncrhonous process initiated from a background process
+- Handling an asynchronous process initiated from a user event without blocking the UI
+- Handling an asynchronous process initiated from a background process
 - Handling a pub/sub message

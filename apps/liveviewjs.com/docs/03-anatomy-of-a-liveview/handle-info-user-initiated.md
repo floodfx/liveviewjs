@@ -2,9 +2,9 @@
 sidebar_position: 7
 ---
 
-# User Initiated Event with `handleInfo`
+# User-Initiated Event with `handleInfo`
 
-Search is a common use case where a user initiated event might be handled by `handleInfo`.
+Search is a common use case where a user-initiated event might be handled by `handleInfo`.
 
 ## Example Search LiveView
 
@@ -84,19 +84,19 @@ function renderResults(results: string[], loading: boolean) {
 
 ## How it works
 
-- The LiveView renders a form that allows a user to search for a user by name. When the user submits the form the
+- The LiveView renders a form that allows a user to search for a user by name. When the user submits the form, the
   `handleEvent` method is called with the `search` event.
-- The `handleEvent` method then updates the `context` with the search text, sets `loading` to `true`, and sends an
+- The `handleEvent` method then updates the `context` with the search text, sets `loading` to `true`, and sends a
   `doSearch` info event to the `handleInfo` method.
 - The `handleInfo` method then performs the search asynchronously (i.e. _it doesn't block rendering from the
   `handleEvent`_).
 - When the search is completed `handleInfo` and updates the results in the context and sets `loading` to `false`.
-  Updating the context causes the `render` method to be called again which renders the search results.
+  Updating the context causes the `render` method to be called again, which renders the search results.
 
 ## `handleInfo` Use Cases
 
 There are three main use cases for `handleInfo`:
 
-- Handling a asyncrhonous process initiated from a user event without blocking the UI
-- Handling a asyncrhonous process initiated from a background process
+- Handling an asynchronous process initiated from a user event without blocking the UI
+- Handling an asynchronous process initiated from a background process
 - Handling a pub/sub message

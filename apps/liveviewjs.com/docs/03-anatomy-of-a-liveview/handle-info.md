@@ -20,6 +20,6 @@ handleInfo(info: TInfos, socket: LiveViewSocket<TContext, TInfos>): void | Promi
 
 There are three main use cases for `handleInfo`:
 
-- Handling a asyncrhonous process initiated from a user event without blocking the UI
-- Handling a asyncrhonous process initiated from a background process
+- Handling an asynchronous process initiated from a user event without blocking the UI
+- Handling an asynchronous process initiated from a background process
 - Handling a pub/sub message

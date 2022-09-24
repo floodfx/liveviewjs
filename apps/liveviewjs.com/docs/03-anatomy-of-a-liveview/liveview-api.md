@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # LiveView API
 
-:::note We are going to be using Typescript in our examples because **LiveViewJS** is very thouroughly typed which
+:::note We are going to be using Typescript in our examples because **LiveViewJS** is very thoroughly typed, which
 provides great type hints, autocompletion, etc. If the typescript syntax is confusing, just ignore it and focus on the
 code. :::
 
@@ -13,7 +13,7 @@ code. :::
 The **LiveViewJS** API is extremely simple but very flexible. There are only five methods that make up the LiveView API:
 `mount`, `render`, `handleEvent`, `handleInfo`, and `handleParams`. Technically, only `render` is required. The other
 four methods (`mount`, `handleEvent`, `handleInfo`, `handleParams`) are optional but usually `mount` and at least one
-other `handle` method is defined as well to enable a dynamic experience.
+other `handle` method is defined to enable a dynamic experience.
 
 :::info The smallest, valid LiveView only defines `render` like so:
 
@@ -87,7 +87,7 @@ Typescript annotations `TContext`, `TEvents`, and `TInfo`.
 The `html` function is a tagged template literal that allows you to write HTML with dynamic content in a very normal way
 using javascript
 [template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals). The `html` tag
-handles escaping content in order to prevent injection attacks but just as important, the `html` tag also
+handles escaping content to prevent injection attacks but just as importantly, the `html` tag also
 (transparently) creates the data structure necessary to efficiently calculate diffs between the current HTML and the new
 HTML. This is what allows **LiveViewJS** to efficiently update the DOM with only the changes.
 
