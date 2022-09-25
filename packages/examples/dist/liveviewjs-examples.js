@@ -1197,17 +1197,17 @@ function renderLoading$1() {
 const BookSchema = zod.z.object({
     id: zod.z.string().default(nanoid.nanoid),
     name: zod.z.string().min(2).max(100),
-    author: zod.z.string().min(2).max(100),
+    author: zod.z.string().min(4).max(100),
     checked_out: zod.z.boolean().default(false),
 });
-// in memory data store for Books
-const booksDB = {};
 // Book LiveViewChangesetFactory
 const bookCSF = liveviewjs.newChangesetFactory(BookSchema);
+// in memory data store for Books
+const booksDB = {};
 // Pub/Sub for publishing changes
 const pubSub$2 = new liveviewjs.SingleProcessPubSub();
 const booksLiveView = liveviewjs.createLiveView({
-    mount: async (socket) => {
+    mount: (socket) => {
         if (socket.connected) {
             socket.subscribe("books");
         }
@@ -1225,7 +1225,7 @@ const booksLiveView = liveviewjs.createLiveView({
                 });
                 break;
             case "save":
-                // attempt to create the volunteer from the form data
+                // attempt to create the book from the form data
                 const saveChangeset = bookCSF({}, event, "save");
                 let changeset = saveChangeset;
                 if (saveChangeset.valid) {
@@ -1963,6 +1963,7 @@ const searchLiveView = liveviewjs.createLiveView({
             ${loading ? "readonly" : ""} />
 
           <button type="submit">🔎</button>
+          <div style="font-size: 10px">(Try "80204" for results)</div>
         </form>
 
         ${loading ? renderLoading() : ""}
@@ -2276,7 +2277,7 @@ const photosLiveView = liveviewjs.createLiveView({
         socket.allowUpload("photos", {
             accept: [".png", ".jpg", ".jpeg", ".gif"],
             maxEntries: 3,
-            maxFileSize: 10 * 1024 * 1024, // 10MB
+            maxFileSize: 5 * 1024 * 1024, // 5MB
         });
     },
     handleEvent: async (event, socket) => {
@@ -2389,7 +2390,7 @@ function renderEntry(entry) {
     var _a;
     return liveviewjs.html `
     <div style="display: flex; align-items: center;">
-      <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${liveviewjs.live_img_preview(entry)}</div>
+      <div style="width: 250px; margin: 2rem 0;">${liveviewjs.live_img_preview(entry)}</div>
       <div style="display: flex; align-items: center; margin-left: 2rem;">
         <progress
           style="position: relative; top: 8px; width: 150px; height: 1em;"
@@ -2571,7 +2572,7 @@ const serversLiveView = liveviewjs.createLiveView({
         <div class="sidebar">
           <nav>
             ${servers.map((server) => {
-            return liveviewjs.live_patch(link_body(server), {
+            return liveviewjs.live_patch(link_body(server, server.id === selectedServer.id), {
                 to: { path: "/servers", params: { id: server.id } },
                 className: server.id === selectedServer.id ? "selected" : "",
             });
@@ -2607,8 +2608,10 @@ const serversLiveView = liveviewjs.createLiveView({
     `;
     },
 });
-function link_body(server) {
-    return liveviewjs.html `<button>🤖 ${server.name}</button>`;
+function link_body(server, selected) {
+    return liveviewjs.html `<button style="margin-left: 12px; background-color: ${selected ? "blue" : "gray"}">
+    🤖 ${server.name}
+  </button>`;
 }
 
 const items = [

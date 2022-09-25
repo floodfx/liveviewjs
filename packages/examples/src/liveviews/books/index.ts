@@ -16,18 +16,18 @@ import { z } from "zod";
 const BookSchema = z.object({
   id: z.string().default(nanoid),
   name: z.string().min(2).max(100),
-  author: z.string().min(2).max(100),
+  author: z.string().min(4).max(100),
   checked_out: z.boolean().default(false),
 });
 
 // Infer the Book type from the BookSchema
 type Book = z.infer<typeof BookSchema>;
 
-// in memory data store for Books
-const booksDB: Record<string, Book> = {};
-
 // Book LiveViewChangesetFactory
 const bookCSF = newChangesetFactory<Book>(BookSchema);
+
+// in memory data store for Books
+const booksDB: Record<string, Book> = {};
 
 // Pub/Sub for publishing changes
 const pubSub = new SingleProcessPubSub();
@@ -43,7 +43,7 @@ export const booksLiveView = createLiveView<
   | { type: "validate"; name: string; author: string }
   | { type: "toggle-checkout"; id: string }
 >({
-  mount: async (socket) => {
+  mount: (socket) => {
     if (socket.connected) {
       socket.subscribe("books");
     }
@@ -62,7 +62,7 @@ export const booksLiveView = createLiveView<
         });
         break;
       case "save":
-        // attempt to create the volunteer from the form data
+        // attempt to create the book from the form data
         const saveChangeset = bookCSF({}, event, "save");
         let changeset = saveChangeset;
         if (saveChangeset.valid) {
@@ -116,12 +116,12 @@ export const booksLiveView = createLiveView<
         })}
           
           <div class="field">
-            ${text_input<Book>(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
+            ${text_input(changeset, "name", { placeholder: "Name", autocomplete: "off", phx_debounce: 1000 })}
             ${error_tag(changeset, "name")}
           </div>
 
           <div class="field">
-            ${text_input<Book>(changeset, "author", { placeholder: "Author", autocomplete: "off", phx_debounce: 1000 })}
+            ${text_input(changeset, "author", { placeholder: "Author", autocomplete: "off", phx_debounce: 1000 })}
             ${error_tag(changeset, "author")}
           </div>
 

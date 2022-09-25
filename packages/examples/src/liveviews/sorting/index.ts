@@ -1,16 +1,4 @@
-import {
-  BaseLiveView,
-  createLiveView,
-  html,
-  HtmlSafeString,
-  join,
-  LiveViewMeta,
-  LiveViewMountParams,
-  LiveViewSocket,
-  live_patch,
-  options_for_select,
-  SessionData,
-} from "liveviewjs";
+import { createLiveView, html, HtmlSafeString, join, live_patch, options_for_select } from "liveviewjs";
 import { almostExpired, Donation, donations, listItems } from "./data";
 
 export interface PaginateOptions {
