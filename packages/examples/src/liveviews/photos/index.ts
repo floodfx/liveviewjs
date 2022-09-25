@@ -40,8 +40,8 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
     // configure the upload constraints
     socket.allowUpload("photos", {
       accept: [".png", ".jpg", ".jpeg", ".gif"], // only allow images
-      maxEntries: 3,
-      maxFileSize: 10 * 1024 * 1024, // 10MB
+      maxEntries: 3, // only 3 entries per upload
+      maxFileSize: 5 * 1024 * 1024, // 5MB
     });
   },
   handleEvent: async (event, socket) => {
@@ -155,7 +155,7 @@ export const photosLiveView = createLiveView<PhotosContext, PhotosEvents>({
 function renderEntry(entry: UploadEntry) {
   return html`
     <div style="display: flex; align-items: center;">
-      <div style="width: 250px; border: 1px solid black; margin: 2rem 0;">${live_img_preview(entry)}</div>
+      <div style="width: 250px; margin: 2rem 0;">${live_img_preview(entry)}</div>
       <div style="display: flex; align-items: center; margin-left: 2rem;">
         <progress
           style="position: relative; top: 8px; width: 150px; height: 1em;"

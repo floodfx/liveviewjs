@@ -59,6 +59,7 @@ export const searchLiveView = createLiveView<
             ${loading ? "readonly" : ""} />
 
           <button type="submit">🔎</button>
+          <div style="font-size: 10px">(Try "80204" for results)</div>
         </form>
 
         ${loading ? renderLoading() : ""}

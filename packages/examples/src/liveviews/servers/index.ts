@@ -39,7 +39,7 @@ export const serversLiveView = createLiveView<
         <div class="sidebar">
           <nav>
             ${servers.map((server) => {
-              return live_patch(link_body(server), {
+              return live_patch(link_body(server, server.id === selectedServer.id), {
                 to: { path: "/servers", params: { id: server.id } },
                 className: server.id === selectedServer.id ? "selected" : "",
               });
@@ -76,6 +76,8 @@ export const serversLiveView = createLiveView<
   },
 });
 
-function link_body(server: Server) {
-  return html`<button>🤖 ${server.name}</button>`;
+function link_body(server: Server, selected: boolean) {
+  return html`<button style="margin-left: 12px; background-color: ${selected ? "blue" : "gray"}">
+    🤖 ${server.name}
+  </button>`;
 }
