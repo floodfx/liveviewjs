@@ -18,10 +18,6 @@
     "outDir": "./build",
     "baseUrl": "."
   },
-  "include": [
-    "./src/**/*",
-    "../examples/src/liveviews/counter/rtCounter.ts",
-    "../examples/src/liveviews/hello/helloToggleEmoji.ts"
-  ],
+  "include": ["./src/**/*"],
   "exclude": ["build", "node_modules", "./**/*.test.ts", "./src/client/**/*"]
 }
