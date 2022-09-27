@@ -110,16 +110,11 @@ describe("test diffs", () => {
     let toggle = false;
     const previousState = html`something ${"foo"} blah ${toggle ? "bar" : html`baz${toggle ? "" : subbaz}`}`;
     toggle = true;
-    // not sure this should happen IRL because templates should be the same but for sake of testing
     const nextState = html`something ${"foo"} blah ${toggle ? "bar" : html`baz${toggle ? "" : subbaz}`} ${"newkey"}`;
 
     const diff = deepDiff(previousState.partsTree(), nextState.partsTree());
     // console.log("prevState", previousState.partsTree(), "nextState", nextState.partsTree(), "diff", diff);
-    expect(diff).toStrictEqual({
-      1: "bar",
-      2: "newkey",
-      s: ["something ", " blah ", " ", ""],
-    });
+    expect(diff).toStrictEqual(nextState.partsTree());
   });
 
   it("diffs for empty strings", () => {
