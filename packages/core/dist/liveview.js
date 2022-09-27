@@ -516,15 +516,11 @@ function deepDiff(oldParts, newParts) {
     // the diff is all the new parts AND the new statics.  The reason is that
     // statics and dynamics part counts are dependent on each other.  if there are N
     // dynamics there are N+1 statics.
-    let keyCountsDiffer = false;
     if (Object.keys(oldParts).length !== Object.keys(newParts).length) {
-        // // different lengths so diff is all new parts. i.e. new statics and new dynamics
-        // diff = structuredClone(newParts);
-        // return diff;
-        keyCountsDiffer = true;
+        diff = newParts;
+        return diff;
     }
     // if JSON.strigifys are different then iterate through keys
-    // TODO - should we check if key length is different?
     for (let i = 0; i < Object.keys(newParts).length; i++) {
         const key = Object.keys(newParts)[i];
         // the final message to client can also contain keys of 't' and 'e'
@@ -536,13 +532,14 @@ function deepDiff(oldParts, newParts) {
             const oldStatics = oldParts[key];
             const newStatics = newParts[key];
             if (oldStatics.length !== newStatics.length) {
-                // if length is different and if so keep new statics
-                diff[key] = newStatics;
-            }
-            else if (keyCountsDiffer) {
-                // if key counts are different for new and old parts keep the new statics
-                diff[key] = newStatics;
-                // } else if (diffArrays2<string>(oldStatics, newStatics).length > 0) {
+                // if length of statics array is different than we have different
+                // number of dynamics as well. so instead of diffing the old vs new
+                // parts trees by key, we just return the full new parts tree.
+                // Technically this should be caught before we loop through the keys
+                // where we compare lenth of keys of oldParts and newParts.
+                // TODO - throw warning perhaps?
+                diff = newParts;
+                break;
             }
             else if (diffArrays(oldStatics, newStatics)) {
                 // if length is the same but contents are different then keep new statics
