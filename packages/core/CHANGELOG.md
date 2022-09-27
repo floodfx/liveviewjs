@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.7.1
+
+### Patch Changes
+
+- 2385ba3: Fix deepDiff bug where old vs new parts key length is different
+
 ## 0.7.0
 
 ### Minor Changes
