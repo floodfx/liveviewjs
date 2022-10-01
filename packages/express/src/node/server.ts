@@ -9,6 +9,7 @@ import {
   LiveViewRouter,
   LiveViewServerAdaptor,
   LiveViewWrapperTemplate,
+  matchRoute,
   PubSub,
   SerDe,
   SessionData,
@@ -92,13 +93,14 @@ export class NodeExpressLiveViewServer
         const { getRequestPath } = adaptor;
 
         // look up LiveView for route
-        const liveview = this.router[getRequestPath()];
-        if (!liveview) {
+        const matchResult = matchRoute(this.router, getRequestPath());
+        if (!matchResult) {
           // no LiveView found for route so call next() to
           // let a possible downstream route handle the request
           next();
           return;
         }
+        const [liveview, mr] = matchResult;
 
         // defer to liveviewjs to handle the request
         const rootViewHtml = await handleHttpLiveView(
@@ -107,6 +109,7 @@ export class NodeExpressLiveViewServer
           liveview,
           adaptor,
           this.htmlPageTemplate,
+          mr.params,
           this.liveTitleOptions,
           this.wrapperTemplate
         );
