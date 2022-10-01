@@ -1733,6 +1733,17 @@ function today(path) {
     });
 }
 
+const helloNameLiveView = liveviewjs.createLiveView({
+    mount: (socket, _, params) => {
+        var _a;
+        socket.assign({ name: (_a = params.name) !== null && _a !== void 0 ? _a : "World" });
+    },
+    render: (context) => {
+        const { name } = context;
+        return liveviewjs.html `👋 ${name}! `;
+    },
+});
+
 const helloToggleEmojiLiveView = liveviewjs.createLiveView({
     mount: (socket) => {
         socket.assign({ useEmoji: false });
@@ -3130,6 +3141,7 @@ exports.booksLiveView = booksLiveView;
 exports.counterLiveView = counterLiveView;
 exports.dashboardLiveView = dashboardLiveView;
 exports.decarbLiveView = decarbLiveView;
+exports.helloNameLiveView = helloNameLiveView;
 exports.helloToggleEmojiLiveView = helloToggleEmojiLiveView;
 exports.jsCmdsLiveView = jsCmdsLiveView;
 exports.paginateLiveView = paginateLiveView;
