@@ -62,6 +62,7 @@ describe("test liveview manager", () => {
       pubSub,
       flashAdaptor,
       filesAdaptor,
+      {},
       (sessionData, innerContent) => {
         return html`<div>${innerContent}</div>`;
       }
@@ -73,7 +74,8 @@ describe("test liveview manager", () => {
       serDe,
       pubSub,
       flashAdaptor,
-      filesAdaptor
+      filesAdaptor,
+      {}
     );
   });
 
@@ -442,7 +444,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
@@ -469,7 +472,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
@@ -503,7 +507,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
@@ -529,7 +534,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     const spyMaybeAddPageTitleToParts = jest.spyOn(cm as any, "maybeAddPageTitleToParts");
 
@@ -553,7 +559,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
 
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
@@ -577,7 +584,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
 
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
@@ -600,7 +608,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -631,7 +640,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       pubSub,
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -649,7 +659,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     const spyCm = jest.spyOn(cm as any, "onPushPatch");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
@@ -681,7 +692,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     const spyCm = jest.spyOn(cm as any, "onPushRedirect");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
@@ -713,7 +725,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     const spyCm = jest.spyOn(cm as any, "onPushEvent");
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
@@ -750,6 +763,7 @@ describe("test liveview manager", () => {
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
       new TestNodeFileSystemAdatptor(),
+      {},
       async (session, innerContent) => {
         const flashAdaptor = new SessionFlashAdaptor();
         const _ = await flashAdaptor.peekFlash(session, "info");
@@ -824,7 +838,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
 
@@ -856,7 +871,8 @@ describe("test liveview manager", () => {
       new JsonSerDe(),
       new SingleProcessPubSub(),
       new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor()
+      new TestNodeFileSystemAdatptor(),
+      {}
     );
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
     // use inline shapshot to see liveViewRootTemplate rendered

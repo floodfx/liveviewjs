@@ -3,7 +3,7 @@ import { SerDe } from "../adaptor";
 import { FileSystemAdaptor } from "../adaptor/files";
 import { FlashAdaptor } from "../adaptor/flash";
 import { WsAdaptor } from "../adaptor/websocket";
-import { LiveViewWrapperTemplate } from "../live";
+import { LiveViewWrapperTemplate, matchRoute } from "../live";
 import { PubSub } from "../pubsub/pubSub";
 import { LiveViewManager } from "./liveViewManager";
 import { PhxHeartbeatIncoming, PhxIncomingMessage, PhxJoinIncoming, PhxJoinUploadIncoming, PhxProtocol } from "./types";
@@ -130,20 +130,22 @@ export class WsMessageRouter {
     const url = new URL(joinUrl);
 
     // route to the correct component based on the resolved url (pathname)
-    const component = this.router[url.pathname];
-    if (!component) {
-      throw Error(`no component found for ${url}`);
+    const matchResult = matchRoute(this.router, url.pathname);
+    if (!matchResult) {
+      throw Error(`no LiveView found for ${url}`);
     }
+    const [liveView, mr] = matchResult;
 
     // create a LiveViewManager for this connection / LiveView
     const liveViewManager = new LiveViewManager(
-      component,
+      liveView,
       connectionId,
       wsAdaptor,
       this.serDe,
       this.pubSub,
       this.flashAdaptor,
       this.fileSystemAdaptor,
+      mr.params,
       this.liveViewRootTemplate
     );
     await liveViewManager.handleJoin(message);

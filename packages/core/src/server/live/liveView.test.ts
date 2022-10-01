@@ -10,7 +10,7 @@ import { LiveViewManager } from "../socket/liveViewManager";
 import { PhxJoinIncoming } from "../socket/types";
 import { LiveComponentMeta } from "./liveComponent";
 import { BaseLiveView, createLiveView, LiveViewMeta, LiveViewMountParams } from "./liveView";
-import { LiveViewRouter } from "./types";
+import { LiveViewRouter } from "./router";
 
 describe("test LiveViewMeta", () => {
   it("test meta", async () => {
@@ -102,7 +102,8 @@ function newManager(callback: (message: string) => void): LiveViewManager {
     new JsonSerDe(),
     new SingleProcessPubSub(),
     new SessionFlashAdaptor(),
-    new TestNodeFileSystemAdatptor()
+    new TestNodeFileSystemAdatptor(),
+    {}
   );
 }
 

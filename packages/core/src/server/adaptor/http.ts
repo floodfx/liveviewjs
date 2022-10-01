@@ -6,6 +6,7 @@ import {
   LiveViewHtmlPageTemplate,
   LiveViewTemplate,
   LiveViewWrapperTemplate,
+  PathParams,
 } from "../live";
 import { SessionData } from "../session";
 import { HttpLiveViewSocket } from "../socket/liveSocket";
@@ -61,6 +62,7 @@ export const handleHttpLiveView = async (
   liveView: LiveView,
   adaptor: HttpRequestAdaptor,
   pageRenderer: LiveViewHtmlPageTemplate,
+  pathParams: PathParams,
   pageTitleDefaults?: LiveTitleOptions,
   rootRenderer?: LiveViewWrapperTemplate
 ) => {
@@ -78,7 +80,11 @@ export const handleHttpLiveView = async (
   const liveViewSocket = new HttpLiveViewSocket<AnyLiveContext>(liveViewId);
 
   // execute the `LiveView`'s `mount` function, passing in the data from the HTTP request
-  await liveView.mount(liveViewSocket, { ...sessionData }, { _csrf_token: sessionData._csrf_token, _mounts: -1 });
+  await liveView.mount(
+    liveViewSocket,
+    { ...sessionData },
+    { _csrf_token: sessionData._csrf_token, _mounts: -1, ...pathParams }
+  );
 
   // check for redirects in `mount`
   if (liveViewSocket.redirect) {

@@ -29,7 +29,8 @@ describe("test http adaptor", () => {
       new TestHttpAdaptor(),
       (pageTitleDefault, csrfToken, content) => {
         return html`<main>${content}</main>`;
-      }
+      },
+      {}
     );
 
     expect(view).toMatchSnapshot();
@@ -45,7 +46,8 @@ describe("test http adaptor", () => {
       adaptor,
       (pageTitleDefault, csrfToken, content) => {
         return html`<main>${content}</main>`;
-      }
+      },
+      {}
     );
 
     expect(adaptor.redirect).toEqual("/redirectM");
@@ -63,7 +65,8 @@ describe("test http adaptor", () => {
       adaptor,
       (pageTitleDefault, csrfToken, content) => {
         return html`<main>${content}</main>`;
-      }
+      },
+      {}
     );
 
     expect(adaptor.redirect).toEqual("/redirectHP");
@@ -82,7 +85,8 @@ describe("test http adaptor", () => {
       adaptor,
       (pageTitleDefault, csrfToken, content) => {
         return html`<main>${content}</main>`;
-      }
+      },
+      {}
     );
 
     expect(view).toMatchSnapshot();
@@ -100,7 +104,8 @@ describe("test http adaptor", () => {
       adaptor,
       (pageTitleDefault, csrfToken, content) => {
         return html`<main>${content}</main>`;
-      }
+      },
+      {}
     );
 
     expect(view).toMatchSnapshot();
@@ -119,6 +124,7 @@ describe("test http adaptor", () => {
       (pageTitleDefault, csrfToken, content) => {
         return html`<main>${content}</main>`;
       },
+      {},
       { title: "Default Title" },
       async (session, content) => {
         const flashAdaptor = new SessionFlashAdaptor();

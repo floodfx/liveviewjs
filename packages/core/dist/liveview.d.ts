@@ -1,4 +1,5 @@
 /// <reference types="node" />
+import { MatchResult } from 'path-to-regexp';
 import { SomeZodObject } from 'zod';
 
 /**
@@ -225,6 +226,7 @@ declare class LiveViewManager {
     private uploadConfigs;
     private activeUploadRef;
     private csrfToken?;
+    private pathParams;
     private _infoQueue;
     private _events;
     private _pageTitle;
@@ -234,7 +236,7 @@ declare class LiveViewManager {
     private hasWarnedAboutMissingCsrfToken;
     private _parts;
     private _cidIndex;
-    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, fileAdapter: FileSystemAdaptor, liveViewRootTemplate?: LiveViewWrapperTemplate);
+    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, fileAdapter: FileSystemAdaptor, pathParams: PathParams, liveViewRootTemplate?: LiveViewWrapperTemplate);
     /**
      * The `phx_join` event is the initial connection between the client and the server and initializes the
      * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
@@ -1131,7 +1133,8 @@ interface AnyLivePushEvent extends LiveEvent {
 /**
  * Paramter passed into the `mount` function of a LiveView.
  */
-interface LiveViewMountParams {
+declare type LiveViewMountParams = {
+    [key: string]: string | number;
     /**
      * The cross site request forgery token from the `LiveView` html page.
      */
@@ -1140,7 +1143,7 @@ interface LiveViewMountParams {
      * The number of mounts for this `LiveView`.
      */
     ["_mounts"]: number;
-}
+};
 /**
  * Interface for `LiveView`s supporting the basic lifecycle of a `LiveView`.
  * The `Context` type is for defining the "shape" of the data / state that is
@@ -1413,10 +1416,15 @@ interface CreateLiveComponentParams<TContext extends LiveContext = AnyLiveContex
  */
 declare const createLiveComponent: <TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo>(params: CreateLiveComponentParams<TContext, TEvents, TInfos>) => LiveComponent<TContext, TEvents, TInfos>;
 
-interface LiveViewTemplate extends HtmlSafeString {
-}
 interface LiveViewRouter {
     [key: string]: LiveView<AnyLiveContext, AnyLiveEvent, AnyLiveInfo>;
+}
+declare type PathParams = {
+    [key: string]: string;
+};
+declare function matchRoute(router: LiveViewRouter, path: string): [LiveView<AnyLiveContext, AnyLiveEvent, AnyLiveInfo>, MatchResult<PathParams>] | undefined;
+
+interface LiveViewTemplate extends HtmlSafeString {
 }
 
 /**
@@ -1475,7 +1483,7 @@ interface HttpRequestAdaptor {
  * @param liveViewTemplateRenderer optional @{LiveViewTemplate} used for adding additional content to the LiveView (typically reused across all LiveViews)
  * @returns the HTML for the HTTP server to return to the client
  */
-declare const handleHttpLiveView: (idGenerator: IdGenerator, csrfGenerator: CsrfGenerator, liveView: LiveView, adaptor: HttpRequestAdaptor, pageRenderer: LiveViewHtmlPageTemplate, pageTitleDefaults?: LiveTitleOptions, rootRenderer?: LiveViewWrapperTemplate) => Promise<string | undefined>;
+declare const handleHttpLiveView: (idGenerator: IdGenerator, csrfGenerator: CsrfGenerator, liveView: LiveView, adaptor: HttpRequestAdaptor, pageRenderer: LiveViewHtmlPageTemplate, pathParams: PathParams, pageTitleDefaults?: LiveTitleOptions, rootRenderer?: LiveViewWrapperTemplate) => Promise<string | undefined>;
 
 /**
  * Naive implementation of flash adaptor that uses "__flash" property on session data
@@ -1600,4 +1608,4 @@ interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
     wsMiddleware(): TWsMiddleware;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, mime, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
