@@ -6,6 +6,7 @@ import {
   counterLiveView,
   dashboardLiveView,
   decarbLiveView,
+  helloNameLiveView,
   helloToggleEmojiLiveView,
   jsCmdsLiveView,
   LiveViewRouter,
@@ -44,6 +45,7 @@ const lvRouter: LiveViewRouter = {
   "/rtcounter": rtCounterLiveView,
   "/books": booksLiveView,
   "/helloToggle": helloToggleEmojiLiveView,
+  "/hi/:name": helloNameLiveView,
 };
 
 // configure your oak app

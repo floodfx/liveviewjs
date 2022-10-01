@@ -10,6 +10,7 @@ import {
   LiveViewRouter,
   LiveViewServerAdaptor,
   LiveViewWrapperTemplate,
+  matchRoute,
   nanoid,
   PubSub,
   SerDe,
@@ -109,13 +110,14 @@ export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddlewa
         const { getRequestPath } = adaptor;
 
         // look up LiveView for route
-        const liveview = this.router[getRequestPath()];
-        if (!liveview) {
+        const matchResult = matchRoute(this.router, getRequestPath());
+        if (!matchResult) {
           // no LiveView found for route so call next() to
           // let a possible downstream route handle the request
           await next();
           return;
         }
+        const [liveview, mr] = matchResult;
 
         // defer to liveviewjs to handle the request
         const rootViewHtml = await handleHttpLiveView(
@@ -124,6 +126,7 @@ export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddlewa
           liveview,
           adaptor,
           this.liveHtmlTemplate,
+          mr.params,
           this.liveTitleOptions,
           this.wrapperTemplate
         );
