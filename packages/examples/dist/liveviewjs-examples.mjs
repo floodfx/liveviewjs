@@ -1731,6 +1731,17 @@ function today(path) {
     });
 }
 
+const helloNameLiveView = createLiveView({
+    mount: (socket, _, params) => {
+        var _a;
+        socket.assign({ name: (_a = params.name) !== null && _a !== void 0 ? _a : "World" });
+    },
+    render: (context) => {
+        const { name } = context;
+        return html `👋 ${name}! `;
+    },
+});
+
 const helloToggleEmojiLiveView = createLiveView({
     mount: (socket) => {
         socket.assign({ useEmoji: false });
@@ -3123,4 +3134,4 @@ const routeDetails = [
     },
 ];
 
-export { autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
+export { autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloNameLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };

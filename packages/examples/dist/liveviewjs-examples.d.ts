@@ -125,6 +125,8 @@ declare const decarbLiveView: liveviewjs.LiveView<{
  */
 declare const xkcdLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, liveviewjs.AnyLiveEvent, liveviewjs.AnyLiveInfo>;
 
+declare const helloNameLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, liveviewjs.AnyLiveEvent, liveviewjs.AnyLiveInfo>;
+
 declare const helloToggleEmojiLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, liveviewjs.AnyLiveEvent, liveviewjs.AnyLiveInfo>;
 
 declare type MyContext = {
@@ -330,4 +332,4 @@ interface RouteDetails {
 }
 declare const routeDetails: RouteDetails[];
 
-export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
+export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloNameLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };

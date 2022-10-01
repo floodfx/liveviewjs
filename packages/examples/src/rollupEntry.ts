@@ -5,6 +5,7 @@ export * from "./liveviews/counter/realtime";
 export * from "./liveviews/dashboard";
 export * from "./liveviews/decarbonize";
 export * from "./liveviews/fetch";
+export * from "./liveviews/hello/helloName";
 export * from "./liveviews/hello/helloToggleEmoji";
 export * from "./liveviews/jsCommands";
 export * from "./liveviews/liveSearch";
