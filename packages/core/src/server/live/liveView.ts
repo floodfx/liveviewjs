@@ -35,7 +35,8 @@ export interface AnyLivePushEvent extends LiveEvent {
 /**
  * Paramter passed into the `mount` function of a LiveView.
  */
-export interface LiveViewMountParams {
+export type LiveViewMountParams = {
+  [key: string]: string | number;
   /**
    * The cross site request forgery token from the `LiveView` html page.
    */
@@ -44,7 +45,7 @@ export interface LiveViewMountParams {
    * The number of mounts for this `LiveView`.
    */
   ["_mounts"]: number;
-}
+};
 
 /**
  * Interface for `LiveView`s supporting the basic lifecycle of a `LiveView`.

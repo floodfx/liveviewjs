@@ -396,6 +396,7 @@ function newMgr(opts?: NewMgrOpts): LiveViewManager {
     pubSub,
     flashAdaptor,
     fileSystemAdaptor,
+    {},
     opts?.LiveViewRootRenderer
   );
 }

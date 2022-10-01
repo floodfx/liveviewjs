@@ -2,6 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+var pathToRegexp = require('path-to-regexp');
 var nanoid = require('nanoid');
 var crypto = require('crypto');
 var EventEmitter = require('events');
@@ -131,6 +132,24 @@ const createLiveView = (params) => {
         ...params,
     };
 };
+
+const matchFns = {};
+function matchRoute(router, path) {
+    for (const route in router) {
+        let matchFn = matchFns[route];
+        if (!matchFn) {
+            // lazy init match function
+            matchFn = pathToRegexp.match(route, { decode: decodeURIComponent });
+            matchFns[route] = matchFn;
+        }
+        // match the path to the route match function
+        const matchResult = matchFn(path);
+        if (matchResult) {
+            return [router[route], matchResult];
+        }
+    }
+    return undefined;
+}
 
 class UploadConfig {
     constructor(name, options) {
@@ -1273,7 +1292,7 @@ function transitionOptionsToCmd(opts) {
  * @param liveViewTemplateRenderer optional @{LiveViewTemplate} used for adding additional content to the LiveView (typically reused across all LiveViews)
  * @returns the HTML for the HTTP server to return to the client
  */
-const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor, pageRenderer, pageTitleDefaults, rootRenderer) => {
+const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor, pageRenderer, pathParams, pageTitleDefaults, rootRenderer) => {
     const { getSessionData, getRequestUrl, onRedirect } = adaptor;
     // new LiveViewId for each request
     const liveViewId = idGenerator();
@@ -1285,7 +1304,7 @@ const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor,
     // prepare a http socket for the `LiveView` render lifecycle: mount => handleParams => render
     const liveViewSocket = new HttpLiveViewSocket(liveViewId);
     // execute the `LiveView`'s `mount` function, passing in the data from the HTTP request
-    await liveView.mount(liveViewSocket, { ...sessionData }, { _csrf_token: sessionData._csrf_token, _mounts: -1 });
+    await liveView.mount(liveViewSocket, { ...sessionData }, { _csrf_token: sessionData._csrf_token, _mounts: -1, ...pathParams });
     // check for redirects in `mount`
     if (liveViewSocket.redirect) {
         const { to } = liveViewSocket.redirect;
@@ -1614,6 +1633,7 @@ class LiveViewManager {
     uploadConfigs = {};
     activeUploadRef;
     csrfToken;
+    pathParams;
     _infoQueue = [];
     _events = [];
     _pageTitle;
@@ -1623,7 +1643,7 @@ class LiveViewManager {
     hasWarnedAboutMissingCsrfToken = false;
     _parts;
     _cidIndex = 0;
-    constructor(liveView, connectionId, wsAdaptor, serDe, pubSub, flashAdaptor, fileAdapter, liveViewRootTemplate) {
+    constructor(liveView, connectionId, wsAdaptor, serDe, pubSub, flashAdaptor, fileAdapter, pathParams, liveViewRootTemplate) {
         this.liveView = liveView;
         this.connectionId = connectionId;
         this.wsAdaptor = wsAdaptor;
@@ -1632,6 +1652,7 @@ class LiveViewManager {
         this.flashAdaptor = flashAdaptor;
         this.fileSystemAdaptor = fileAdapter;
         this.liveViewRootTemplate = liveViewRootTemplate;
+        this.pathParams = pathParams;
         // subscribe to events for a given connectionId which should only be heartbeat messages
         const subId = this.pubSub.subscribe(connectionId, this.handleSubscriptions.bind(this));
         // save subscription id for unsubscribing on shutdown
@@ -1675,7 +1696,7 @@ class LiveViewManager {
             this.subscriptionIds[this.joinId] = subId;
             // run initial lifecycle steps for the liveview: mount => handleParams
             this.socket = this.newLiveViewSocket();
-            await this.liveView.mount(this.socket, this.session, payloadParams);
+            await this.liveView.mount(this.socket, this.session, { ...payloadParams, ...this.pathParams });
             await this.liveView.handleParams(url, this.socket);
             // now the socket context had a chance to be updated, we run the render steps
             // step 1: render the `LiveView`
@@ -2744,12 +2765,13 @@ class WsMessageRouter {
         }
         const url = new URL(joinUrl);
         // route to the correct component based on the resolved url (pathname)
-        const component = this.router[url.pathname];
-        if (!component) {
-            throw Error(`no component found for ${url}`);
+        const matchResult = matchRoute(this.router, url.pathname);
+        if (!matchResult) {
+            throw Error(`no LiveView found for ${url}`);
         }
+        const [liveView, mr] = matchResult;
         // create a LiveViewManager for this connection / LiveView
-        const liveViewManager = new LiveViewManager(component, connectionId, wsAdaptor, this.serDe, this.pubSub, this.flashAdaptor, this.fileSystemAdaptor, this.liveViewRootTemplate);
+        const liveViewManager = new LiveViewManager(liveView, connectionId, wsAdaptor, this.serDe, this.pubSub, this.flashAdaptor, this.fileSystemAdaptor, mr.params, this.liveViewRootTemplate);
         await liveViewManager.handleJoin(message);
     }
 }
@@ -2783,6 +2805,7 @@ exports.live_file_input = live_file_input;
 exports.live_img_preview = live_img_preview;
 exports.live_patch = live_patch;
 exports.live_title_tag = live_title_tag;
+exports.matchRoute = matchRoute;
 exports.mime = mime;
 exports.newChangesetFactory = newChangesetFactory;
 exports.options_for_select = options_for_select;

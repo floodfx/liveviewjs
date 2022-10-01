@@ -4,9 +4,12 @@ import dts from "rollup-plugin-dts";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 
+// packages that will be loaded externally
+const external = ["zod", "nanoid", "path-to-regexp"];
+
 export default [
   {
-    external: ["zod", "nanoid"],
+    external,
     input: "./src/index.ts",
     output: {
       file: "./build/liveview.js",
@@ -21,7 +24,7 @@ export default [
     ],
   },
   {
-    external: ["zod", "nanoid"],
+    external,
     input: "./src/index.ts",
     output: {
       file: "./build/liveview.mjs",
@@ -42,7 +45,7 @@ export default [
     ],
   },
   {
-    external: ["zod", "nanoid"],
+    external,
     input: "./build/rollup/server/index.d.ts",
     output: {
       file: "./build/liveview.d.ts",

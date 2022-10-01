@@ -15,6 +15,7 @@ import {
   LiveViewMeta,
   LiveViewTemplate,
   LiveViewWrapperTemplate,
+  PathParams,
   WsLiveComponentSocket,
 } from "../live";
 import { PubSub } from "../pubsub";
@@ -107,6 +108,7 @@ export class LiveViewManager {
   private activeUploadRef: string | undefined;
 
   private csrfToken?: string;
+  private pathParams: PathParams;
 
   private _infoQueue: AnyLiveInfo[] = [];
   private _events: AnyLivePushEvent[] = [];
@@ -129,6 +131,7 @@ export class LiveViewManager {
     pubSub: PubSub,
     flashAdaptor: FlashAdaptor,
     fileAdapter: FileSystemAdaptor,
+    pathParams: PathParams,
     liveViewRootTemplate?: LiveViewWrapperTemplate
   ) {
     this.liveView = liveView;
@@ -139,6 +142,7 @@ export class LiveViewManager {
     this.flashAdaptor = flashAdaptor;
     this.fileSystemAdaptor = fileAdapter;
     this.liveViewRootTemplate = liveViewRootTemplate;
+    this.pathParams = pathParams;
 
     // subscribe to events for a given connectionId which should only be heartbeat messages
     const subId = this.pubSub.subscribe<PhxMessage>(connectionId, this.handleSubscriptions.bind(this));
@@ -189,7 +193,7 @@ export class LiveViewManager {
 
       // run initial lifecycle steps for the liveview: mount => handleParams
       this.socket = this.newLiveViewSocket();
-      await this.liveView.mount(this.socket, this.session, payloadParams);
+      await this.liveView.mount(this.socket, this.session, { ...payloadParams, ...this.pathParams });
       await this.liveView.handleParams(url, this.socket);
 
       // now the socket context had a chance to be updated, we run the render steps
