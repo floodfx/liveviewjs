@@ -139,15 +139,16 @@ class NodeExpressLiveViewServer {
                 const adaptor = new ExpressRequestAdaptor(req, res, this.serDe);
                 const { getRequestPath } = adaptor;
                 // look up LiveView for route
-                const liveview = this.router[getRequestPath()];
-                if (!liveview) {
+                const matchResult = liveviewjs.matchRoute(this.router, getRequestPath());
+                if (!matchResult) {
                     // no LiveView found for route so call next() to
                     // let a possible downstream route handle the request
                     next();
                     return;
                 }
+                const [liveview, mr] = matchResult;
                 // defer to liveviewjs to handle the request
-                const rootViewHtml = await liveviewjs.handleHttpLiveView(nanoid.nanoid, nanoid.nanoid, liveview, adaptor, this.htmlPageTemplate, this.liveTitleOptions, this.wrapperTemplate);
+                const rootViewHtml = await liveviewjs.handleHttpLiveView(nanoid.nanoid, nanoid.nanoid, liveview, adaptor, this.htmlPageTemplate, mr.params, this.liveTitleOptions, this.wrapperTemplate);
                 // check if LiveView calls for a redirect and if so, do it
                 if (adaptor.redirect) {
                     res.redirect(adaptor.redirect);
