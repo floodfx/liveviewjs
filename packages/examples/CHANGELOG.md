@@ -1,5 +1,16 @@
 # @liveviewjs/examples
 
+## 0.7.2
+
+### Patch Changes
+
+- a927c16: Support path params in route
+  - Core: Support path params in routes for HTTP and WS
+  - Examples: Add "helloNameLiveView" example
+  - Express / Deno: Update server integration to use `matchRoute` helper
+- Updated dependencies [a927c16]
+  - liveviewjs@0.7.2
+
 ## 0.7.1
 
 ### Patch Changes
