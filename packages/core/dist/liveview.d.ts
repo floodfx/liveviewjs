@@ -1416,12 +1416,33 @@ interface CreateLiveComponentParams<TContext extends LiveContext = AnyLiveContex
  */
 declare const createLiveComponent: <TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo>(params: CreateLiveComponentParams<TContext, TEvents, TInfos>) => LiveComponent<TContext, TEvents, TInfos>;
 
+/**
+ * Maps a route to a LiveView.
+ * e.g. `"/users": UserListLiveView`
+ * Routes can be optionally contain parameters which LiveViewJS will automatically
+ * extract from the URL path and pass to the LiveView's `mount` method as part
+ * of the `params` object.
+ * e.g. `"/users/:id": UserLiveView` => `{ id: "123" }`
+ */
 interface LiveViewRouter {
     [key: string]: LiveView<AnyLiveContext, AnyLiveEvent, AnyLiveInfo>;
 }
+/**
+ * Type representing parameters extracted from a URL path.
+ */
 declare type PathParams = {
     [key: string]: string;
 };
+/**
+ * Helper function that returns a tuple containing the `LiveView` and
+ * the `MatchResult` object containing the parameters extracted from the URL path
+ * if there is a match.  Returns `undefined` if there is no match.
+ * Used internally to match a URL path to a LiveView class for both HTTP and WS
+ * requests.
+ * @param router the `LiveViewRouter` object
+ * @param path the URL path to match
+ * @returns a tuple containing the `LiveView` and the `MatchResult` object or `undefined`
+ */
 declare function matchRoute(router: LiveViewRouter, path: string): [LiveView<AnyLiveContext, AnyLiveEvent, AnyLiveInfo>, MatchResult<PathParams>] | undefined;
 
 interface LiveViewTemplate extends HtmlSafeString {
@@ -1597,6 +1618,12 @@ declare class Mime {
     get loaded(): boolean;
     load(): Promise<void>;
 }
+/**
+ * Fallback implementation of getting JSON from a URL for Node <18.
+ * @param url the url to fetch
+ * @returns the JSON object returned from the URL
+ */
+declare function nodeHttpFetch<T>(url: string): Promise<T>;
 declare const mime: Mime;
 
 /**
@@ -1608,4 +1635,4 @@ interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
     wsMiddleware(): TWsMiddleware;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };

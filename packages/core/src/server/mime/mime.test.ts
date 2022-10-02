@@ -1,4 +1,4 @@
-import { mime } from ".";
+import { mime, nodeHttpFetch } from ".";
 
 describe("test mime", () => {
   beforeAll(async () => {
@@ -12,5 +12,10 @@ describe("test mime", () => {
   it("lookupExt by mime", async () => {
     expect(mime.loaded).toBeTruthy();
     expect(mime.lookupExtensions("application/pdf")).toContain("pdf");
+  });
+
+  it("http requests success", async () => {
+    const res = await nodeHttpFetch("https://cdn.jsdelivr.net/gh/jshttp/mime-db@master/db.json");
+    expect(res).toBeTruthy();
   });
 });

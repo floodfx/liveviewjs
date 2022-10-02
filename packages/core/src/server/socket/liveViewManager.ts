@@ -25,6 +25,7 @@ import { deepDiff } from "../templates/diff";
 import { UploadConfig, UploadEntry } from "../upload";
 import { BinaryUploadSerDe } from "../upload/binaryUploadSerDe";
 import { ConsumeUploadedEntriesMeta, Info, WsLiveViewSocket } from "./liveSocket";
+import { maybeAddStructuredClone } from "./structuredClone";
 import {
   PhxAllowUploadIncoming,
   PhxBlurPayload,
@@ -48,7 +49,7 @@ import {
   PhxProtocol,
 } from "./types";
 import { newHeartbeatReply, newPhxReply } from "./util";
-
+maybeAddStructuredClone();
 /**
  * Data kept for each `LiveComponent` instance.
  */

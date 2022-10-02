@@ -64,13 +64,19 @@ class Mime {
   async load() {
     if (this.loaded) return;
     try {
-      const res = await fetch(MIME_DB_URL);
-      // istanbul ignore next
-      if (!res.ok) {
+      if (globalThis && !globalThis.fetch) {
+        // only Node 18+ and Deno have fetch so fall back to https
+        //  implementation if globalThis.fetch is not defined.
+        this.db = await nodeHttpFetch<MimeDB>(MIME_DB_URL);
+      } else {
+        const res = await fetch(MIME_DB_URL);
         // istanbul ignore next
-        throw new Error(`Failed to load mime-db: ${res.status} ${res.statusText}`);
+        if (!res.ok) {
+          // istanbul ignore next
+          throw new Error(`Failed to load mime-db: ${res.status} ${res.statusText}`);
+        }
+        this.db = await res.json();
       }
-      this.db = await res.json();
 
       // build a reverse lookup table for extensions to mime types
       Object.keys(this.db).forEach((mimeType, i) => {
@@ -90,6 +96,33 @@ class Mime {
       this.#loaded = false;
     }
   }
+}
+
+/**
+ * Fallback implementation of getting JSON from a URL for Node <18.
+ * @param url the url to fetch
+ * @returns the JSON object returned from the URL
+ */
+export function nodeHttpFetch<T>(url: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const https = require("https");
+
+    https.get(url, (res: any) => {
+      if (res.statusCode !== 200) {
+        res.resume(); // ignore response body
+        reject(res.statusCode);
+      }
+
+      let data = "";
+      res.on("data", (chunk: any) => {
+        data += chunk;
+      });
+
+      res.on("close", () => {
+        resolve(JSON.parse(data) as T);
+      });
+    });
+  });
 }
 
 const mime = new Mime();

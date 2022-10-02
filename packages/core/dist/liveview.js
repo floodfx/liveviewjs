@@ -134,6 +134,16 @@ const createLiveView = (params) => {
 };
 
 const matchFns = {};
+/**
+ * Helper function that returns a tuple containing the `LiveView` and
+ * the `MatchResult` object containing the parameters extracted from the URL path
+ * if there is a match.  Returns `undefined` if there is no match.
+ * Used internally to match a URL path to a LiveView class for both HTTP and WS
+ * requests.
+ * @param router the `LiveViewRouter` object
+ * @param path the URL path to match
+ * @returns a tuple containing the `LiveView` and the `MatchResult` object or `undefined`
+ */
 function matchRoute(router, path) {
     for (const route in router) {
         let matchFn = matchFns[route];
@@ -244,13 +254,20 @@ class Mime {
         if (this.loaded)
             return;
         try {
-            const res = await fetch(MIME_DB_URL);
-            // istanbul ignore next
-            if (!res.ok) {
-                // istanbul ignore next
-                throw new Error(`Failed to load mime-db: ${res.status} ${res.statusText}`);
+            if (globalThis && !globalThis.fetch) {
+                // only Node 18+ and Deno have fetch so fall back to https
+                //  implementation if globalThis.fetch is not defined.
+                this.db = await nodeHttpFetch(MIME_DB_URL);
             }
-            this.db = await res.json();
+            else {
+                const res = await fetch(MIME_DB_URL);
+                // istanbul ignore next
+                if (!res.ok) {
+                    // istanbul ignore next
+                    throw new Error(`Failed to load mime-db: ${res.status} ${res.statusText}`);
+                }
+                this.db = await res.json();
+            }
             // build a reverse lookup table for extensions to mime types
             Object.keys(this.db).forEach((mimeType, i) => {
                 const exts = this.lookupExtensions(mimeType);
@@ -270,6 +287,29 @@ class Mime {
             this.#loaded = false;
         }
     }
+}
+/**
+ * Fallback implementation of getting JSON from a URL for Node <18.
+ * @param url the url to fetch
+ * @returns the JSON object returned from the URL
+ */
+function nodeHttpFetch(url) {
+    return new Promise((resolve, reject) => {
+        const https = require("https");
+        https.get(url, (res) => {
+            if (res.statusCode !== 200) {
+                res.resume(); // ignore response body
+                reject(res.statusCode);
+            }
+            let data = "";
+            res.on("data", (chunk) => {
+                data += chunk;
+            });
+            res.on("close", () => {
+                resolve(JSON.parse(data));
+            });
+        });
+    });
 }
 const mime = new Mime();
 
@@ -342,6 +382,22 @@ class UploadEntry {
     }
 }
 
+/**
+ * Checks if globalThis has a `structuredClone` function and if not, adds one
+ * that uses `JSON.parse(JSON.stringify())` as a fallback.  This is needed
+ * for Node version <17.
+ */
+function maybeAddStructuredClone() {
+    /**
+     * Really bad implementation of structured clone algorithm to backfill for
+     * Node 16 (and below).
+     */
+    if (globalThis && !globalThis.structuredClone) {
+        globalThis.structuredClone = (value, transfer) => JSON.parse(JSON.stringify(value));
+    }
+}
+
+maybeAddStructuredClone();
 class BaseLiveViewSocket {
     _context;
     _tempContext = {}; // values to reset the context to post render cycle
@@ -1611,6 +1667,7 @@ const newHeartbeatReply = (incoming) => {
     ];
 };
 
+maybeAddStructuredClone();
 /**
  * The `LiveViewComponentManager` is responsible for managing the lifecycle of a `LiveViewComponent`
  * including routing of events, the state (i.e. context), and other aspects of the component.  The
@@ -2808,6 +2865,7 @@ exports.live_title_tag = live_title_tag;
 exports.matchRoute = matchRoute;
 exports.mime = mime;
 exports.newChangesetFactory = newChangesetFactory;
+exports.nodeHttpFetch = nodeHttpFetch;
 exports.options_for_select = options_for_select;
 exports.safe = safe;
 exports.submit = submit;
