@@ -2,6 +2,8 @@ import { FileSystemAdaptor } from "../adaptor";
 import { AnyLiveContext, AnyLiveInfo, AnyLivePushEvent, LiveContext, LiveInfo } from "../live";
 import { UploadConfig, UploadEntry } from "../upload";
 import { UploadConfigOptions } from "../upload/uploadConfig";
+import { maybeAddStructuredClone } from "./structuredClone";
+maybeAddStructuredClone();
 
 /**
  *  Type that enables Info events to be passed as plain strings
