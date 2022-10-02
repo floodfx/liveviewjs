@@ -1,5 +1,13 @@
 # @liveviewjs/express
 
+## 0.7.3
+
+### Patch Changes
+
+- c6f6985: Support Node16+ (add polyfills for fetch and structuredClone)
+- Updated dependencies [c6f6985]
+  - liveviewjs@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes
