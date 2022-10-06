@@ -2371,7 +2371,7 @@ class LiveViewManager {
      */
     async sendInternal(info) {
         try {
-            this.liveView.handleInfo(info, this.socket);
+            await this.liveView.handleInfo(info, this.socket);
             // render the new view
             let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
             // wrap in root template if there is one
