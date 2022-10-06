@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.7.4
+
+### Patch Changes
+
+- 6318d39: Fix bug where handleInfo was not being awaited
+
 ## 0.7.3
 
 ### Patch Changes
