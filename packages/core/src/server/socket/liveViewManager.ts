@@ -912,7 +912,7 @@ export class LiveViewManager {
    */
   private async sendInternal(info: AnyLiveInfo): Promise<void> {
     try {
-      this.liveView.handleInfo(info, this.socket);
+      await this.liveView.handleInfo(info, this.socket);
 
       // render the new view
       let view = await this.liveView.render(this.socket.context, this.defaultLiveViewMeta());
