@@ -26,10 +26,17 @@ export class SingleProcessPubSub implements Subscriber, Publisher {
   }
 
   public async unsubscribe(topic: string, subscriberId: string) {
-    // get subscriber function from id
-    const subscriber = this.subscribers[subscriberId];
-    await eventEmitter.removeListener(topic, subscriber);
-    // remove subscriber from subscribers
-    delete this.subscribers[subscriberId];
+    try {
+      // get subscriber function from id
+      const subscriber = this.subscribers[subscriberId];
+
+      if (subscriber) {
+        await eventEmitter.removeListener(topic, subscriber);
+      }
+      // remove subscriber from subscribers
+      delete this.subscribers[subscriberId];
+    } catch (err) {
+      console.warn("error unsubscribing from topic", topic, err);
+    }
   }
 }
