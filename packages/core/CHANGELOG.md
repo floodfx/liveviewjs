@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.7.5
+
+### Patch Changes
+
+- 08e4e41: Fix unsubscribe bug with undefined subscriber
+
 ## 0.7.4
 
 ### Patch Changes
