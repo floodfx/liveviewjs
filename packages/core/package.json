@@ -1,6 +1,6 @@
 {
   "name": "liveviewjs",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "LiveViewJS brings the power of LiveView to Typescript and Javascript developers and applications.",
   "exports": {
     "require": "./dist/liveview.js",
