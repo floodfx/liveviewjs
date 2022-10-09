@@ -26,7 +26,7 @@ cd packages/deno
 Then, start the Deno server with the examples:
 
 ```bash
-deno run --allow-net --allow-read --allow-write --allow-env --import-map=import_map.json src/example/index.ts
+deno run --allow-run --allow-read --allow-env  src/example/autorun.ts
 ```
 
 Point your browser to [http://localhost:9001](http://localhost:9001)
