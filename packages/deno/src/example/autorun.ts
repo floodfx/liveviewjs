@@ -30,7 +30,7 @@ esbuild
 
 // Spawn the server
 Deno.run({
-  cmd: "deno run --allow-net --allow-read --allow-write --allow-env --import-map=import_map.json --watch src/example/index.ts".split(
+  cmd: "deno run --unstable --allow-net --allow-read --allow-write --allow-env --import-map=import_map.json --watch src/example/index.ts".split(
     " "
   ),
 });

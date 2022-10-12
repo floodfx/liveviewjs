@@ -1,3 +1,4 @@
+import { BroadcastChannelPubSub } from "../deno/broadcastChannelPubSub.ts";
 import { DenoOakLiveViewServer } from "../deno/server.ts";
 import {
   Application,
@@ -14,7 +15,6 @@ import {
   photosLiveView,
   printLiveView,
   Router,
-  rtCounterLiveView,
   searchLiveView,
   send,
   serversLiveView,
@@ -25,6 +25,7 @@ import {
 } from "../deps.ts";
 import { indexHandler } from "./indexHandler.ts";
 import { liveHtmlTemplate, wrapperTemplate } from "./liveTemplates.ts";
+import { rtCounterLiveView } from "./liveview/rtcounter.ts";
 
 // map request paths to LiveViews
 const lvRouter: LiveViewRouter = {
@@ -63,7 +64,10 @@ const liveView = new DenoOakLiveViewServer(
   lvRouter,
   liveHtmlTemplate,
   { title: "Deno Demo", suffix: " · LiveViewJS" },
-  { wrapperTemplate: wrapperTemplate }
+  {
+    wrapperTemplate: wrapperTemplate,
+    pubSub: new BroadcastChannelPubSub(),
+  }
 );
 
 // setup the LiveViewJS HTTP middleware
