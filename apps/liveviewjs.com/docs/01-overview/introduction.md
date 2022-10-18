@@ -137,7 +137,7 @@ paradigm it enables.
 
 ### Reach more developers
 
-Unfortuately, Elixir only represents
+Unfortunately, Elixir only represents
 [about 2%](https://survey.stackoverflow.co/2022/#section-most-popular-technologies-programming-scripting-and-markup-languages)
 of the programming language market share. We believe that **LiveViewJS** will help bring the productivity and magic of
 LiveView to the
