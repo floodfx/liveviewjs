@@ -1,0 +1,54 @@
+{
+  "name": "@liveviewjs/lambda-examples",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "ts-node ./src/example/autorun.ts",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "esbuild ./src/client/index.ts --bundle --outdir=public/js --platform=browser --format=esm --minify --sourcemap",
+    "build:server": "esbuild ./src/example/index.ts --bundle --outdir=build --platform=node --format=cjs --minify --sourcemap",
+    "clean": "rm -rf build; rm -rf dist",
+    "dist": "npm run build",
+    "format": "prettier --write '**/*.{ts,js,json,html,css}'"
+  },
+  "bin": {
+    "cdk": "bin/liveviewjs-lambda.ts"
+  },
+  "keywords": [
+    "liveviewjs",
+    "liveview",
+    "phoenix",
+    "typescript",
+    "javascript",
+    "lambda",
+    "aws"
+  ],
+  "author": "Donnie Flood <donnie@floodfx.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@liveviewjs/examples": "*",
+    "@liveviewjs/express": "*",    
+    "liveviewjs": "*",
+    "nanoid": "^3.2.0"
+  },
+  "devDependencies": {
+    "@aws-cdk/aws-apigatewayv2-alpha": "^2.46.0-alpha.0",
+    "@aws-cdk/aws-apigatewayv2-integrations-alpha": "^2.46.0-alpha.0",    
+    "@types/aws-lambda": "^8.10.108",
+    "@types/node": "^18.7.8",
+    "@types/nprogress": "^0.2.0",
+    "@types/phoenix": "^1.5.4",
+    "@types/phoenix_live_view": "^0.15.1",
+    "aws-cdk": "^2.43.1",
+    "aws-cdk-lib": "^2.43.1",
+    "aws-lambda": "^1.0.7",
+    "aws-sdk": "^2.1236.0",
+    "esbuild": "^0.14.53",
+    "nprogress": "^0.2.0",
+    "phoenix": "^1.6.12",
+    "phoenix_html": "^3.2.0",
+    "phoenix_live_view": "^0.18.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.5.4"
+  }
+}
