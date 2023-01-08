@@ -24,5 +24,6 @@
     }
   },
   "deno.importMap": "packages/deno/import_map.json",
-  "deno.enablePaths": ["packages/deno/mod.ts", "packages/deno/src/deno", "packages/deno/src/example"]
+  "deno.enablePaths": ["packages/deno/mod.ts", "packages/deno/src/deno", "packages/deno/src/example"],
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
