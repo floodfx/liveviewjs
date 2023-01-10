@@ -218,7 +218,7 @@ export class WsHandler {
           }
           break;
         case "heartbeat":
-          this.send(PhxReply.hbReply(msg));
+          this.send(PhxReply.heartbeat(msg));
           break;
         case "event":
           try {
@@ -248,8 +248,26 @@ export class WsHandler {
     console.log("upload", msg);
   }
 
-  handleInfo(msg: Info<AnyLiveInfo>) {
-    console.log("info", msg);
+  async handleInfo(info: Info<AnyLiveInfo>) {
+    try {
+      // info can be a string or an object
+      // if it's a string, we need to convert it to a LiveInfo object
+      if (typeof info === "string") {
+        info = { type: info };
+      }
+      // lifecycle handleInfo => render
+      await this.#ctx!.liveView.handleInfo(info, this.#ctx!.socket);
+      const view = await this.#ctx!.liveView.render(this.#ctx!.socket.context, this.#ctx!.defaultLiveViewMeta());
+
+      // diff and send
+      const diff = await this.viewToDiff(view);
+      this.send(PhxReply.diff(null, this.#ctx!.joinId, diff));
+
+      this.cleanupPostReply();
+    } catch (e) {
+      /* istanbul ignore next */
+      console.error(`Error sending internal info`, e);
+    }
   }
 
   async handleClose() {

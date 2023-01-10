@@ -756,8 +756,8 @@ declare namespace Phx {
         payload = 4
     }
     type Msg<Payload = unknown> = [
-        joinRef: string,
-        msgRef: string,
+        joinRef: string | null,
+        msgRef: string | null,
         topic: string,
         event: string,
         payload: Payload
@@ -1126,10 +1126,11 @@ declare namespace PhxReply {
         joinRef: string | null,
         msgRef: string | null,
         topic: string,
-        event: "phx_reply",
+        event: "phx_reply" | "diff",
         payload: {
-            status: Status;
-            response: Response;
+            status?: Status;
+            response?: Response;
+            diff?: Parts;
         }
     ];
     type Response = {
@@ -1148,6 +1149,7 @@ declare namespace PhxReply {
     };
     type Status = "ok" | "error";
     function renderedReply(msg: Phx.Msg, parts: Parts): Reply;
+    function diff(joinRef: string | null, topic: string, diff: Parts): Reply;
     function diffReply(msg: Phx.Msg, diff: Parts): Reply;
     function hbReply(msg: Phx.Msg): Reply;
     function serialize(msg: Reply): string;
@@ -1184,7 +1186,7 @@ declare class WsHandler {
     constructor(ws: WsAdaptor, config: WsHandlerConfig);
     handleMsg(msg: Phx.Msg<unknown>): Promise<void>;
     handleUpload(msg: Phx.UploadMsg): void;
-    handleInfo(msg: Info<AnyLiveInfo>): void;
+    handleInfo(info: Info<AnyLiveInfo>): Promise<void>;
     handleClose(): Promise<void>;
     send(reply: PhxReply.Reply): void;
     private cleanupPostReply;

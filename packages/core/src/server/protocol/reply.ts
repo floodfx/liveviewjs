@@ -6,11 +6,13 @@ export namespace PhxReply {
     joinRef: string | null,
     msgRef: string | null,
     topic: string,
-    event: "phx_reply",
-    payload: {
-      status: Status;
-      response: Response;
-    }
+    event: "phx_reply" | "diff",
+    payload:
+      | {
+          status?: Status;
+          response?: Response;
+        }
+      | Parts // for diff
   ];
 
   export type Response = {
@@ -37,6 +39,10 @@ export namespace PhxReply {
     ];
   }
 
+  export function diff(joinRef: string | null, topic: string, diff: Parts): Reply {
+    return [joinRef, null, topic, "diff", diff];
+  }
+
   export function diffReply(msg: Phx.Msg, diff: Parts): Reply {
     return [
       msg[Phx.MsgIdx.joinRef],
@@ -52,7 +58,7 @@ export namespace PhxReply {
     ];
   }
 
-  export function hbReply(msg: Phx.Msg): Reply {
+  export function heartbeat(msg: Phx.Msg): Reply {
     return [
       null,
       msg[Phx.MsgIdx.msgRef],

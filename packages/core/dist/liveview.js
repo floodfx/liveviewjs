@@ -2774,6 +2774,10 @@ var PhxReply;
         ];
     }
     PhxReply.renderedReply = renderedReply;
+    function diff(joinRef, topic, diff) {
+        return [joinRef, null, topic, "diff", diff];
+    }
+    PhxReply.diff = diff;
     function diffReply(msg, diff) {
         return [
             msg[exports.Phx.MsgIdx.joinRef],
@@ -2808,7 +2812,7 @@ var PhxReply;
     PhxReply.serialize = serialize;
 })(PhxReply || (PhxReply = {}));
 
-async function onEvent(ctx, payload) {
+async function handleEvent(ctx, payload) {
     const { type, event, cid } = payload;
     let value = {};
     switch (type) {
@@ -3019,7 +3023,7 @@ class WsHandler {
                 case "event":
                     try {
                         const payload = msg[exports.Phx.MsgIdx.payload];
-                        const view = await onEvent(this.#ctx, payload);
+                        const view = await handleEvent(this.#ctx, payload);
                         const diff = await this.viewToDiff(view);
                         this.send(PhxReply.diffReply(msg, diff));
                         this.cleanupPostReply();
@@ -3044,8 +3048,25 @@ class WsHandler {
     handleUpload(msg) {
         console.log("upload", msg);
     }
-    handleInfo(msg) {
-        console.log("info", msg);
+    async handleInfo(info) {
+        console.log("info", info);
+        try {
+            // info can be a string or an object
+            // if it's a string, we need to convert it to a LiveInfo object
+            if (typeof info === "string") {
+                info = { type: info };
+            }
+            await this.#ctx.liveView.handleInfo(info, this.#ctx.socket);
+            const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx.defaultLiveViewMeta());
+            const diff = await this.viewToDiff(view);
+            console.log("diff", diff);
+            this.send(PhxReply.diff(null, this.#ctx.joinId, diff));
+            this.cleanupPostReply();
+        }
+        catch (e) {
+            /* istanbul ignore next */
+            console.error(`Error sending internal info`, e);
+        }
     }
     async handleClose() {
         console.log("close");
