@@ -15,6 +15,8 @@ import {
   SessionData,
   SessionFlashAdaptor,
   SingleProcessPubSub,
+  WsHandler,
+  WsHandlerConfig,
   WsMessageRouter,
 } from "liveviewjs";
 import { nanoid } from "nanoid";
@@ -44,6 +46,7 @@ export class NodeExpressLiveViewServer
   private liveTitleOptions: LiveTitleOptions;
   private wrapperTemplate?: LiveViewWrapperTemplate;
   private _wsRouter: WsMessageRouter;
+  #config: WsHandlerConfig;
 
   constructor(
     router: LiveViewRouter,
@@ -67,22 +70,29 @@ export class NodeExpressLiveViewServer
       this.fileSystem,
       this.wrapperTemplate
     );
+    this.#config = {
+      router: this.router,
+      fileSysAdaptor: this.fileSystem,
+      serDe: this.serDe,
+      wrapperTemplate: this.wrapperTemplate,
+    };
   }
 
   wsMiddleware(): (wsServer: WebSocketServer) => Promise<void> {
     return async (wsServer: WebSocketServer) => {
       // send websocket requests to the LiveViewJS message router
-      wsServer.on("connection", (ws) => {
-        const connectionId = nanoid();
-        ws.on("message", async (message, isBinary) => {
-          // pass websocket messages to LiveViewJS
-          await this._wsRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
-        });
-        ws.on("close", async () => {
-          // pass websocket close events to LiveViewJS
-          await this._wsRouter.onClose(connectionId);
-        });
-      });
+      wsServer.on("connection", (ws) => new WsHandler(new NodeWsAdaptor(ws), this.#config));
+      // wsServer.on("connection", (ws) => {
+      //   const connectionId = nanoid();
+      //   ws.on("message", async (message, isBinary) => {
+      //     // pass websocket messages to LiveViewJS
+      //     await this._wsRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
+      //   });
+      //   ws.on("close", async () => {
+      //     // pass websocket close events to LiveViewJS
+      //     await this._wsRouter.onClose(connectionId);
+      //   });
+      // });
     };
   }
 

@@ -6,7 +6,7 @@ import path from 'path';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createClient } from 'redis';
-import { SessionFlashAdaptor, SingleProcessPubSub, WsMessageRouter, matchRoute, handleHttpLiveView } from 'liveviewjs';
+import { SessionFlashAdaptor, SingleProcessPubSub, WsMessageRouter, WsHandler, matchRoute, handleHttpLiveView } from 'liveviewjs';
 import { nanoid } from 'nanoid';
 
 class NodeFileSystemAdatptor {
@@ -81,22 +81,61 @@ class RedisPubSub {
     }
 }
 
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __classPrivateFieldGet(receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+}
+
+function __classPrivateFieldSet(receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+}
+
+var _NodeWsAdaptor_ws;
 /**
  * Node specific adaptor to enabled the WsMessageRouter to send messages back
  * to the client via WebSockets.
  */
 class NodeWsAdaptor {
     constructor(ws) {
-        this.ws = ws;
+        _NodeWsAdaptor_ws.set(this, void 0);
+        __classPrivateFieldSet(this, _NodeWsAdaptor_ws, ws, "f");
+    }
+    subscribeToMessages(msgListener) {
+        __classPrivateFieldGet(this, _NodeWsAdaptor_ws, "f").on("message", msgListener);
+    }
+    subscribeToClose(closeListener) {
+        __classPrivateFieldGet(this, _NodeWsAdaptor_ws, "f").on("close", closeListener);
     }
     send(message, errorHandler) {
-        this.ws.send(message, errorHandler);
+        __classPrivateFieldGet(this, _NodeWsAdaptor_ws, "f").send(message, errorHandler);
     }
 }
+_NodeWsAdaptor_ws = new WeakMap();
 
+var _NodeExpressLiveViewServer_config;
 class NodeExpressLiveViewServer {
     constructor(router, htmlPageTemplate, liveTitleOptions, options) {
         var _a, _b, _c, _d, _e;
+        _NodeExpressLiveViewServer_config.set(this, void 0);
         this.router = router;
         this.serDe = (_a = options === null || options === void 0 ? void 0 : options.serDe) !== null && _a !== void 0 ? _a : new NodeJwtSerDe((_b = options === null || options === void 0 ? void 0 : options.serDeSigningSecret) !== null && _b !== void 0 ? _b : nanoid());
         this.flashAdapter = (_c = options === null || options === void 0 ? void 0 : options.flashAdaptor) !== null && _c !== void 0 ? _c : new SessionFlashAdaptor();
@@ -106,21 +145,28 @@ class NodeExpressLiveViewServer {
         this.liveTitleOptions = liveTitleOptions;
         this.wrapperTemplate = options === null || options === void 0 ? void 0 : options.wrapperTemplate;
         this._wsRouter = new WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.fileSystem, this.wrapperTemplate);
+        __classPrivateFieldSet(this, _NodeExpressLiveViewServer_config, {
+            router: this.router,
+            fileSysAdaptor: this.fileSystem,
+            serDe: this.serDe,
+            wrapperTemplate: this.wrapperTemplate,
+        }, "f");
     }
     wsMiddleware() {
         return async (wsServer) => {
             // send websocket requests to the LiveViewJS message router
-            wsServer.on("connection", (ws) => {
-                const connectionId = nanoid();
-                ws.on("message", async (message, isBinary) => {
-                    // pass websocket messages to LiveViewJS
-                    await this._wsRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
-                });
-                ws.on("close", async () => {
-                    // pass websocket close events to LiveViewJS
-                    await this._wsRouter.onClose(connectionId);
-                });
-            });
+            wsServer.on("connection", (ws) => new WsHandler(new NodeWsAdaptor(ws), __classPrivateFieldGet(this, _NodeExpressLiveViewServer_config, "f")));
+            // wsServer.on("connection", (ws) => {
+            //   const connectionId = nanoid();
+            //   ws.on("message", async (message, isBinary) => {
+            //     // pass websocket messages to LiveViewJS
+            //     await this._wsRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
+            //   });
+            //   ws.on("close", async () => {
+            //     // pass websocket close events to LiveViewJS
+            //     await this._wsRouter.onClose(connectionId);
+            //   });
+            // });
         };
     }
     httpMiddleware() {
@@ -160,6 +206,7 @@ class NodeExpressLiveViewServer {
         return this._wsRouter;
     }
 }
+_NodeExpressLiveViewServer_config = new WeakMap();
 /**
  * Express specific adaptor for mapping HTTP requests to LiveViews
  */

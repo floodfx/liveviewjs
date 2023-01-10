@@ -1545,6 +1545,100 @@ const newChangesetFactory = (schema) => {
     };
 };
 
+// export interface PhxUploadMsg {
+//   joinRef: string;
+//   messageRef: string;
+//   topic: string;
+//   event: string;
+//   data: Buffer;
+// }
+class BinaryUploadSerDe {
+    deserialize(data) {
+        // read first 5 bytes to get sizes of parts
+        const sizesOffset = 5;
+        const sizes = data.subarray(0, sizesOffset);
+        const startSize = parseInt(sizes[0].toString());
+        // istanbul ignore next
+        if (startSize !== 0) {
+            // istanbul ignore next
+            throw Error(`Unexpected startSize from uploadBinary: ${sizes.subarray(0, 1).toString()}`);
+        }
+        const joinRefSize = parseInt(sizes[1].toString());
+        const messageRefSize = parseInt(sizes[2].toString());
+        const topicSize = parseInt(sizes[3].toString());
+        const eventSize = parseInt(sizes[4].toString());
+        // console.log("sizes", startSize, joinRefSize, messageRefSize, topicSize, eventSize);
+        // read header and header parts
+        const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
+        const header = data.subarray(sizesOffset, sizesOffset + headerLength).toString();
+        let start = 0;
+        let end = joinRefSize;
+        const joinRef = header.slice(0, end).toString();
+        start += joinRefSize;
+        end += messageRefSize;
+        const msgRef = header.slice(start, end).toString();
+        start += messageRefSize;
+        end += topicSize;
+        const topic = header.slice(start, end).toString();
+        start += topicSize;
+        end += eventSize;
+        const event = header.slice(start, end).toString();
+        // console.log(`onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`);
+        // adjust data index based on message length
+        const dataStartIndex = sizesOffset + headerLength;
+        // get rest of data
+        const payload = data.subarray(dataStartIndex);
+        return {
+            joinRef,
+            msgRef,
+            topic,
+            event,
+            payload,
+        };
+    }
+    serialize(value) {
+        const { joinRef, msgRef, topic, event, payload } = value;
+        const joinRefSize = Buffer.byteLength(joinRef);
+        const messageRefSize = Buffer.byteLength(msgRef);
+        const topicSize = Buffer.byteLength(topic);
+        const eventSize = Buffer.byteLength(event);
+        const dataLength = payload.length;
+        const headerLength = joinRefSize + messageRefSize + topicSize + eventSize;
+        const sizes = Buffer.from([0, joinRefSize, messageRefSize, topicSize, eventSize]);
+        const header = Buffer.from(`${joinRef}${msgRef}${topic}${event}`);
+        const buffer = Buffer.concat([sizes, header, payload], sizes.length + headerLength + dataLength);
+        return buffer;
+    }
+}
+
+var Phx;
+(function (Phx) {
+    (function (MsgIdx) {
+        MsgIdx[MsgIdx["joinRef"] = 0] = "joinRef";
+        MsgIdx[MsgIdx["msgRef"] = 1] = "msgRef";
+        MsgIdx[MsgIdx["topic"] = 2] = "topic";
+        MsgIdx[MsgIdx["event"] = 3] = "event";
+        MsgIdx[MsgIdx["payload"] = 4] = "payload";
+    })(Phx.MsgIdx || (Phx.MsgIdx = {}));
+    function parse(msg) {
+        const m = JSON.parse(msg);
+        if (!Array.isArray(m) && m.length < 5) {
+            throw new Error("invalid phx message");
+        }
+        // TODO validate other parts of message (e.g. topic, event, etc)
+        return m;
+    }
+    Phx.parse = parse;
+    function parseBinary(raw) {
+        return new BinaryUploadSerDe().deserialize(raw);
+    }
+    Phx.parseBinary = parseBinary;
+    function serialize(msg) {
+        return JSON.stringify(msg);
+    }
+    Phx.serialize = serialize;
+})(Phx || (Phx = {}));
+
 /**
  * A PubSub implementation that uses the Node.js EventEmitter as a backend.
  *
@@ -1577,65 +1671,6 @@ class SingleProcessPubSub {
         catch (err) {
             console.warn("error unsubscribing from topic", topic, err);
         }
-    }
-}
-
-class BinaryUploadSerDe {
-    async deserialize(data) {
-        // read first 5 bytes to get sizes of parts
-        const sizesOffset = 5;
-        const sizes = data.subarray(0, sizesOffset);
-        const startSize = parseInt(sizes[0].toString());
-        // istanbul ignore next
-        if (startSize !== 0) {
-            // istanbul ignore next
-            throw Error(`Unexpected startSize from uploadBinary: ${sizes.subarray(0, 1).toString()}`);
-        }
-        const joinRefSize = parseInt(sizes[1].toString());
-        const messageRefSize = parseInt(sizes[2].toString());
-        const topicSize = parseInt(sizes[3].toString());
-        const eventSize = parseInt(sizes[4].toString());
-        // console.log("sizes", startSize, joinRefSize, messageRefSize, topicSize, eventSize);
-        // read header and header parts
-        const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
-        const header = data.subarray(sizesOffset, sizesOffset + headerLength).toString();
-        let start = 0;
-        let end = joinRefSize;
-        const joinRef = header.slice(0, end).toString();
-        start += joinRefSize;
-        end += messageRefSize;
-        const messageRef = header.slice(start, end).toString();
-        start += messageRefSize;
-        end += topicSize;
-        const topic = header.slice(start, end).toString();
-        start += topicSize;
-        end += eventSize;
-        const event = header.slice(start, end).toString();
-        // console.log(`onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`);
-        // adjust data index based on message length
-        const dataStartIndex = sizesOffset + headerLength;
-        // get rest of data
-        const rest = data.subarray(dataStartIndex);
-        return {
-            joinRef,
-            messageRef,
-            topic,
-            event,
-            data: rest,
-        };
-    }
-    async serialize(value) {
-        const { joinRef, messageRef, topic, event, data } = value;
-        const joinRefSize = Buffer.byteLength(joinRef);
-        const messageRefSize = Buffer.byteLength(messageRef);
-        const topicSize = Buffer.byteLength(topic);
-        const eventSize = Buffer.byteLength(event);
-        const dataLength = data.length;
-        const headerLength = joinRefSize + messageRefSize + topicSize + eventSize;
-        const sizes = Buffer.from([0, joinRefSize, messageRefSize, topicSize, eventSize]);
-        const header = Buffer.from(`${joinRef}${messageRef}${topic}${event}`);
-        const buffer = Buffer.concat([sizes, header, data], sizes.length + headerLength + dataLength);
-        return buffer;
     }
 }
 
@@ -2095,8 +2130,8 @@ class LiveViewManager {
             //console.log("onUploadBinary handle", message.data.length);
             // generate a random temp file path
             const randomTempFilePath = this.fileSystemAdaptor.tempPath(nanoid());
-            const { joinRef, messageRef, topic, event, data } = await new BinaryUploadSerDe().deserialize(message.data);
-            this.fileSystemAdaptor.writeTempFile(randomTempFilePath, data);
+            const { joinRef, msgRef, topic, event, payload } = await new BinaryUploadSerDe().deserialize(message.data);
+            this.fileSystemAdaptor.writeTempFile(randomTempFilePath, payload);
             // console.log("wrote temp file", randomTempFilePath, header.length, `"${header.toString()}"`);
             // split topic to get uploadRef
             const ref = topic.split(":")[1];
@@ -2137,7 +2172,7 @@ class LiveViewManager {
             // now send lvu reply
             this.sendPhxReply([
                 joinRef,
-                messageRef,
+                msgRef,
                 topic,
                 "phx_reply",
                 {
@@ -2715,6 +2750,316 @@ class LiveViewManager {
     }
 }
 
+var PhxReply;
+(function (PhxReply) {
+    function renderedReply(msg, parts) {
+        return [
+            msg[Phx.MsgIdx.joinRef],
+            msg[Phx.MsgIdx.msgRef],
+            msg[Phx.MsgIdx.topic],
+            "phx_reply",
+            {
+                status: "ok",
+                response: {
+                    rendered: parts,
+                },
+            },
+        ];
+    }
+    PhxReply.renderedReply = renderedReply;
+    function hbReply(msg) {
+        return [
+            null,
+            msg[Phx.MsgIdx.msgRef],
+            "phoenix",
+            "phx_reply",
+            {
+                status: "ok",
+                response: {},
+            },
+        ];
+    }
+    PhxReply.hbReply = hbReply;
+    function serialize(msg) {
+        return JSON.stringify(msg);
+    }
+    PhxReply.serialize = serialize;
+})(PhxReply || (PhxReply = {}));
+
+class LiveViewContext {
+    #joinId;
+    #csrfToken;
+    #url;
+    #pageTitle;
+    #pageTitleChanged = false;
+    sessionData;
+    uploadConfigs = {};
+    parts = {};
+    constructor(joinId, csrfToken, url, sessionData) {
+        this.#joinId = joinId;
+        this.#csrfToken = csrfToken;
+        this.#url = url;
+        this.sessionData = sessionData;
+    }
+    get joinId() {
+        return this.#joinId;
+    }
+    get csrfToken() {
+        return this.#csrfToken;
+    }
+    get url() {
+        return this.#url;
+    }
+    set pageTitle(newTitle) {
+        if (this.#pageTitle !== newTitle) {
+            this.#pageTitle = newTitle;
+            this.#pageTitleChanged = true;
+        }
+    }
+    get hasPageTitleChanged() {
+        return this.#pageTitleChanged;
+    }
+    get pageTitle() {
+        this.#pageTitleChanged = false;
+        return this.#pageTitle ?? "";
+    }
+}
+class WsHandler {
+    #ws;
+    #config;
+    #ctx;
+    #liveView;
+    #socket;
+    #connectionId;
+    constructor(ws, config) {
+        this.#connectionId = nanoid();
+        this.#config = config;
+        this.#ws = ws;
+        this.#ws.subscribeToMessages(async (data, isBinary) => {
+            try {
+                if (isBinary) {
+                    await this.handleUpload(Phx.parseBinary(data));
+                }
+                await this.handleMsg(Phx.parse(data.toString()));
+            }
+            catch (e) {
+                console.error("error parsing Phx message", e);
+            }
+        });
+        this.#ws.subscribeToClose(this.handleClose);
+    }
+    async handleMsg(msg) {
+        console.log("dispatch", msg);
+        const event = msg[Phx.MsgIdx.event];
+        const topic = msg[Phx.MsgIdx.topic];
+        try {
+            switch (event) {
+                case "phx_join":
+                    // phx_join event used for both LiveView joins and LiveUpload joins
+                    // check prefix of topic to determine if LiveView (lv:*) or LiveViewUpload (lvu:*)
+                    if (topic.startsWith("lv:")) {
+                        const payload = msg[Phx.MsgIdx.payload];
+                        // figure out if we are using url or redirect for join URL
+                        const { url: urlString, redirect: redirectString } = payload;
+                        if (urlString === undefined && redirectString === undefined) {
+                            throw new Error("Join message must have either a url or redirect property");
+                        }
+                        // checked one of these was defined in MessageRouter
+                        const url = new URL((urlString || redirectString));
+                        // route to the LiveView based on the URL
+                        const matchResult = matchRoute(this.#config.router, url.pathname);
+                        if (!matchResult) {
+                            throw Error(`no LiveView found for ${url}`);
+                        }
+                        const [liveView, pathParams] = matchResult;
+                        // extract params, session and socket from payload
+                        const { params: payloadParams, session: payloadSession, static: payloadStatic } = payload;
+                        // attempt to deserialize session
+                        const sessionData = await this.#config.serDe.deserialize(payloadSession);
+                        // if session csrfToken does not match payload csrfToken, reject join
+                        if (sessionData._csrf_token !== payloadParams._csrf_token) {
+                            console.error("Rejecting join due to mismatched csrfTokens", sessionData._csrf_token, payloadParams._csrf_token);
+                            return;
+                        }
+                        // success! now let's initialize this liveview
+                        this.#liveView = liveView;
+                        this.#ctx = new LiveViewContext(topic, payloadParams._csrf_token, url, sessionData);
+                        this.#socket = this.newLiveViewSocket();
+                        // run initial lifecycle steps for the liveview: mount => handleParams => render
+                        await this.#liveView.mount(this.#socket, sessionData, { ...payloadParams, ...pathParams.params });
+                        await this.#liveView.handleParams(url, this.#socket);
+                        const view = await this.#liveView.render(this.#socket.context, this.newLiveViewMeta());
+                        // convert the view into a parts tree
+                        const rendered = await this.viewToParts(view);
+                        // build response from parts and message
+                        const reply = PhxReply.renderedReply(msg, rendered);
+                        // send the response
+                        this.send(reply);
+                        // do post-send lifecycle step
+                        this.#socket.updateContextWithTempAssigns();
+                    }
+                    else if (topic.startsWith("lvu:")) {
+                        // since we don't have the lv topic id, use the connectionId to broadcast to the component manager
+                        // await this.pubSub.broadcast(connectionId, {
+                        //   type: "phx_join_upload",
+                        //   message: rawPhxMessage as PhxJoinUploadIncoming,
+                        // });
+                    }
+                    else {
+                        // istanbul ignore next
+                        throw new Error(`Unknown phx_join prefix: ${topic}`);
+                    }
+                    break;
+                case "heartbeat":
+                    this.send(PhxReply.hbReply(msg));
+                    break;
+                case "event":
+                case "live_patch":
+                case "phx_leave":
+                case "allow_upload":
+                case "progress":
+                    break;
+                default:
+                    throw new Error(`unexpected phx protocol event ${event}`);
+            }
+        }
+        catch (e) {
+            console.error("error handling phx message", e);
+        }
+    }
+    handleUpload(msg) {
+        console.log("upload", msg);
+    }
+    handleInfo(msg) {
+        console.log("info", msg);
+    }
+    async handleClose() {
+        console.log("close");
+        // await this.#liveView?.unmount(this.#socket);
+    }
+    send(reply) {
+        this.#ws.send(PhxReply.serialize(reply));
+    }
+    async viewToParts(view) {
+        // step 1: if provided, wrap the rendered `LiveView` inside the root template
+        if (this.#config.wrapperTemplate) {
+            view = await this.#config.wrapperTemplate(this.#ctx.sessionData, safe(view));
+        }
+        // step 2: store parts for later diffing after rootTemplate is applied
+        let parts = view.partsTree(true);
+        // TODO
+        // step 3: add any `LiveComponent` renderings to the parts tree
+        // let rendered = this.maybeAddLiveComponentsToParts(parts);
+        // step 4: if set, add the page title to the parts tree
+        if (this.#ctx.hasPageTitleChanged) {
+            const t = this.#ctx.pageTitle; // resets changed flag
+            parts = {
+                ...parts,
+                t,
+            };
+        }
+        // set the parts tree on the context
+        this.#ctx.parts = parts;
+        return parts;
+    }
+    // LiveViewMeta
+    newLiveViewMeta() {
+        return {
+            csrfToken: this.#ctx.csrfToken,
+            // live_component: async <TContext extends LiveContext = AnyLiveContext>(
+            //   liveComponent: LiveComponent<TContext>,
+            //   params?: Partial<TContext & { id: string | number }>
+            // ): Promise<LiveViewTemplate> => {
+            //   return await this.liveComponentProcessor<TContext>(liveComponent, params);
+            // },
+            url: this.#ctx.url,
+            uploads: this.#ctx.uploadConfigs,
+        };
+    }
+    // liveview socket methods
+    newLiveViewSocket() {
+        return new WsLiveViewSocket(
+        // id
+        this.#ctx.joinId, 
+        // pageTitleCallback
+        (newTitle) => {
+            this.#ctx.pageTitle = newTitle;
+        }, 
+        // pushEventCallback
+        (event) => { }, 
+        // pushPatchCallback
+        async (path, params, replace) => { }, 
+        // pushRedirectCallback
+        async (path, params, replace) => { }, 
+        // putFlashCallback
+        async (key, value) => { }, 
+        // repeatCallback
+        (fn, intervalMillis) => { }, 
+        // sendInfoCallback
+        (info) => this.handleInfo(info), 
+        // subscribeCallback
+        async (topic) => { }, 
+        // allowUploadCallback
+        async (name, options) => {
+            // console.log("allowUpload", name, options);
+            this.#ctx.uploadConfigs[name] = new UploadConfig(name, options);
+        }, 
+        // cancelUploadCallback
+        async (configName, ref) => {
+            // console.log("cancelUpload", configName, ref);
+            const uploadConfig = this.#ctx.uploadConfigs[configName];
+            if (uploadConfig) {
+                uploadConfig.removeEntry(ref);
+            }
+            else {
+                // istanbul ignore next
+                console.warn(`Upload config ${configName} not found for cancelUpload`);
+            }
+        }, 
+        // consumeUploadedEntriesCallback
+        async (configName, fn) => {
+            // console.log("consomeUploadedEntries", configName, fn);
+            const uploadConfig = this.#ctx.uploadConfigs[configName];
+            if (uploadConfig) {
+                const inProgress = uploadConfig.entries.some((entry) => !entry.done);
+                if (inProgress) {
+                    throw new Error("Cannot consume entries while uploads are still in progress");
+                }
+                // noting is in progress so we can consume
+                const entries = uploadConfig.consumeEntries();
+                return await Promise.all(entries.map(async (entry) => await fn({ path: entry.getTempFile(), fileSystem: this.#config.fileSysAdaptor }, entry)));
+            }
+            console.warn(`Upload config ${configName} not found for consumeUploadedEntries`);
+            return [];
+        }, 
+        // uploadedEntriesCallback
+        async (configName) => {
+            // console.log("uploadedEntries", configName);
+            const completed = [];
+            const inProgress = [];
+            const uploadConfig = this.#ctx.uploadConfigs[configName];
+            if (uploadConfig) {
+                uploadConfig.entries.forEach((entry) => {
+                    if (entry.done) {
+                        completed.push(entry);
+                    }
+                    else {
+                        inProgress.push(entry);
+                    }
+                });
+            }
+            else {
+                // istanbul ignore next
+                console.warn(`Upload config ${configName} not found for uploadedEntries`);
+            }
+            return {
+                completed,
+                inProgress,
+            };
+        });
+    }
+}
+
 /**
  * LiveViewJS Router for web socket messages.  Determines if a message is a `LiveView` message and routes it
  * to the correct LiveView based on the meta data.
@@ -2833,4 +3178,4 @@ class WsMessageRouter {
     }
 }
 
-export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, JS, LiveViewManager, SessionFlashAdaptor, SingleProcessPubSub, UploadConfig, UploadEntry, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
+export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, JS, LiveViewManager, Phx, SessionFlashAdaptor, SingleProcessPubSub, UploadConfig, UploadEntry, WsHandler, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };

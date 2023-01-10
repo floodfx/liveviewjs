@@ -1,6 +1,6 @@
 import { BaseLiveComponent, LiveViewTemplate } from ".";
 import { html } from "..";
-import { SessionFlashAdaptor, WsAdaptor } from "../adaptor";
+import { SessionFlashAdaptor, WsAdaptor, WsCloseListener, WsMsgListener } from "../adaptor";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
 import { TestNodeFileSystemAdatptor } from "../adaptor/testFilesAdatptor";
 import { SingleProcessPubSub } from "../pubsub";
@@ -90,6 +90,12 @@ class CallbackMessenger implements WsAdaptor {
 
   send(message: string, errorHandler?: (err: any) => void): void {
     this.callback(message);
+  }
+  subscribeToClose(closeListener: WsCloseListener): void | Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  subscribeToMessages(msgListener: WsMsgListener): void | Promise<void> {
+    throw new Error("Method not implemented.");
   }
 }
 

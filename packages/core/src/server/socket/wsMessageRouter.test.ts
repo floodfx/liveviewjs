@@ -22,16 +22,22 @@ describe("test message router", () => {
   let mr: WsMessageRouter;
   let ws: WsAdaptor;
   let send: jest.Mock;
+  let subscribeToClose: jest.Mock;
+  let subscribeToMessages: jest.Mock;
   let pubSub: PubSub;
   let flashAdaptor: FlashAdaptor;
   let filesAdaptor: TestNodeFileSystemAdatptor;
   beforeEach(() => {
     send = jest.fn();
+    subscribeToClose = jest.fn();
+    subscribeToMessages = jest.fn();
     pubSub = new SingleProcessPubSub();
     flashAdaptor = new SessionFlashAdaptor();
     filesAdaptor = new TestNodeFileSystemAdatptor();
     ws = {
       send,
+      subscribeToClose,
+      subscribeToMessages,
     };
     mr = new WsMessageRouter(router, pubSub, flashAdaptor, new JsonSerDe(), filesAdaptor);
   });
@@ -100,10 +106,10 @@ describe("test message router", () => {
     // now upload binary
     const data = await new BinaryUploadSerDe().serialize({
       joinRef: "joinRef",
-      messageRef: "msgRef",
+      msgRef: "msgRef",
       topic: `lvu:0`,
       event: "binary_upload",
-      data: Buffer.alloc(100),
+      payload: Buffer.alloc(100),
     });
     await mr.onMessage("1234", data, ws, true); // sends 2 replies
     expect(ws.send).toHaveBeenCalledTimes(3);

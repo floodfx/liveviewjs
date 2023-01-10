@@ -11,7 +11,15 @@ import {
   LiveViewSocket,
   LiveViewTemplate,
 } from "..";
-import { FileSystemAdaptor, FlashAdaptor, SerDe, SessionFlashAdaptor, WsAdaptor } from "../adaptor";
+import {
+  FileSystemAdaptor,
+  FlashAdaptor,
+  SerDe,
+  SessionFlashAdaptor,
+  WsAdaptor,
+  WsCloseListener,
+  WsMsgListener,
+} from "../adaptor";
 import { JsonSerDe } from "../adaptor/jsonSerDe";
 import { TestNodeFileSystemAdatptor } from "../adaptor/testFilesAdatptor";
 import { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, createLiveComponent, createLiveView } from "../live";
@@ -53,6 +61,8 @@ describe("test liveview manager", () => {
     liveViewAndLiveComponentConnectionId = nanoid();
     ws = {
       send: jest.fn(),
+      subscribeToClose: jest.fn(),
+      subscribeToMessages: jest.fn(),
     };
     cmLiveView = new LiveViewManager(
       new TestLiveViewComponent(),
@@ -499,6 +509,8 @@ describe("test liveview manager", () => {
           errorHandler(new Error("unknown error"));
         }
       },
+      subscribeToClose: () => {},
+      subscribeToMessages: () => {},
     };
     const cm = new LiveViewManager(
       tc,
@@ -551,6 +563,8 @@ describe("test liveview manager", () => {
       send(message: string, errorHandler?: (error?: Error) => void) {
         msg = message;
       },
+      subscribeToClose: () => {},
+      subscribeToMessages: () => {},
     };
     const cm = new LiveViewManager(
       testArrayOfLiveTemplatesLV,
@@ -576,6 +590,8 @@ describe("test liveview manager", () => {
       send(message: string, errorHandler?: (error?: Error) => void) {
         msg = message;
       },
+      subscribeToClose: () => {},
+      subscribeToMessages: () => {},
     };
     const cm = new LiveViewManager(
       testArrayOfLCLV,
@@ -753,6 +769,8 @@ describe("test liveview manager", () => {
       send(msg: string) {
         lastMessage = msg;
       },
+      subscribeToClose: () => {},
+      subscribeToMessages: () => {},
     };
     const c = new PutFlashComponent();
     const cm = new LiveViewManager(
@@ -1202,6 +1220,12 @@ class TestWsAdaptor implements WsAdaptor {
   constructor(private msgCb: (msg: string) => void, private errorCb?: (err: any) => void) {
     this.msgCb = msgCb;
     this.errorCb = errorCb;
+  }
+  subscribeToMessages(msgListener: WsMsgListener): void | Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  subscribeToClose(closeListener: WsCloseListener): void | Promise<void> {
+    throw new Error("Method not implemented.");
   }
 
   send(message: string, errorHandler?: (err: any) => void): void {

@@ -7,6 +7,7 @@ import { TestNodeFileSystemAdatptor } from "../adaptor/testFilesAdatptor";
 import { createLiveView, LiveView, LiveViewMountParams, LiveViewWrapperTemplate } from "../live";
 import { PubSub, SingleProcessPubSub } from "../pubsub";
 import { LiveViewSocket } from "../socket";
+import { TestWsAdaptor } from "../test/wsAdaptor";
 import { UploadConfig } from "../upload";
 import { BinaryUploadSerDe } from "../upload/binaryUploadSerDe";
 import { LiveViewManager } from "./liveViewManager";
@@ -14,6 +15,18 @@ import { PhxEventUpload, PhxFlash, PhxFormPayload, PhxIncomingMessage, PhxJoinIn
 
 describe("test liveview manager uploads", () => {
   let mgr: LiveViewManager;
+  let wsAdaptor: TestWsAdaptor;
+  let send: jest.Mock;
+  let subscribeToClose: jest.Mock;
+  let subscribeToMessages: jest.Mock;
+
+  beforeEach(() => {
+    send = jest.fn();
+    subscribeToClose = jest.fn();
+    subscribeToMessages = jest.fn();
+    wsAdaptor = new TestWsAdaptor(send, subscribeToClose, subscribeToMessages);
+    mgr = newMgr({ wsAdaptor });
+  });
   afterEach(() => {
     if (mgr) {
       (mgr as any).shutdown();
@@ -22,8 +35,7 @@ describe("test liveview manager uploads", () => {
 
   it("test onAllowUpload", async () => {
     const joinId = "phx-v70rBYbBXTaWKYkyZ-yy_";
-    const send = jest.fn();
-    mgr = newMgr({ wsAdaptor: { send } as WsAdaptor });
+
     await mgr.handleJoin(phxJoinIncoming());
 
     await mgr.handleSubscriptions({
@@ -48,6 +60,7 @@ describe("test liveview manager uploads", () => {
       ],
     });
     // second send response is the allow_upload response
+    console.log("send", send.mock);
     expect(send.mock.calls[1][0]).toMatchInlineSnapshot(
       `"[\\"joinRef\\",\\"msgRef\\",\\"phx-v70rBYbBXTaWKYkyZ-yy_\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{},\\"config\\":{\\"chunk_size\\":64000,\\"max_entries\\":10,\\"max_file_size\\":10485760},\\"entries\\":{\\"0\\":\\"{\\\\\\"name\\\\\\":\\\\\\"filename\\\\\\",\\\\\\"type\\\\\\":\\\\\\"mimetype\\\\\\",\\\\\\"size\\\\\\":1000,\\\\\\"last_modified\\\\\\":1661570303752,\\\\\\"ref\\\\\\":\\\\\\"0\\\\\\"}\\",\\"ref\\":\\"uploadRef\\"}},\\"status\\":\\"ok\\"}]"`
     );
@@ -55,8 +68,6 @@ describe("test liveview manager uploads", () => {
 
   it("test onPhxJoinUpload", async () => {
     const joinId = "phx-UfsaM3mwEygZi3w0ZSteZ";
-    const send = jest.fn();
-    mgr = newMgr({ wsAdaptor: { send } as WsAdaptor });
     await mgr.handleJoin(phxJoinIncoming());
     await mgr.handleSubscriptions({
       type: "phx_join_upload",
@@ -71,9 +82,11 @@ describe("test liveview manager uploads", () => {
   it("test onBinaryUpload", async () => {
     const joinId = newJoinId();
     const send = jest.fn();
+    const onClose = jest.fn();
+    const onMessage = jest.fn();
     const uploadName = "testBinaryUpload";
     mgr = newMgr({
-      wsAdaptor: { send } as WsAdaptor,
+      wsAdaptor,
       liveView: createLiveView({
         mount: async (socket) => {
           // need to call socket.allowUpload first to configure the uploadConfig
@@ -123,10 +136,10 @@ describe("test liveview manager uploads", () => {
 
     const data = await new BinaryUploadSerDe().serialize({
       joinRef: "joinRef",
-      messageRef: "msgRef",
+      msgRef: "msgRef",
       topic: `lvu:${entryRef}`,
       event: "binary_upload",
-      data: Buffer.alloc(byteSize),
+      payload: Buffer.alloc(byteSize),
     });
 
     // call upload_binary through handleSubscriptions
@@ -144,11 +157,9 @@ describe("test liveview manager uploads", () => {
 
   it("test onProgressUpload", async () => {
     const joinId = "phx-o5LsszTRfwXyYXmj18vjA";
-    const send = jest.fn();
-
     const uploadName = "uploadName";
     mgr = newMgr({
-      wsAdaptor: { send } as WsAdaptor,
+      wsAdaptor,
       liveView: createLiveView({
         mount: async (socket) => {
           // need to call socket.allowUpload first to configure the uploadConfig
@@ -222,11 +233,9 @@ describe("test liveview manager uploads", () => {
 
   it("test cancelUpload", async () => {
     const joinId = "phx-lAqkK7LrmoAuZGCMcgVuw";
-    const send = jest.fn();
-
     const uploadName = "uploadName";
     mgr = newMgr({
-      wsAdaptor: { send } as WsAdaptor,
+      wsAdaptor,
       liveView: createLiveView({
         mount: async (socket) => {
           // need to call socket.allowUpload first to configure the uploadConfig
@@ -265,11 +274,9 @@ describe("test liveview manager uploads", () => {
 
   it("test consumeUploadedEntries and uploadedEntries", async () => {
     const joinId = "phx-o5LsszTRfwXyYXmj18vjA";
-    const send = jest.fn();
-
     const uploadName = "uploadName";
     mgr = newMgr({
-      wsAdaptor: { send } as WsAdaptor,
+      wsAdaptor,
       liveView: createLiveView({
         mount: async (socket) => {
           // need to call socket.allowUpload first to configure the uploadConfig
@@ -385,7 +392,8 @@ function newMgr(opts?: NewMgrOpts): LiveViewManager {
   const flashAdaptor = opts?.flashAdaptor ?? new SessionFlashAdaptor();
   const serDe = opts?.serDe ?? new JsonSerDe();
   const fileSystemAdaptor = opts?.fileSystemAdaptor ?? new TestNodeFileSystemAdatptor();
-  const wsAdaptor = opts?.wsAdaptor ?? ({ send: jest.fn() } as WsAdaptor);
+  const wsAdaptor =
+    opts?.wsAdaptor ?? ({ send: jest.fn(), subscribeToClose: jest.fn(), subscribeToMessages: jest.fn() } as WsAdaptor);
   const lv = opts?.liveView ?? createLiveView({ render: () => html`` });
   const cid = opts?.cid ?? nanoid();
   return new LiveViewManager(

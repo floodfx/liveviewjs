@@ -50,42 +50,86 @@ interface FlashAdaptor {
 }
 
 /**
- * Adaptor that enables sending websocket messages over a concrete websocket implementation.
+ * Options for creating a new upload config.
  */
-interface WsAdaptor {
-    send(message: string, errorHandler?: (err: any) => void): void;
-}
-
-declare type SubscriberFunction<T> = (data: T) => void;
-declare type SubscriberId = string;
+declare type UploadConfigOptions = {
+    /**
+     * "accept" contains the unique file type specifiers that can be uploaded.
+     * See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
+     */
+    accept?: string[];
+    /**
+     * the maximum number of files that can be uploaded at once. Defaults to 1.
+     */
+    maxEntries?: number;
+    /**
+     * the maximum size of each file in bytes. Defaults to 10MB.
+     */
+    maxFileSize?: number;
+    /**
+     * Whether to upload the selected files automatically when the user selects them.
+     * Defaults to false.
+     */
+    autoUpload?: boolean;
+};
 /**
- * A Subscriber allows you to subscribe and unsubscribe to a PubSub topic providing a callback function.
+ * The configuration and entry related details for uploading files.
  */
-interface Subscriber {
-    subscribe<T extends {
-        type: string;
-    }>(topic: string, subscriber: SubscriberFunction<T>): Promise<SubscriberId>;
-    unsubscribe(topic: string, subscriberId: SubscriberId): Promise<void>;
+interface UploadConfig {
+    /**
+     * The name of the upload config to be used in the `allowUpload` and `uploadedEntries` methods.
+     * should be unique per LiveView.
+     */
+    name: string;
+    /**
+     * "accept" contains the unique file type specifiers that can be uploaded.
+     * See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
+     */
+    accept: string[];
+    /**
+     * the maximum number of files that can be uploaded at once. Defaults to 1.
+     */
+    maxEntries: number;
+    /**
+     * the maximum size of each file in bytes. Defaults to 10MB.
+     */
+    maxFileSize: number;
+    /**
+     * Whether to upload the selected files automatically when the user selects them.
+     * Defaults to false.
+     */
+    autoUpload: boolean;
+    /**
+     * The files selected for upload.
+     */
+    entries: UploadEntry[];
+    /**
+     * The unique instance ref of the upload config
+     */
+    ref: string;
+    /**
+     * Errors that have occurred during selection or upload.
+     */
+    errors: string[];
 }
-/**
- * A Publisher allows you to publish data to a PubSub topic.
- */
-interface Publisher {
-    broadcast<T extends {
-        type: string;
-    }>(topic: string, data: T): Promise<void>;
-}
-/**
- * A PubSub implements both a Publisher and a Subscriber.
- */
-interface PubSub extends Subscriber, Publisher {
-}
-
-declare class SingleProcessPubSub implements Subscriber, Publisher {
-    private subscribers;
-    subscribe<T>(topic: string, subscriber: SubscriberFunction<T>): Promise<string>;
-    broadcast<T>(topic: string, data: T): Promise<void>;
-    unsubscribe(topic: string, subscriberId: string): Promise<void>;
+declare class UploadConfig implements UploadConfig {
+    constructor(name: string, options?: UploadConfigOptions);
+    /**
+     * Set the entries for the config.
+     * @param entries UploadEntry[] to set
+     */
+    setEntries(entries: UploadEntry[]): void;
+    /**
+     * Remove an entry from the config.
+     * @param ref The unique ref of the UploadEntry to remove.
+     */
+    removeEntry(ref: string): void;
+    /**
+     * Returns all the entries (throws if any are still uploading) and removes
+     * the entries from the config.
+     */
+    consumeEntries(): UploadEntry[];
+    private validate;
 }
 
 declare type PhxIncomingMessage<Payload> = [
@@ -203,244 +247,6 @@ declare type PhxMessage = {
     type: "progress";
     message: PhxProgressUploadIncoming;
 };
-
-/**
- * The `LiveViewComponentManager` is responsible for managing the lifecycle of a `LiveViewComponent`
- * including routing of events, the state (i.e. context), and other aspects of the component.  The
- * `MessageRouter` is responsible for routing messages to the appropriate `LiveViewComponentManager`
- * based on the topic on the incoming socket messages.
- */
-declare class LiveViewManager {
-    private connectionId;
-    private joinId;
-    private url;
-    private wsAdaptor;
-    private subscriptionIds;
-    private liveView;
-    private intervals;
-    private session;
-    private pubSub;
-    private serDe;
-    private flashAdaptor;
-    private fileSystemAdaptor;
-    private uploadConfigs;
-    private activeUploadRef;
-    private csrfToken?;
-    private pathParams;
-    private _infoQueue;
-    private _events;
-    private _pageTitle;
-    private pageTitleChanged;
-    private socket;
-    private liveViewRootTemplate?;
-    private hasWarnedAboutMissingCsrfToken;
-    private _parts;
-    private _cidIndex;
-    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, fileAdapter: FileSystemAdaptor, pathParams: PathParams, liveViewRootTemplate?: LiveViewWrapperTemplate);
-    /**
-     * The `phx_join` event is the initial connection between the client and the server and initializes the
-     * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
-     * future client interactions.
-     * @param message a `PhxJoinIncoming` message
-     */
-    handleJoin(message: PhxJoinIncoming): Promise<void>;
-    /**
-     * Every event other than `phx_join` that is received over the connected WebSocket are passed into this
-     * method and then dispatched the appropriate handler based on the message type.
-     * @param phxMessage
-     */
-    handleSubscriptions(phxMessage: PhxMessage): Promise<void>;
-    /**
-     * Any message of type `event` is passed into this method and then handled based on the payload details of
-     * the message including: click, form, key, blur/focus, and hook events.
-     * @param message a `PhxEventIncoming` message with a different payload depending on the event type
-     */
-    onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload | PhxLVClearFlashPayload>): Promise<void>;
-    onAllowUpload(message: PhxAllowUploadIncoming): Promise<void>;
-    onPhxJoinUpload(message: PhxJoinUploadIncoming): Promise<void>;
-    onUploadBinary(message: {
-        data: Buffer;
-    }): Promise<void>;
-    onProgressUpload(message: PhxProgressUploadIncoming): Promise<void>;
-    /**
-     * Handle's `live_patch` message from clients which denote change to the `LiveView`'s path parameters
-     * and kicks off a re-render after calling `handleParams`.
-     * @param message a `PhxLivePatchIncoming` message
-     */
-    onLivePatch(message: PhxLivePatchIncoming): Promise<void>;
-    /**
-     * Responds to `heartbeat` message from clients by sending a `heartbeat` message back.
-     * @param message
-     */
-    onHeartbeat(message: PhxHeartbeatIncoming): void;
-    /**
-     * Handles `phx_leave` messages from clients which are sent when the client is leaves the `LiveView`
-     * that is currently being rendered by navigating to a different `LiveView` or closing the browser.
-     * @param message
-     */
-    onPhxLeave(message: PhxIncomingMessage<{}>): Promise<void>;
-    /**
-     * Clean up any resources used by the `LiveView` and `LiveComponent` instances.
-     */
-    private shutdown;
-    /**
-     * Repeats a function every `intervalMillis` milliseconds until `shutdown` is called.
-     * @param fn
-     * @param intervalMillis
-     */
-    private repeat;
-    /**
-     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
-     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to update the browser's
-     * path and query string params.
-     * @param path the path to patch
-     * @param params the URLSearchParams to that will drive the new path query string params
-     * @param replaceHistory whether to replace the current browser history entry or not
-     */
-    private onPushPatch;
-    /**
-     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
-     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to redirect the browser to a
-     * new path and query string params.
-     * @param path the path to redirect to
-     * @param params the URLSearchParams to that will be added to the redirect
-     * @param replaceHistory whether to replace the current browser history entry or not
-     */
-    private onPushRedirect;
-    /**
-     * Common logic that handles both `live_patch` and `live_redirect` messages from clients.
-     * @param navEvent the type of navigation event to handle: either `live_patch` or `live_redirect`
-     * @param path the path to patch or to be redirected to
-     * @param params the URLSearchParams to that will be added to the path
-     * @param replaceHistory whether to replace the current browser history entry or not
-     */
-    private onPushNavigation;
-    /**
-     * Queues `AnyLivePushEvent` messages to be sent to the client on the subsequent `sendPhxReply` call.
-     * @param pushEvent the `AnyLivePushEvent` to queue
-     */
-    private onPushEvent;
-    /**
-     * Queues `AnyLiveInfo` messages to be sent to the LiveView until after the current lifecycle
-     * @param info the AnyLiveInfo to queue
-     */
-    private onSendInfo;
-    /**
-     * Handles sending `LiveInfo` events back to the `LiveView`'s `handleInfo` method.
-     * @param info the `LiveInfo` event to dispatch to the `LiveView`
-     */
-    private sendInternal;
-    private set pageTitle(value);
-    private putFlash;
-    private clearFlash;
-    private maybeSendInfos;
-    private maybeWrapInRootTemplate;
-    private maybeAddPageTitleToParts;
-    private maybeAddEventsToParts;
-    private sendPhxReply;
-    /**
-     * Records for stateful components where key is a compound id `${componentName}_${componentId}`
-     * and value is a tuple of [context, renderedPartsTree, changed, myself].
-     *
-     */
-    private statefulLiveComponents;
-    private statefuleLiveComponentInstances;
-    /**
-     * Collect all the LiveComponents first, group by their component type (e.g. instanceof),
-     * then run single preload for all components of same type. then run rest of lifecycle
-     * based on stateless or stateful.
-     * @param liveComponent
-     * @param params
-     */
-    private liveComponentProcessor;
-    private maybeAddLiveComponentsToParts;
-    defaultLiveViewMeta(): LiveViewMeta;
-    private newLiveViewSocket;
-    private newLiveComponentSocket;
-}
-
-/**
- * Options for creating a new upload config.
- */
-declare type UploadConfigOptions = {
-    /**
-     * "accept" contains the unique file type specifiers that can be uploaded.
-     * See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
-     */
-    accept?: string[];
-    /**
-     * the maximum number of files that can be uploaded at once. Defaults to 1.
-     */
-    maxEntries?: number;
-    /**
-     * the maximum size of each file in bytes. Defaults to 10MB.
-     */
-    maxFileSize?: number;
-    /**
-     * Whether to upload the selected files automatically when the user selects them.
-     * Defaults to false.
-     */
-    autoUpload?: boolean;
-};
-/**
- * The configuration and entry related details for uploading files.
- */
-interface UploadConfig {
-    /**
-     * The name of the upload config to be used in the `allowUpload` and `uploadedEntries` methods.
-     * should be unique per LiveView.
-     */
-    name: string;
-    /**
-     * "accept" contains the unique file type specifiers that can be uploaded.
-     * See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
-     */
-    accept: string[];
-    /**
-     * the maximum number of files that can be uploaded at once. Defaults to 1.
-     */
-    maxEntries: number;
-    /**
-     * the maximum size of each file in bytes. Defaults to 10MB.
-     */
-    maxFileSize: number;
-    /**
-     * Whether to upload the selected files automatically when the user selects them.
-     * Defaults to false.
-     */
-    autoUpload: boolean;
-    /**
-     * The files selected for upload.
-     */
-    entries: UploadEntry[];
-    /**
-     * The unique instance ref of the upload config
-     */
-    ref: string;
-    /**
-     * Errors that have occurred during selection or upload.
-     */
-    errors: string[];
-}
-declare class UploadConfig implements UploadConfig {
-    constructor(name: string, options?: UploadConfigOptions);
-    /**
-     * Set the entries for the config.
-     * @param entries UploadEntry[] to set
-     */
-    setEntries(entries: UploadEntry[]): void;
-    /**
-     * Remove an entry from the config.
-     * @param ref The unique ref of the UploadEntry to remove.
-     */
-    removeEntry(ref: string): void;
-    /**
-     * Returns all the entries (throws if any are still uploading) and removes
-     * the entries from the config.
-     */
-    consumeEntries(): UploadEntry[];
-    private validate;
-}
 
 /**
  * A file and related metadata selected for upload
@@ -743,29 +549,231 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     }>;
 }
 
+declare type WsMsgListener = (data: Buffer, isBinary: boolean) => void;
+declare type WsCloseListener = () => void;
 /**
- * LiveViewJS Router for web socket messages.  Determines if a message is a `LiveView` message and routes it
- * to the correct LiveView based on the meta data.
+ * Adaptor that enables sending websocket messages over a concrete websocket implementation.
  */
-declare class WsMessageRouter {
-    private router;
+interface WsAdaptor {
+    send(message: string, errorHandler?: (err: any) => void): void;
+    subscribeToMessages(msgListener: WsMsgListener): Promise<void> | void;
+    subscribeToClose(closeListener: WsCloseListener): Promise<void> | void;
+}
+
+declare type SubscriberFunction<T> = (data: T) => void;
+declare type SubscriberId = string;
+/**
+ * A Subscriber allows you to subscribe and unsubscribe to a PubSub topic providing a callback function.
+ */
+interface Subscriber {
+    subscribe<T extends {
+        type: string;
+    }>(topic: string, subscriber: SubscriberFunction<T>): Promise<SubscriberId>;
+    unsubscribe(topic: string, subscriberId: SubscriberId): Promise<void>;
+}
+/**
+ * A Publisher allows you to publish data to a PubSub topic.
+ */
+interface Publisher {
+    broadcast<T extends {
+        type: string;
+    }>(topic: string, data: T): Promise<void>;
+}
+/**
+ * A PubSub implements both a Publisher and a Subscriber.
+ */
+interface PubSub extends Subscriber, Publisher {
+}
+
+declare class SingleProcessPubSub implements Subscriber, Publisher {
+    private subscribers;
+    subscribe<T>(topic: string, subscriber: SubscriberFunction<T>): Promise<string>;
+    broadcast<T>(topic: string, data: T): Promise<void>;
+    unsubscribe(topic: string, subscriberId: string): Promise<void>;
+}
+
+/**
+ * The `LiveViewComponentManager` is responsible for managing the lifecycle of a `LiveViewComponent`
+ * including routing of events, the state (i.e. context), and other aspects of the component.  The
+ * `MessageRouter` is responsible for routing messages to the appropriate `LiveViewComponentManager`
+ * based on the topic on the incoming socket messages.
+ */
+declare class LiveViewManager {
+    private connectionId;
+    private joinId;
+    private url;
+    private wsAdaptor;
+    private subscriptionIds;
+    private liveView;
+    private intervals;
+    private session;
     private pubSub;
-    private flashAdaptor;
     private serDe;
+    private flashAdaptor;
     private fileSystemAdaptor;
+    private uploadConfigs;
+    private activeUploadRef;
+    private csrfToken?;
+    private pathParams;
+    private _infoQueue;
+    private _events;
+    private _pageTitle;
+    private pageTitleChanged;
+    private socket;
     private liveViewRootTemplate?;
-    constructor(router: LiveViewRouter, pubSub: PubSub, flashAdaptor: FlashAdaptor, serDe: SerDe, filesAdapter: FileSystemAdaptor, liveViewRootTemplate?: LiveViewWrapperTemplate);
+    private hasWarnedAboutMissingCsrfToken;
+    private _parts;
+    private _cidIndex;
+    constructor(liveView: LiveView, connectionId: string, wsAdaptor: WsAdaptor, serDe: SerDe, pubSub: PubSub, flashAdaptor: FlashAdaptor, fileAdapter: FileSystemAdaptor, pathParams: PathParams, liveViewRootTemplate?: LiveViewWrapperTemplate);
     /**
-     * Handles incoming websocket messages including binary and text messages and manages
-     * routing those messages to the correct LiveViewManager.
-     * @param connectionId the connection id of the websocket connection
-     * @param data text or binary message data
-     * @param wsAdaptor an instance of the websocket adaptor used to send messages to the client
-     * @param isBinary whether the message is a binary message
+     * The `phx_join` event is the initial connection between the client and the server and initializes the
+     * `LiveView`, sets up subscriptions for additional events, and otherwise prepares the `LiveView` for
+     * future client interactions.
+     * @param message a `PhxJoinIncoming` message
      */
-    onMessage(connectionId: string, data: string | unknown, wsAdaptor: WsAdaptor, isBinary?: boolean): Promise<void>;
-    onClose(connectionId: string): Promise<void>;
-    private onPhxJoin;
+    handleJoin(message: PhxJoinIncoming): Promise<void>;
+    /**
+     * Every event other than `phx_join` that is received over the connected WebSocket are passed into this
+     * method and then dispatched the appropriate handler based on the message type.
+     * @param phxMessage
+     */
+    handleSubscriptions(phxMessage: PhxMessage): Promise<void>;
+    /**
+     * Any message of type `event` is passed into this method and then handled based on the payload details of
+     * the message including: click, form, key, blur/focus, and hook events.
+     * @param message a `PhxEventIncoming` message with a different payload depending on the event type
+     */
+    onEvent(message: PhxIncomingMessage<PhxClickPayload | PhxFormPayload | PhxKeyUpPayload | PhxKeyDownPayload | PhxBlurPayload | PhxFocusPayload | PhxHookPayload | PhxLVClearFlashPayload>): Promise<void>;
+    onAllowUpload(message: PhxAllowUploadIncoming): Promise<void>;
+    onPhxJoinUpload(message: PhxJoinUploadIncoming): Promise<void>;
+    onUploadBinary(message: {
+        data: Buffer;
+    }): Promise<void>;
+    onProgressUpload(message: PhxProgressUploadIncoming): Promise<void>;
+    /**
+     * Handle's `live_patch` message from clients which denote change to the `LiveView`'s path parameters
+     * and kicks off a re-render after calling `handleParams`.
+     * @param message a `PhxLivePatchIncoming` message
+     */
+    onLivePatch(message: PhxLivePatchIncoming): Promise<void>;
+    /**
+     * Responds to `heartbeat` message from clients by sending a `heartbeat` message back.
+     * @param message
+     */
+    onHeartbeat(message: PhxHeartbeatIncoming): void;
+    /**
+     * Handles `phx_leave` messages from clients which are sent when the client is leaves the `LiveView`
+     * that is currently being rendered by navigating to a different `LiveView` or closing the browser.
+     * @param message
+     */
+    onPhxLeave(message: PhxIncomingMessage<{}>): Promise<void>;
+    /**
+     * Clean up any resources used by the `LiveView` and `LiveComponent` instances.
+     */
+    private shutdown;
+    /**
+     * Repeats a function every `intervalMillis` milliseconds until `shutdown` is called.
+     * @param fn
+     * @param intervalMillis
+     */
+    private repeat;
+    /**
+     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
+     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to update the browser's
+     * path and query string params.
+     * @param path the path to patch
+     * @param params the URLSearchParams to that will drive the new path query string params
+     * @param replaceHistory whether to replace the current browser history entry or not
+     */
+    private onPushPatch;
+    /**
+     * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
+     * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to redirect the browser to a
+     * new path and query string params.
+     * @param path the path to redirect to
+     * @param params the URLSearchParams to that will be added to the redirect
+     * @param replaceHistory whether to replace the current browser history entry or not
+     */
+    private onPushRedirect;
+    /**
+     * Common logic that handles both `live_patch` and `live_redirect` messages from clients.
+     * @param navEvent the type of navigation event to handle: either `live_patch` or `live_redirect`
+     * @param path the path to patch or to be redirected to
+     * @param params the URLSearchParams to that will be added to the path
+     * @param replaceHistory whether to replace the current browser history entry or not
+     */
+    private onPushNavigation;
+    /**
+     * Queues `AnyLivePushEvent` messages to be sent to the client on the subsequent `sendPhxReply` call.
+     * @param pushEvent the `AnyLivePushEvent` to queue
+     */
+    private onPushEvent;
+    /**
+     * Queues `AnyLiveInfo` messages to be sent to the LiveView until after the current lifecycle
+     * @param info the AnyLiveInfo to queue
+     */
+    private onSendInfo;
+    /**
+     * Handles sending `LiveInfo` events back to the `LiveView`'s `handleInfo` method.
+     * @param info the `LiveInfo` event to dispatch to the `LiveView`
+     */
+    private sendInternal;
+    private set pageTitle(value);
+    private putFlash;
+    private clearFlash;
+    private maybeSendInfos;
+    private maybeWrapInRootTemplate;
+    private maybeAddPageTitleToParts;
+    private maybeAddEventsToParts;
+    private sendPhxReply;
+    /**
+     * Records for stateful components where key is a compound id `${componentName}_${componentId}`
+     * and value is a tuple of [context, renderedPartsTree, changed, myself].
+     *
+     */
+    private statefulLiveComponents;
+    private statefuleLiveComponentInstances;
+    /**
+     * Collect all the LiveComponents first, group by their component type (e.g. instanceof),
+     * then run single preload for all components of same type. then run rest of lifecycle
+     * based on stateless or stateful.
+     * @param liveComponent
+     * @param params
+     */
+    private liveComponentProcessor;
+    private maybeAddLiveComponentsToParts;
+    defaultLiveViewMeta(): LiveViewMeta;
+    private newLiveViewSocket;
+    private newLiveComponentSocket;
+}
+
+declare namespace Phx {
+    enum MsgIdx {
+        joinRef = 0,
+        msgRef = 1,
+        topic = 2,
+        event = 3,
+        payload = 4
+    }
+    type Msg = [
+        joinRef: string,
+        msgRef: string,
+        topic: string,
+        event: string,
+        payload: {
+            [key: string]: unknown;
+        }
+    ];
+    type UploadMsg = {
+        joinRef: string;
+        msgRef: string;
+        topic: string;
+        event: string;
+        payload: Buffer;
+    };
+    function parse(msg: string): Msg;
+    function parseBinary(raw: Buffer): Phx.UploadMsg;
+    function serialize(msg: Msg): string;
 }
 
 declare function deepDiff(oldParts: Parts, newParts: Parts): Parts;
@@ -1107,6 +1115,81 @@ declare class JS {
      * @returns JSON stringified commands for embedding in HTML
      */
     toString(): string;
+}
+
+declare namespace PhxReply {
+    type Reply = [
+        joinRef: string | null,
+        msgRef: string | null,
+        topic: string,
+        event: "phx_reply",
+        payload: {
+            status: Status;
+            response: Response;
+        }
+    ];
+    type Response = {
+        rendered?: {
+            [key: string]: unknown;
+        };
+        diff?: {
+            [key: string]: unknown;
+        };
+        config?: {
+            [key: string]: unknown;
+        };
+        entries?: {
+            [key: string]: unknown;
+        };
+    };
+    type Status = "ok" | "error";
+    function renderedReply(msg: Phx.Msg, parts: Parts): Reply;
+    function hbReply(msg: Phx.Msg): Reply;
+    function serialize(msg: Reply): string;
+}
+
+interface WsHandlerConfig {
+    serDe: SerDe;
+    router: LiveViewRouter;
+    fileSysAdaptor: FileSystemAdaptor;
+    wrapperTemplate?: LiveViewWrapperTemplate;
+}
+declare class WsHandler {
+    #private;
+    constructor(ws: WsAdaptor, config: WsHandlerConfig);
+    handleMsg(msg: Phx.Msg): Promise<void>;
+    handleUpload(msg: Phx.UploadMsg): void;
+    handleInfo(msg: Info<AnyLiveInfo>): void;
+    handleClose(): Promise<void>;
+    send(reply: PhxReply.Reply): void;
+    private viewToParts;
+    private newLiveViewMeta;
+    private newLiveViewSocket;
+}
+
+/**
+ * LiveViewJS Router for web socket messages.  Determines if a message is a `LiveView` message and routes it
+ * to the correct LiveView based on the meta data.
+ */
+declare class WsMessageRouter {
+    private router;
+    private pubSub;
+    private flashAdaptor;
+    private serDe;
+    private fileSystemAdaptor;
+    private liveViewRootTemplate?;
+    constructor(router: LiveViewRouter, pubSub: PubSub, flashAdaptor: FlashAdaptor, serDe: SerDe, filesAdapter: FileSystemAdaptor, liveViewRootTemplate?: LiveViewWrapperTemplate);
+    /**
+     * Handles incoming websocket messages including binary and text messages and manages
+     * routing those messages to the correct LiveViewManager.
+     * @param connectionId the connection id of the websocket connection
+     * @param data text or binary message data
+     * @param wsAdaptor an instance of the websocket adaptor used to send messages to the client
+     * @param isBinary whether the message is a binary message
+     */
+    onMessage(connectionId: string, data: string | unknown, wsAdaptor: WsAdaptor, isBinary?: boolean): Promise<void>;
+    onClose(connectionId: string): Promise<void>;
+    private onPhxJoin;
 }
 
 interface LiveContext {
@@ -1635,4 +1718,4 @@ interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
     wsMiddleware(): TWsMiddleware;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
