@@ -1,4 +1,4 @@
-import type { WsAdaptor } from "../deps.ts";
+import type { WsAdaptor, WsCloseListener, WsMsgListener } from "../deps.ts";
 
 /**
  * Deno specific adaptor to enabled the WsMessageRouter to send messages back
@@ -20,5 +20,17 @@ export class DenoWsAdaptor implements WsAdaptor {
         console.error(e);
       }
     }
+  }
+  subscribeToMessages(msgListener: WsMsgListener): void | Promise<void> {
+    this.ws.onmessage = async (message) => {
+      const isBinary = message.data instanceof ArrayBuffer;
+      // prob a better way to take ArrayBuffer and turn it into a Buffer
+      // but this works for now
+      const data = isBinary ? Buffer.from(message.data) : message.data;
+      await msgListener(data, isBinary);
+    };
+  }
+  subscribeToClose(closeListener: WsCloseListener): void | Promise<void> {
+    this.ws.onclose = closeListener;
   }
 }

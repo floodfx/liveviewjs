@@ -593,9 +593,9 @@ export class LiveViewManager {
       // generate a random temp file path
       const randomTempFilePath = this.fileSystemAdaptor.tempPath(nanoid());
 
-      const { joinRef, messageRef, topic, event, data } = await new BinaryUploadSerDe().deserialize(message.data);
+      const { joinRef, msgRef, topic, event, payload } = await new BinaryUploadSerDe().deserialize(message.data);
 
-      this.fileSystemAdaptor.writeTempFile(randomTempFilePath, data);
+      this.fileSystemAdaptor.writeTempFile(randomTempFilePath, payload);
       // console.log("wrote temp file", randomTempFilePath, header.length, `"${header.toString()}"`);
 
       // split topic to get uploadRef
@@ -641,7 +641,7 @@ export class LiveViewManager {
       // now send lvu reply
       this.sendPhxReply([
         joinRef,
-        messageRef,
+        msgRef,
         topic,
         "phx_reply",
         {

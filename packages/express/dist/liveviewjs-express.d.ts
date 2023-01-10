@@ -1,8 +1,8 @@
 /// <reference types="node" />
-import { FileSystemAdaptor, SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, LiveViewHtmlPageTemplate, LiveTitleOptions, WsMessageRouter, PubSub, FlashAdaptor, LiveViewWrapperTemplate, WsAdaptor } from 'liveviewjs';
-import { RedisClientOptions } from 'redis';
 import { RequestHandler } from 'express';
-import { WebSocketServer, WebSocket } from 'ws';
+import { FileSystemAdaptor, FlashAdaptor, LiveTitleOptions, LiveViewHtmlPageTemplate, LiveViewRouter, LiveViewServerAdaptor, LiveViewWrapperTemplate, Publisher, PubSub, SerDe, SessionData, Subscriber, SubscriberFunction, WsAdaptor, WsMessageRouter } from 'liveviewjs';
+import { RedisClientOptions } from 'redis';
+import { WebSocket, WebSocketServer } from 'ws';
 
 declare class NodeFileSystemAdatptor implements FileSystemAdaptor {
     tempPath(lastPathPart: string): string;
@@ -44,6 +44,7 @@ interface NodeExpressLiveViewServerOptions {
     wrapperTemplate?: LiveViewWrapperTemplate;
 }
 declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler, (wsServer: WebSocketServer) => Promise<void>> {
+    #private;
     private router;
     private serDe;
     private flashAdapter;
@@ -64,8 +65,10 @@ declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<Request
  * to the client via WebSockets.
  */
 declare class NodeWsAdaptor implements WsAdaptor {
-    private ws;
+    #private;
     constructor(ws: WebSocket);
+    subscribeToMessages(msgListener: WsMsgListener): void | Promise<void>;
+    subscribeToClose(closeListener: WsCloseListener): void | Promise<void>;
     send(message: string, errorHandler?: (err: any) => void): void;
 }
 

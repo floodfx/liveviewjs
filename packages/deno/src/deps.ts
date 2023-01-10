@@ -39,6 +39,7 @@ export {
   safe,
   SessionFlashAdaptor,
   SingleProcessPubSub,
+  WsHandler,
   WsMessageRouter,
 } from "liveviewjs"; // see import_map.json
 export type {
@@ -56,6 +57,9 @@ export type {
   SessionData,
   SubscriberFunction,
   WsAdaptor,
+  WsCloseListener,
+  WsHandlerConfig,
+  WsMsgListener,
 } from "liveviewjs"; // see import_map.json
 // nanoid
 export { nanoid } from "nanoid";

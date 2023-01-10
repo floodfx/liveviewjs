@@ -1,15 +1,15 @@
-import { SerDe } from "../adaptor";
+import { Phx } from "../protocol/phx";
 
-interface BinaryUploadParts {
-  joinRef: string;
-  messageRef: string;
-  topic: string;
-  event: string;
-  data: Buffer;
-}
+// export interface PhxUploadMsg {
+//   joinRef: string;
+//   messageRef: string;
+//   topic: string;
+//   event: string;
+//   data: Buffer;
+// }
 
-export class BinaryUploadSerDe implements SerDe<BinaryUploadParts, Buffer> {
-  async deserialize(data: Buffer): Promise<BinaryUploadParts> {
+export class BinaryUploadSerDe {
+  deserialize(data: Buffer): Phx.UploadMsg {
     // read first 5 bytes to get sizes of parts
     const sizesOffset = 5;
     const sizes = data.subarray(0, sizesOffset);
@@ -35,7 +35,7 @@ export class BinaryUploadSerDe implements SerDe<BinaryUploadParts, Buffer> {
     const joinRef = header.slice(0, end).toString();
     start += joinRefSize;
     end += messageRefSize;
-    const messageRef = header.slice(start, end).toString();
+    const msgRef = header.slice(start, end).toString();
     start += messageRefSize;
     end += topicSize;
     const topic = header.slice(start, end).toString();
@@ -48,26 +48,26 @@ export class BinaryUploadSerDe implements SerDe<BinaryUploadParts, Buffer> {
     const dataStartIndex = sizesOffset + headerLength;
 
     // get rest of data
-    const rest = data.subarray(dataStartIndex);
+    const payload = data.subarray(dataStartIndex);
     return {
       joinRef,
-      messageRef,
+      msgRef,
       topic,
       event,
-      data: rest,
+      payload,
     };
   }
-  async serialize(value: BinaryUploadParts): Promise<Buffer> {
-    const { joinRef, messageRef, topic, event, data } = value;
+  serialize(value: Phx.UploadMsg): Buffer {
+    const { joinRef, msgRef, topic, event, payload } = value;
     const joinRefSize = Buffer.byteLength(joinRef);
-    const messageRefSize = Buffer.byteLength(messageRef);
+    const messageRefSize = Buffer.byteLength(msgRef);
     const topicSize = Buffer.byteLength(topic);
     const eventSize = Buffer.byteLength(event);
-    const dataLength = data.length;
+    const dataLength = payload.length;
     const headerLength = joinRefSize + messageRefSize + topicSize + eventSize;
     const sizes = Buffer.from([0, joinRefSize, messageRefSize, topicSize, eventSize]);
-    const header = Buffer.from(`${joinRef}${messageRef}${topic}${event}`);
-    const buffer = Buffer.concat([sizes, header, data], sizes.length + headerLength + dataLength);
+    const header = Buffer.from(`${joinRef}${msgRef}${topic}${event}`);
+    const buffer = Buffer.concat([sizes, header, payload], sizes.length + headerLength + dataLength);
     return buffer;
   }
 }
