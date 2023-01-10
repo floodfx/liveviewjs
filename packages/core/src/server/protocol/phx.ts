@@ -9,13 +9,20 @@ export namespace Phx {
     payload,
   }
 
-  export type Msg = [
+  export type Msg<Payload = unknown> = [
     joinRef: string,
     msgRef: string,
     topic: string,
     event: string,
-    payload: { [key: string]: unknown }
+    payload: Payload // Type varies based on message type
   ];
+
+  export type EventPayload<T extends string = string, V = any, E extends string = string> = {
+    type: T;
+    event: E;
+    value: V;
+    cid?: number;
+  };
 
   export type UploadMsg = {
     joinRef: string;

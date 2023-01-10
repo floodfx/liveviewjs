@@ -755,15 +755,19 @@ declare namespace Phx {
         event = 3,
         payload = 4
     }
-    type Msg = [
+    type Msg<Payload = unknown> = [
         joinRef: string,
         msgRef: string,
         topic: string,
         event: string,
-        payload: {
-            [key: string]: unknown;
-        }
+        payload: Payload
     ];
+    type EventPayload<T extends string = string, V = any, E extends string = string> = {
+        type: T;
+        event: E;
+        value: V;
+        cid?: number;
+    };
     type UploadMsg = {
         joinRef: string;
         msgRef: string;
@@ -1144,6 +1148,7 @@ declare namespace PhxReply {
     };
     type Status = "ok" | "error";
     function renderedReply(msg: Phx.Msg, parts: Parts): Reply;
+    function diffReply(msg: Phx.Msg, diff: Parts): Reply;
     function hbReply(msg: Phx.Msg): Reply;
     function serialize(msg: Reply): string;
 }
@@ -1153,16 +1158,40 @@ interface WsHandlerConfig {
     router: LiveViewRouter;
     fileSysAdaptor: FileSystemAdaptor;
     wrapperTemplate?: LiveViewWrapperTemplate;
+    flashAdaptor: FlashAdaptor;
+}
+declare class WsHandlerContext {
+    #private;
+    uploadConfigs: {
+        [key: string]: UploadConfig;
+    };
+    parts: Parts;
+    constructor(liveView: LiveView, socket: WsLiveViewSocket, joinId: string, csrfToken: string, url: URL, sessionData: SessionData, flash: FlashAdaptor);
+    get liveView(): LiveView<AnyLiveContext, AnyLiveEvent, AnyLiveInfo>;
+    get socket(): WsLiveViewSocket<AnyLiveContext, AnyLiveInfo>;
+    get joinId(): string;
+    get csrfToken(): string;
+    get url(): URL;
+    set pageTitle(newTitle: string);
+    get hasPageTitleChanged(): boolean;
+    get pageTitle(): string;
+    get sessionData(): SessionData;
+    defaultLiveViewMeta(): LiveViewMeta;
+    clearFlash(key: string): Promise<void>;
 }
 declare class WsHandler {
     #private;
     constructor(ws: WsAdaptor, config: WsHandlerConfig);
-    handleMsg(msg: Phx.Msg): Promise<void>;
+    handleMsg(msg: Phx.Msg<unknown>): Promise<void>;
     handleUpload(msg: Phx.UploadMsg): void;
     handleInfo(msg: Info<AnyLiveInfo>): void;
     handleClose(): Promise<void>;
     send(reply: PhxReply.Reply): void;
-    private viewToParts;
+    private cleanupPostReply;
+    private viewToDiff;
+    private viewToRendered;
+    private maybeAddTitleToView;
+    private maybeWrapView;
     private newLiveViewMeta;
     private newLiveViewSocket;
 }
@@ -1718,4 +1747,4 @@ interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
     wsMiddleware(): TWsMiddleware;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };

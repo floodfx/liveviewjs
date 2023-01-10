@@ -22,9 +22,7 @@ describe("test liveview manager uploads", () => {
 
   beforeEach(() => {
     send = jest.fn();
-    subscribeToClose = jest.fn();
-    subscribeToMessages = jest.fn();
-    wsAdaptor = new TestWsAdaptor(send, subscribeToClose, subscribeToMessages);
+    wsAdaptor = new TestWsAdaptor(send);
     mgr = newMgr({ wsAdaptor });
   });
   afterEach(() => {

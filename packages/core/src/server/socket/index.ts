@@ -1,4 +1,4 @@
 export * from "./liveSocket";
 export * from "./liveViewManager";
-export * from "./wsHandler";
+export * from "./ws/wsHandler";
 export * from "./wsMessageRouter";

@@ -2767,6 +2767,21 @@ var PhxReply;
         ];
     }
     PhxReply.renderedReply = renderedReply;
+    function diffReply(msg, diff) {
+        return [
+            msg[Phx.MsgIdx.joinRef],
+            msg[Phx.MsgIdx.msgRef],
+            msg[Phx.MsgIdx.topic],
+            "phx_reply",
+            {
+                status: "ok",
+                response: {
+                    diff,
+                },
+            },
+        ];
+    }
+    PhxReply.diffReply = diffReply;
     function hbReply(msg) {
         return [
             null,
@@ -2786,20 +2801,91 @@ var PhxReply;
     PhxReply.serialize = serialize;
 })(PhxReply || (PhxReply = {}));
 
-class LiveViewContext {
+async function onEvent(ctx, payload) {
+    const { type, event, cid } = payload;
+    let value = {};
+    switch (type) {
+        case "click":
+        case "keyup":
+        case "keydown":
+        case "blur":
+        case "focus":
+        case "hook":
+            value = payload.value;
+            break;
+        case "form":
+            // parse payload into form data
+            const pl = payload;
+            value = Object.fromEntries(new URLSearchParams(pl.value));
+            // if _csrf_token is set, ensure it is the same as session csrf token
+            if (value.hasOwnProperty("_csrf_token")) {
+                if (value._csrf_token !== ctx.csrfToken) {
+                    throw new Error("Mismatched CSRF token");
+                }
+            }
+            else {
+                console.warn(`Warning: form event data missing _csrf_token value. \nConsider passing it in via a hidden input named "_csrf_token".  \nYou can get the value from the LiveViewMeta object passed the render method. \nWe won't warn you again for this instance of the LiveView.`);
+            }
+            // parse uploads into uploadConfig for given name
+            if (pl.uploads) {
+                const { uploads } = pl;
+                // get _target from form data
+                const target = value["_target"];
+                if (target && ctx.uploadConfigs.hasOwnProperty(target)) {
+                    const config = ctx.uploadConfigs[target];
+                    // check config ref matches uploads key
+                    if (uploads.hasOwnProperty(config.ref)) {
+                        const entries = uploads[config.ref].map((upload) => {
+                            return new UploadEntry(upload, config);
+                        });
+                        config.setEntries(entries);
+                    }
+                }
+            }
+            break;
+        default:
+            throw new Error(`Unknown event type: ${type}`);
+    }
+    // if the payload has a cid, then this event's target is a `LiveComponent`
+    // TODO - reimplement LiveComponent
+    // for "lv:clear-flash" events we don't need to call handleEvent
+    if (event === "lv:clear-flash") {
+        const clearFlashPayload = payload;
+        const key = clearFlashPayload.value.key;
+        ctx.clearFlash(key);
+    }
+    else {
+        await ctx.liveView.handleEvent({ type: event, ...value }, ctx.socket);
+    }
+    return await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
+}
+
+class WsHandlerContext {
+    #liveView;
+    #socket;
     #joinId;
     #csrfToken;
     #url;
     #pageTitle;
     #pageTitleChanged = false;
-    sessionData;
+    #flash;
+    #sessionData;
     uploadConfigs = {};
     parts = {};
-    constructor(joinId, csrfToken, url, sessionData) {
+    constructor(liveView, socket, joinId, csrfToken, url, sessionData, flash) {
+        this.#liveView = liveView;
+        this.#socket = socket;
         this.#joinId = joinId;
         this.#csrfToken = csrfToken;
         this.#url = url;
-        this.sessionData = sessionData;
+        this.#sessionData = sessionData;
+        this.#flash = flash;
+    }
+    get liveView() {
+        return this.#liveView;
+    }
+    get socket() {
+        return this.#socket;
     }
     get joinId() {
         return this.#joinId;
@@ -2823,16 +2909,29 @@ class LiveViewContext {
         this.#pageTitleChanged = false;
         return this.#pageTitle ?? "";
     }
+    get sessionData() {
+        return this.#sessionData;
+    }
+    defaultLiveViewMeta() {
+        return {
+            csrfToken: this.csrfToken,
+            live_component: async (liveComponent, params) => {
+                // TODO - reimplement live components
+                throw new Error("Not implemented");
+            },
+            url: this.url,
+            uploads: this.uploadConfigs,
+        };
+    }
+    clearFlash(key) {
+        return this.#flash.clearFlash(this.#sessionData, key);
+    }
 }
 class WsHandler {
     #ws;
     #config;
     #ctx;
-    #liveView;
-    #socket;
-    #connectionId;
     constructor(ws, config) {
-        this.#connectionId = nanoid();
         this.#config = config;
         this.#ws = ws;
         this.#ws.subscribeToMessages(async (data, isBinary) => {
@@ -2882,21 +2981,18 @@ class WsHandler {
                             return;
                         }
                         // success! now let's initialize this liveview
-                        this.#liveView = liveView;
-                        this.#ctx = new LiveViewContext(topic, payloadParams._csrf_token, url, sessionData);
-                        this.#socket = this.newLiveViewSocket();
+                        const socket = this.newLiveViewSocket(topic);
+                        this.#ctx = new WsHandlerContext(liveView, socket, topic, // aka joinId
+                        payloadParams._csrf_token, url, sessionData, this.#config.flashAdaptor);
                         // run initial lifecycle steps for the liveview: mount => handleParams => render
-                        await this.#liveView.mount(this.#socket, sessionData, { ...payloadParams, ...pathParams.params });
-                        await this.#liveView.handleParams(url, this.#socket);
-                        const view = await this.#liveView.render(this.#socket.context, this.newLiveViewMeta());
+                        await this.#ctx.liveView.mount(this.#ctx.socket, sessionData, { ...payloadParams, ...pathParams.params });
+                        await this.#ctx.liveView.handleParams(url, this.#ctx.socket);
+                        const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.newLiveViewMeta());
                         // convert the view into a parts tree
-                        const rendered = await this.viewToParts(view);
-                        // build response from parts and message
-                        const reply = PhxReply.renderedReply(msg, rendered);
-                        // send the response
-                        this.send(reply);
-                        // do post-send lifecycle step
-                        this.#socket.updateContextWithTempAssigns();
+                        const rendered = await this.viewToRendered(view);
+                        // send the response and cleanup
+                        this.send(PhxReply.renderedReply(msg, rendered));
+                        this.cleanupPostReply();
                     }
                     else if (topic.startsWith("lvu:")) {
                         // since we don't have the lv topic id, use the connectionId to broadcast to the component manager
@@ -2914,6 +3010,17 @@ class WsHandler {
                     this.send(PhxReply.hbReply(msg));
                     break;
                 case "event":
+                    try {
+                        const payload = msg[Phx.MsgIdx.payload];
+                        const view = await onEvent(this.#ctx, payload);
+                        const diff = await this.viewToDiff(view);
+                        this.send(PhxReply.diffReply(msg, diff));
+                        this.cleanupPostReply();
+                    }
+                    catch (e) {
+                        console.error("error handling event", e);
+                    }
+                    break;
                 case "live_patch":
                 case "phx_leave":
                 case "allow_upload":
@@ -2940,17 +3047,39 @@ class WsHandler {
     send(reply) {
         this.#ws.send(PhxReply.serialize(reply));
     }
-    async viewToParts(view) {
+    async cleanupPostReply() {
+        // // maybe send any queued info messages
+        // await this.maybeSendInfos();
+        // do post-send lifecycle step
+        this.#ctx.socket.updateContextWithTempAssigns();
+    }
+    async viewToDiff(view) {
+        // wrap in root template if there is one
+        view = await this.maybeWrapView(view);
+        // diff the new view with the old view
+        const newParts = view.partsTree(true);
+        const diff = deepDiff(this.#ctx.parts, newParts);
+        // store newParts for future diffs
+        this.#ctx.parts = newParts;
+        // TODO
+        // diff = this.maybeAddEventsToParts(diff);
+        return this.maybeAddTitleToView(diff);
+    }
+    async viewToRendered(view) {
         // step 1: if provided, wrap the rendered `LiveView` inside the root template
-        if (this.#config.wrapperTemplate) {
-            view = await this.#config.wrapperTemplate(this.#ctx.sessionData, safe(view));
-        }
+        view = await this.maybeWrapView(view);
         // step 2: store parts for later diffing after rootTemplate is applied
         let parts = view.partsTree(true);
         // TODO
         // step 3: add any `LiveComponent` renderings to the parts tree
         // let rendered = this.maybeAddLiveComponentsToParts(parts);
         // step 4: if set, add the page title to the parts tree
+        parts = this.maybeAddTitleToView(parts);
+        // set the parts tree on the context
+        this.#ctx.parts = parts;
+        return parts;
+    }
+    maybeAddTitleToView(parts) {
         if (this.#ctx.hasPageTitleChanged) {
             const t = this.#ctx.pageTitle; // resets changed flag
             parts = {
@@ -2958,9 +3087,13 @@ class WsHandler {
                 t,
             };
         }
-        // set the parts tree on the context
-        this.#ctx.parts = parts;
         return parts;
+    }
+    async maybeWrapView(view) {
+        if (this.#config.wrapperTemplate) {
+            view = await this.#config.wrapperTemplate(this.#ctx.sessionData, safe(view));
+        }
+        return view;
     }
     // LiveViewMeta
     newLiveViewMeta() {
@@ -2977,10 +3110,11 @@ class WsHandler {
         };
     }
     // liveview socket methods
-    newLiveViewSocket() {
+    // TODO move this to context?
+    newLiveViewSocket(joinId) {
         return new WsLiveViewSocket(
         // id
-        this.#ctx.joinId, 
+        joinId, 
         // pageTitleCallback
         (newTitle) => {
             this.#ctx.pageTitle = newTitle;
@@ -3178,4 +3312,4 @@ class WsMessageRouter {
     }
 }
 
-export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, JS, LiveViewManager, Phx, SessionFlashAdaptor, SingleProcessPubSub, UploadConfig, UploadEntry, WsHandler, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
+export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, JS, LiveViewManager, Phx, SessionFlashAdaptor, SingleProcessPubSub, UploadConfig, UploadEntry, WsHandler, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
