@@ -1,25 +1,23 @@
 import { WsAdaptor, WsCloseListener, WsMsgListener } from "../adaptor";
 
 export class TestWsAdaptor implements WsAdaptor {
-  #send: jest.Mock;
+  private sendFn: (msg: string) => void;
   #closeListener: WsCloseListener;
   #msgListener: WsMsgListener;
-  constructor(send: jest.Mock, closeListener: jest.Mock, msgListener: jest.Mock) {
-    this.#send = send;
-    this.#closeListener = closeListener;
-    this.#msgListener = msgListener;
+  constructor(sendFn: (msg: string) => void) {
+    this.sendFn = sendFn;
   }
   subscribeToClose(closeListener: WsCloseListener): void {
     this.#closeListener = closeListener;
   }
   send(message: string, errorHandler?: ((err: any) => void) | undefined): void {
-    this.#send(message);
+    this.sendFn(message);
   }
   subscribeToMessages(msgListener: WsMsgListener): void {
     this.#msgListener = msgListener;
   }
 
-  sendIncomingMsg(msg: string) {
-    this.#msgListener(Buffer.from(msg), false);
+  async sendIncomingMsg(msg: string) {
+    await this.#msgListener(Buffer.from(msg), false);
   }
 }

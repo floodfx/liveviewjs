@@ -37,6 +37,21 @@ export namespace PhxReply {
     ];
   }
 
+  export function diffReply(msg: Phx.Msg, diff: Parts): Reply {
+    return [
+      msg[Phx.MsgIdx.joinRef],
+      msg[Phx.MsgIdx.msgRef],
+      msg[Phx.MsgIdx.topic],
+      "phx_reply",
+      {
+        status: "ok",
+        response: {
+          diff,
+        },
+      },
+    ];
+  }
+
   export function hbReply(msg: Phx.Msg): Reply {
     return [
       null,
