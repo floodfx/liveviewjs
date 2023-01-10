@@ -19,6 +19,7 @@ import { UploadConfig, UploadEntry } from "../../upload";
 import { ConsumeUploadedEntriesMeta, Info, WsLiveViewSocket } from "../liveSocket";
 import { PhxJoinPayload } from "../types";
 import { handleEvent } from "./wsEventHandler";
+import { onAllowUpload, onProgressUpload, onUploadBinary } from "./wsUploadHandler";
 
 export interface WsHandlerConfig {
   serDe: SerDe;
@@ -38,6 +39,7 @@ export class WsHandlerContext {
   #pageTitleChanged: boolean = false;
   #flash: FlashAdaptor;
   #sessionData: SessionData;
+  activeUploadRef: string | null = null;
   uploadConfigs: { [key: string]: UploadConfig } = {};
   parts: Parts = {};
 
@@ -131,6 +133,7 @@ export class WsHandler {
       try {
         if (isBinary) {
           await this.handleUpload(Phx.parseBinary(data));
+          return;
         }
         await this.handleMsg(Phx.parse(data.toString()));
       } catch (e) {
@@ -166,6 +169,7 @@ export class WsHandler {
             if (!matchResult) {
               throw Error(`no LiveView found for ${url}`);
             }
+            // Found a match! so let's keep going
             const [liveView, pathParams] = matchResult;
 
             // extract params, session and socket from payload
@@ -207,11 +211,13 @@ export class WsHandler {
             this.send(PhxReply.renderedReply(msg, rendered));
             this.cleanupPostReply();
           } else if (topic.startsWith("lvu:")) {
-            // since we don't have the lv topic id, use the connectionId to broadcast to the component manager
-            // await this.pubSub.broadcast(connectionId, {
-            //   type: "phx_join_upload",
-            //   message: rawPhxMessage as PhxJoinUploadIncoming,
-            // });
+            // TODO? send more than ack?
+            // perhaps we should check this token matches the entry sent earlier?
+            const payload = msg[Phx.MsgIdx.payload];
+            console.log("upload join payload", payload);
+            // const { token } = payload;
+            // send ACK
+            this.send(PhxReply.renderedReply(msg, {}));
           } else {
             // istanbul ignore next
             throw new Error(`Unknown phx_join prefix: ${topic}`);
@@ -234,7 +240,26 @@ export class WsHandler {
         case "live_patch":
         case "phx_leave":
         case "allow_upload":
+          console.log("allow_upload", msg);
+          try {
+            const payload = msg[Phx.MsgIdx.payload] as Phx.AllowUploadPayload;
+            const { view, config, entries } = await onAllowUpload(this.#ctx!, payload);
+            const diff = await this.viewToDiff(view);
+            this.send(PhxReply.allowUploadReply(msg, diff, config, entries));
+          } catch (e) {
+            console.error("error handling allow_upload", e);
+          }
+          break;
         case "progress":
+          try {
+            const payload = msg[Phx.MsgIdx.payload] as Phx.ProgressUploadPayload;
+            const view = await onProgressUpload(this.#ctx!, payload);
+            const diff = await this.viewToDiff(view);
+            this.send(PhxReply.diffReply(msg, diff));
+            this.cleanupPostReply();
+          } catch (e) {
+            console.error("error handling progress", e);
+          }
           break;
         default:
           throw new Error(`unexpected phx protocol event ${event}`);
@@ -244,8 +269,12 @@ export class WsHandler {
     }
   }
 
-  handleUpload(msg: Phx.UploadMsg) {
+  async handleUpload(msg: Phx.UploadMsg) {
     console.log("upload", msg);
+    const replies = await onUploadBinary(this.#ctx!, msg, this.#config.fileSysAdaptor);
+    for (const reply of replies) {
+      this.send(reply);
+    }
   }
 
   async handleInfo(info: Info<AnyLiveInfo>) {

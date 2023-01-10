@@ -1,3 +1,4 @@
+import { AllowUploadEntry } from "../socket/types";
 import { BinaryUploadSerDe } from "../upload/binaryUploadSerDe";
 
 export namespace Phx {
@@ -30,6 +31,20 @@ export namespace Phx {
     topic: string;
     event: string;
     payload: Buffer; // binary data
+  };
+
+  export type AllowUploadPayload = { ref: string; entries: AllowUploadEntry[] };
+  export type JoinUploadPayload = {
+    // this is the string returned from the AllowUpload response
+    // right now it is a json string of the AllowUploadEntry but
+    // perhaps it should be something else like a jwt token?
+    token: string;
+  };
+  export type ProgressUploadPayload = {
+    event: string | null;
+    ref: string;
+    entry_ref: string; // usually number as a string
+    progress: number;
   };
 
   export function parse(msg: string): Msg {

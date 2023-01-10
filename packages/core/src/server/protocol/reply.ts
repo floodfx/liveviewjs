@@ -1,3 +1,4 @@
+import { AllowUploadConstraints, AllowUploadEntries } from "../socket/ws/wsUploadHandler";
 import { Parts } from "../templates";
 import { Phx } from "./phx";
 
@@ -53,6 +54,28 @@ export namespace PhxReply {
         status: "ok",
         response: {
           diff,
+        },
+      },
+    ];
+  }
+
+  export function allowUploadReply(
+    msg: Phx.Msg,
+    diff: Parts,
+    config: AllowUploadConstraints,
+    entries: AllowUploadEntries
+  ): Reply {
+    return [
+      msg[Phx.MsgIdx.joinRef],
+      msg[Phx.MsgIdx.msgRef],
+      msg[Phx.MsgIdx.topic],
+      "phx_reply",
+      {
+        status: "ok",
+        response: {
+          diff,
+          config,
+          entries,
         },
       },
     ];
