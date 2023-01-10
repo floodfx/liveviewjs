@@ -75,6 +75,7 @@ export class NodeExpressLiveViewServer
       fileSysAdaptor: this.fileSystem,
       serDe: this.serDe,
       wrapperTemplate: this.wrapperTemplate,
+      flashAdaptor: this.flashAdapter,
     };
   }
 

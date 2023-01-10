@@ -756,8 +756,8 @@ declare namespace Phx {
         payload = 4
     }
     type Msg<Payload = unknown> = [
-        joinRef: string | null,
-        msgRef: string | null,
+        joinRef: string,
+        msgRef: string,
         topic: string,
         event: string,
         payload: Payload
@@ -775,10 +775,30 @@ declare namespace Phx {
         event: string;
         payload: Buffer;
     };
+    type AllowUploadPayload = {
+        ref: string;
+        entries: AllowUploadEntry[];
+    };
+    type JoinUploadPayload = {
+        token: string;
+    };
+    type ProgressUploadPayload = {
+        event: string | null;
+        ref: string;
+        entry_ref: string;
+        progress: number;
+    };
     function parse(msg: string): Msg;
     function parseBinary(raw: Buffer): Phx.UploadMsg;
     function serialize(msg: Msg): string;
 }
+
+declare type AllowUploadEntries = {
+    [key: string]: string;
+};
+declare type AllowUploadConstraints = {
+    [key: string]: number;
+};
 
 declare function deepDiff(oldParts: Parts, newParts: Parts): Parts;
 declare function diffArrays(oldArray: unknown[], newArray: unknown[]): boolean;
@@ -1130,8 +1150,7 @@ declare namespace PhxReply {
         payload: {
             status?: Status;
             response?: Response;
-            diff?: Parts;
-        }
+        } | Parts
     ];
     type Response = {
         rendered?: {
@@ -1151,7 +1170,8 @@ declare namespace PhxReply {
     function renderedReply(msg: Phx.Msg, parts: Parts): Reply;
     function diff(joinRef: string | null, topic: string, diff: Parts): Reply;
     function diffReply(msg: Phx.Msg, diff: Parts): Reply;
-    function hbReply(msg: Phx.Msg): Reply;
+    function allowUploadReply(msg: Phx.Msg, diff: Parts, config: AllowUploadConstraints, entries: AllowUploadEntries): Reply;
+    function heartbeat(msg: Phx.Msg): Reply;
     function serialize(msg: Reply): string;
 }
 
@@ -1164,6 +1184,7 @@ interface WsHandlerConfig {
 }
 declare class WsHandlerContext {
     #private;
+    activeUploadRef: string | null;
     uploadConfigs: {
         [key: string]: UploadConfig;
     };
@@ -1185,7 +1206,7 @@ declare class WsHandler {
     #private;
     constructor(ws: WsAdaptor, config: WsHandlerConfig);
     handleMsg(msg: Phx.Msg<unknown>): Promise<void>;
-    handleUpload(msg: Phx.UploadMsg): void;
+    handleUpload(msg: Phx.UploadMsg): Promise<void>;
     handleInfo(info: Info<AnyLiveInfo>): Promise<void>;
     handleClose(): Promise<void>;
     send(reply: PhxReply.Reply): void;
