@@ -72,7 +72,7 @@ export async function handleEvent(ctx: WsHandlerContext, payload: Phx.EventPaylo
         }
       } else {
         console.warn(
-          `Warning: form event data missing _csrf_token value. \nConsider passing it in via a hidden input named "_csrf_token".  \nYou can get the value from the LiveViewMeta object passed the render method. \nWe won't warn you again for this instance of the LiveView.`
+          `Warning: form event data missing _csrf_token value. \nConsider passing it in via a hidden input named "_csrf_token".  \nYou can get the value from the LiveViewMeta object passed the render method. \n`
         );
       }
 

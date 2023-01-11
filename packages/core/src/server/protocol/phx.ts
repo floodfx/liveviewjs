@@ -11,8 +11,8 @@ export namespace Phx {
   }
 
   export type Msg<Payload = unknown> = [
-    joinRef: string,
-    msgRef: string,
+    joinRef: string | null,
+    msgRef: string | null,
     topic: string,
     event: string,
     payload: Payload // Type varies based on message type
@@ -58,8 +58,9 @@ export namespace Phx {
     return m as Msg;
   }
 
-  export function parseBinary(raw: Buffer): Phx.UploadMsg {
-    return new BinaryUploadSerDe().deserialize(raw);
+  export function parseBinary(raw: Buffer): Phx.Msg<Buffer> {
+    const um = new BinaryUploadSerDe().deserialize(raw);
+    return [um.joinRef, um.msgRef, um.topic, um.event, um.payload] as Phx.Msg<Buffer>;
   }
 
   export function serialize(msg: Msg): string {
