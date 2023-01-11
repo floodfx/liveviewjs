@@ -1,7 +1,7 @@
 /// <reference types="node" />
+import { RedisClientOptions } from '@node-redis/client';
 import { RequestHandler } from 'express';
-import { FileSystemAdaptor, FlashAdaptor, LiveTitleOptions, LiveViewHtmlPageTemplate, LiveViewRouter, LiveViewServerAdaptor, LiveViewWrapperTemplate, Publisher, PubSub, SerDe, SessionData, Subscriber, SubscriberFunction, WsAdaptor, WsMessageRouter } from 'liveviewjs';
-import { RedisClientOptions } from 'redis';
+import { FileSystemAdaptor, FlashAdaptor, LiveTitleOptions, LiveViewHtmlPageTemplate, LiveViewRouter, LiveViewServerAdaptor, LiveViewWrapperTemplate, Publisher, PubSub, SerDe, SessionData, Subscriber, SubscriberFunction, WsAdaptor, WsCloseListener, WsMsgListener } from 'liveviewjs';
 import { WebSocket, WebSocketServer } from 'ws';
 
 declare class NodeFileSystemAdatptor implements FileSystemAdaptor {
@@ -53,11 +53,9 @@ declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<Request
     private htmlPageTemplate;
     private liveTitleOptions;
     private wrapperTemplate?;
-    private _wsRouter;
     constructor(router: LiveViewRouter, htmlPageTemplate: LiveViewHtmlPageTemplate, liveTitleOptions: LiveTitleOptions, options?: NodeExpressLiveViewServerOptions);
     wsMiddleware(): (wsServer: WebSocketServer) => Promise<void>;
     httpMiddleware(): RequestHandler;
-    wsRouter(): WsMessageRouter;
 }
 
 /**

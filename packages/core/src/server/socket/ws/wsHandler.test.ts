@@ -2,6 +2,7 @@ import { SessionFlashAdaptor } from "../../adaptor";
 import { JsonSerDe } from "../../adaptor/jsonSerDe";
 import { TestNodeFileSystemAdatptor } from "../../adaptor/testFilesAdatptor";
 import { Phx } from "../../protocol/phx";
+import { SingleProcessPubSub } from "../../pubsub";
 import { Test } from "../../test/liveviews";
 import { TestWsAdaptor } from "../../test/wsAdaptor";
 import { WsHandler } from "./wsHandler";
@@ -20,6 +21,7 @@ describe("test NodeWsHandler", () => {
       fileSysAdaptor: new TestNodeFileSystemAdatptor(),
       serDe: new JsonSerDe(),
       flashAdaptor: new SessionFlashAdaptor(),
+      pubSub: new SingleProcessPubSub(),
     });
   });
 

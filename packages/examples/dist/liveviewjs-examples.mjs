@@ -1397,19 +1397,22 @@ function numberToCurrency(amount) {
     return formatter.format(amount);
 }
 
+const intervalRefs = {};
 /**
  * Dashboard that automatically refreshes every second or when a user hits refresh.
  */
 const dashboardLiveView = createLiveView({
     mount: (socket) => {
+        let interval = null;
         if (socket.connected) {
             // only start repeating if the socket is connected (i.e. websocket is connected)
-            setInterval(() => {
+            interval = setInterval(() => {
                 // send the tick event internally
                 socket.sendInfo({ type: "tick" });
             }, 1000);
+            intervalRefs[socket.id] = interval;
         }
-        socket.assign(nextRandomData());
+        socket.assign({ ...nextRandomData() });
     },
     // on tick, update random data
     handleInfo: (_, socket) => socket.assign(nextRandomData()),
@@ -1433,6 +1436,10 @@ const dashboardLiveView = createLiveView({
       <br />
       <button phx-click="refresh">↻ Refresh</button>
     `;
+    },
+    shutdown: (id, context) => {
+        // clear the interval when the LiveView is shut down
+        clearInterval(intervalRefs[id]);
     },
 });
 // generate a random set of data

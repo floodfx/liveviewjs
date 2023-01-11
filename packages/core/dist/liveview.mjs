@@ -102,6 +102,9 @@ class BaseLiveView {
     handleParams(url, socket) {
         // no-op
     }
+    shutdown(id, context) {
+        // no-op
+    }
 }
 /**
  * Functional `LiveView` factory method for generating a `LiveView`.
@@ -121,6 +124,7 @@ const createLiveView = (params) => {
             // istanbul ignore next
             console.warn(`handleInfo not implemented in LiveView but info received: ${JSON.stringify(info)}`);
         },
+        shutdown: () => { },
         // replace default impls with params if they are defined
         ...params,
     };
@@ -3049,8 +3053,12 @@ class WsHandler {
     #ws;
     #config;
     #ctx;
-    #active = false;
+    #activeMsg = false;
     #msgQueue = [];
+    #subscriptionIds = {};
+    #hbInterval;
+    #lastHB;
+    #closed = false;
     constructor(ws, config) {
         this.#config = config;
         this.#ws = ws;
@@ -3066,16 +3074,20 @@ class WsHandler {
                 console.error("error parsing Phx message", e);
             }
         });
-        this.#ws.subscribeToClose(() => this.handleClose);
+        this.#ws.subscribeToClose(() => this.close);
     }
     async handleMsg(msg) {
+        if (this.#closed) {
+            console.error("received message after socket closed", msg);
+            return;
+        }
         // attempt to prevent race conditions by queuing messages
         // if we are already processing a message
-        if (this.#active) {
+        if (this.#activeMsg) {
             this.#msgQueue.push(msg);
             return;
         }
-        this.#active = true;
+        this.#activeMsg = true;
         console.log("dispatch", msg);
         const event = msg[Phx.MsgIdx.event];
         const topic = msg[Phx.MsgIdx.topic];
@@ -3122,6 +3134,15 @@ class WsHandler {
                         // send the response and cleanup
                         this.send(PhxReply.renderedReply(msg, rendered));
                         this.cleanupPostReply();
+                        // start heartbeat interval
+                        this.#lastHB = Date.now();
+                        this.#hbInterval = setInterval(() => {
+                            // shutdown if we haven't received a heartbeat in 60 seconds
+                            if (this.#lastHB && Date.now() - this.#lastHB > 60000) {
+                                this.#hbInterval && clearInterval(this.#hbInterval);
+                                this.close();
+                            }
+                        }, 30000);
                     }
                     else if (topic.startsWith("lvu:")) {
                         // const payload = msg[Phx.MsgIdx.payload] as Phx.JoinUploadPayload;
@@ -3216,22 +3237,29 @@ class WsHandler {
                     break;
                 // End File Upload Events
                 case "heartbeat":
+                    this.#lastHB = Date.now();
                     this.send(PhxReply.heartbeat(msg));
                     break;
                 case "phx_leave":
-                    // try {
-                    // shutdown the liveview
-                    //   if (this.#ctx) {
-                    //     await this.#ctx.liveView.shutdown(this.#ctx);
-                    //   }
-                    // unsubscribe from PubSubs
-                    // Object.entries(this.subscriptionIds).forEach(async ([topic, subscriptionId]) => {
-                    //   const subId = await subscriptionId;
-                    //   await this.pubSub.unsubscribe(topic, subId);
-                    // });
-                    // } catch (e) {
-                    //   console.error("error handling phx_leave", e);
-                    // }
+                    this.#closed = true;
+                    try {
+                        // shutdown the liveview
+                        if (this.#ctx) {
+                            await this.#ctx.liveView.shutdown(this.#ctx.joinId, this.#ctx);
+                        }
+                    }
+                    catch (e) {
+                        console.error("error shutting down liveview:" + this.#ctx?.joinId, e);
+                    }
+                    try {
+                        // unsubscribe from PubSubs
+                        Object.entries(this.#subscriptionIds).forEach(async ([topic, subId]) => {
+                            await this.#config.pubSub.unsubscribe(topic, subId);
+                        });
+                    }
+                    catch (e) {
+                        console.error("error unsubscribing from pubsub", e);
+                    }
                     break;
                 default:
                     throw new Error(`unexpected phx protocol event ${event}`);
@@ -3241,13 +3269,13 @@ class WsHandler {
             console.error("error handling phx message", e);
         }
         // we're done with this message, so we can process the next one if there is one
-        this.#active = false;
+        this.#activeMsg = false;
         const nextMsg = this.#msgQueue.pop();
         if (nextMsg) {
             this.handleMsg(nextMsg);
         }
     }
-    async handleClose() {
+    async close() {
         // redirect this through handleMsg after adding the joinId
         const joinId = this.#ctx?.joinId ?? "unknown";
         this.handleMsg([null, null, joinId, "phx_leave", null]);
@@ -3343,7 +3371,13 @@ class WsHandler {
             this.handleMsg([null, null, this.#ctx.joinId, "info", info]);
         }, 
         // subscribeCallback
-        async (topic) => { }, 
+        async (topic) => {
+            const subId = await this.#config.pubSub.subscribe(topic, (info) => {
+                // dispatch as an "info" message
+                this.handleMsg([null, null, this.#ctx.joinId, "info", info]);
+            });
+            this.#subscriptionIds[topic] = subId;
+        }, 
         // allowUploadCallback
         async (name, options) => {
             this.#ctx.uploadConfigs[name] = new UploadConfig(name, options);

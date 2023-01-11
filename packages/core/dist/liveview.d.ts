@@ -1171,6 +1171,7 @@ interface WsHandlerConfig {
     fileSysAdaptor: FileSystemAdaptor;
     wrapperTemplate?: LiveViewWrapperTemplate;
     flashAdaptor: FlashAdaptor;
+    pubSub: PubSub;
 }
 declare class WsHandlerContext {
     #private;
@@ -1196,7 +1197,7 @@ declare class WsHandler {
     #private;
     constructor(ws: WsAdaptor, config: WsHandlerConfig);
     handleMsg(msg: Phx.Msg<unknown>): Promise<void>;
-    handleClose(): Promise<void>;
+    close(): Promise<void>;
     send(reply: PhxReply.Reply): void;
     private cleanupPostReply;
     private viewToDiff;
@@ -1317,6 +1318,11 @@ interface LiveView<TContext extends LiveContext = AnyLiveContext, TEvents extend
      * @param meta the `LiveViewMeta` for this `LiveView`
      */
     render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
+    /**
+     * `shutdown` is called when the `LiveView` is disconnected from the websocket. You can clean
+     * up any resources or references here.
+     */
+    shutdown(id: string, content: TContext): void | Promise<void>;
 }
 declare type Event<TEvent extends LiveEvent> = TEvent["type"];
 /**
@@ -1353,6 +1359,7 @@ declare abstract class BaseLiveView<TContext extends LiveContext = AnyLiveContex
     handleEvent(event: TEvents, socket: LiveViewSocket<TContext, TInfos>): void;
     handleInfo(info: TInfos, socket: LiveViewSocket<TContext, TInfos>): void;
     handleParams(url: URL, socket: LiveViewSocket<TContext, TInfos>): void;
+    shutdown(id: string, context: TContext): void | Promise<void>;
     abstract render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 /**
@@ -1364,6 +1371,7 @@ interface BaseLiveViewParams<TContext extends LiveContext = AnyLiveContext, TEve
     handleParams?: (url: URL, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
     handleEvent?: (event: TEvents, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
     handleInfo?: (info: TInfos, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
+    shutdown?: (id: string, context: TContext) => void | Promise<void>;
     render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 /**

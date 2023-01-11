@@ -1,6 +1,8 @@
 import { createLiveView, html } from "liveviewjs";
 import { numberToCurrency } from "../utils";
 
+const intervalRefs: { [key: string]: NodeJS.Timer } = {};
+
 /**
  * Dashboard that automatically refreshes every second or when a user hits refresh.
  */
@@ -13,14 +15,16 @@ export const dashboardLiveView = createLiveView<
   { type: "tick" }
 >({
   mount: (socket) => {
+    let interval = null;
     if (socket.connected) {
       // only start repeating if the socket is connected (i.e. websocket is connected)
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         // send the tick event internally
         socket.sendInfo({ type: "tick" });
       }, 1000);
+      intervalRefs[socket.id] = interval;
     }
-    socket.assign(nextRandomData());
+    socket.assign({ ...nextRandomData() });
   },
 
   // on tick, update random data
@@ -46,6 +50,11 @@ export const dashboardLiveView = createLiveView<
       <br />
       <button phx-click="refresh">↻ Refresh</button>
     `;
+  },
+
+  shutdown: (id, context) => {
+    // clear the interval when the LiveView is shut down
+    clearInterval(intervalRefs[id]);
   },
 });
 

@@ -109,6 +109,12 @@ export interface LiveView<
    * @param meta the `LiveViewMeta` for this `LiveView`
    */
   render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
+
+  /**
+   * `shutdown` is called when the `LiveView` is disconnected from the websocket. You can clean
+   * up any resources or references here.
+   */
+  shutdown(id: string, content: TContext): void | Promise<void>;
 }
 
 export type Event<TEvent extends LiveEvent> = TEvent["type"];
@@ -160,12 +166,14 @@ export abstract class BaseLiveView<
       `handleEvent not implemented for ${this.constructor.name} but event received: ${JSON.stringify(event)}`
     );
   }
-
   handleInfo(info: TInfos, socket: LiveViewSocket<TContext, TInfos>) {
     // istanbul ignore next
     console.warn(`handleInfo not implemented for ${this.constructor.name} but info received: ${JSON.stringify(info)}`);
   }
   handleParams(url: URL, socket: LiveViewSocket<TContext, TInfos>) {
+    // no-op
+  }
+  shutdown(id: string, context: TContext): void | Promise<void> {
     // no-op
   }
 
@@ -189,6 +197,7 @@ interface BaseLiveViewParams<
   handleParams?: (url: URL, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
   handleEvent?: (event: TEvents, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
   handleInfo?: (info: TInfos, socket: LiveViewSocket<TContext, TInfos>) => void | Promise<void>;
+  shutdown?: (id: string, context: TContext) => void | Promise<void>;
   render(context: TContext, meta: LiveViewMeta<TEvents>): LiveViewTemplate | Promise<LiveViewTemplate>;
 }
 
@@ -216,6 +225,7 @@ export const createLiveView = <
       // istanbul ignore next
       console.warn(`handleInfo not implemented in LiveView but info received: ${JSON.stringify(info)}`);
     },
+    shutdown: () => {},
     // replace default impls with params if they are defined
     ...params,
   };

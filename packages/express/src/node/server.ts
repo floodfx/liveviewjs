@@ -17,7 +17,6 @@ import {
   SingleProcessPubSub,
   WsHandler,
   WsHandlerConfig,
-  WsMessageRouter,
 } from "liveviewjs";
 import { nanoid } from "nanoid";
 import { WebSocketServer } from "ws";
@@ -45,7 +44,6 @@ export class NodeExpressLiveViewServer
   private htmlPageTemplate: LiveViewHtmlPageTemplate;
   private liveTitleOptions: LiveTitleOptions;
   private wrapperTemplate?: LiveViewWrapperTemplate;
-  private _wsRouter: WsMessageRouter;
   #config: WsHandlerConfig;
 
   constructor(
@@ -62,20 +60,13 @@ export class NodeExpressLiveViewServer
     this.htmlPageTemplate = htmlPageTemplate;
     this.liveTitleOptions = liveTitleOptions;
     this.wrapperTemplate = options?.wrapperTemplate;
-    this._wsRouter = new WsMessageRouter(
-      this.router,
-      this.pubSub,
-      this.flashAdapter,
-      this.serDe,
-      this.fileSystem,
-      this.wrapperTemplate
-    );
     this.#config = {
       router: this.router,
       fileSysAdaptor: this.fileSystem,
       serDe: this.serDe,
       wrapperTemplate: this.wrapperTemplate,
       flashAdaptor: this.flashAdapter,
+      pubSub: this.pubSub,
     };
   }
 
@@ -83,17 +74,6 @@ export class NodeExpressLiveViewServer
     return async (wsServer: WebSocketServer) => {
       // send websocket requests to the LiveViewJS message router
       wsServer.on("connection", (ws) => new WsHandler(new NodeWsAdaptor(ws), this.#config));
-      // wsServer.on("connection", (ws) => {
-      //   const connectionId = nanoid();
-      //   ws.on("message", async (message, isBinary) => {
-      //     // pass websocket messages to LiveViewJS
-      //     await this._wsRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
-      //   });
-      //   ws.on("close", async () => {
-      //     // pass websocket close events to LiveViewJS
-      //     await this._wsRouter.onClose(connectionId);
-      //   });
-      // });
     };
   }
 
@@ -141,10 +121,6 @@ export class NodeExpressLiveViewServer
         next(error);
       }
     };
-  }
-
-  wsRouter() {
-    return this._wsRouter;
   }
 }
 
