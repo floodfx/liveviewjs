@@ -1,34 +1,39 @@
 import { createLiveView, html } from "liveviewjs";
 import { numberToCurrency } from "../utils";
 
-const intervalRefs: { [key: string]: NodeJS.Timer } = {};
+const intervalRefs: { [key: string]: NodeJS.Timer[] } = {};
 
 /**
  * Dashboard that automatically refreshes every second or when a user hits refresh.
  */
 export const dashboardLiveView = createLiveView<
   // Define LiveView Context / State
-  { newOrders: number; salesAmount: number; rating: number },
+  { newOrders: number; salesAmount: number; rating: number; refreshes: number },
   // Define LiveView External Events
   { type: "refresh" },
   // Define LiveView Internal Events
   { type: "tick" }
 >({
   mount: (socket) => {
-    let interval = null;
     if (socket.connected) {
       // only start repeating if the socket is connected (i.e. websocket is connected)
-      interval = setInterval(() => {
+      const infoInterval = setInterval(() => {
         // send the tick event internally
         socket.sendInfo({ type: "tick" });
       }, 1000);
-      intervalRefs[socket.id] = interval;
+      intervalRefs[socket.id] = [infoInterval];
     }
-    socket.assign({ ...nextRandomData() });
+    socket.assign({ ...nextRandomData(), refreshes: 0 });
   },
 
   // on tick, update random data
-  handleInfo: (_, socket) => socket.assign(nextRandomData()),
+  handleInfo: (info, socket) => {
+    const { refreshes } = socket.context;
+    if (refreshes % 5 === 0) {
+      socket.pushEvent({ type: "refresh", refreshes });
+    }
+    socket.assign({ ...nextRandomData(), refreshes: socket.context.refreshes + 1 });
+  },
   // on refresh, update random data
   handleEvent: (_, socket) => socket.assign(nextRandomData()),
 
@@ -54,7 +59,7 @@ export const dashboardLiveView = createLiveView<
 
   shutdown: (id, context) => {
     // clear the interval when the LiveView is shut down
-    clearInterval(intervalRefs[id]);
+    intervalRefs[id].forEach((interval) => clearInterval(interval));
   },
 });
 

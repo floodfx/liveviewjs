@@ -1175,6 +1175,7 @@ interface WsHandlerConfig {
 }
 declare class WsHandlerContext {
     #private;
+    pushEvents: AnyLivePushEvent[];
     activeUploadRef: string | null;
     uploadConfigs: {
         [key: string]: UploadConfig;
@@ -1202,6 +1203,7 @@ declare class WsHandler {
     private cleanupPostReply;
     private viewToDiff;
     private viewToRendered;
+    private maybeAddEventsToParts;
     private maybeAddTitleToView;
     private maybeWrapView;
     private newLiveViewMeta;

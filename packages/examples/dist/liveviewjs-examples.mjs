@@ -1403,19 +1403,24 @@ const intervalRefs = {};
  */
 const dashboardLiveView = createLiveView({
     mount: (socket) => {
-        let interval = null;
         if (socket.connected) {
             // only start repeating if the socket is connected (i.e. websocket is connected)
-            interval = setInterval(() => {
+            const infoInterval = setInterval(() => {
                 // send the tick event internally
                 socket.sendInfo({ type: "tick" });
             }, 1000);
-            intervalRefs[socket.id] = interval;
+            intervalRefs[socket.id] = [infoInterval];
         }
-        socket.assign({ ...nextRandomData() });
+        socket.assign({ ...nextRandomData(), refreshes: 0 });
     },
     // on tick, update random data
-    handleInfo: (_, socket) => socket.assign(nextRandomData()),
+    handleInfo: (info, socket) => {
+        const { refreshes } = socket.context;
+        if (refreshes % 5 === 0) {
+            socket.pushEvent({ type: "refresh", refreshes });
+        }
+        socket.assign({ ...nextRandomData(), refreshes: socket.context.refreshes + 1 });
+    },
     // on refresh, update random data
     handleEvent: (_, socket) => socket.assign(nextRandomData()),
     render: (context) => {
@@ -1439,7 +1444,7 @@ const dashboardLiveView = createLiveView({
     },
     shutdown: (id, context) => {
         // clear the interval when the LiveView is shut down
-        clearInterval(intervalRefs[id]);
+        intervalRefs[id].forEach((interval) => clearInterval(interval));
     },
 });
 // generate a random set of data

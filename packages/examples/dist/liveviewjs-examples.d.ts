@@ -100,6 +100,7 @@ declare const dashboardLiveView: liveviewjs.LiveView<{
     newOrders: number;
     salesAmount: number;
     rating: number;
+    refreshes: number;
 }, {
     type: "refresh";
 }, {
