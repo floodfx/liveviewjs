@@ -24,15 +24,6 @@ export namespace Phx {
     value: V;
     cid?: number;
   };
-
-  export type UploadMsg = {
-    joinRef: string;
-    msgRef: string;
-    topic: string;
-    event: string;
-    payload: Buffer; // binary data
-  };
-
   export type AllowUploadPayload = { ref: string; entries: AllowUploadEntry[] };
   export type JoinUploadPayload = {
     // this is the string returned from the AllowUpload response
@@ -45,6 +36,17 @@ export namespace Phx {
     ref: string;
     entry_ref: string; // usually number as a string
     progress: number;
+  };
+  export type LivePatchPayload = {
+    url: string;
+  };
+
+  export type UploadMsg = {
+    joinRef: string;
+    msgRef: string;
+    topic: string;
+    event: string;
+    payload: Buffer; // binary data
   };
 
   export function parse(msg: string): Msg {
