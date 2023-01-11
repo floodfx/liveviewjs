@@ -5,7 +5,7 @@ describe("live_img_preview test", () => {
   it("live_img_preview", () => {
     const uc = new UploadConfig("foo", {
       accept: [".png"],
-      maxEntries: 2,
+      max_entries: 2,
     });
     // override the ref so always the same for testing
     uc.ref = "phx-testid";

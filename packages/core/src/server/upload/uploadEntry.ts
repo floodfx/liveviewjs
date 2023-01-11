@@ -94,7 +94,7 @@ export class UploadEntry {
     this.errors = [];
 
     // validate file size
-    if (this.client_size > this.#config.maxFileSize) {
+    if (this.client_size > this.#config.max_file_size) {
       this.errors.push("Too large");
     }
 

@@ -18,16 +18,20 @@ export interface UploadConfig {
   /**
    * the maximum number of files that can be uploaded at once. Defaults to 1.
    */
-  maxEntries: number;
+  max_entries: number;
   /**
    * the maximum size of each file in bytes. Defaults to 10MB.
    */
-  maxFileSize: number;
+  max_file_size: number;
   /**
    * Whether to upload the selected files automatically when the user selects them.
    * Defaults to false.
    */
-  autoUpload: boolean;
+  auto_upload: boolean;
+  /**
+   * The size of each chunk in bytes. Defaults to 64kb.
+   */
+  chunk_size: number;
   /**
    * The files selected for upload.
    */
@@ -49,30 +53,36 @@ export type UploadConfigOptions = {
   /**
    * "accept" contains the unique file type specifiers that can be uploaded.
    * See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
+   * An empty array will allow all file types.
    */
   accept?: string[];
   /**
    * the maximum number of files that can be uploaded at once. Defaults to 1.
    */
-  maxEntries?: number;
+  max_entries?: number;
   /**
    * the maximum size of each file in bytes. Defaults to 10MB.
    */
-  maxFileSize?: number;
+  max_file_size?: number;
   /**
    * Whether to upload the selected files automatically when the user selects them.
    * Defaults to false.
    */
-  autoUpload?: boolean;
+  auto_upload?: boolean;
+  /**
+   * The size of each chunk in bytes. Defaults to 64kb.
+   */
+  chunk_size?: number;
 };
 
 export class UploadConfig implements UploadConfig {
   constructor(name: string, options?: UploadConfigOptions) {
     this.name = name;
     this.accept = options?.accept ?? [];
-    this.maxEntries = options?.maxEntries ?? 1;
-    this.maxFileSize = options?.maxFileSize ?? 10 * 1024 * 1024; // 8MB
-    this.autoUpload = options?.autoUpload ?? false;
+    this.max_entries = options?.max_entries ?? 1;
+    this.max_file_size = options?.max_file_size ?? 10 * 1024 * 1024; // 10MB
+    this.auto_upload = options?.auto_upload ?? false;
+    this.chunk_size = options?.chunk_size ?? 64 * 1024; // 64kb
     this.entries = [];
     this.ref = `phx-${nanoid()}`;
     this.errors = [];
@@ -112,7 +122,7 @@ export class UploadConfig implements UploadConfig {
 
   private validate() {
     this.errors = [];
-    if (this.entries.length > this.maxEntries) {
+    if (this.entries.length > this.max_entries) {
       this.errors.push("Too many files");
     }
     // add errors from entries

@@ -3,6 +3,7 @@ import { LiveViewTemplate } from "src/server/live";
 import { FileSystemAdaptor } from "../../../server/adaptor";
 import { Phx } from "../../../server/protocol/phx";
 import { PhxReply } from "../../../server/protocol/reply";
+import { UploadConfig } from "../../../server/upload";
 import { WsHandlerContext } from "./wsHandler";
 
 export async function onUploadBinary(
@@ -89,10 +90,9 @@ export async function onProgressUpload(
 }
 
 export type AllowUploadEntries = { [key: string]: string };
-export type AllowUploadConstraints = { [key: string]: number };
 export type AllowUploadResult = {
   entries: AllowUploadEntries;
-  config: AllowUploadConstraints;
+  config: UploadConfig;
   view: LiveViewTemplate;
 };
 export async function onAllowUpload(
@@ -100,15 +100,13 @@ export async function onAllowUpload(
   payload: Phx.AllowUploadPayload
 ): Promise<AllowUploadResult> {
   const { ref, entries } = payload;
-  // console.log("onAllowUpload handle", ref, entries);
-  ctx.activeUploadRef = ref;
 
-  // TODO allow configuration settings for server
-  const config = {
-    chunk_size: 64000, // 64kb
-    max_entries: 10,
-    max_file_size: 10 * 1024 * 1024, // 10MB
-  };
+  ctx.activeUploadRef = ref;
+  const uc = Object.values(ctx.uploadConfigs).find((c) => c.ref === ref);
+  if (!uc) {
+    // istanbul ignore next
+    throw Error(`Could not find upload config for ref ${ref}`);
+  }
 
   const entriesReply: { [key: string]: string } = {
     ref,
@@ -126,7 +124,7 @@ export async function onAllowUpload(
   const view = await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
   return {
     entries: entriesReply,
-    config,
+    config: uc,
     view,
   };
 

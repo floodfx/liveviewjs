@@ -1,5 +1,6 @@
-import { AllowUploadConstraints, AllowUploadEntries } from "../socket/ws/wsUploadHandler";
+import { AllowUploadEntries } from "../socket/ws/wsUploadHandler";
 import { Parts } from "../templates";
+import { UploadConfigOptions } from "../upload";
 import { Phx } from "./phx";
 
 export namespace PhxReply {
@@ -19,7 +20,7 @@ export namespace PhxReply {
   export type Response = {
     rendered?: { [key: string]: unknown };
     diff?: { [key: string]: unknown };
-    config?: { [key: string]: unknown };
+    config?: UploadConfigOptions;
     entries?: { [key: string]: unknown };
   };
 
@@ -62,7 +63,7 @@ export namespace PhxReply {
   export function allowUploadReply(
     msg: Phx.Msg,
     diff: Parts,
-    config: AllowUploadConstraints,
+    config: UploadConfigOptions,
     entries: AllowUploadEntries
   ): Reply {
     return [

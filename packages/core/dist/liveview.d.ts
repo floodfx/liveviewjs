@@ -56,21 +56,26 @@ declare type UploadConfigOptions = {
     /**
      * "accept" contains the unique file type specifiers that can be uploaded.
      * See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
+     * An empty array will allow all file types.
      */
     accept?: string[];
     /**
      * the maximum number of files that can be uploaded at once. Defaults to 1.
      */
-    maxEntries?: number;
+    max_entries?: number;
     /**
      * the maximum size of each file in bytes. Defaults to 10MB.
      */
-    maxFileSize?: number;
+    max_file_size?: number;
     /**
      * Whether to upload the selected files automatically when the user selects them.
      * Defaults to false.
      */
-    autoUpload?: boolean;
+    auto_upload?: boolean;
+    /**
+     * The size of each chunk in bytes. Defaults to 64kb.
+     */
+    chunk_size?: number;
 };
 /**
  * The configuration and entry related details for uploading files.
@@ -89,16 +94,20 @@ interface UploadConfig {
     /**
      * the maximum number of files that can be uploaded at once. Defaults to 1.
      */
-    maxEntries: number;
+    max_entries: number;
     /**
      * the maximum size of each file in bytes. Defaults to 10MB.
      */
-    maxFileSize: number;
+    max_file_size: number;
     /**
      * Whether to upload the selected files automatically when the user selects them.
      * Defaults to false.
      */
-    autoUpload: boolean;
+    auto_upload: boolean;
+    /**
+     * The size of each chunk in bytes. Defaults to 64kb.
+     */
+    chunk_size: number;
     /**
      * The files selected for upload.
      */
@@ -796,9 +805,6 @@ declare namespace Phx {
 declare type AllowUploadEntries = {
     [key: string]: string;
 };
-declare type AllowUploadConstraints = {
-    [key: string]: number;
-};
 
 declare function deepDiff(oldParts: Parts, newParts: Parts): Parts;
 declare function diffArrays(oldArray: unknown[], newArray: unknown[]): boolean;
@@ -1159,9 +1165,7 @@ declare namespace PhxReply {
         diff?: {
             [key: string]: unknown;
         };
-        config?: {
-            [key: string]: unknown;
-        };
+        config?: UploadConfigOptions;
         entries?: {
             [key: string]: unknown;
         };
@@ -1170,7 +1174,7 @@ declare namespace PhxReply {
     function renderedReply(msg: Phx.Msg, parts: Parts): Reply;
     function diff(joinRef: string | null, topic: string, diff: Parts): Reply;
     function diffReply(msg: Phx.Msg, diff: Parts): Reply;
-    function allowUploadReply(msg: Phx.Msg, diff: Parts, config: AllowUploadConstraints, entries: AllowUploadEntries): Reply;
+    function allowUploadReply(msg: Phx.Msg, diff: Parts, config: UploadConfigOptions, entries: AllowUploadEntries): Reply;
     function heartbeat(msg: Phx.Msg): Reply;
     function serialize(msg: Reply): string;
 }

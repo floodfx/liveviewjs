@@ -158,9 +158,10 @@ class UploadConfig {
     constructor(name, options) {
         this.name = name;
         this.accept = options?.accept ?? [];
-        this.maxEntries = options?.maxEntries ?? 1;
-        this.maxFileSize = options?.maxFileSize ?? 10 * 1024 * 1024; // 8MB
-        this.autoUpload = options?.autoUpload ?? false;
+        this.max_entries = options?.max_entries ?? 1;
+        this.max_file_size = options?.max_file_size ?? 10 * 1024 * 1024; // 10MB
+        this.auto_upload = options?.auto_upload ?? false;
+        this.chunk_size = options?.chunk_size ?? 64 * 1024; // 64kb
         this.entries = [];
         this.ref = `phx-${nanoid()}`;
         this.errors = [];
@@ -196,7 +197,7 @@ class UploadConfig {
     }
     validate() {
         this.errors = [];
-        if (this.entries.length > this.maxEntries) {
+        if (this.entries.length > this.max_entries) {
             this.errors.push("Too many files");
         }
         // add errors from entries
@@ -335,7 +336,7 @@ class UploadEntry {
     validate() {
         this.errors = [];
         // validate file size
-        if (this.client_size > this.#config.maxFileSize) {
+        if (this.client_size > this.#config.max_file_size) {
             this.errors.push("Too large");
         }
         // validate mime type is allowed
@@ -966,7 +967,7 @@ const error_tag = (changeset, key, options) => {
  * @returns the html for the file input
  */
 function live_file_input(uploadConfig) {
-    const { name, accept, maxEntries, ref, entries } = uploadConfig;
+    const { name, accept, max_entries: maxEntries, ref, entries } = uploadConfig;
     const multiple = maxEntries > 1 ? "multiple" : "";
     const activeRefs = entries.map((entry) => entry.ref).join(",");
     const doneRefs = entries
@@ -2949,14 +2950,12 @@ async function onProgressUpload(ctx, payload) {
 }
 async function onAllowUpload(ctx, payload) {
     const { ref, entries } = payload;
-    // console.log("onAllowUpload handle", ref, entries);
     ctx.activeUploadRef = ref;
-    // TODO allow configuration settings for server
-    const config = {
-        chunk_size: 64000,
-        max_entries: 10,
-        max_file_size: 10 * 1024 * 1024, // 10MB
-    };
+    const uc = Object.values(ctx.uploadConfigs).find((c) => c.ref === ref);
+    if (!uc) {
+        // istanbul ignore next
+        throw Error(`Could not find upload config for ref ${ref}`);
+    }
     const entriesReply = {
         ref,
     };
@@ -2973,7 +2972,7 @@ async function onAllowUpload(ctx, payload) {
     const view = await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
     return {
         entries: entriesReply,
-        config,
+        config: uc,
         view,
     };
     // // wrap in root template if there is one
@@ -3139,12 +3138,11 @@ class WsHandler {
                         this.cleanupPostReply();
                     }
                     else if (topic.startsWith("lvu:")) {
-                        // TODO? send more than ack?
-                        // perhaps we should check this token matches the entry sent earlier?
-                        const payload = msg[Phx.MsgIdx.payload];
-                        console.log("upload join payload", payload);
+                        // const payload = msg[Phx.MsgIdx.payload] as Phx.JoinUploadPayload;
+                        // perhaps we should check this token matches entries send in the "allow_upload" event?
                         // const { token } = payload;
                         // send ACK
+                        // TODO? send more than ack? what?
                         this.send(PhxReply.renderedReply(msg, {}));
                     }
                     else {
@@ -3169,8 +3167,14 @@ class WsHandler {
                     break;
                 case "live_patch":
                 case "phx_leave":
+                // try {
+                //   if (this.#ctx) {
+                //     await this.#ctx.liveView.shutdown(this.#ctx);
+                //   }
+                // } catch (e) {
+                //   console.error("error handling phx_leave", e);
+                // }
                 case "allow_upload":
-                    console.log("allow_upload", msg);
                     try {
                         const payload = msg[Phx.MsgIdx.payload];
                         const { view, config, entries } = await onAllowUpload(this.#ctx, payload);
@@ -3210,7 +3214,7 @@ class WsHandler {
     }
     async handleInfo(info) {
         try {
-            // info can be a string or an object
+            // info can be a string or an object so check it
             // if it's a string, we need to convert it to a LiveInfo object
             if (typeof info === "string") {
                 info = { type: info };
@@ -3218,7 +3222,6 @@ class WsHandler {
             // lifecycle handleInfo => render
             await this.#ctx.liveView.handleInfo(info, this.#ctx.socket);
             const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx.defaultLiveViewMeta());
-            // diff and send
             const diff = await this.viewToDiff(view);
             this.send(PhxReply.diff(null, this.#ctx.joinId, diff));
             this.cleanupPostReply();
@@ -3323,7 +3326,6 @@ class WsHandler {
         async (topic) => { }, 
         // allowUploadCallback
         async (name, options) => {
-            // console.log("allowUpload", name, options);
             this.#ctx.uploadConfigs[name] = new UploadConfig(name, options);
         }, 
         // cancelUploadCallback
@@ -3349,6 +3351,7 @@ class WsHandler {
                 }
                 // noting is in progress so we can consume
                 const entries = uploadConfig.consumeEntries();
+                console.log("entries", entries);
                 return await Promise.all(entries.map(async (entry) => await fn({ path: entry.getTempFile(), fileSystem: this.#config.fileSysAdaptor }, entry)));
             }
             console.warn(`Upload config ${configName} not found for consumeUploadedEntries`);
