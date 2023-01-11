@@ -8,13 +8,13 @@ import { WsHandlerContext } from "./wsHandler";
 
 export async function onUploadBinary(
   ctx: WsHandlerContext,
-  msg: Phx.UploadMsg,
+  msg: Phx.Msg<Buffer>,
   fileSystem: FileSystemAdaptor
 ): Promise<PhxReply.Reply[]> {
   // generate a random temp file path
   const randomTempFilePath = fileSystem.tempPath(nanoid());
 
-  const { joinRef, msgRef, topic, event, payload } = msg;
+  const [joinRef, msgRef, topic, event, payload] = msg;
 
   fileSystem.writeTempFile(randomTempFilePath, payload);
   // console.log("wrote temp file", randomTempFilePath, header.length, `"${header.toString()}"`);

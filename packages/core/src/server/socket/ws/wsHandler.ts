@@ -16,7 +16,7 @@ import { PhxReply } from "../../protocol/reply";
 import { SessionData } from "../../session";
 import { deepDiff, Parts, safe } from "../../templates";
 import { UploadConfig, UploadEntry } from "../../upload";
-import { ConsumeUploadedEntriesMeta, Info, WsLiveViewSocket } from "../liveSocket";
+import { ConsumeUploadedEntriesMeta, WsLiveViewSocket } from "../liveSocket";
 import { PhxJoinPayload } from "../types";
 import { handleEvent } from "./wsEventHandler";
 import { onAllowUpload, onProgressUpload, onUploadBinary } from "./wsUploadHandler";
@@ -125,6 +125,8 @@ export class WsHandler {
   #ws: WsAdaptor;
   #config: WsHandlerConfig;
   #ctx?: WsHandlerContext;
+  #active: boolean = false;
+  #msgQueue: Phx.Msg<unknown>[] = [];
 
   constructor(ws: WsAdaptor, config: WsHandlerConfig) {
     this.#config = config;
@@ -132,7 +134,7 @@ export class WsHandler {
     this.#ws.subscribeToMessages(async (data: Buffer, isBinary: boolean) => {
       try {
         if (isBinary) {
-          await this.handleUpload(Phx.parseBinary(data));
+          await this.handleMsg(Phx.parseBinary(data));
           return;
         }
         await this.handleMsg(Phx.parse(data.toString()));
@@ -140,10 +142,17 @@ export class WsHandler {
         console.error("error parsing Phx message", e);
       }
     });
-    this.#ws.subscribeToClose(this.handleClose);
+    this.#ws.subscribeToClose(() => this.handleClose);
   }
 
   async handleMsg(msg: Phx.Msg<unknown>) {
+    // attempt to prevent race conditions by queuing messages
+    // if we are already processing a message
+    if (this.#active) {
+      this.#msgQueue.push(msg);
+      return;
+    }
+    this.#active = true;
     console.log("dispatch", msg);
     const event = msg[Phx.MsgIdx.event];
     const topic = msg[Phx.MsgIdx.topic];
@@ -222,9 +231,6 @@ export class WsHandler {
             throw new Error(`Unknown phx_join prefix: ${topic}`);
           }
           break;
-        case "heartbeat":
-          this.send(PhxReply.heartbeat(msg));
-          break;
         case "event":
           try {
             const payload = msg[Phx.MsgIdx.payload] as Phx.EventPayload;
@@ -234,6 +240,20 @@ export class WsHandler {
             this.cleanupPostReply();
           } catch (e) {
             console.error("error handling event", e);
+          }
+          break;
+        case "info":
+          try {
+            const payload = msg[Phx.MsgIdx.payload] as AnyLiveInfo;
+            // lifecycle handleInfo => render
+            await this.#ctx!.liveView.handleInfo(payload, this.#ctx!.socket);
+            const view = await this.#ctx!.liveView.render(this.#ctx!.socket.context, this.#ctx!.defaultLiveViewMeta());
+            const diff = await this.viewToDiff(view);
+            this.send(PhxReply.diff(null, this.#ctx!.joinId, diff));
+            this.cleanupPostReply();
+          } catch (e) {
+            /* istanbul ignore next */
+            console.error(`Error sending internal info`, e);
           }
           break;
         case "live_patch":
@@ -250,15 +270,7 @@ export class WsHandler {
             console.error("Error handling live_patch", e);
           }
           break;
-        case "phx_leave":
-          // try {
-          //   if (this.#ctx) {
-          //     await this.#ctx.liveView.shutdown(this.#ctx);
-          //   }
-          // } catch (e) {
-          //   console.error("error handling phx_leave", e);
-          // }
-          break;
+        // Start File Upload Events
         case "allow_upload":
           try {
             const payload = msg[Phx.MsgIdx.payload] as Phx.AllowUploadPayload;
@@ -280,45 +292,55 @@ export class WsHandler {
             console.error("error handling progress", e);
           }
           break;
+        case "chunk":
+          try {
+            console.log("upload", msg);
+            const replies = await onUploadBinary(this.#ctx!, msg as Phx.Msg<Buffer>, this.#config.fileSysAdaptor);
+            for (const reply of replies) {
+              this.send(reply);
+            }
+          } catch (e) {
+            console.error("error handling chunk", e);
+          }
+          break;
+        // End File Upload Events
+        case "heartbeat":
+          this.send(PhxReply.heartbeat(msg));
+          break;
+        case "phx_leave":
+          // try {
+          // shutdown the liveview
+          //   if (this.#ctx) {
+          //     await this.#ctx.liveView.shutdown(this.#ctx);
+          //   }
+          // unsubscribe from PubSubs
+          // Object.entries(this.subscriptionIds).forEach(async ([topic, subscriptionId]) => {
+          //   const subId = await subscriptionId;
+          //   await this.pubSub.unsubscribe(topic, subId);
+          // });
+          // } catch (e) {
+          //   console.error("error handling phx_leave", e);
+          // }
+          break;
         default:
           throw new Error(`unexpected phx protocol event ${event}`);
       }
     } catch (e) {
       console.error("error handling phx message", e);
     }
-  }
 
-  async handleUpload(msg: Phx.UploadMsg) {
-    console.log("upload", msg);
-    const replies = await onUploadBinary(this.#ctx!, msg, this.#config.fileSysAdaptor);
-    for (const reply of replies) {
-      this.send(reply);
-    }
-  }
-
-  async handleInfo(info: Info<AnyLiveInfo>) {
-    try {
-      // info can be a string or an object so check it
-      // if it's a string, we need to convert it to a LiveInfo object
-      if (typeof info === "string") {
-        info = { type: info };
-      }
-      // lifecycle handleInfo => render
-      await this.#ctx!.liveView.handleInfo(info, this.#ctx!.socket);
-      const view = await this.#ctx!.liveView.render(this.#ctx!.socket.context, this.#ctx!.defaultLiveViewMeta());
-      const diff = await this.viewToDiff(view);
-      this.send(PhxReply.diff(null, this.#ctx!.joinId, diff));
-
-      this.cleanupPostReply();
-    } catch (e) {
-      /* istanbul ignore next */
-      console.error(`Error sending internal info`, e);
+    // we're done with this message, so we can process the next one if there is one
+    this.#active = false;
+    const nextMsg = this.#msgQueue.pop();
+    if (nextMsg) {
+      this.handleMsg(nextMsg);
     }
   }
 
   async handleClose() {
-    console.log("close");
-    // await this.#liveView?.unmount(this.#socket);
+    // redirect this through handleMsg after adding the joinId
+    const joinId = this.#ctx?.joinId ?? "unknown";
+    this.handleMsg([null, null, joinId, "phx_leave", null]);
   }
 
   send(reply: PhxReply.Reply) {
@@ -326,8 +348,6 @@ export class WsHandler {
   }
 
   private async cleanupPostReply() {
-    // // maybe send any queued info messages
-    // await this.maybeSendInfos();
     // do post-send lifecycle step
     this.#ctx!.socket.updateContextWithTempAssigns();
   }
@@ -421,7 +441,14 @@ export class WsHandler {
       // repeatCallback
       (fn, intervalMillis) => {},
       // sendInfoCallback
-      (info) => this.handleInfo(info),
+      (info) => {
+        // info can be a string or an object so check it
+        // if it's a string, we need to convert it to a LiveInfo object
+        if (typeof info === "string") {
+          info = { type: info };
+        }
+        this.handleMsg([null, null, this.#ctx!.joinId, "info", info] as Phx.Msg);
+      },
       // subscribeCallback
       async (topic: string) => {},
       // allowUploadCallback

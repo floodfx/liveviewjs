@@ -765,8 +765,8 @@ declare namespace Phx {
         payload = 4
     }
     type Msg<Payload = unknown> = [
-        joinRef: string,
-        msgRef: string,
+        joinRef: string | null,
+        msgRef: string | null,
         topic: string,
         event: string,
         payload: Payload
@@ -801,7 +801,7 @@ declare namespace Phx {
         payload: Buffer;
     };
     function parse(msg: string): Msg;
-    function parseBinary(raw: Buffer): Phx.UploadMsg;
+    function parseBinary(raw: Buffer): Phx.Msg<Buffer>;
     function serialize(msg: Msg): string;
 }
 
@@ -1213,8 +1213,6 @@ declare class WsHandler {
     #private;
     constructor(ws: WsAdaptor, config: WsHandlerConfig);
     handleMsg(msg: Phx.Msg<unknown>): Promise<void>;
-    handleUpload(msg: Phx.UploadMsg): Promise<void>;
-    handleInfo(info: Info<AnyLiveInfo>): Promise<void>;
     handleClose(): Promise<void>;
     send(reply: PhxReply.Reply): void;
     private cleanupPostReply;
