@@ -25,6 +25,9 @@ let Hooks = {
 const url = "/live";
 let csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content");
 let liveSocket = new LiveSocket(url, Socket, { params: { _csrf_token: csrfToken }, hooks: Hooks });
+window.addEventListener("phx:refresh", (e) => {
+  console.log("phx:refresh", e);
+});
 
 // Show progress bar on live navigation and form submits
 window.addEventListener("phx:page-loading-start", (info) => NProgress.start());

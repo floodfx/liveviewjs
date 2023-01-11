@@ -2,6 +2,7 @@ import { FileSystemAdaptor, FlashAdaptor, SerDe, WsAdaptor } from "../../adaptor
 import {
   AnyLiveContext,
   AnyLiveInfo,
+  AnyLivePushEvent,
   LiveComponent,
   LiveContext,
   LiveView,
@@ -41,6 +42,7 @@ export class WsHandlerContext {
   #pageTitleChanged: boolean = false;
   #flash: FlashAdaptor;
   #sessionData: SessionData;
+  pushEvents: AnyLivePushEvent[] = [];
   activeUploadRef: string | null = null;
   uploadConfigs: { [key: string]: UploadConfig } = {};
   parts: Parts = {};
@@ -383,12 +385,12 @@ export class WsHandler {
 
     // diff the new view with the old view
     const newParts = view.partsTree(true);
-    const diff = deepDiff(this.#ctx!.parts, newParts);
+    let diff = deepDiff(this.#ctx!.parts, newParts);
     // store newParts for future diffs
     this.#ctx!.parts = newParts;
 
     // TODO
-    // diff = this.maybeAddEventsToParts(diff);
+    diff = this.maybeAddEventsToParts(diff);
     return this.maybeAddTitleToView(diff);
   }
 
@@ -403,12 +405,31 @@ export class WsHandler {
     // step 3: add any `LiveComponent` renderings to the parts tree
     // let rendered = this.maybeAddLiveComponentsToParts(parts);
 
+    parts = this.maybeAddEventsToParts(parts);
+
     // step 4: if set, add the page title to the parts tree
     parts = this.maybeAddTitleToView(parts);
 
     // set the parts tree on the context
     this.#ctx!.parts = parts;
 
+    return parts;
+  }
+
+  private maybeAddEventsToParts(parts: Parts) {
+    if (this.#ctx!.pushEvents.length > 0) {
+      const events = structuredClone(this.#ctx!.pushEvents);
+      this.#ctx!.pushEvents = []; // reset
+      // map events to tuples of [type, values]
+      const e = events.map((event) => {
+        const { type, ...values } = event;
+        return [type, values];
+      });
+      return {
+        ...parts,
+        e,
+      };
+    }
     return parts;
   }
 
@@ -456,7 +477,9 @@ export class WsHandler {
         this.#ctx!.pageTitle = newTitle;
       },
       // pushEventCallback
-      (event) => {},
+      (pushEvent) => {
+        this.#ctx!.pushEvents.push(pushEvent);
+      },
       // pushPatchCallback
       async (path, params, replace) => {},
       // pushRedirectCallback
