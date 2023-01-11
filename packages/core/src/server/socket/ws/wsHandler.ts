@@ -13,6 +13,7 @@ import {
 } from "../../live";
 import { Phx } from "../../protocol/phx";
 import { PhxReply } from "../../protocol/reply";
+import { PubSub } from "../../pubsub";
 import { SessionData } from "../../session";
 import { deepDiff, Parts, safe } from "../../templates";
 import { UploadConfig, UploadEntry } from "../../upload";
@@ -27,6 +28,7 @@ export interface WsHandlerConfig {
   fileSysAdaptor: FileSystemAdaptor;
   wrapperTemplate?: LiveViewWrapperTemplate;
   flashAdaptor: FlashAdaptor;
+  pubSub: PubSub;
 }
 
 export class WsHandlerContext {
@@ -125,8 +127,12 @@ export class WsHandler {
   #ws: WsAdaptor;
   #config: WsHandlerConfig;
   #ctx?: WsHandlerContext;
-  #active: boolean = false;
+  #activeMsg: boolean = false;
   #msgQueue: Phx.Msg<unknown>[] = [];
+  #subscriptionIds: { [key: string]: string } = {};
+  #hbInterval?: NodeJS.Timeout;
+  #lastHB?: number;
+  #closed: boolean = false;
 
   constructor(ws: WsAdaptor, config: WsHandlerConfig) {
     this.#config = config;
@@ -142,17 +148,21 @@ export class WsHandler {
         console.error("error parsing Phx message", e);
       }
     });
-    this.#ws.subscribeToClose(() => this.handleClose);
+    this.#ws.subscribeToClose(() => this.close);
   }
 
   async handleMsg(msg: Phx.Msg<unknown>) {
+    if (this.#closed) {
+      console.error("received message after socket closed", msg);
+      return;
+    }
     // attempt to prevent race conditions by queuing messages
     // if we are already processing a message
-    if (this.#active) {
+    if (this.#activeMsg) {
       this.#msgQueue.push(msg);
       return;
     }
-    this.#active = true;
+    this.#activeMsg = true;
     console.log("dispatch", msg);
     const event = msg[Phx.MsgIdx.event];
     const topic = msg[Phx.MsgIdx.topic];
@@ -219,6 +229,15 @@ export class WsHandler {
             // send the response and cleanup
             this.send(PhxReply.renderedReply(msg, rendered));
             this.cleanupPostReply();
+            // start heartbeat interval
+            this.#lastHB = Date.now();
+            this.#hbInterval = setInterval(() => {
+              // shutdown if we haven't received a heartbeat in 60 seconds
+              if (this.#lastHB && Date.now() - this.#lastHB > 60000) {
+                this.#hbInterval && clearInterval(this.#hbInterval);
+                this.close();
+              }
+            }, 30000);
           } else if (topic.startsWith("lvu:")) {
             // const payload = msg[Phx.MsgIdx.payload] as Phx.JoinUploadPayload;
             // perhaps we should check this token matches entries send in the "allow_upload" event?
@@ -305,22 +324,28 @@ export class WsHandler {
           break;
         // End File Upload Events
         case "heartbeat":
+          this.#lastHB = Date.now();
           this.send(PhxReply.heartbeat(msg));
           break;
         case "phx_leave":
-          // try {
-          // shutdown the liveview
-          //   if (this.#ctx) {
-          //     await this.#ctx.liveView.shutdown(this.#ctx);
-          //   }
-          // unsubscribe from PubSubs
-          // Object.entries(this.subscriptionIds).forEach(async ([topic, subscriptionId]) => {
-          //   const subId = await subscriptionId;
-          //   await this.pubSub.unsubscribe(topic, subId);
-          // });
-          // } catch (e) {
-          //   console.error("error handling phx_leave", e);
-          // }
+          // mark this wsHandler as closed
+          this.#closed = true;
+          try {
+            // shutdown the liveview
+            if (this.#ctx) {
+              await this.#ctx.liveView.shutdown(this.#ctx.joinId, this.#ctx);
+            }
+          } catch (e) {
+            console.error("error shutting down liveview:" + this.#ctx?.joinId, e);
+          }
+          try {
+            // unsubscribe from PubSubs
+            Object.entries(this.#subscriptionIds).forEach(async ([topic, subId]) => {
+              await this.#config.pubSub.unsubscribe(topic, subId);
+            });
+          } catch (e) {
+            console.error("error unsubscribing from pubsub", e);
+          }
           break;
         default:
           throw new Error(`unexpected phx protocol event ${event}`);
@@ -330,14 +355,14 @@ export class WsHandler {
     }
 
     // we're done with this message, so we can process the next one if there is one
-    this.#active = false;
+    this.#activeMsg = false;
     const nextMsg = this.#msgQueue.pop();
     if (nextMsg) {
       this.handleMsg(nextMsg);
     }
   }
 
-  async handleClose() {
+  async close() {
     // redirect this through handleMsg after adding the joinId
     const joinId = this.#ctx?.joinId ?? "unknown";
     this.handleMsg([null, null, joinId, "phx_leave", null]);
@@ -448,7 +473,13 @@ export class WsHandler {
         this.handleMsg([null, null, this.#ctx!.joinId, "info", info] as Phx.Msg);
       },
       // subscribeCallback
-      async (topic: string) => {},
+      async (topic: string) => {
+        const subId = await this.#config.pubSub.subscribe<AnyLiveInfo>(topic, (info: AnyLiveInfo) => {
+          // dispatch as an "info" message
+          this.handleMsg([null, null, this.#ctx!.joinId, "info", info] as Phx.Msg);
+        });
+        this.#subscriptionIds[topic] = subId;
+      },
       // allowUploadCallback
       async (name, options) => {
         this.#ctx!.uploadConfigs[name] = new UploadConfig(name, options);

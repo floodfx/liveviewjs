@@ -85,6 +85,8 @@ export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddlewa
       fileSysAdaptor: this.fileSystem,
       serDe: this.serDe,
       wrapperTemplate: this.wrapperTemplate,
+      flashAdaptor: this.flashAdapter,
+      pubSub: this.pubSub,
     };
   }
 
@@ -94,19 +96,6 @@ export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddlewa
       const ws = await ctx.upgrade();
       // const connectionId = nanoid();
       new WsHandler(new DenoWsAdaptor(ws), this.#config);
-
-      // ws.onmessage = async (message) => {
-      //   const isBinary = message.data instanceof ArrayBuffer;
-      //   // prob a better way to take ArrayBuffer and turn it into a Buffer
-      //   // but this works for now
-      //   const data = isBinary ? Buffer.from(message.data) : message.data;
-      //   // pass websocket messages to LiveViewJS
-      //   await this._wsRouter.onMessage(connectionId, data, new DenoWsAdaptor(ws), isBinary);
-      // };
-      // ws.onclose = async () => {
-      //   // pass websocket close events to LiveViewJS
-      //   await this._wsRouter.onClose(connectionId);
-      // };
     };
   }
 
@@ -155,10 +144,6 @@ export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddlewa
         throw error;
       }
     };
-  }
-
-  wsRouter() {
-    return this._wsRouter;
   }
 }
 

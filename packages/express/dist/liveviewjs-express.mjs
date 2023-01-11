@@ -6,7 +6,7 @@ import path from 'path';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createClient } from 'redis';
-import { SessionFlashAdaptor, SingleProcessPubSub, WsMessageRouter, WsHandler, matchRoute, handleHttpLiveView } from 'liveviewjs';
+import { SessionFlashAdaptor, SingleProcessPubSub, WsHandler, matchRoute, handleHttpLiveView } from 'liveviewjs';
 import { nanoid } from 'nanoid';
 
 class NodeFileSystemAdatptor {
@@ -144,30 +144,19 @@ class NodeExpressLiveViewServer {
         this.htmlPageTemplate = htmlPageTemplate;
         this.liveTitleOptions = liveTitleOptions;
         this.wrapperTemplate = options === null || options === void 0 ? void 0 : options.wrapperTemplate;
-        this._wsRouter = new WsMessageRouter(this.router, this.pubSub, this.flashAdapter, this.serDe, this.fileSystem, this.wrapperTemplate);
         __classPrivateFieldSet(this, _NodeExpressLiveViewServer_config, {
             router: this.router,
             fileSysAdaptor: this.fileSystem,
             serDe: this.serDe,
             wrapperTemplate: this.wrapperTemplate,
             flashAdaptor: this.flashAdapter,
+            pubSub: this.pubSub,
         }, "f");
     }
     wsMiddleware() {
         return async (wsServer) => {
             // send websocket requests to the LiveViewJS message router
             wsServer.on("connection", (ws) => new WsHandler(new NodeWsAdaptor(ws), __classPrivateFieldGet(this, _NodeExpressLiveViewServer_config, "f")));
-            // wsServer.on("connection", (ws) => {
-            //   const connectionId = nanoid();
-            //   ws.on("message", async (message, isBinary) => {
-            //     // pass websocket messages to LiveViewJS
-            //     await this._wsRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
-            //   });
-            //   ws.on("close", async () => {
-            //     // pass websocket close events to LiveViewJS
-            //     await this._wsRouter.onClose(connectionId);
-            //   });
-            // });
         };
     }
     httpMiddleware() {
@@ -202,9 +191,6 @@ class NodeExpressLiveViewServer {
                 next(error);
             }
         };
-    }
-    wsRouter() {
-        return this._wsRouter;
     }
 }
 _NodeExpressLiveViewServer_config = new WeakMap();
