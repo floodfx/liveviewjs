@@ -777,13 +777,6 @@ declare namespace Phx {
         value: V;
         cid?: number;
     };
-    type UploadMsg = {
-        joinRef: string;
-        msgRef: string;
-        topic: string;
-        event: string;
-        payload: Buffer;
-    };
     type AllowUploadPayload = {
         ref: string;
         entries: AllowUploadEntry[];
@@ -796,6 +789,16 @@ declare namespace Phx {
         ref: string;
         entry_ref: string;
         progress: number;
+    };
+    type LivePatchPayload = {
+        url: string;
+    };
+    type UploadMsg = {
+        joinRef: string;
+        msgRef: string;
+        topic: string;
+        event: string;
+        payload: Buffer;
     };
     function parse(msg: string): Msg;
     function parseBinary(raw: Buffer): Phx.UploadMsg;

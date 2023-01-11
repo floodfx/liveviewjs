@@ -237,14 +237,28 @@ export class WsHandler {
           }
           break;
         case "live_patch":
+          try {
+            const payload = msg[Phx.MsgIdx.payload] as Phx.LivePatchPayload;
+            const url = new URL(payload.url);
+            await this.#ctx!.liveView.handleParams(url, this.#ctx!.socket);
+            const view = await this.#ctx!.liveView.render(this.#ctx!.socket.context, this.#ctx!.defaultLiveViewMeta());
+            const diff = await this.viewToDiff(view);
+            this.send(PhxReply.diffReply(msg, diff));
+            this.cleanupPostReply();
+          } catch (e) {
+            /* istanbul ignore next */
+            console.error("Error handling live_patch", e);
+          }
+          break;
         case "phx_leave":
-        // try {
-        //   if (this.#ctx) {
-        //     await this.#ctx.liveView.shutdown(this.#ctx);
-        //   }
-        // } catch (e) {
-        //   console.error("error handling phx_leave", e);
-        // }
+          // try {
+          //   if (this.#ctx) {
+          //     await this.#ctx.liveView.shutdown(this.#ctx);
+          //   }
+          // } catch (e) {
+          //   console.error("error handling phx_leave", e);
+          // }
+          break;
         case "allow_upload":
           try {
             const payload = msg[Phx.MsgIdx.payload] as Phx.AllowUploadPayload;
