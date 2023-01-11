@@ -801,21 +801,6 @@ export class LiveViewManager {
   }
 
   /**
-   * Repeats a function every `intervalMillis` milliseconds until `shutdown` is called.
-   * @param fn
-   * @param intervalMillis
-   */
-  private repeat(fn: () => void, intervalMillis: number) {
-    // wrap function in another function that sends any send infos
-    // TODO prob a race condition here but not sure what can really do about it
-    const fnPlusSendInfo = () => {
-      fn();
-      this.maybeSendInfos();
-    };
-    this.intervals.push(setInterval(fnPlusSendInfo, intervalMillis));
-  }
-
-  /**
    * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
    * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to update the browser's
    * path and query string params.
@@ -1223,8 +1208,6 @@ export class LiveViewManager {
       async (path, params, replace) => await this.onPushRedirect(path, params, replace),
       // putFlashCallback
       async (key, value) => await this.putFlash(key, value),
-      // repeatCallback
-      (fn, intervalMillis) => this.repeat(fn, intervalMillis),
       // sendInfoCallback
       (info) => this.onSendInfo(info),
       // subscribeCallback

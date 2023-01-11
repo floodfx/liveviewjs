@@ -611,41 +611,6 @@ describe("test liveview manager", () => {
     );
   });
 
-  it("liveview that repeats", async () => {
-    jest.useFakeTimers();
-    jest.spyOn(global, "setTimeout");
-    jest.spyOn(global, "setInterval");
-    const c = new Repeat50msTestLiveViewComponent();
-    const spyHandleInfo = jest.spyOn(c, "handleInfo");
-    const cm = new LiveViewManager(
-      c,
-      liveViewConnectionId,
-      ws,
-      new JsonSerDe(),
-      new SingleProcessPubSub(),
-      new SessionFlashAdaptor(),
-      new TestNodeFileSystemAdatptor(),
-      {}
-    );
-    await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
-
-    jest.advanceTimersToNextTimer();
-    expect((cm["socket"] as LiveViewSocket).context).toHaveProperty("count", 1);
-    // TODO - something is wrong...
-    // expect((cm["socket"] as LiveViewSocket).context).toHaveProperty("ignores", 1);
-    // console.log("spySendInternal", spyHandleInfo.mock.calls);
-    // TODO should be 2
-    expect(spyHandleInfo).toHaveBeenCalledTimes(1);
-
-    jest.advanceTimersToNextTimer();
-    expect((cm["socket"] as LiveViewSocket).context).toHaveProperty("count", 2);
-    // TODO - something is wrong...
-    // expect((cm["socket"] as LiveViewSocket).context).toHaveProperty("ignores", 2);
-    // TODO should be 4
-    expect(spyHandleInfo).toHaveBeenCalledTimes(2);
-    (cm as any).shutdown();
-  });
-
   it("component that subscribes and received message", async () => {
     const c = new SubscribeTestLiveViewComponent();
     const pubSub = new SingleProcessPubSub();
@@ -976,15 +941,16 @@ class SendInternalTestLiveViewComponent extends BaseLiveView<SendInternalContext
 interface RepeatCtx {
   count: number;
   ignores: number;
+  intervalRef?: NodeJS.Timeout;
 }
 type RepeatInfo = { type: "add" };
 class Repeat50msTestLiveViewComponent extends BaseLiveView<RepeatCtx, AnyLiveEvent, RepeatInfo> {
   mount(socket: LiveViewSocket<RepeatCtx>, session: Partial<SessionData>, params: LiveViewMountParams) {
-    socket.assign({ count: 0, ignores: 0 });
-    socket.repeat(() => {
+    const ref = setInterval(() => {
       socket.sendInfo({ type: "add" });
       socket.sendInfo({ type: "ignore" });
     }, 50);
+    socket.assign({ count: 0, ignores: 0, intervalRef: ref });
   }
 
   handleInfo(info: RepeatInfo, socket: LiveViewSocket<RepeatCtx>) {

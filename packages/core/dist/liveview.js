@@ -438,9 +438,6 @@ class BaseLiveViewSocket {
         // istanbul ignore next
         return Promise.resolve();
     }
-    repeat(fn, intervalMillis) {
-        // no-op
-    }
     sendInfo(info) {
         // no-op
     }
@@ -518,14 +515,13 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     pushPatchCallback;
     pushRedirectCallback;
     putFlashCallback;
-    repeatCallback;
     sendInfoCallback;
     subscribeCallback;
     allowUploadCallback;
     cancelUploadCallback;
     consumeUploadedEntriesCallback;
     uploadedEntriesCallback;
-    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, repeatCallback, sendInfoCallback, subscribeCallback, allowUploadCallback, cancelUploadCallback, consumeUploadedEntriesCallback, uploadedEntriesCallback) {
+    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, sendInfoCallback, subscribeCallback, allowUploadCallback, cancelUploadCallback, consumeUploadedEntriesCallback, uploadedEntriesCallback) {
         super();
         this.id = id;
         this.pageTitleCallback = pageTitleCallback;
@@ -533,7 +529,6 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
         this.pushPatchCallback = pushPatchCallback;
         this.pushRedirectCallback = pushRedirectCallback;
         this.putFlashCallback = putFlashCallback;
-        this.repeatCallback = repeatCallback;
         this.sendInfoCallback = sendInfoCallback;
         this.subscribeCallback = subscribeCallback;
         this.allowUploadCallback = allowUploadCallback;
@@ -555,9 +550,6 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     }
     async pushRedirect(path, params, replaceHistory = false) {
         await this.pushRedirectCallback(path, params, replaceHistory);
-    }
-    repeat(fn, intervalMillis) {
-        this.repeatCallback(fn, intervalMillis);
     }
     sendInfo(info) {
         this.sendInfoCallback(info);
@@ -2319,20 +2311,6 @@ class LiveViewManager {
         }
     }
     /**
-     * Repeats a function every `intervalMillis` milliseconds until `shutdown` is called.
-     * @param fn
-     * @param intervalMillis
-     */
-    repeat(fn, intervalMillis) {
-        // wrap function in another function that sends any send infos
-        // TODO prob a race condition here but not sure what can really do about it
-        const fnPlusSendInfo = () => {
-            fn();
-            this.maybeSendInfos();
-        };
-        this.intervals.push(setInterval(fnPlusSendInfo, intervalMillis));
-    }
-    /**
      * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
      * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to update the browser's
      * path and query string params.
@@ -2684,8 +2662,6 @@ class LiveViewManager {
         async (path, params, replace) => await this.onPushRedirect(path, params, replace), 
         // putFlashCallback
         async (key, value) => await this.putFlash(key, value), 
-        // repeatCallback
-        (fn, intervalMillis) => this.repeat(fn, intervalMillis), 
         // sendInfoCallback
         (info) => this.onSendInfo(info), 
         // subscribeCallback
@@ -2854,7 +2830,7 @@ async function handleEvent(ctx, payload) {
                 }
             }
             else {
-                console.warn(`Warning: form event data missing _csrf_token value. \nConsider passing it in via a hidden input named "_csrf_token".  \nYou can get the value from the LiveViewMeta object passed the render method. \nWe won't warn you again for this instance of the LiveView.`);
+                console.warn(`Warning: form event data missing _csrf_token value. \nConsider passing it in via a hidden input named "_csrf_token".  \nYou can get the value from the LiveViewMeta object passed the render method. \n`);
             }
             // parse uploads into uploadConfig for given name
             if (pl.uploads) {
@@ -3364,8 +3340,6 @@ class WsHandler {
         async (path, params, replace) => { }, 
         // putFlashCallback
         async (key, value) => { }, 
-        // repeatCallback
-        (fn, intervalMillis) => { }, 
         // sendInfoCallback
         (info) => {
             // info can be a string or an object so check it

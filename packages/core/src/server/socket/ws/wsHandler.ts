@@ -438,8 +438,6 @@ export class WsHandler {
       async (path, params, replace) => {},
       // putFlashCallback
       async (key, value) => {},
-      // repeatCallback
-      (fn, intervalMillis) => {},
       // sendInfoCallback
       (info) => {
         // info can be a string or an object so check it
