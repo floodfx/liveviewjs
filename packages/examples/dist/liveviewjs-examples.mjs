@@ -1946,7 +1946,6 @@ const searchLiveView = createLiveView({
     },
     // internal events
     handleInfo: (info, socket) => {
-        console.log("handleInfo", info);
         const { zip } = info;
         const stores = searchByZip(zip);
         socket.assign({

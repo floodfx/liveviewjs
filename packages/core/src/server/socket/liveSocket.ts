@@ -101,14 +101,6 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    */
   putFlash(key: string, value: string): Promise<void>;
   /**
-   * Runs the given function on the given interval until this `LiveView` is
-   * unloaded.
-   *
-   * @param fn the function to run on the interval
-   * @param intervalMillis the interval to run the function on in milliseconds
-   */
-  repeat(fn: () => void, intervalMillis: number): void;
-  /**
    * Send an internal event (a.k.a "Info") to the LiveView's `handleInfo` method
    *
    * @param event the event to send to `handleInfo`
@@ -121,7 +113,6 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    * @param topic the topic to subscribe this `LiveView`to
    */
   subscribe(topic: string): Promise<void>;
-
   /**
    * Allows file uploads for the given `LiveView`and configures the upload
    * options (filetypes, size, etc).
@@ -129,14 +120,12 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    * @param options the options for the upload (optional)
    */
   allowUpload(name: string, options?: UploadConfigOptions): Promise<void>;
-
   /**
    * Cancels the file upload for a given UploadConfig by config name and file ref.
    * @param name the name of the upload from which to cancel
    * @param ref the ref of the upload entry to cancel
    */
   cancelUpload(configName: string, ref: string): Promise<void>;
-
   /**
    * Consume the uploaded files for a given UploadConfig (by name). This
    * should only be called after the form's "save" event has occurred which
@@ -150,7 +139,6 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
     configName: string,
     fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>
   ): Promise<T[]>;
-
   /**
    * Returns two sets of files that are being uploaded, those `completed` and
    * those `inProgress` for a given UploadConfig (by name).  Unlike `consumeUploadedEntries`,
@@ -212,9 +200,6 @@ abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext,
     // no-op
     // istanbul ignore next
     return Promise.resolve();
-  }
-  repeat(fn: () => void, intervalMillis: number) {
-    // no-op
   }
   sendInfo(info: Info<TInfo>) {
     // no-op
@@ -310,7 +295,6 @@ export class WsLiveViewSocket<
   private pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void;
   private pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void;
   private putFlashCallback: (key: string, value: string) => void;
-  private repeatCallback: (fn: () => void, intervalMillis: number) => void;
   private sendInfoCallback: (info: Info<TInfo>) => void;
   private subscribeCallback: (topic: string) => void;
   private allowUploadCallback: (name: string, options?: UploadConfigOptions) => void;
@@ -330,7 +314,6 @@ export class WsLiveViewSocket<
     pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void,
     pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void,
     putFlashCallback: (key: string, value: string) => void,
-    repeatCallback: (fn: () => void, intervalMillis: number) => void,
     sendInfoCallback: (info: Info<TInfo>) => void,
     subscribeCallback: (topic: string) => void,
     allowUploadCallback: (name: string, options?: UploadConfigOptions) => void,
@@ -348,7 +331,6 @@ export class WsLiveViewSocket<
     this.pushPatchCallback = pushPatchCallback;
     this.pushRedirectCallback = pushRedirectCallback;
     this.putFlashCallback = putFlashCallback;
-    this.repeatCallback = repeatCallback;
     this.sendInfoCallback = sendInfoCallback;
     this.subscribeCallback = subscribeCallback;
     this.allowUploadCallback = allowUploadCallback;
@@ -370,9 +352,6 @@ export class WsLiveViewSocket<
   }
   async pushRedirect(path: string, params?: URLSearchParams, replaceHistory: boolean = false) {
     await this.pushRedirectCallback(path, params, replaceHistory);
-  }
-  repeat(fn: () => void, intervalMillis: number) {
-    this.repeatCallback(fn, intervalMillis);
   }
   sendInfo(info: Info<TInfo>): void {
     this.sendInfoCallback(info);

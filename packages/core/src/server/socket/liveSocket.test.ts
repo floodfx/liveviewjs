@@ -11,7 +11,6 @@ describe("test LiveViewSocket", () => {
   let pushRedirectCallback = jest.fn();
   let pushPatchCallback = jest.fn();
   let putFlashCallback = jest.fn();
-  let repeatCallback = jest.fn();
   let sendCallback = jest.fn();
   let subscribeCallback = jest.fn();
   let allowUploadCallback = jest.fn();
@@ -26,7 +25,6 @@ describe("test LiveViewSocket", () => {
     pushPatchCallback = jest.fn();
     pushRedirectCallback = jest.fn();
     putFlashCallback = jest.fn();
-    repeatCallback = jest.fn();
     sendCallback = jest.fn();
     subscribeCallback = jest.fn();
     allowUploadCallback = jest.fn();
@@ -40,7 +38,6 @@ describe("test LiveViewSocket", () => {
       pushPatchCallback,
       pushRedirectCallback,
       putFlashCallback,
-      repeatCallback,
       sendCallback,
       subscribeCallback,
       allowUploadCallback,
@@ -93,7 +90,6 @@ describe("test LiveViewSocket", () => {
     expect(pushPatchCallback).toHaveBeenCalledTimes(3);
     expect(pushRedirectCallback).toHaveBeenCalledTimes(3);
     expect(putFlashCallback).toHaveBeenCalledTimes(1);
-    expect(repeatCallback).toHaveBeenCalledTimes(1);
     expect(sendCallback).toHaveBeenCalledTimes(2);
     expect(subscribeCallback).toHaveBeenCalledTimes(1);
     expect(allowUploadCallback).toHaveBeenCalledTimes(0);
@@ -191,7 +187,6 @@ class TestLVPushAndSend extends BaseLiveView<TestLVPushAndSendContext> {
     socket.pushRedirect("/new/path", new URLSearchParams({ param: String(1) }));
     socket.pushRedirect("/new/path", new URLSearchParams({ param: String(1) }), true);
     socket.putFlash("info", "Helpful message");
-    socket.repeat(() => {}, 10000);
     socket.sendInfo({ type: "my_event" });
     socket.sendInfo("my_event");
     socket.subscribe("topic");

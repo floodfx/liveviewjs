@@ -417,14 +417,6 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      */
     putFlash(key: string, value: string): Promise<void>;
     /**
-     * Runs the given function on the given interval until this `LiveView` is
-     * unloaded.
-     *
-     * @param fn the function to run on the interval
-     * @param intervalMillis the interval to run the function on in milliseconds
-     */
-    repeat(fn: () => void, intervalMillis: number): void;
-    /**
      * Send an internal event (a.k.a "Info") to the LiveView's `handleInfo` method
      *
      * @param event the event to send to `handleInfo`
@@ -486,7 +478,6 @@ declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLive
     pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     putFlash(key: string, value: string): Promise<void>;
-    repeat(fn: () => void, intervalMillis: number): void;
     sendInfo(info: Info<TInfo>): void;
     subscribe(topic: string): Promise<void>;
     allowUpload(name: string, options?: UploadConfigOptions): Promise<void>;
@@ -530,14 +521,13 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     private pushPatchCallback;
     private pushRedirectCallback;
     private putFlashCallback;
-    private repeatCallback;
     private sendInfoCallback;
     private subscribeCallback;
     private allowUploadCallback;
     private cancelUploadCallback;
     private consumeUploadedEntriesCallback;
     private uploadedEntriesCallback;
-    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, repeatCallback: (fn: () => void, intervalMillis: number) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void, allowUploadCallback: (name: string, options?: UploadConfigOptions) => void, cancelUploadCallback: (configName: string, ref: string) => void, consumeUploadedEntriesCallback: <T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>) => Promise<T[]>, uploadedEntriesCallback: (configName: string) => Promise<{
+    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void, allowUploadCallback: (name: string, options?: UploadConfigOptions) => void, cancelUploadCallback: (configName: string, ref: string) => void, consumeUploadedEntriesCallback: <T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>) => Promise<T[]>, uploadedEntriesCallback: (configName: string) => Promise<{
         completed: UploadEntry[];
         inProgress: UploadEntry[];
     }>);
@@ -546,7 +536,6 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     pushEvent(pushEvent: AnyLivePushEvent): void;
     pushPatch(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
     pushRedirect(path: string, params?: URLSearchParams, replaceHistory?: boolean): Promise<void>;
-    repeat(fn: () => void, intervalMillis: number): void;
     sendInfo(info: Info<TInfo>): void;
     subscribe(topic: string): Promise<void>;
     allowUpload(name: string, options?: UploadConfigOptions | undefined): Promise<void>;
@@ -680,12 +669,6 @@ declare class LiveViewManager {
      * Clean up any resources used by the `LiveView` and `LiveComponent` instances.
      */
     private shutdown;
-    /**
-     * Repeats a function every `intervalMillis` milliseconds until `shutdown` is called.
-     * @param fn
-     * @param intervalMillis
-     */
-    private repeat;
     /**
      * Callback from `LiveSocket`s passed into `LiveView` and `LiveComponent` lifecycle methods (i.e. mount, handleParams,
      * handleEvent, handleInfo, update, etc) that enables a `LiveView` or `LiveComponent` to update the browser's
