@@ -211,12 +211,11 @@ export class WsHandler {
             this.send(PhxReply.renderedReply(msg, rendered));
             this.cleanupPostReply();
           } else if (topic.startsWith("lvu:")) {
-            // TODO? send more than ack?
-            // perhaps we should check this token matches the entry sent earlier?
-            const payload = msg[Phx.MsgIdx.payload];
-            console.log("upload join payload", payload);
+            // const payload = msg[Phx.MsgIdx.payload] as Phx.JoinUploadPayload;
+            // perhaps we should check this token matches entries send in the "allow_upload" event?
             // const { token } = payload;
             // send ACK
+            // TODO? send more than ack? what?
             this.send(PhxReply.renderedReply(msg, {}));
           } else {
             // istanbul ignore next
@@ -239,8 +238,14 @@ export class WsHandler {
           break;
         case "live_patch":
         case "phx_leave":
+        // try {
+        //   if (this.#ctx) {
+        //     await this.#ctx.liveView.shutdown(this.#ctx);
+        //   }
+        // } catch (e) {
+        //   console.error("error handling phx_leave", e);
+        // }
         case "allow_upload":
-          console.log("allow_upload", msg);
           try {
             const payload = msg[Phx.MsgIdx.payload] as Phx.AllowUploadPayload;
             const { view, config, entries } = await onAllowUpload(this.#ctx!, payload);
@@ -279,7 +284,7 @@ export class WsHandler {
 
   async handleInfo(info: Info<AnyLiveInfo>) {
     try {
-      // info can be a string or an object
+      // info can be a string or an object so check it
       // if it's a string, we need to convert it to a LiveInfo object
       if (typeof info === "string") {
         info = { type: info };
@@ -287,8 +292,6 @@ export class WsHandler {
       // lifecycle handleInfo => render
       await this.#ctx!.liveView.handleInfo(info, this.#ctx!.socket);
       const view = await this.#ctx!.liveView.render(this.#ctx!.socket.context, this.#ctx!.defaultLiveViewMeta());
-
-      // diff and send
       const diff = await this.viewToDiff(view);
       this.send(PhxReply.diff(null, this.#ctx!.joinId, diff));
 
@@ -409,7 +412,6 @@ export class WsHandler {
       async (topic: string) => {},
       // allowUploadCallback
       async (name, options) => {
-        // console.log("allowUpload", name, options);
         this.#ctx!.uploadConfigs[name] = new UploadConfig(name, options);
       },
       // cancelUploadCallback
@@ -434,6 +436,7 @@ export class WsHandler {
           }
           // noting is in progress so we can consume
           const entries = uploadConfig.consumeEntries();
+          console.log("entries", entries);
           return await Promise.all(
             entries.map(
               async (entry) => await fn({ path: entry.getTempFile(), fileSystem: this.#config.fileSysAdaptor }, entry)

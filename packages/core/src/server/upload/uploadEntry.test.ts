@@ -9,8 +9,8 @@ describe("uploadEntry tests", () => {
   it("test too large", async () => {
     const uc = new UploadConfig("foo", {
       accept: [".pdf"],
-      maxEntries: 1,
-      maxFileSize: 100,
+      max_entries: 1,
+      max_file_size: 100,
     });
     // override the ref so always the same for testing
     uc.ref = "phx-testid";
@@ -25,8 +25,8 @@ describe("uploadEntry tests", () => {
   it("test found mime types", async () => {
     const uc = new UploadConfig("foo", {
       accept: ["image/png"],
-      maxEntries: 1,
-      maxFileSize: 1000,
+      max_entries: 1,
+      max_file_size: 1000,
     });
     // override the ref so always the same for testing
     uc.ref = "phx-testid";

@@ -4,7 +4,7 @@ describe("additional uploadConfig test", () => {
   it("test too many files", async () => {
     const uc = new UploadConfig("foo", {
       accept: [".pdf"],
-      maxEntries: 1,
+      max_entries: 1,
     });
     // override the ref so always the same for testing
     uc.ref = "phx-testid";

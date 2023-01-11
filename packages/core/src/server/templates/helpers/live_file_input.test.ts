@@ -28,9 +28,9 @@ describe("live_file_input test", () => {
   it("returns more complex live_file_input", () => {
     const uc = new UploadConfig("foo", {
       accept: ["image/*"],
-      maxEntries: 2,
-      autoUpload: true,
-      maxFileSize: 1500000,
+      max_entries: 2,
+      auto_upload: true,
+      max_file_size: 1500000,
     });
     // override the ref so always the same for testing
     uc.ref = "phx-testid";
@@ -56,7 +56,7 @@ describe("live_file_input test", () => {
   it("returns more complex live_file_input with entries", () => {
     const uc = new UploadConfig("foo", {
       accept: [".pdf"],
-      maxEntries: 3,
+      max_entries: 3,
     });
     // override the ref so always the same for testing
     uc.ref = "phx-testid";
