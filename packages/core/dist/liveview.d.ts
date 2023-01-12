@@ -1329,6 +1329,7 @@ interface WsHandlerConfig {
     wrapperTemplate?: LiveViewWrapperTemplate;
     flashAdaptor: FlashAdaptor;
     pubSub: PubSub;
+    onError?: (err: any) => void;
 }
 declare class WsHandlerContext {
     #private;
@@ -1357,6 +1358,7 @@ declare class WsHandler {
     handleMsg(msg: Phx.Msg<unknown>): Promise<void>;
     close(): Promise<void>;
     send(reply: PhxReply.Reply): void;
+    private maybeHandleError;
     private cleanupPostReply;
     private viewToDiff;
     private viewToRendered;

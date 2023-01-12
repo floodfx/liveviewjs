@@ -3183,16 +3183,17 @@ class WsHandler {
         this.#ws.subscribeToClose(() => this.close);
     }
     async handleMsg(msg) {
-        // attempt to prevent race conditions by queuing messages
-        // if we are already processing a message
-        if (this.#activeMsg) {
-            this.#msgQueue.push(msg);
-            return;
-        }
-        this.#activeMsg = true;
-        const event = msg[Phx.MsgIdx.event];
-        const topic = msg[Phx.MsgIdx.topic];
+        console.log("dispatching message", msg);
         try {
+            // attempt to prevent race conditions by queuing messages
+            // if we are already processing a message
+            if (this.#activeMsg) {
+                this.#msgQueue.push(msg);
+                return;
+            }
+            this.#activeMsg = true;
+            const event = msg[Phx.MsgIdx.event];
+            const topic = msg[Phx.MsgIdx.topic];
             switch (event) {
                 case "phx_join":
                     // phx_join event used for both LiveView joins and LiveUpload joins
@@ -3296,6 +3297,7 @@ class WsHandler {
                     this.send(msg);
                     break;
                 case "live_patch":
+                    console.log("live_patch", msg);
                     // two cases of live_patch: server-side (pushPatch) or client-side (click on link)
                     try {
                         const payload = msg[Phx.MsgIdx.payload];
@@ -3308,16 +3310,17 @@ class WsHandler {
                             const diff = await this.viewToDiff(view);
                             this.send(PhxReply.diffReply(msg, diff));
                             this.cleanupPostReply();
-                            return;
                         }
-                        // case 2: server-side live_patch
-                        const { to } = payload;
-                        // to is relative so need to provide the urlBase determined on initial join
-                        this.#ctx.url = new URL(to, this.#ctx.url);
-                        // let the `LiveView` udpate its context based on the new url
-                        await this.#ctx.liveView.handleParams(this.#ctx.url, this.#ctx.socket);
-                        // send the message on to the client
-                        this.send(msg);
+                        else {
+                            // case 2: server-side live_patch
+                            const { to } = payload;
+                            // to is relative so need to provide the urlBase determined on initial join
+                            this.#ctx.url = new URL(to, this.#ctx.url);
+                            // let the `LiveView` udpate its context based on the new url
+                            await this.#ctx.liveView.handleParams(this.#ctx.url, this.#ctx.socket);
+                            // send the message on to the client
+                            this.send(msg);
+                        }
                     }
                     catch (e) {
                         /* istanbul ignore next */
@@ -3398,15 +3401,15 @@ class WsHandler {
                 default:
                     throw new Error(`unexpected phx protocol event ${event}`);
             }
+            // we're done with this message, so we can process the next one if there is one
+            this.#activeMsg = false;
+            const nextMsg = this.#msgQueue.pop();
+            if (nextMsg) {
+                this.handleMsg(nextMsg);
+            }
         }
         catch (e) {
-            console.error("error handling phx message", e);
-        }
-        // we're done with this message, so we can process the next one if there is one
-        this.#activeMsg = false;
-        const nextMsg = this.#msgQueue.pop();
-        if (nextMsg) {
-            this.handleMsg(nextMsg);
+            this.maybeHandleError(e);
         }
     }
     async close() {
@@ -3415,7 +3418,17 @@ class WsHandler {
         this.handleMsg([null, null, joinId, "phx_leave", null]);
     }
     send(reply) {
-        this.#ws.send(PhxReply.serialize(reply));
+        try {
+            this.#ws.send(PhxReply.serialize(reply), this.maybeHandleError);
+        }
+        catch (e) {
+            this.maybeHandleError(e);
+        }
+    }
+    maybeHandleError(err) {
+        if (err && this.#config.onError) {
+            this.#config.onError(err);
+        }
     }
     async cleanupPostReply() {
         // do post-send lifecycle step

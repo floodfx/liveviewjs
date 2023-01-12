@@ -31,6 +31,7 @@ interface NodeExpressLiveViewServerOptions {
   flashAdaptor?: FlashAdaptor;
   fileSystemAdaptor?: FileSystemAdaptor;
   wrapperTemplate?: LiveViewWrapperTemplate;
+  onError?: (err: any) => void;
 }
 
 export class NodeExpressLiveViewServer
@@ -67,6 +68,7 @@ export class NodeExpressLiveViewServer
       wrapperTemplate: this.wrapperTemplate,
       flashAdaptor: this.flashAdapter,
       pubSub: this.pubSub,
+      onError: options?.onError,
     };
   }
 
