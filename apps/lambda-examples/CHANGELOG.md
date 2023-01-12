@@ -1,5 +1,15 @@
 # @liveviewjs/lambda-examples
 
+## 0.1.1
+
+### Patch Changes
+
+- 0985538: Fix live_patch early return bug and add option onError server config
+- Updated dependencies [0985538]
+  - liveviewjs@0.8.1
+  - @liveviewjs/examples@0.8.1
+  - @liveviewjs/express@0.8.1
+
 ## 0.1.0
 
 ### Minor Changes
