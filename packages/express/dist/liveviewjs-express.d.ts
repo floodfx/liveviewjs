@@ -1,8 +1,8 @@
 /// <reference types="node" />
-import { RedisClientOptions } from '@node-redis/client';
+import { FileSystemAdaptor, SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, LiveViewHtmlPageTemplate, LiveTitleOptions, PubSub, FlashAdaptor, LiveViewWrapperTemplate, WsAdaptor, WsMsgListener, WsCloseListener } from 'liveviewjs';
+import { RedisClientOptions } from 'redis';
 import { RequestHandler } from 'express';
-import { FileSystemAdaptor, FlashAdaptor, LiveTitleOptions, LiveViewHtmlPageTemplate, LiveViewRouter, LiveViewServerAdaptor, LiveViewWrapperTemplate, Publisher, PubSub, SerDe, SessionData, Subscriber, SubscriberFunction, WsAdaptor, WsCloseListener, WsMsgListener } from 'liveviewjs';
-import { WebSocket, WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 
 declare class NodeFileSystemAdatptor implements FileSystemAdaptor {
     tempPath(lastPathPart: string): string;
