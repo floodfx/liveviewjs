@@ -3190,7 +3190,6 @@ class WsHandler {
         this.#ws.subscribeToClose(() => this.close);
     }
     async handleMsg(msg) {
-        console.log("dispatching message", msg);
         try {
             // attempt to prevent race conditions by queuing messages
             // if we are already processing a message
@@ -3304,12 +3303,11 @@ class WsHandler {
                     this.send(msg);
                     break;
                 case "live_patch":
-                    console.log("live_patch", msg);
                     // two cases of live_patch: server-side (pushPatch) or client-side (click on link)
                     try {
                         const payload = msg[exports.Phx.MsgIdx.payload];
-                        // case 1: client-side live_patch
                         if (payload.hasOwnProperty("url")) {
+                            // case 1: client-side live_patch
                             const url = new URL(payload.url);
                             this.#ctx.url = url;
                             await this.#ctx.liveView.handleParams(url, this.#ctx.socket);
