@@ -98,6 +98,7 @@ const liveView = new NodeExpressLiveViewServer(
   {
     serDeSigningSecret: signingSecret,
     wrapperTemplate: wrapperTemplate,
+    onError: (err) => console.error(err),
   }
 );
 

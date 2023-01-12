@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
-import { LiveViewTemplate } from "src/server/live";
 import { FileSystemAdaptor } from "../../../server/adaptor";
+import { LiveViewTemplate } from "../../../server/live";
 import { Phx } from "../../../server/protocol/phx";
 import { PhxReply } from "../../../server/protocol/reply";
 import { UploadConfig } from "../../../server/upload";

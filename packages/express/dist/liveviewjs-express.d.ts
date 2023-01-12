@@ -42,6 +42,7 @@ interface NodeExpressLiveViewServerOptions {
     flashAdaptor?: FlashAdaptor;
     fileSystemAdaptor?: FileSystemAdaptor;
     wrapperTemplate?: LiveViewWrapperTemplate;
+    onError?: (err: any) => void;
 }
 declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler, (wsServer: WebSocketServer) => Promise<void>> {
     #private;

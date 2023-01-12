@@ -30,6 +30,7 @@ interface DenoOakLiveViewServerOptions {
   flashAdaptor?: FlashAdaptor;
   fileSystemAdaptor?: FileSystemAdaptor;
   wrapperTemplate?: LiveViewWrapperTemplate;
+  onError?: (err: any) => void;
 }
 
 type DenoMiddleware = (
@@ -87,6 +88,7 @@ export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddlewa
       wrapperTemplate: this.wrapperTemplate,
       flashAdaptor: this.flashAdapter,
       pubSub: this.pubSub,
+      onError: options?.onError,
     };
   }
 

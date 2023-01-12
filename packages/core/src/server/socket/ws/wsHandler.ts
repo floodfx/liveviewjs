@@ -32,6 +32,7 @@ export interface WsHandlerConfig {
   wrapperTemplate?: LiveViewWrapperTemplate;
   flashAdaptor: FlashAdaptor;
   pubSub: PubSub;
+  onError?: (err: any) => void;
 }
 
 export class WsHandlerContext {
@@ -151,16 +152,16 @@ export class WsHandler {
   }
 
   async handleMsg(msg: Phx.Msg<unknown>) {
-    // attempt to prevent race conditions by queuing messages
-    // if we are already processing a message
-    if (this.#activeMsg) {
-      this.#msgQueue.push(msg);
-      return;
-    }
-    this.#activeMsg = true;
-    const event = msg[Phx.MsgIdx.event];
-    const topic = msg[Phx.MsgIdx.topic];
     try {
+      // attempt to prevent race conditions by queuing messages
+      // if we are already processing a message
+      if (this.#activeMsg) {
+        this.#msgQueue.push(msg);
+        return;
+      }
+      this.#activeMsg = true;
+      const event = msg[Phx.MsgIdx.event];
+      const topic = msg[Phx.MsgIdx.topic];
       switch (event) {
         case "phx_join":
           // phx_join event used for both LiveView joins and LiveUpload joins
@@ -283,8 +284,8 @@ export class WsHandler {
           // two cases of live_patch: server-side (pushPatch) or client-side (click on link)
           try {
             const payload = msg[Phx.MsgIdx.payload] as Phx.LivePatchPayload | Phx.LiveNavPushPayload;
-            // case 1: client-side live_patch
             if (payload.hasOwnProperty("url")) {
+              // case 1: client-side live_patch
               const url = new URL((payload as Phx.LivePatchPayload).url);
               this.#ctx!.url = url;
               await this.#ctx!.liveView.handleParams(url, this.#ctx!.socket);
@@ -295,16 +296,16 @@ export class WsHandler {
               const diff = await this.viewToDiff(view);
               this.send(PhxReply.diffReply(msg, diff));
               this.cleanupPostReply();
-              return;
+            } else {
+              // case 2: server-side live_patch
+              const { to } = payload as Phx.LiveNavPushPayload;
+              // to is relative so need to provide the urlBase determined on initial join
+              this.#ctx!.url = new URL(to, this.#ctx!.url);
+              // let the `LiveView` udpate its context based on the new url
+              await this.#ctx!.liveView.handleParams(this.#ctx!.url, this.#ctx!.socket);
+              // send the message on to the client
+              this.send(msg as PhxReply.Reply);
             }
-            // case 2: server-side live_patch
-            const { to } = payload as Phx.LiveNavPushPayload;
-            // to is relative so need to provide the urlBase determined on initial join
-            this.#ctx!.url = new URL(to, this.#ctx!.url);
-            // let the `LiveView` udpate its context based on the new url
-            await this.#ctx!.liveView.handleParams(this.#ctx!.url, this.#ctx!.socket);
-            // send the message on to the client
-            this.send(msg as PhxReply.Reply);
           } catch (e) {
             /* istanbul ignore next */
             console.error("Error handling live_patch", e);
@@ -379,15 +380,15 @@ export class WsHandler {
         default:
           throw new Error(`unexpected phx protocol event ${event}`);
       }
-    } catch (e) {
-      console.error("error handling phx message", e);
-    }
 
-    // we're done with this message, so we can process the next one if there is one
-    this.#activeMsg = false;
-    const nextMsg = this.#msgQueue.pop();
-    if (nextMsg) {
-      this.handleMsg(nextMsg);
+      // we're done with this message, so we can process the next one if there is one
+      this.#activeMsg = false;
+      const nextMsg = this.#msgQueue.pop();
+      if (nextMsg) {
+        this.handleMsg(nextMsg);
+      }
+    } catch (e) {
+      this.maybeHandleError(e);
     }
   }
 
@@ -398,7 +399,17 @@ export class WsHandler {
   }
 
   send(reply: PhxReply.Reply) {
-    this.#ws.send(PhxReply.serialize(reply));
+    try {
+      this.#ws.send(PhxReply.serialize(reply), this.maybeHandleError);
+    } catch (e) {
+      this.maybeHandleError(e);
+    }
+  }
+
+  private maybeHandleError(err: any) {
+    if (err && this.#config.onError) {
+      this.#config.onError(err);
+    }
   }
 
   private async cleanupPostReply() {
