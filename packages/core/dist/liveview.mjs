@@ -158,6 +158,9 @@ function matchRoute(router, path) {
     return undefined;
 }
 
+/**
+ * UploadConfig contains configuration and entry related details for uploading files.
+ */
 class UploadConfig {
     constructor(name, options) {
         this.name = name;
@@ -199,6 +202,9 @@ class UploadConfig {
         this.validate();
         return entries;
     }
+    /**
+     * Checks if the entries are valid w.r.t. max_entries, max_file_size, and mime type.
+     */
     validate() {
         this.errors = [];
         if (this.entries.length > this.max_entries) {
@@ -311,16 +317,18 @@ function nodeHttpFetch(url) {
 }
 const mime = new Mime();
 
+/**
+ * UploadEntry represents a file and related metadata selected for upload
+ */
 class UploadEntry {
-    // private fields
     #config; // the parent upload config
     #tempFile; // the temp file location where the file is stored
     constructor(upload, config) {
         this.cancelled = false;
-        this.client_last_modified = upload.last_modified;
-        this.client_name = upload.name;
-        this.client_size = upload.size;
-        this.client_type = upload.type;
+        this.last_modified = upload.last_modified;
+        this.name = upload.name;
+        this.size = upload.size;
+        this.type = upload.type;
         this.done = false;
         this.preflighted = false;
         this.progress = 0;
@@ -332,15 +340,28 @@ class UploadEntry {
         this.#config = config;
         this.validate();
     }
+    /**
+     * Takes in a progress percentage and updates the entry accordingly
+     * @param progress
+     */
     updateProgress(progress) {
+        if (progress < 0) {
+            progress = 0;
+        }
+        if (progress > 100) {
+            progress = 100;
+        }
         this.progress = progress;
         this.preflighted = progress > 0;
         this.done = progress === 100;
     }
+    /**
+     * Validates the file against the upload config
+     */
     validate() {
         this.errors = [];
         // validate file size
-        if (this.client_size > this.#config.max_file_size) {
+        if (this.size > this.#config.max_file_size) {
             this.errors.push("Too large");
         }
         // validate mime type is allowed
@@ -353,14 +374,14 @@ class UploadEntry {
                 if (acceptItem.startsWith(".")) {
                     // extension so look up mime type (first trim off the leading dot)
                     const mimeTypes = mime.lookupMimeType(acceptItem.slice(1));
-                    if (mimeTypes.includes(this.client_type)) {
+                    if (mimeTypes.includes(this.type)) {
                         allowed = true;
                         break;
                     }
                 }
                 else {
                     // mime type so check if it matches
-                    if (acceptItem === this.client_type) {
+                    if (acceptItem === this.type) {
                         allowed = true;
                         break;
                     }
@@ -372,9 +393,17 @@ class UploadEntry {
         }
         this.valid = this.errors.length === 0;
     }
+    /**
+     * Sets the temp file path for the entry, used internally
+     * @param tempFilePath a path to the temp file
+     */
     setTempFile(tempFilePath) {
         this.#tempFile = tempFilePath;
     }
+    /**
+     * Gets the temp file path for the entry, used internally
+     * @returns the temp file path
+     */
     getTempFile() {
         return this.#tempFile;
     }
@@ -783,6 +812,11 @@ function escapehtml(unsafe) {
     }
     return String(unsafe).replace(ENT_REGEX, (char) => ENTITIES[char]);
 }
+/**
+ * HtmlSafeString is what a `LiveView` returns from its `render` function.
+ * It is based on "tagged template literals" and is what allows LiveViewJS
+ * to minimize the amount of data sent to the client.
+ */
 class HtmlSafeString {
     statics;
     dynamics;
@@ -1520,7 +1554,7 @@ const newChangesetFactory = (schema) => {
             // error(s) for that field
             const target = newAttrs["_target"] ?? false;
             errors = result.error.issues.reduce((acc, issue) => {
-                // TODO recursively walk the full tree of fields for the issues
+                // TODO recursively walk the full tree of fields for the issues?
                 if (target) {
                     if (issue.path[0] === target) {
                         // @ts-ignore
@@ -1546,14 +1580,15 @@ const newChangesetFactory = (schema) => {
     };
 };
 
-// export interface PhxUploadMsg {
-//   joinRef: string;
-//   messageRef: string;
-//   topic: string;
-//   event: string;
-//   data: Buffer;
-// }
+/**
+ * BinaryUploadSerDe is a serializer/deserializer for binary (file) uploads from LiveViews.
+ */
 class BinaryUploadSerDe {
+    /**
+     * Deserialize a binary upload message into a Phx.UploadMsg.
+     * @param data Buffer of binary data
+     * @returns the Phx.UploadMsg
+     */
     deserialize(data) {
         // read first 5 bytes to get sizes of parts
         const sizesOffset = 5;
@@ -1568,7 +1603,6 @@ class BinaryUploadSerDe {
         const messageRefSize = parseInt(sizes[2].toString());
         const topicSize = parseInt(sizes[3].toString());
         const eventSize = parseInt(sizes[4].toString());
-        // console.log("sizes", startSize, joinRefSize, messageRefSize, topicSize, eventSize);
         // read header and header parts
         const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
         const header = data.subarray(sizesOffset, sizesOffset + headerLength).toString();
@@ -1584,7 +1618,6 @@ class BinaryUploadSerDe {
         start += topicSize;
         end += eventSize;
         const event = header.slice(start, end).toString();
-        // console.log(`onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`);
         // adjust data index based on message length
         const dataStartIndex = sizesOffset + headerLength;
         // get rest of data
@@ -1597,6 +1630,11 @@ class BinaryUploadSerDe {
             payload,
         };
     }
+    /**
+     * Serialize a Phx.UploadMsg into a Buffer. (typically used for testing)
+     * @param value a Phx.UploadMsg
+     * @returns a Buffer of binary data
+     */
     serialize(value) {
         const { joinRef, msgRef, topic, event, payload } = value;
         const joinRefSize = Buffer.byteLength(joinRef);
@@ -1612,6 +1650,9 @@ class BinaryUploadSerDe {
     }
 }
 
+/**
+ * Phx is a namespace for Phoenix LiveView protocol related types and functions.
+ */
 var Phx;
 (function (Phx) {
     (function (MsgIdx) {
@@ -1621,6 +1662,12 @@ var Phx;
         MsgIdx[MsgIdx["event"] = 3] = "event";
         MsgIdx[MsgIdx["payload"] = 4] = "payload";
     })(Phx.MsgIdx || (Phx.MsgIdx = {}));
+    /**
+     * parse attempts to parse a string into a Msg.
+     * @param msg the string to parse
+     * @returns the parsed Msg
+     * @throws an error if the message is invalid
+     */
     function parse(msg) {
         const m = JSON.parse(msg);
         if (!Array.isArray(m) && m.length < 5) {
@@ -1630,11 +1677,21 @@ var Phx;
         return m;
     }
     Phx.parse = parse;
+    /**
+     * parseBinary attempts to parse a binary buffer into a Msg<Buffer>.
+     * @param raw the binary buffer to parse
+     * @returns a Msg<Buffer>
+     */
     function parseBinary(raw) {
         const um = new BinaryUploadSerDe().deserialize(raw);
         return [um.joinRef, um.msgRef, um.topic, um.event, um.payload];
     }
     Phx.parseBinary = parseBinary;
+    /**
+     * serialize serializes a Msg into a string typically for sending across the socket back to the client.
+     * @param msg the Msg to serialize
+     * @returns the serialized Msg
+     */
     function serialize(msg) {
         return JSON.stringify(msg);
     }
@@ -2738,8 +2795,17 @@ class LiveViewManager {
     }
 }
 
+/**
+ * PhxReply is a namespace for Phx protocol related types and functions typically send from the server to the client.
+ */
 var PhxReply;
 (function (PhxReply) {
+    /**
+     * renderedReply builds a reply that contains the full rendered HTML for a LiveView.
+     * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
+     * @param parts the "tree" of parts that will be used to render the client-side LiveView
+     * @returns the reply message
+     */
     function renderedReply(msg, parts) {
         return [
             msg[Phx.MsgIdx.joinRef],
@@ -2755,10 +2821,26 @@ var PhxReply;
         ];
     }
     PhxReply.renderedReply = renderedReply;
+    /**
+     * diff builds a diff message which only contains the parts of the LiveView that have changed.
+     * As opposed to "diffReply" messages, "diff" messages are sent without an original, incoming message but rather because of
+     * a "server-side" event that triggers a change in the `LiveView`
+     * @param joinRef optional joinRef
+     * @param topic the topic (typically the LiveView's socket id)
+     * @param diff the "diffed" parts of the LiveView that have changed
+     * @returns a diff message
+     */
     function diff(joinRef, topic, diff) {
         return [joinRef, null, topic, "diff", diff];
     }
     PhxReply.diff = diff;
+    /**
+     * diffReply builds a diff reply message which only contains the parts of the LiveView that have changed.
+     * As opposed to "diff" messages, "diffReply" messages are sent in response to an incoming message from the client.
+     * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
+     * @param diff the "diffed" parts of the LiveView that have changed
+     * @returns a diff reply message
+     */
     function diffReply(msg, diff) {
         return [
             msg[Phx.MsgIdx.joinRef],
@@ -2774,6 +2856,16 @@ var PhxReply;
         ];
     }
     PhxReply.diffReply = diffReply;
+    /**
+     * allowUploadReply builds a reply that contains the upload configuration, the entries to be uploaded,
+     * and the "diff" of the LiveView that will be used to render the client-side LiveView.
+     * It is part of the file upload messages flow.
+     * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
+     * @param diff the "tree" of parts that will be used to render the client-side LiveView
+     * @param config the upload configuration
+     * @param entries the entries to be uploaded
+     * @returns the reply message
+     */
     function allowUploadReply(msg, diff, config, entries) {
         return [
             msg[Phx.MsgIdx.joinRef],
@@ -2791,6 +2883,11 @@ var PhxReply;
         ];
     }
     PhxReply.allowUploadReply = allowUploadReply;
+    /**
+     * heartbeat builds a heartbeat reply message which is used to respond to a heartbeat message from the client.
+     * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
+     * @returns a heartbeat reply message
+     */
     function heartbeat(msg) {
         return [
             null,
@@ -2804,6 +2901,11 @@ var PhxReply;
         ];
     }
     PhxReply.heartbeat = heartbeat;
+    /**
+     * serialize serializes a reply message to a string.
+     * @param msg the message to serialize
+     * @returns a string representation of the message
+     */
     function serialize(msg) {
         return JSON.stringify(msg);
     }

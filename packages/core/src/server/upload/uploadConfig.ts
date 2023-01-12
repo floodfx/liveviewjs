@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { UploadEntry } from ".";
 
 /**
- * The configuration and entry related details for uploading files.
+ * UploadConfig contains configuration and entry related details for uploading files.
  */
 export interface UploadConfig {
   /**
@@ -75,6 +75,9 @@ export type UploadConfigOptions = {
   chunk_size?: number;
 };
 
+/**
+ * UploadConfig contains configuration and entry related details for uploading files.
+ */
 export class UploadConfig implements UploadConfig {
   constructor(name: string, options?: UploadConfigOptions) {
     this.name = name;
@@ -120,6 +123,9 @@ export class UploadConfig implements UploadConfig {
     return entries;
   }
 
+  /**
+   * Checks if the entries are valid w.r.t. max_entries, max_file_size, and mime type.
+   */
   private validate() {
     this.errors = [];
     if (this.entries.length > this.max_entries) {

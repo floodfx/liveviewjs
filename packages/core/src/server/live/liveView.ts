@@ -4,30 +4,51 @@ import { LiveViewSocket } from "../socket/liveSocket";
 import { LiveTitleOptions } from "../templates";
 import { UploadConfig } from "../upload/uploadConfig";
 
+/**
+ * LiveContext sets the minimum requirements for a `LiveView` context.
+ */
 export interface LiveContext {
   [key: string]: any;
 }
 
+/**
+ * Generic LiveContext Type that can be used for any `LiveView` context.
+ */
 export interface AnyLiveContext extends LiveContext {
   [key: string]: any;
 }
 
+/**
+ * LiveEvent is the minimal interface for a `LiveEvent` which requires a `type` field.
+ */
 export interface LiveEvent {
   type: string;
 }
 
+/**
+ * Generic LiveEvent Type that can be used for any `LiveEvent`.
+ */
 export interface AnyLiveEvent extends LiveEvent {
   [key: string]: any;
 }
 
+/**
+ * LiveInfo is the minimal interface for a `LiveInfo` which requires a `type` field.
+ */
 export interface LiveInfo {
   type: string;
 }
 
+/**
+ * Generic LiveInfo Type that can be used for any `LiveInfo`.
+ */
 export interface AnyLiveInfo extends LiveInfo {
   [key: string]: any;
 }
 
+/**
+ * AnyLivePushEvent is the minimal interface for events that can be pushed to the client.
+ */
 export interface AnyLivePushEvent extends LiveEvent {
   [key: string]: any;
 }
@@ -117,9 +138,10 @@ export interface LiveView<
   shutdown(id: string, content: TContext): void | Promise<void>;
 }
 
-export type Event<TEvent extends LiveEvent> = TEvent["type"];
 /**
- * Meta data and helpers for `LiveView`s.
+ * Meta data and helpers for `LiveView`s passed into the `render` function of a `LiveView`.
+ * Provides readonly access to the `csrfToken`, `url`, and `uploads` for the `LiveView` along
+ * with a helper for loading `LiveComponent`s within a `LiveView`.
  */
 export interface LiveViewMeta<TEvents extends LiveEvent = AnyLiveEvent> {
   /**
@@ -144,7 +166,8 @@ export interface LiveViewMeta<TEvents extends LiveEvent = AnyLiveEvent> {
    */
   readonly uploads: { [key: string]: UploadConfig };
 
-  // typesafe way to get an event string for use in 'render'?
+  // TODO -typesafe way to get an event string for use in 'render'?
+  // export type Event<TEvent extends LiveEvent> = TEvent["type"];
   // getEvent(event: Event<TEvents>): string;
 }
 
