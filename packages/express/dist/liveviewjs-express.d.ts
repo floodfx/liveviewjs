@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { FileSystemAdaptor, SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, LiveViewHtmlPageTemplate, LiveTitleOptions, WsMessageRouter, PubSub, FlashAdaptor, LiveViewWrapperTemplate, WsAdaptor } from 'liveviewjs';
-import { RedisClientOptions } from '@node-redis/client';
+import { RedisClientOptions } from 'redis';
 import { RequestHandler } from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 

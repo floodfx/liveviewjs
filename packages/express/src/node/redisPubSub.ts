@@ -1,13 +1,6 @@
-import {
-  createClient,
-  RedisClientOptions,
-  RedisClientType,
-  RedisFunctions,
-  RedisModules,
-  RedisScripts,
-} from "@redis/client";
 import crypto from "crypto";
 import { Publisher, Subscriber, SubscriberFunction } from "liveviewjs";
+import { createClient, RedisClientOptions, RedisClientType, RedisFunctions, RedisModules, RedisScripts } from "redis";
 
 type RedisClient = RedisClientType<RedisModules, RedisFunctions, RedisScripts>;
 
