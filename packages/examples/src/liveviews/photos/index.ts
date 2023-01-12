@@ -207,7 +207,7 @@ const photoGroupStore = new InMemoryChangesetDB<PhotoGroup>(PhotoGroupSchema, {
  * concatenated with the entry's uuid
  */
 function filename(entry: UploadEntry) {
-  const exts = mime.lookupExtensions(entry.client_type);
+  const exts = mime.lookupExtensions(entry.type);
   const ext = exts.length > 0 ? exts[0] : "bin";
   return `${entry.uuid}.${ext}`;
 }

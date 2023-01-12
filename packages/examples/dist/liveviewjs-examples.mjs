@@ -1959,7 +1959,7 @@ const liveNavLV = createLiveView({
                 socket.pushPatch(socket.url.pathname, new URLSearchParams({ id: event.id }));
                 break;
             case "redirect":
-                // extract first part of path (e.g. /counter)
+                // extract first part of path (e.g. /liveNav)
                 const path = socket.url.pathname.split("/")[1];
                 socket.pushRedirect("/" + path + event.path);
                 break;
@@ -1970,7 +1970,7 @@ const liveNavLV = createLiveView({
         const { id } = context;
         return html `
       <div>
-        <h1>Search ID: ${id}</h1>
+        <h1>Query String ID: ${id}</h1>
         <button phx-click="patch" phx-value-id="foo">Live Patch Search Param (to ?id=foo)</button>
         <button phx-click="redirect" phx-value-path="/bar">Live Redirect (to /bar)</button>
       </div>
@@ -2489,7 +2489,7 @@ const photoGroupStore = new InMemoryChangesetDB(PhotoGroupSchema, {
  * concatenated with the entry's uuid
  */
 function filename(entry) {
-    const exts = mime.lookupExtensions(entry.client_type);
+    const exts = mime.lookupExtensions(entry.type);
     const ext = exts.length > 0 ? exts[0] : "bin";
     return `${entry.uuid}.${ext}`;
 }
