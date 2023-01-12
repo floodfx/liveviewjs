@@ -8,6 +8,7 @@ export * from "./liveviews/fetch";
 export * from "./liveviews/hello/helloName";
 export * from "./liveviews/hello/helloToggleEmoji";
 export * from "./liveviews/jsCommands";
+export * from "./liveviews/liveNav";
 export * from "./liveviews/liveSearch";
 export * from "./liveviews/pagination";
 export * from "./liveviews/photos";

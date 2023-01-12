@@ -48,6 +48,10 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
    */
   readonly context: TContext;
   /**
+   * The current URL of the `LiveView`
+   */
+  readonly url: URL;
+  /**
    * `assign` is used to update the context (i.e. state) of the `LiveComponent`
    * @param context a `Partial` of the LiveView's context to update
    */
@@ -156,6 +160,7 @@ export interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, T
 abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo>
   implements LiveViewSocket<TContext, TInfo>
 {
+  abstract url: URL;
   abstract connected: boolean;
   abstract id: string;
 
@@ -251,11 +256,13 @@ export class HttpLiveViewSocket<
   readonly id: string;
   readonly connected: boolean = false;
   readonly uploadConfigs: { [name: string]: UploadConfig } = {};
+  readonly url: URL;
 
   private _redirect: { to: string; replace: boolean } | undefined;
-  constructor(id: string) {
+  constructor(id: string, url: URL) {
     super();
     this.id = id;
+    this.url = url;
   }
 
   get redirect(): { to: string; replace: boolean } | undefined {
@@ -288,6 +295,7 @@ export class WsLiveViewSocket<
 > extends BaseLiveViewSocket<TContext, TInfo> {
   readonly id: string;
   readonly connected: boolean = true;
+  readonly url: URL;
 
   // callbacks to the ComponentManager
   private pageTitleCallback: (newPageTitle: string) => void;
@@ -309,6 +317,7 @@ export class WsLiveViewSocket<
 
   constructor(
     id: string,
+    url: URL,
     pageTitleCallback: (newPageTitle: string) => void,
     pushEventCallback: (pushEvent: AnyLivePushEvent) => void,
     pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void,
@@ -326,6 +335,7 @@ export class WsLiveViewSocket<
   ) {
     super();
     this.id = id;
+    this.url = url;
     this.pageTitleCallback = pageTitleCallback;
     this.pushEventCallback = pushEventCallback;
     this.pushPatchCallback = pushPatchCallback;

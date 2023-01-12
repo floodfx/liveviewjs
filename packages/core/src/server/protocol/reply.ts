@@ -8,13 +8,14 @@ export namespace PhxReply {
     joinRef: string | null,
     msgRef: string | null,
     topic: string,
-    event: "phx_reply" | "diff",
+    event: "phx_reply" | "diff" | "live_redirect" | "live_patch",
     payload:
       | {
           status?: Status;
           response?: Response;
         }
       | Parts // for diff
+      | Phx.LiveNavPushPayload // for live_redirect and live_patch
   ];
 
   export type Response = {

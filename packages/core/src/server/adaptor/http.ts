@@ -77,7 +77,7 @@ export const handleHttpLiveView = async (
   }
 
   // prepare a http socket for the `LiveView` render lifecycle: mount => handleParams => render
-  const liveViewSocket = new HttpLiveViewSocket<AnyLiveContext>(liveViewId);
+  const liveViewSocket = new HttpLiveViewSocket<AnyLiveContext>(liveViewId, getRequestUrl());
 
   // execute the `LiveView`'s `mount` function, passing in the data from the HTTP request
   await liveView.mount(

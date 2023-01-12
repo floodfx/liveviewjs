@@ -7,6 +7,7 @@ import {
   helloNameLiveView,
   helloToggleEmojiLiveView,
   jsCmdsLiveView,
+  liveNavLV,
   paginateLiveView,
   photosLiveView,
   printLiveView,
@@ -47,6 +48,7 @@ const router: LiveViewRouter = {
   "/books": booksLiveView,
   "/helloToggle": helloToggleEmojiLiveView,
   "/hi/:name": helloNameLiveView,
+  "/liveNav/:sub": liveNavLV,
 };
 
 // you'd want to set this to some secure, random string in production

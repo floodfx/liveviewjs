@@ -19,9 +19,11 @@ import { SessionData } from "../../session";
 import { deepDiff, Parts, safe } from "../../templates";
 import { UploadConfig, UploadEntry } from "../../upload";
 import { ConsumeUploadedEntriesMeta, WsLiveViewSocket } from "../liveSocket";
+import { maybeAddStructuredClone } from "../structuredClone";
 import { PhxJoinPayload } from "../types";
 import { handleEvent } from "./wsEventHandler";
 import { onAllowUpload, onProgressUpload, onUploadBinary } from "./wsUploadHandler";
+maybeAddStructuredClone();
 
 export interface WsHandlerConfig {
   serDe: SerDe;
@@ -37,11 +39,11 @@ export class WsHandlerContext {
   #socket: WsLiveViewSocket;
   #joinId: string;
   #csrfToken: string;
-  #url: URL;
   #pageTitle?: string;
   #pageTitleChanged: boolean = false;
   #flash: FlashAdaptor;
   #sessionData: SessionData;
+  url: URL;
   pushEvents: AnyLivePushEvent[] = [];
   activeUploadRef: string | null = null;
   uploadConfigs: { [key: string]: UploadConfig } = {};
@@ -60,7 +62,7 @@ export class WsHandlerContext {
     this.#socket = socket;
     this.#joinId = joinId;
     this.#csrfToken = csrfToken;
-    this.#url = url;
+    this.url = url;
     this.#sessionData = sessionData;
     this.#flash = flash;
   }
@@ -79,10 +81,6 @@ export class WsHandlerContext {
 
   get csrfToken() {
     return this.#csrfToken;
-  }
-
-  get url() {
-    return this.#url;
   }
 
   set pageTitle(newTitle: string) {
@@ -134,7 +132,6 @@ export class WsHandler {
   #subscriptionIds: { [key: string]: string } = {};
   #hbInterval?: NodeJS.Timeout;
   #lastHB?: number;
-  #closed: boolean = false;
 
   constructor(ws: WsAdaptor, config: WsHandlerConfig) {
     this.#config = config;
@@ -154,10 +151,6 @@ export class WsHandler {
   }
 
   async handleMsg(msg: Phx.Msg<unknown>) {
-    if (this.#closed) {
-      console.error("received message after socket closed", msg);
-      return;
-    }
     // attempt to prevent race conditions by queuing messages
     // if we are already processing a message
     if (this.#activeMsg) {
@@ -209,7 +202,7 @@ export class WsHandler {
             }
 
             // success! now let's initialize this liveview
-            const socket = this.newLiveViewSocket(topic);
+            const socket = this.newLiveViewSocket(topic, url);
             this.#ctx = new WsHandlerContext(
               liveView,
               socket,
@@ -277,15 +270,42 @@ export class WsHandler {
             console.error(`Error sending internal info`, e);
           }
           break;
+        case "live_redirect":
+          const payload = msg[Phx.MsgIdx.payload] as Phx.LiveNavPushPayload;
+          const { to } = payload;
+          // to is relative so need to provide the urlBase determined on initial join
+          this.#ctx!.url = new URL(to, this.#ctx!.url);
+          // let the `LiveView` udpate its context based on the new url
+          await this.#ctx!.liveView.handleParams(this.#ctx!.url, this.#ctx!.socket);
+          // send the message on to the client
+          this.send(msg as PhxReply.Reply);
+          break;
         case "live_patch":
+          // two cases of live_patch: server-side (pushPatch) or client-side (click on link)
           try {
-            const payload = msg[Phx.MsgIdx.payload] as Phx.LivePatchPayload;
-            const url = new URL(payload.url);
-            await this.#ctx!.liveView.handleParams(url, this.#ctx!.socket);
-            const view = await this.#ctx!.liveView.render(this.#ctx!.socket.context, this.#ctx!.defaultLiveViewMeta());
-            const diff = await this.viewToDiff(view);
-            this.send(PhxReply.diffReply(msg, diff));
-            this.cleanupPostReply();
+            const payload = msg[Phx.MsgIdx.payload] as Phx.LivePatchPayload | Phx.LiveNavPushPayload;
+            // case 1: client-side live_patch
+            if (payload.hasOwnProperty("url")) {
+              const url = new URL((payload as Phx.LivePatchPayload).url);
+              this.#ctx!.url = url;
+              await this.#ctx!.liveView.handleParams(url, this.#ctx!.socket);
+              const view = await this.#ctx!.liveView.render(
+                this.#ctx!.socket.context,
+                this.#ctx!.defaultLiveViewMeta()
+              );
+              const diff = await this.viewToDiff(view);
+              this.send(PhxReply.diffReply(msg, diff));
+              this.cleanupPostReply();
+              return;
+            }
+            // case 2: server-side live_patch
+            const { to } = payload as Phx.LiveNavPushPayload;
+            // to is relative so need to provide the urlBase determined on initial join
+            this.#ctx!.url = new URL(to, this.#ctx!.url);
+            // let the `LiveView` udpate its context based on the new url
+            await this.#ctx!.liveView.handleParams(this.#ctx!.url, this.#ctx!.socket);
+            // send the message on to the client
+            this.send(msg as PhxReply.Reply);
           } catch (e) {
             /* istanbul ignore next */
             console.error("Error handling live_patch", e);
@@ -330,16 +350,25 @@ export class WsHandler {
           this.send(PhxReply.heartbeat(msg));
           break;
         case "phx_leave":
-          // mark this wsHandler as closed
-          this.#closed = true;
+          try {
+            // stop the heartbeat
+            if (this.#hbInterval) {
+              clearInterval(this.#hbInterval);
+            }
+          } catch (e) {
+            console.error("error stopping heartbeat", e);
+          }
           try {
             // shutdown the liveview
             if (this.#ctx) {
               await this.#ctx.liveView.shutdown(this.#ctx.joinId, this.#ctx);
+              // clear out the context
+              this.#ctx = undefined;
             }
           } catch (e) {
             console.error("error shutting down liveview:" + this.#ctx?.joinId, e);
           }
+
           try {
             // unsubscribe from PubSubs
             Object.entries(this.#subscriptionIds).forEach(async ([topic, subId]) => {
@@ -466,12 +495,39 @@ export class WsHandler {
     } as LiveViewMeta;
   }
 
+  private async pushNav(
+    navEvent: "live_redirect" | "live_patch",
+    path: string,
+    params?: URLSearchParams,
+    replaceHistory: boolean = false
+  ) {
+    try {
+      // construct the outgoing message
+      const to = params ? `${path}?${params}` : path;
+      const kind = replaceHistory ? "replace" : "push";
+      const msg: Phx.Msg<Phx.LiveNavPushPayload> = [
+        null, // no join reference
+        null, // no message reference
+        this.#ctx!.joinId,
+        navEvent,
+        { kind, to },
+      ];
+      // send this back through handleMsg
+      this.handleMsg(msg);
+    } catch (e) {
+      /* istanbul ignore next */
+      console.error(`Error handling ${navEvent}`, e);
+    }
+  }
+
   // liveview socket methods
   // TODO move this to context?
-  private newLiveViewSocket(joinId: string) {
+  private newLiveViewSocket(joinId: string, url: URL) {
     return new WsLiveViewSocket(
       // id
       joinId,
+      // url
+      url,
       // pageTitleCallback
       (newTitle: string) => {
         this.#ctx!.pageTitle = newTitle;
@@ -481,11 +537,17 @@ export class WsHandler {
         this.#ctx!.pushEvents.push(pushEvent);
       },
       // pushPatchCallback
-      async (path, params, replace) => {},
+      async (path, params, replace) => {
+        await this.pushNav("live_patch", path, params, replace);
+      },
       // pushRedirectCallback
-      async (path, params, replace) => {},
+      async (path, params, replace) => {
+        await this.pushNav("live_redirect", path, params, replace);
+      },
       // putFlashCallback
-      async (key, value) => {},
+      async (key, value) => {
+        await this.#config.flashAdaptor.putFlash(this.#ctx!.sessionData, key, value);
+      },
       // sendInfoCallback
       (info) => {
         // info can be a string or an object so check it
