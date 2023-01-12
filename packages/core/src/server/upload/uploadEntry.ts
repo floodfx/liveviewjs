@@ -4,7 +4,7 @@ import { mime } from "../mime";
 import { PhxEventUpload } from "../socket/types";
 
 /**
- * A file and related metadata selected for upload
+ * UploadEntry represents a file and related metadata selected for upload
  */
 export interface UploadEntry {
   /**
@@ -14,19 +14,19 @@ export interface UploadEntry {
   /**
    * The timestamp when the file was last modified from the client's file system
    */
-  client_last_modified: number;
+  last_modified: number;
   /**
    * The name of the file from the client's file system
    */
-  client_name: string;
+  name: string;
   /**
    * The size of the file in bytes from the client's file system
    */
-  client_size: number;
+  size: number;
   /**
    * The mime type of the file from the client's file system
    */
-  client_type: string;
+  type: string;
   /**
    * True if the file has been uploaded. Defaults to false.
    */
@@ -61,17 +61,19 @@ export interface UploadEntry {
   errors: string[];
 }
 
+/**
+ * UploadEntry represents a file and related metadata selected for upload
+ */
 export class UploadEntry {
-  // private fields
   #config: UploadConfig; // the parent upload config
   #tempFile: string; // the temp file location where the file is stored
 
   constructor(upload: PhxEventUpload, config: UploadConfig) {
     this.cancelled = false;
-    this.client_last_modified = upload.last_modified;
-    this.client_name = upload.name;
-    this.client_size = upload.size;
-    this.client_type = upload.type;
+    this.last_modified = upload.last_modified;
+    this.name = upload.name;
+    this.size = upload.size;
+    this.type = upload.type;
     this.done = false;
     this.preflighted = false;
     this.progress = 0;
@@ -84,17 +86,30 @@ export class UploadEntry {
     this.validate();
   }
 
+  /**
+   * Takes in a progress percentage and updates the entry accordingly
+   * @param progress
+   */
   updateProgress(progress: number) {
+    if (progress < 0) {
+      progress = 0;
+    }
+    if (progress > 100) {
+      progress = 100;
+    }
     this.progress = progress;
     this.preflighted = progress > 0;
     this.done = progress === 100;
   }
 
+  /**
+   * Validates the file against the upload config
+   */
   validate() {
     this.errors = [];
 
     // validate file size
-    if (this.client_size > this.#config.max_file_size) {
+    if (this.size > this.#config.max_file_size) {
       this.errors.push("Too large");
     }
 
@@ -108,13 +123,13 @@ export class UploadEntry {
         if (acceptItem.startsWith(".")) {
           // extension so look up mime type (first trim off the leading dot)
           const mimeTypes = mime.lookupMimeType(acceptItem.slice(1));
-          if (mimeTypes.includes(this.client_type)) {
+          if (mimeTypes.includes(this.type)) {
             allowed = true;
             break;
           }
         } else {
           // mime type so check if it matches
-          if (acceptItem === this.client_type) {
+          if (acceptItem === this.type) {
             allowed = true;
             break;
           }
@@ -127,10 +142,18 @@ export class UploadEntry {
     this.valid = this.errors.length === 0;
   }
 
+  /**
+   * Sets the temp file path for the entry, used internally
+   * @param tempFilePath a path to the temp file
+   */
   setTempFile(tempFilePath: string) {
     this.#tempFile = tempFilePath;
   }
 
+  /**
+   * Gets the temp file path for the entry, used internally
+   * @returns the temp file path
+   */
   getTempFile() {
     return this.#tempFile;
   }

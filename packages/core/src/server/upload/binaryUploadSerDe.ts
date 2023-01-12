@@ -1,14 +1,14 @@
 import { Phx } from "../protocol/phx";
 
-// export interface PhxUploadMsg {
-//   joinRef: string;
-//   messageRef: string;
-//   topic: string;
-//   event: string;
-//   data: Buffer;
-// }
-
+/**
+ * BinaryUploadSerDe is a serializer/deserializer for binary (file) uploads from LiveViews.
+ */
 export class BinaryUploadSerDe {
+  /**
+   * Deserialize a binary upload message into a Phx.UploadMsg.
+   * @param data Buffer of binary data
+   * @returns the Phx.UploadMsg
+   */
   deserialize(data: Buffer): Phx.UploadMsg {
     // read first 5 bytes to get sizes of parts
     const sizesOffset = 5;
@@ -24,11 +24,8 @@ export class BinaryUploadSerDe {
     const topicSize = parseInt(sizes[3].toString());
     const eventSize = parseInt(sizes[4].toString());
 
-    // console.log("sizes", startSize, joinRefSize, messageRefSize, topicSize, eventSize);
-
     // read header and header parts
     const headerLength = startSize + joinRefSize + messageRefSize + topicSize + eventSize;
-
     const header = data.subarray(sizesOffset, sizesOffset + headerLength).toString();
     let start = 0;
     let end = joinRefSize;
@@ -42,7 +39,6 @@ export class BinaryUploadSerDe {
     start += topicSize;
     end += eventSize;
     const event = header.slice(start, end).toString();
-    // console.log(`onUploadBinary header: joinRef:${joinRef}, messageRef:${messageRef}, topic:${topic}, event:${event}`);
 
     // adjust data index based on message length
     const dataStartIndex = sizesOffset + headerLength;
@@ -57,6 +53,11 @@ export class BinaryUploadSerDe {
       payload,
     };
   }
+  /**
+   * Serialize a Phx.UploadMsg into a Buffer. (typically used for testing)
+   * @param value a Phx.UploadMsg
+   * @returns a Buffer of binary data
+   */
   serialize(value: Phx.UploadMsg): Buffer {
     const { joinRef, msgRef, topic, event, payload } = value;
     const joinRefSize = Buffer.byteLength(joinRef);

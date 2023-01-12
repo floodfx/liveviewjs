@@ -57,6 +57,11 @@ export function escapehtml(unsafe: unknown): string {
 // type Parts = IndexPart | StaticsPart | DynamicsPart
 export type Parts = { [key: string]: unknown };
 
+/**
+ * HtmlSafeString is what a `LiveView` returns from its `render` function.
+ * It is based on "tagged template literals" and is what allows LiveViewJS
+ * to minimize the amount of data sent to the client.
+ */
 export class HtmlSafeString {
   readonly statics: readonly string[];
   readonly dynamics: readonly unknown[];

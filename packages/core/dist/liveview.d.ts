@@ -78,7 +78,7 @@ declare type UploadConfigOptions = {
     chunk_size?: number;
 };
 /**
- * The configuration and entry related details for uploading files.
+ * UploadConfig contains configuration and entry related details for uploading files.
  */
 interface UploadConfig {
     /**
@@ -121,6 +121,9 @@ interface UploadConfig {
      */
     errors: string[];
 }
+/**
+ * UploadConfig contains configuration and entry related details for uploading files.
+ */
 declare class UploadConfig implements UploadConfig {
     constructor(name: string, options?: UploadConfigOptions);
     /**
@@ -138,6 +141,9 @@ declare class UploadConfig implements UploadConfig {
      * the entries from the config.
      */
     consumeEntries(): UploadEntry[];
+    /**
+     * Checks if the entries are valid w.r.t. max_entries, max_file_size, and mime type.
+     */
     private validate;
 }
 
@@ -258,7 +264,7 @@ declare type PhxMessage = {
 };
 
 /**
- * A file and related metadata selected for upload
+ * UploadEntry represents a file and related metadata selected for upload
  */
 interface UploadEntry {
     /**
@@ -268,19 +274,19 @@ interface UploadEntry {
     /**
      * The timestamp when the file was last modified from the client's file system
      */
-    client_last_modified: number;
+    last_modified: number;
     /**
      * The name of the file from the client's file system
      */
-    client_name: string;
+    name: string;
     /**
      * The size of the file in bytes from the client's file system
      */
-    client_size: number;
+    size: number;
     /**
      * The mime type of the file from the client's file system
      */
-    client_type: string;
+    type: string;
     /**
      * True if the file has been uploaded. Defaults to false.
      */
@@ -314,12 +320,30 @@ interface UploadEntry {
      */
     errors: string[];
 }
+/**
+ * UploadEntry represents a file and related metadata selected for upload
+ */
 declare class UploadEntry {
     #private;
     constructor(upload: PhxEventUpload, config: UploadConfig);
+    /**
+     * Takes in a progress percentage and updates the entry accordingly
+     * @param progress
+     */
     updateProgress(progress: number): void;
+    /**
+     * Validates the file against the upload config
+     */
     validate(): void;
+    /**
+     * Sets the temp file path for the entry, used internally
+     * @param tempFilePath a path to the temp file
+     */
     setTempFile(tempFilePath: string): void;
+    /**
+     * Gets the temp file path for the entry, used internally
+     * @returns the temp file path
+     */
     getTempFile(): string;
 }
 
@@ -746,7 +770,13 @@ declare class LiveViewManager {
     private newLiveComponentSocket;
 }
 
+/**
+ * Phx is a namespace for Phoenix LiveView protocol related types and functions.
+ */
 declare namespace Phx {
+    /**
+     * MsgIdx is an enum of the indexes of the Phx LiveView message tuple.
+     */
     enum MsgIdx {
         joinRef = 0,
         msgRef = 1,
@@ -754,6 +784,11 @@ declare namespace Phx {
         event = 3,
         payload = 4
     }
+    /**
+     * Msg are the messages typically send from the client to the server.
+     * The payload type varies based on the message type and,
+     * in some cases, the joinRef and/or msgRef may be null.
+     */
     type Msg<Payload = unknown> = [
         joinRef: string | null,
         msgRef: string | null,
@@ -761,32 +796,68 @@ declare namespace Phx {
         event: string,
         payload: Payload
     ];
+    /**
+     * EventPayload is the payload for a LiveView event (click, form, blur, key, etc)
+     */
     type EventPayload<T extends string = string, V = any, E extends string = string> = {
         type: T;
         event: E;
         value: V;
         cid?: number;
     };
+    /**
+     * AllowUploadPayload is the payload for the allow_upload event
+     * which is initiated during binary file uploads.
+     */
     type AllowUploadPayload = {
+        /**
+         * ref is a string that is used to identify the upload
+         */
         ref: string;
+        /**
+         * entries is an array of one or more entries to be uploaded
+         */
         entries: AllowUploadEntry[];
     };
+    /**
+     * JoinUploadPayload is the payload for the join_upload event
+     * which is initiated at the start of a binary file upload process.
+     */
     type JoinUploadPayload = {
         token: string;
     };
+    /**
+     * ProgressUploadPayload is the payload for the progress_upload event
+     * which is send (potentially multiple times, depending on the entry size and chunk size)
+     * during a binary file upload process
+     */
     type ProgressUploadPayload = {
         event: string | null;
         ref: string;
         entry_ref: string;
         progress: number;
     };
+    /**
+     * LivePatchPayload is the payload for the live_patch event
+     * which affect the url of the `LiveView`.
+     */
     type LivePatchPayload = {
         url: string;
     };
+    /**
+     * LiveNavPushPayload is the payload for the live_nav_push events
+     * either live_patch or live_redirect, both of which will change
+     * the url of the `LiveView`.
+     */
     interface LiveNavPushPayload {
         kind: "push" | "replace";
         to: string;
     }
+    /**
+     * UploadMsg is the initial type that we deserialize the binary upload message into.
+     * It is then converted into a Msg<Buffer> which is the type that is used throughout
+     * the rest of the code.
+     */
     type UploadMsg = {
         joinRef: string;
         msgRef: string;
@@ -794,8 +865,24 @@ declare namespace Phx {
         event: string;
         payload: Buffer;
     };
+    /**
+     * parse attempts to parse a string into a Msg.
+     * @param msg the string to parse
+     * @returns the parsed Msg
+     * @throws an error if the message is invalid
+     */
     function parse(msg: string): Msg;
+    /**
+     * parseBinary attempts to parse a binary buffer into a Msg<Buffer>.
+     * @param raw the binary buffer to parse
+     * @returns a Msg<Buffer>
+     */
     function parseBinary(raw: Buffer): Phx.Msg<Buffer>;
+    /**
+     * serialize serializes a Msg into a string typically for sending across the socket back to the client.
+     * @param msg the Msg to serialize
+     * @returns the serialized Msg
+     */
     function serialize(msg: Msg): string;
 }
 
@@ -813,6 +900,11 @@ declare function escapehtml(unsafe: unknown): string;
 declare type Parts = {
     [key: string]: unknown;
 };
+/**
+ * HtmlSafeString is what a `LiveView` returns from its `render` function.
+ * It is based on "tagged template literals" and is what allows LiveViewJS
+ * to minimize the amount of data sent to the client.
+ */
 declare class HtmlSafeString {
     readonly statics: readonly string[];
     readonly dynamics: readonly unknown[];
@@ -1144,7 +1236,13 @@ declare class JS {
     toString(): string;
 }
 
+/**
+ * PhxReply is a namespace for Phx protocol related types and functions typically send from the server to the client.
+ */
 declare namespace PhxReply {
+    /**
+     * Reply are the messages typically send from the server to the client.
+     */
     type Reply = [
         joinRef: string | null,
         msgRef: string | null,
@@ -1155,6 +1253,9 @@ declare namespace PhxReply {
             response?: Response;
         } | Parts | Phx.LiveNavPushPayload
     ];
+    /**
+     * Response contains different properties depending on the reply type.
+     */
     type Response = {
         rendered?: {
             [key: string]: unknown;
@@ -1167,12 +1268,57 @@ declare namespace PhxReply {
             [key: string]: unknown;
         };
     };
-    type Status = "ok" | "error";
+    /**
+     * Status is the status of the reply.
+     */
+    type Status = "ok";
+    /**
+     * renderedReply builds a reply that contains the full rendered HTML for a LiveView.
+     * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
+     * @param parts the "tree" of parts that will be used to render the client-side LiveView
+     * @returns the reply message
+     */
     function renderedReply(msg: Phx.Msg, parts: Parts): Reply;
+    /**
+     * diff builds a diff message which only contains the parts of the LiveView that have changed.
+     * As opposed to "diffReply" messages, "diff" messages are sent without an original, incoming message but rather because of
+     * a "server-side" event that triggers a change in the `LiveView`
+     * @param joinRef optional joinRef
+     * @param topic the topic (typically the LiveView's socket id)
+     * @param diff the "diffed" parts of the LiveView that have changed
+     * @returns a diff message
+     */
     function diff(joinRef: string | null, topic: string, diff: Parts): Reply;
+    /**
+     * diffReply builds a diff reply message which only contains the parts of the LiveView that have changed.
+     * As opposed to "diff" messages, "diffReply" messages are sent in response to an incoming message from the client.
+     * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
+     * @param diff the "diffed" parts of the LiveView that have changed
+     * @returns a diff reply message
+     */
     function diffReply(msg: Phx.Msg, diff: Parts): Reply;
+    /**
+     * allowUploadReply builds a reply that contains the upload configuration, the entries to be uploaded,
+     * and the "diff" of the LiveView that will be used to render the client-side LiveView.
+     * It is part of the file upload messages flow.
+     * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
+     * @param diff the "tree" of parts that will be used to render the client-side LiveView
+     * @param config the upload configuration
+     * @param entries the entries to be uploaded
+     * @returns the reply message
+     */
     function allowUploadReply(msg: Phx.Msg, diff: Parts, config: UploadConfigOptions, entries: AllowUploadEntries): Reply;
+    /**
+     * heartbeat builds a heartbeat reply message which is used to respond to a heartbeat message from the client.
+     * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
+     * @returns a heartbeat reply message
+     */
     function heartbeat(msg: Phx.Msg): Reply;
+    /**
+     * serialize serializes a reply message to a string.
+     * @param msg the message to serialize
+     * @returns a string representation of the message
+     */
     function serialize(msg: Reply): string;
 }
 
@@ -1247,24 +1393,45 @@ declare class WsMessageRouter {
     private onPhxJoin;
 }
 
+/**
+ * LiveContext sets the minimum requirements for a `LiveView` context.
+ */
 interface LiveContext {
     [key: string]: any;
 }
+/**
+ * Generic LiveContext Type that can be used for any `LiveView` context.
+ */
 interface AnyLiveContext extends LiveContext {
     [key: string]: any;
 }
+/**
+ * LiveEvent is the minimal interface for a `LiveEvent` which requires a `type` field.
+ */
 interface LiveEvent {
     type: string;
 }
+/**
+ * Generic LiveEvent Type that can be used for any `LiveEvent`.
+ */
 interface AnyLiveEvent extends LiveEvent {
     [key: string]: any;
 }
+/**
+ * LiveInfo is the minimal interface for a `LiveInfo` which requires a `type` field.
+ */
 interface LiveInfo {
     type: string;
 }
+/**
+ * Generic LiveInfo Type that can be used for any `LiveInfo`.
+ */
 interface AnyLiveInfo extends LiveInfo {
     [key: string]: any;
 }
+/**
+ * AnyLivePushEvent is the minimal interface for events that can be pushed to the client.
+ */
 interface AnyLivePushEvent extends LiveEvent {
     [key: string]: any;
 }
@@ -1338,9 +1505,10 @@ interface LiveView<TContext extends LiveContext = AnyLiveContext, TEvents extend
      */
     shutdown(id: string, content: TContext): void | Promise<void>;
 }
-declare type Event<TEvent extends LiveEvent> = TEvent["type"];
 /**
- * Meta data and helpers for `LiveView`s.
+ * Meta data and helpers for `LiveView`s passed into the `render` function of a `LiveView`.
+ * Provides readonly access to the `csrfToken`, `url`, and `uploads` for the `LiveView` along
+ * with a helper for loading `LiveComponent`s within a `LiveView`.
  */
 interface LiveViewMeta<TEvents extends LiveEvent = AnyLiveEvent> {
     /**
@@ -1780,4 +1948,4 @@ interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
     wsMiddleware(): TWsMiddleware;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, Event, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };

@@ -72,7 +72,7 @@ export const newChangesetFactory = <T>(schema: SomeZodObject): LiveViewChangeset
       // error(s) for that field
       const target = (newAttrs as any)["_target"] ?? false;
       errors = result.error.issues.reduce((acc, issue) => {
-        // TODO recursively walk the full tree of fields for the issues
+        // TODO recursively walk the full tree of fields for the issues?
         if (target) {
           if (issue.path[0] === target) {
             // @ts-ignore
