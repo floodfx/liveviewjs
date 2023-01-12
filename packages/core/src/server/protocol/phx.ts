@@ -40,6 +40,10 @@ export namespace Phx {
   export type LivePatchPayload = {
     url: string;
   };
+  export interface LiveNavPushPayload {
+    kind: "push" | "replace";
+    to: string;
+  }
 
   export type UploadMsg = {
     joinRef: string;

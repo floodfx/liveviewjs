@@ -143,6 +143,19 @@ declare type MyEvent = {
  */
 declare const jsCmdsLiveView: liveviewjs.LiveView<MyContext, MyEvent, liveviewjs.AnyLiveInfo>;
 
+/**
+ * Example showing how to use server-side live navigation.
+ */
+declare const liveNavLV: liveviewjs.LiveView<{
+    id?: string | undefined;
+}, {
+    type: "patch";
+    id: string;
+} | {
+    type: "redirect";
+    path: string;
+}, liveviewjs.AnyLiveInfo>;
+
 declare const searchLiveView: liveviewjs.LiveView<{
     zip: string;
     stores: Store[];
@@ -333,4 +346,4 @@ interface RouteDetails {
 }
 declare const routeDetails: RouteDetails[];
 
-export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloNameLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
+export { FootprintData, FootprintUpdateInfo, PaginateOptions, RouteDetails, SortOptions, autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloNameLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, liveNavLV, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };

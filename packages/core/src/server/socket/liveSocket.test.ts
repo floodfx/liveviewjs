@@ -33,6 +33,7 @@ describe("test LiveViewSocket", () => {
     uploadedEntriesCallback = jest.fn();
     wsSocket = new WsLiveViewSocket(
       "id",
+      new URL("http://example.com"),
       pageTitleCallback,
       pushEventCallback,
       pushPatchCallback,
@@ -48,21 +49,21 @@ describe("test LiveViewSocket", () => {
   });
 
   it("http mount returns context", () => {
-    const socket = new HttpLiveViewSocket<TestLVContext>("id");
+    const socket = new HttpLiveViewSocket<TestLVContext>("id", new URL("http://example.com"));
     component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     expect(socket.context.foo).toEqual("bar");
   });
 
   it("http default handleParams does NOT change context", async () => {
-    const socket = new HttpLiveViewSocket<TestLVContext>("id");
+    const socket = new HttpLiveViewSocket<TestLVContext>("id", new URL("http://example.com"));
     component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     await component.handleParams(new URL("http://example.com/?foo=baz"), socket);
     expect(socket.context.foo).toEqual("bar");
   });
 
   it("http render returns context view", async () => {
-    const socket = new HttpLiveViewSocket<TestLVContext>("id");
     const url = new URL("http://example.com/?foo=baz");
+    const socket = new HttpLiveViewSocket<TestLVContext>("id", url);
     component.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     await component.handleParams(url, socket);
     expect(socket.context.foo).toEqual("bar");
@@ -108,7 +109,8 @@ describe("test LiveViewSocket", () => {
   });
 
   it("pushRedirect works in mount and handleParams in HTTP request", () => {
-    const socket = new HttpLiveViewSocket<TestRedirectingContext>("id");
+    const url = new URL("http://example.com");
+    const socket = new HttpLiveViewSocket<TestRedirectingContext>("id", url);
     const c = new TestRedirectingLiveView();
     c.mount(socket, {}, { _csrf_token: "csrf", _mounts: -1 });
     expect(socket.redirect).toEqual({ to: "/new/path?param=mount", replace: false });
@@ -119,7 +121,8 @@ describe("test LiveViewSocket", () => {
   });
 
   it("allowUpload works in mount in HTTP", () => {
-    const socket = new HttpLiveViewSocket("id");
+    const url = new URL("http://example.com");
+    const socket = new HttpLiveViewSocket("id", url);
     const lv = createLiveView({
       mount: (socket) => {
         socket.allowUpload("myUploadName");

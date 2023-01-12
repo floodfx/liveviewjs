@@ -1196,6 +1196,8 @@ export class LiveViewManager {
     return new WsLiveViewSocket(
       // id
       this.joinId,
+      // url
+      this.url,
       // pageTitleCallback
       (newTitle: string) => {
         this.pageTitle = newTitle;

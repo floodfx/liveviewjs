@@ -1942,6 +1942,42 @@ const jsCmdsLiveView = createLiveView({
     },
 });
 
+/**
+ * Example showing how to use server-side live navigation.
+ */
+const liveNavLV = createLiveView({
+    handleParams: (url, socket) => {
+        console.log("handleParams", url);
+        if (url.searchParams.has("id")) {
+            socket.assign({ id: url.searchParams.get("id") });
+        }
+    },
+    handleEvent: (event, socket) => {
+        switch (event.type) {
+            case "patch":
+                socket.assign({ id: event.id });
+                socket.pushPatch(socket.url.pathname, new URLSearchParams({ id: event.id }));
+                break;
+            case "redirect":
+                // extract first part of path (e.g. /counter)
+                const path = socket.url.pathname.split("/")[1];
+                socket.pushRedirect("/" + path + event.path);
+                break;
+        }
+    },
+    render: async (context) => {
+        // render the view based on the state
+        const { id } = context;
+        return html `
+      <div>
+        <h1>Search ID: ${id}</h1>
+        <button phx-click="patch" phx-value-id="foo">Live Patch Search Param (to ?id=foo)</button>
+        <button phx-click="redirect" phx-value-path="/bar">Live Redirect (to /bar)</button>
+      </div>
+    `;
+    },
+});
+
 const searchLiveView = createLiveView({
     // initialState
     mount: (socket) => {
@@ -3146,4 +3182,4 @@ const routeDetails = [
     },
 ];
 
-export { autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloNameLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };
+export { autocompleteLiveView, booksLiveView, counterLiveView, dashboardLiveView, decarbLiveView, helloNameLiveView, helloToggleEmojiLiveView, jsCmdsLiveView, liveNavLV, paginateLiveView, photosLiveView, printLiveView, routeDetails, rtCounterLiveView, searchLiveView, serversLiveView, sortLiveView, volumeLiveView, volunteerLiveView, xkcdLiveView };

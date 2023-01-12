@@ -477,10 +477,12 @@ class HttpLiveViewSocket extends BaseLiveViewSocket {
     id;
     connected = false;
     uploadConfigs = {};
+    url;
     _redirect;
-    constructor(id) {
+    constructor(id, url) {
         super();
         this.id = id;
+        this.url = url;
     }
     get redirect() {
         return this._redirect;
@@ -506,6 +508,7 @@ class HttpLiveViewSocket extends BaseLiveViewSocket {
 class WsLiveViewSocket extends BaseLiveViewSocket {
     id;
     connected = true;
+    url;
     // callbacks to the ComponentManager
     pageTitleCallback;
     pushEventCallback;
@@ -518,9 +521,10 @@ class WsLiveViewSocket extends BaseLiveViewSocket {
     cancelUploadCallback;
     consumeUploadedEntriesCallback;
     uploadedEntriesCallback;
-    constructor(id, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, sendInfoCallback, subscribeCallback, allowUploadCallback, cancelUploadCallback, consumeUploadedEntriesCallback, uploadedEntriesCallback) {
+    constructor(id, url, pageTitleCallback, pushEventCallback, pushPatchCallback, pushRedirectCallback, putFlashCallback, sendInfoCallback, subscribeCallback, allowUploadCallback, cancelUploadCallback, consumeUploadedEntriesCallback, uploadedEntriesCallback) {
         super();
         this.id = id;
+        this.url = url;
         this.pageTitleCallback = pageTitleCallback;
         this.pushEventCallback = pushEventCallback;
         this.pushPatchCallback = pushPatchCallback;
@@ -1348,7 +1352,7 @@ const handleHttpLiveView = async (idGenerator, csrfGenerator, liveView, adaptor,
         sessionData._csrf_token = csrfGenerator();
     }
     // prepare a http socket for the `LiveView` render lifecycle: mount => handleParams => render
-    const liveViewSocket = new HttpLiveViewSocket(liveViewId);
+    const liveViewSocket = new HttpLiveViewSocket(liveViewId, getRequestUrl());
     // execute the `LiveView`'s `mount` function, passing in the data from the HTTP request
     await liveView.mount(liveViewSocket, { ...sessionData }, { _csrf_token: sessionData._csrf_token, _mounts: -1, ...pathParams });
     // check for redirects in `mount`
@@ -2647,6 +2651,8 @@ class LiveViewManager {
         return new WsLiveViewSocket(
         // id
         this.joinId, 
+        // url
+        this.url, 
         // pageTitleCallback
         (newTitle) => {
             this.pageTitle = newTitle;
@@ -2981,16 +2987,17 @@ async function onAllowUpload(ctx, payload) {
     // this.socket.updateContextWithTempAssigns();
 }
 
+maybeAddStructuredClone();
 class WsHandlerContext {
     #liveView;
     #socket;
     #joinId;
     #csrfToken;
-    #url;
     #pageTitle;
     #pageTitleChanged = false;
     #flash;
     #sessionData;
+    url;
     pushEvents = [];
     activeUploadRef = null;
     uploadConfigs = {};
@@ -3000,7 +3007,7 @@ class WsHandlerContext {
         this.#socket = socket;
         this.#joinId = joinId;
         this.#csrfToken = csrfToken;
-        this.#url = url;
+        this.url = url;
         this.#sessionData = sessionData;
         this.#flash = flash;
     }
@@ -3015,9 +3022,6 @@ class WsHandlerContext {
     }
     get csrfToken() {
         return this.#csrfToken;
-    }
-    get url() {
-        return this.#url;
     }
     set pageTitle(newTitle) {
         if (this.#pageTitle !== newTitle) {
@@ -3059,7 +3063,6 @@ class WsHandler {
     #subscriptionIds = {};
     #hbInterval;
     #lastHB;
-    #closed = false;
     constructor(ws, config) {
         this.#config = config;
         this.#ws = ws;
@@ -3078,10 +3081,6 @@ class WsHandler {
         this.#ws.subscribeToClose(() => this.close);
     }
     async handleMsg(msg) {
-        if (this.#closed) {
-            console.error("received message after socket closed", msg);
-            return;
-        }
         // attempt to prevent race conditions by queuing messages
         // if we are already processing a message
         if (this.#activeMsg) {
@@ -3123,7 +3122,7 @@ class WsHandler {
                             return;
                         }
                         // success! now let's initialize this liveview
-                        const socket = this.newLiveViewSocket(topic);
+                        const socket = this.newLiveViewSocket(topic, url);
                         this.#ctx = new WsHandlerContext(liveView, socket, topic, // aka joinId
                         payloadParams._csrf_token, url, sessionData, this.#config.flashAdaptor);
                         // run initial lifecycle steps for the liveview: mount => handleParams => render
@@ -3185,15 +3184,39 @@ class WsHandler {
                         console.error(`Error sending internal info`, e);
                     }
                     break;
+                case "live_redirect":
+                    const payload = msg[Phx.MsgIdx.payload];
+                    const { to } = payload;
+                    // to is relative so need to provide the urlBase determined on initial join
+                    this.#ctx.url = new URL(to, this.#ctx.url);
+                    // let the `LiveView` udpate its context based on the new url
+                    await this.#ctx.liveView.handleParams(this.#ctx.url, this.#ctx.socket);
+                    // send the message on to the client
+                    this.send(msg);
+                    break;
                 case "live_patch":
+                    // two cases of live_patch: server-side (pushPatch) or client-side (click on link)
                     try {
                         const payload = msg[Phx.MsgIdx.payload];
-                        const url = new URL(payload.url);
-                        await this.#ctx.liveView.handleParams(url, this.#ctx.socket);
-                        const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx.defaultLiveViewMeta());
-                        const diff = await this.viewToDiff(view);
-                        this.send(PhxReply.diffReply(msg, diff));
-                        this.cleanupPostReply();
+                        // case 1: client-side live_patch
+                        if (payload.hasOwnProperty("url")) {
+                            const url = new URL(payload.url);
+                            this.#ctx.url = url;
+                            await this.#ctx.liveView.handleParams(url, this.#ctx.socket);
+                            const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx.defaultLiveViewMeta());
+                            const diff = await this.viewToDiff(view);
+                            this.send(PhxReply.diffReply(msg, diff));
+                            this.cleanupPostReply();
+                            return;
+                        }
+                        // case 2: server-side live_patch
+                        const { to } = payload;
+                        // to is relative so need to provide the urlBase determined on initial join
+                        this.#ctx.url = new URL(to, this.#ctx.url);
+                        // let the `LiveView` udpate its context based on the new url
+                        await this.#ctx.liveView.handleParams(this.#ctx.url, this.#ctx.socket);
+                        // send the message on to the client
+                        this.send(msg);
                     }
                     catch (e) {
                         /* istanbul ignore next */
@@ -3242,12 +3265,21 @@ class WsHandler {
                     this.send(PhxReply.heartbeat(msg));
                     break;
                 case "phx_leave":
-                    // mark this wsHandler as closed
-                    this.#closed = true;
+                    try {
+                        // stop the heartbeat
+                        if (this.#hbInterval) {
+                            clearInterval(this.#hbInterval);
+                        }
+                    }
+                    catch (e) {
+                        console.error("error stopping heartbeat", e);
+                    }
                     try {
                         // shutdown the liveview
                         if (this.#ctx) {
                             await this.#ctx.liveView.shutdown(this.#ctx.joinId, this.#ctx);
+                            // clear out the context
+                            this.#ctx = undefined;
                         }
                     }
                     catch (e) {
@@ -3362,12 +3394,34 @@ class WsHandler {
             uploads: this.#ctx.uploadConfigs,
         };
     }
+    async pushNav(navEvent, path, params, replaceHistory = false) {
+        try {
+            // construct the outgoing message
+            const to = params ? `${path}?${params}` : path;
+            const kind = replaceHistory ? "replace" : "push";
+            const msg = [
+                null,
+                null,
+                this.#ctx.joinId,
+                navEvent,
+                { kind, to },
+            ];
+            // send this back through handleMsg
+            this.handleMsg(msg);
+        }
+        catch (e) {
+            /* istanbul ignore next */
+            console.error(`Error handling ${navEvent}`, e);
+        }
+    }
     // liveview socket methods
     // TODO move this to context?
-    newLiveViewSocket(joinId) {
+    newLiveViewSocket(joinId, url) {
         return new WsLiveViewSocket(
         // id
         joinId, 
+        // url
+        url, 
         // pageTitleCallback
         (newTitle) => {
             this.#ctx.pageTitle = newTitle;
@@ -3377,11 +3431,17 @@ class WsHandler {
             this.#ctx.pushEvents.push(pushEvent);
         }, 
         // pushPatchCallback
-        async (path, params, replace) => { }, 
+        async (path, params, replace) => {
+            await this.pushNav("live_patch", path, params, replace);
+        }, 
         // pushRedirectCallback
-        async (path, params, replace) => { }, 
+        async (path, params, replace) => {
+            await this.pushNav("live_redirect", path, params, replace);
+        }, 
         // putFlashCallback
-        async (key, value) => { }, 
+        async (key, value) => {
+            await this.#config.flashAdaptor.putFlash(this.#ctx.sessionData, key, value);
+        }, 
         // sendInfoCallback
         (info) => {
             // info can be a string or an object so check it

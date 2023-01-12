@@ -364,6 +364,10 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
      */
     readonly context: TContext;
     /**
+     * The current URL of the `LiveView`
+     */
+    readonly url: URL;
+    /**
      * `assign` is used to update the context (i.e. state) of the `LiveComponent`
      * @param context a `Partial` of the LiveView's context to update
      */
@@ -466,6 +470,7 @@ interface LiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfos e
     }>;
 }
 declare abstract class BaseLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> implements LiveViewSocket<TContext, TInfo> {
+    abstract url: URL;
     abstract connected: boolean;
     abstract id: string;
     private _context;
@@ -499,8 +504,9 @@ declare class HttpLiveViewSocket<TContext extends LiveContext = AnyLiveContext, 
     readonly uploadConfigs: {
         [name: string]: UploadConfig;
     };
+    readonly url: URL;
     private _redirect;
-    constructor(id: string);
+    constructor(id: string, url: URL);
     get redirect(): {
         to: string;
         replace: boolean;
@@ -516,6 +522,7 @@ declare class HttpLiveViewSocket<TContext extends LiveContext = AnyLiveContext, 
 declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TInfo extends LiveInfo = AnyLiveInfo> extends BaseLiveViewSocket<TContext, TInfo> {
     readonly id: string;
     readonly connected: boolean;
+    readonly url: URL;
     private pageTitleCallback;
     private pushEventCallback;
     private pushPatchCallback;
@@ -527,7 +534,7 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     private cancelUploadCallback;
     private consumeUploadedEntriesCallback;
     private uploadedEntriesCallback;
-    constructor(id: string, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void, allowUploadCallback: (name: string, options?: UploadConfigOptions) => void, cancelUploadCallback: (configName: string, ref: string) => void, consumeUploadedEntriesCallback: <T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>) => Promise<T[]>, uploadedEntriesCallback: (configName: string) => Promise<{
+    constructor(id: string, url: URL, pageTitleCallback: (newPageTitle: string) => void, pushEventCallback: (pushEvent: AnyLivePushEvent) => void, pushPatchCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, pushRedirectCallback: (path: string, params?: URLSearchParams, replaceHistory?: boolean) => void, putFlashCallback: (key: string, value: string) => void, sendInfoCallback: (info: Info<TInfo>) => void, subscribeCallback: (topic: string) => void, allowUploadCallback: (name: string, options?: UploadConfigOptions) => void, cancelUploadCallback: (configName: string, ref: string) => void, consumeUploadedEntriesCallback: <T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>) => Promise<T[]>, uploadedEntriesCallback: (configName: string) => Promise<{
         completed: UploadEntry[];
         inProgress: UploadEntry[];
     }>);
@@ -776,6 +783,10 @@ declare namespace Phx {
     type LivePatchPayload = {
         url: string;
     };
+    interface LiveNavPushPayload {
+        kind: "push" | "replace";
+        to: string;
+    }
     type UploadMsg = {
         joinRef: string;
         msgRef: string;
@@ -1138,11 +1149,11 @@ declare namespace PhxReply {
         joinRef: string | null,
         msgRef: string | null,
         topic: string,
-        event: "phx_reply" | "diff",
+        event: "phx_reply" | "diff" | "live_redirect" | "live_patch",
         payload: {
             status?: Status;
             response?: Response;
-        } | Parts
+        } | Parts | Phx.LiveNavPushPayload
     ];
     type Response = {
         rendered?: {
@@ -1175,6 +1186,7 @@ interface WsHandlerConfig {
 }
 declare class WsHandlerContext {
     #private;
+    url: URL;
     pushEvents: AnyLivePushEvent[];
     activeUploadRef: string | null;
     uploadConfigs: {
@@ -1186,7 +1198,6 @@ declare class WsHandlerContext {
     get socket(): WsLiveViewSocket<AnyLiveContext, AnyLiveInfo>;
     get joinId(): string;
     get csrfToken(): string;
-    get url(): URL;
     set pageTitle(newTitle: string);
     get hasPageTitleChanged(): boolean;
     get pageTitle(): string;
@@ -1207,6 +1218,7 @@ declare class WsHandler {
     private maybeAddTitleToView;
     private maybeWrapView;
     private newLiveViewMeta;
+    private pushNav;
     private newLiveViewSocket;
 }
 
