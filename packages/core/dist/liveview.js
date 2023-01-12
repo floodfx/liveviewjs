@@ -3197,7 +3197,6 @@ class WsHandler {
             return;
         }
         this.#activeMsg = true;
-        console.log("dispatch", msg);
         const event = msg[exports.Phx.MsgIdx.event];
         const topic = msg[exports.Phx.MsgIdx.topic];
         try {
@@ -3358,7 +3357,6 @@ class WsHandler {
                     break;
                 case "chunk":
                     try {
-                        console.log("upload", msg);
                         const replies = await onUploadBinary(this.#ctx, msg, this.#config.fileSysAdaptor);
                         for (const reply of replies) {
                             this.send(reply);
@@ -3574,7 +3572,6 @@ class WsHandler {
         }, 
         // cancelUploadCallback
         async (configName, ref) => {
-            // console.log("cancelUpload", configName, ref);
             const uploadConfig = this.#ctx.uploadConfigs[configName];
             if (uploadConfig) {
                 uploadConfig.removeEntry(ref);
@@ -3586,7 +3583,6 @@ class WsHandler {
         }, 
         // consumeUploadedEntriesCallback
         async (configName, fn) => {
-            // console.log("consomeUploadedEntries", configName, fn);
             const uploadConfig = this.#ctx.uploadConfigs[configName];
             if (uploadConfig) {
                 const inProgress = uploadConfig.entries.some((entry) => !entry.done);
@@ -3595,7 +3591,6 @@ class WsHandler {
                 }
                 // noting is in progress so we can consume
                 const entries = uploadConfig.consumeEntries();
-                console.log("entries", entries);
                 return await Promise.all(entries.map(async (entry) => await fn({ path: entry.getTempFile(), fileSystem: this.#config.fileSysAdaptor }, entry)));
             }
             console.warn(`Upload config ${configName} not found for consumeUploadedEntries`);
@@ -3603,7 +3598,6 @@ class WsHandler {
         }, 
         // uploadedEntriesCallback
         async (configName) => {
-            // console.log("uploadedEntries", configName);
             const completed = [];
             const inProgress = [];
             const uploadConfig = this.#ctx.uploadConfigs[configName];

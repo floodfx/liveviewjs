@@ -158,7 +158,6 @@ export class WsHandler {
       return;
     }
     this.#activeMsg = true;
-    console.log("dispatch", msg);
     const event = msg[Phx.MsgIdx.event];
     const topic = msg[Phx.MsgIdx.topic];
     try {
@@ -335,7 +334,6 @@ export class WsHandler {
           break;
         case "chunk":
           try {
-            console.log("upload", msg);
             const replies = await onUploadBinary(this.#ctx!, msg as Phx.Msg<Buffer>, this.#config.fileSysAdaptor);
             for (const reply of replies) {
               this.send(reply);
@@ -571,7 +569,6 @@ export class WsHandler {
       },
       // cancelUploadCallback
       async (configName, ref) => {
-        // console.log("cancelUpload", configName, ref);
         const uploadConfig = this.#ctx!.uploadConfigs[configName];
         if (uploadConfig) {
           uploadConfig.removeEntry(ref);
@@ -582,7 +579,6 @@ export class WsHandler {
       },
       // consumeUploadedEntriesCallback
       async <T>(configName: string, fn: (meta: ConsumeUploadedEntriesMeta, entry: UploadEntry) => Promise<T>) => {
-        // console.log("consomeUploadedEntries", configName, fn);
         const uploadConfig = this.#ctx!.uploadConfigs[configName];
         if (uploadConfig) {
           const inProgress = uploadConfig.entries.some((entry) => !entry.done);
@@ -591,7 +587,6 @@ export class WsHandler {
           }
           // noting is in progress so we can consume
           const entries = uploadConfig.consumeEntries();
-          console.log("entries", entries);
           return await Promise.all(
             entries.map(
               async (entry) => await fn({ path: entry.getTempFile(), fileSystem: this.#config.fileSysAdaptor }, entry)
@@ -603,7 +598,6 @@ export class WsHandler {
       },
       // uploadedEntriesCallback
       async (configName) => {
-        // console.log("uploadedEntries", configName);
         const completed: UploadEntry[] = [];
         const inProgress: UploadEntry[] = [];
         const uploadConfig = this.#ctx!.uploadConfigs[configName];
