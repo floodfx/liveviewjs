@@ -1,7 +1,15 @@
-import { RedisClientOptions, RedisClientType } from "@node-redis/client";
+import {
+  createClient,
+  RedisClientOptions,
+  RedisClientType,
+  RedisFunctions,
+  RedisModules,
+  RedisScripts,
+} from "@redis/client";
 import crypto from "crypto";
-import { createClient } from "redis";
 import { Publisher, Subscriber, SubscriberFunction } from "liveviewjs";
+
+type RedisClient = RedisClientType<RedisModules, RedisFunctions, RedisScripts>;
 
 /**
  * A PubSub implementation that uses Redis as a backend.
@@ -10,8 +18,8 @@ import { Publisher, Subscriber, SubscriberFunction } from "liveviewjs";
  * See: https://github.com/redis/node-redis#pubsub
  */
 export class RedisPubSub implements Subscriber, Publisher {
-  private redis: RedisClientType;
-  private subscribers: Record<string, RedisClientType> = {};
+  private redis: RedisClient;
+  private subscribers: { [key: string]: RedisClient } = {};
 
   constructor(options: RedisClientOptions) {
     this.redis = createClient(options);
