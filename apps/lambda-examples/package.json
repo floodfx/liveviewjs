@@ -1,6 +1,6 @@
 {
   "name": "@liveviewjs/lambda-examples",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "start": "ts-node ./src/example/autorun.ts",
@@ -27,13 +27,13 @@
   "license": "MIT",
   "dependencies": {
     "@liveviewjs/examples": "*",
-    "@liveviewjs/express": "*",    
+    "@liveviewjs/express": "*",
     "liveviewjs": "*",
     "nanoid": "^3.2.0"
   },
   "devDependencies": {
     "@aws-cdk/aws-apigatewayv2-alpha": "^2.46.0-alpha.0",
-    "@aws-cdk/aws-apigatewayv2-integrations-alpha": "^2.46.0-alpha.0",    
+    "@aws-cdk/aws-apigatewayv2-integrations-alpha": "^2.46.0-alpha.0",
     "@types/aws-lambda": "^8.10.108",
     "@types/node": "^18.7.8",
     "@types/nprogress": "^0.2.0",
