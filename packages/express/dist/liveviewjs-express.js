@@ -162,6 +162,7 @@ class NodeExpressLiveViewServer {
             flashAdaptor: this.flashAdapter,
             pubSub: this.pubSub,
             onError: options === null || options === void 0 ? void 0 : options.onError,
+            debug: options === null || options === void 0 ? void 0 : options.debug,
         }, "f");
     }
     wsMiddleware() {

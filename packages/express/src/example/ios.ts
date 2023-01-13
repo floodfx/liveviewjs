@@ -1,23 +1,21 @@
 import express, { NextFunction, Request, Response } from "express";
 import session, { MemoryStore } from "express-session";
 import { Server } from "http";
-import { LiveViewRouter, SessionFlashAdaptor, SingleProcessPubSub } from "liveviewjs";
-import { nanoid } from "nanoid";
-import { NodeFileSystemAdatptor } from "src/node/fsAdaptor";
+import { LiveViewRouter } from "liveviewjs";
 import { WebSocketServer } from "ws";
-import { NodeJwtSerDe } from "../node/jwtSerDe";
 import { NodeExpressLiveViewServer } from "../node/server";
-import { NodeWsAdaptor } from "../node/wsAdaptor";
 import { indexHandler } from "./indexHandler";
 import { iosPageRenderer, iosRootRenderer } from "./iosRenderers";
-import { iosLiveView } from "./liveview/ios";
+import { catLive } from "./liveview/ios/cat";
+import { catListLive } from "./liveview/ios/catList";
 
 // you'd want to set this to some secure, random string in production
 const signingSecret = "MY_VERY_SECRET_KEY";
 
 // map request paths to LiveViews
 const router: LiveViewRouter = {
-  "/ios": iosLiveView,
+  "/cats": catListLive,
+  "/cats/:cat": catLive,
 };
 
 // configure your express app
@@ -59,13 +57,14 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // initialize the LiveViewServer
 const liveView = new NodeExpressLiveViewServer(
   router,
-  new NodeJwtSerDe(signingSecret),
-  new SingleProcessPubSub(),
   iosPageRenderer,
-  { title: "Express Demo", suffix: " · LiveViewJS" },
-  new SessionFlashAdaptor(),
-  new NodeFileSystemAdatptor(),
-  iosRootRenderer
+  { title: "iOS Demo", suffix: " · LiveViewJS" },
+  {
+    serDeSigningSecret: signingSecret,
+    wrapperTemplate: iosRootRenderer,
+    onError: (err) => console.error(err),
+    debug: (msg) => console.log(msg),
+  }
 );
 
 // setup the LiveViewJS middleware
@@ -84,20 +83,8 @@ const wsServer = new WebSocketServer({
 httpServer.on("request", app);
 
 // initialize the LiveViewJS websocket message router
-const liveViewRouter = liveView.wsRouter();
-
-// send websocket requests to the LiveViewJS message router
-wsServer.on("connection", (ws) => {
-  const connectionId = nanoid();
-  ws.on("message", async (message, isBinary) => {
-    // pass websocket messages to LiveViewJS
-    await liveViewRouter.onMessage(connectionId, message, new NodeWsAdaptor(ws), isBinary);
-  });
-  ws.on("close", async () => {
-    // pass websocket close events to LiveViewJS
-    await liveViewRouter.onClose(connectionId);
-  });
-});
+const liveViewWsMiddleware = liveView.wsMiddleware();
+liveViewWsMiddleware(wsServer);
 
 // listen for requests
 const port = process.env.PORT || 4001;

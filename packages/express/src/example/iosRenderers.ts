@@ -1,10 +1,10 @@
 import {
   html,
-  LiveViewPageRenderer,
-  LiveViewRootRenderer,
+  LiveTitleOptions,
+  LiveViewHtmlPageTemplate,
   LiveViewTemplate,
+  LiveViewWrapperTemplate,
   live_title_tag,
-  PageTitleDefaults,
   safe,
   SessionData,
   SessionFlashAdaptor,
@@ -14,19 +14,19 @@ import {
  * Render function for the "root" of the LiveView.  Expected that this function will
  * embed the LiveView inside and contain the necessary HTML tags to make the LiveView
  * work including the client javascript.
- * @param pageTitleDefaults the PageTitleDefauls that should be used for the title tag especially if it is a `live_title_tag`
+ * @param liveTitleOptions the PageTitleDefauls that should be used for the title tag especially if it is a `live_title_tag`
  * @param csrfToken the CSRF token value that should be embedded into a <meta/> tag named "csrf-token". LiveViewJS uses this to validate socket requests
  * @param liveViewContent the content rendered by the LiveView
  * @returns a LiveViewTemplate that can be rendered by the LiveViewJS server
  */
-export const iosPageRenderer: LiveViewPageRenderer = (
-  pageTitleDefaults: PageTitleDefaults,
+export const iosPageRenderer: LiveViewHtmlPageTemplate = (
+  liveTitleOptions: LiveTitleOptions,
   csrfToken: string,
   liveViewContent: LiveViewTemplate
 ): LiveViewTemplate => {
-  const pageTitle = pageTitleDefaults?.title ?? "";
-  const pageTitlePrefix = pageTitleDefaults?.prefix ?? "";
-  const pageTitleSuffix = pageTitleDefaults?.suffix ?? "";
+  const pageTitle = liveTitleOptions?.title ?? "";
+  const pageTitlePrefix = liveTitleOptions?.prefix ?? "";
+  const pageTitleSuffix = liveTitleOptions?.suffix ?? "";
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -54,7 +54,7 @@ export const iosPageRenderer: LiveViewPageRenderer = (
  * @param liveViewContent the content rendered by the LiveView
  * @returns a LiveViewTemplate to be embedded in the root template
  */
-export const iosRootRenderer: LiveViewRootRenderer = async (
+export const iosRootRenderer: LiveViewWrapperTemplate = async (
   session: SessionData,
   liveViewContent: LiveViewTemplate
 ): Promise<LiveViewTemplate> => {
