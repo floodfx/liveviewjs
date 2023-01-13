@@ -1330,6 +1330,7 @@ interface WsHandlerConfig {
     flashAdaptor: FlashAdaptor;
     pubSub: PubSub;
     onError?: (err: any) => void;
+    debug?(msg: string): void;
 }
 declare class WsHandlerContext {
     #private;

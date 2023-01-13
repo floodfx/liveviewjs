@@ -2966,6 +2966,9 @@ async function handleEvent(ctx, payload) {
         ctx.clearFlash(key);
     }
     else {
+        if (typeof value === "string" || typeof value === "number") {
+            value = { value };
+        }
         await ctx.liveView.handleEvent({ type: event, ...value }, ctx.socket);
     }
     return await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
@@ -3183,6 +3186,14 @@ class WsHandler {
         this.#ws.subscribeToClose(() => this.close);
     }
     async handleMsg(msg) {
+        if (this.#config.debug) {
+            try {
+                this.#config.debug(JSON.stringify(msg));
+            }
+            catch (e) {
+                console.error("error debugging message", e);
+            }
+        }
         try {
             // attempt to prevent race conditions by queuing messages
             // if we are already processing a message
