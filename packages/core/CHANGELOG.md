@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.8.2
+
+### Patch Changes
+
+- fb4fbaa: Event value can be a non-object, so fix that and add debug hook while we are at it.
+
 ## 0.8.1
 
 ### Patch Changes
