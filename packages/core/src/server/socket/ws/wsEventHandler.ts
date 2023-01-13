@@ -51,7 +51,7 @@ type HookPayload = Phx.EventPayload<"hook", Record<string, string>>;
 export async function handleEvent(ctx: WsHandlerContext, payload: Phx.EventPayload): Promise<LiveViewTemplate> {
   const { type, event, cid } = payload;
 
-  let value: { [key: string]: unknown } = {};
+  let value: { [key: string]: unknown } | string = {};
   switch (type) {
     case "click":
     case "keyup":
@@ -106,6 +106,9 @@ export async function handleEvent(ctx: WsHandlerContext, payload: Phx.EventPaylo
     const key = clearFlashPayload.value.key;
     ctx.clearFlash(key);
   } else {
+    if (typeof value === "string" || typeof value === "number") {
+      value = { value };
+    }
     await ctx.liveView.handleEvent({ type: event, ...value }, ctx.socket);
   }
 

@@ -33,6 +33,7 @@ export interface WsHandlerConfig {
   flashAdaptor: FlashAdaptor;
   pubSub: PubSub;
   onError?: (err: any) => void;
+  debug?(msg: string): void;
 }
 
 export class WsHandlerContext {
@@ -152,6 +153,13 @@ export class WsHandler {
   }
 
   async handleMsg(msg: Phx.Msg<unknown>) {
+    if (this.#config.debug) {
+      try {
+        this.#config.debug(JSON.stringify(msg));
+      } catch (e) {
+        console.error("error debugging message", e);
+      }
+    }
     try {
       // attempt to prevent race conditions by queuing messages
       // if we are already processing a message
