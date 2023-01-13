@@ -51,7 +51,7 @@ type HookPayload = Phx.EventPayload<"hook", Record<string, string>>;
 export async function handleEvent(ctx: WsHandlerContext, payload: Phx.EventPayload): Promise<LiveViewTemplate> {
   const { type, event, cid } = payload;
 
-  let value: { [key: string]: unknown } | string = {};
+  let value: { [key: string]: unknown } | string | number = {};
   switch (type) {
     case "click":
     case "keyup":
