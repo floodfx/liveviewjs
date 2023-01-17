@@ -2,6 +2,6 @@
 
 ![LiveViewJS Logo](liveviewjs-logo.png)
 
-*An HTML-first, GSD-focused library for building LiveViews in NodeJS and Deno*
+*An HTML-first, "Get Stuff Done"-focused library for building LiveViews in NodeJS and Deno*
 
-Documentation: [LiveViewJS.com](https://www.liveviewjs.com)
+Learn more at [LiveViewJS.com](https://www.liveviewjs.com)
