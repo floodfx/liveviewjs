@@ -3,6 +3,6 @@
  * e.g. NodeExpressServerAdaptor or DenoOakServerAdaptor
  */
 export interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
-  httpMiddleware(): THttpMiddleware;
-  wsMiddleware(): TWsMiddleware;
+  httpMiddleware: THttpMiddleware;
+  wsMiddleware: TWsMiddleware;
 }

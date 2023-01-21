@@ -1078,8 +1078,8 @@ const live_patch = (anchorBody, options) => {
     return html `<a data-phx-link="patch" data-phx-link-state="push" href="${safe(buildHref(options))}"${options.className ? safe(` class="${options.className}"`) : ""}>${anchorBody}</a>`;
 };
 
-const live_title_tag = (title, options) => {
-    const { prefix, suffix } = options ?? {};
+const live_title_tag = (options) => {
+    const { title, prefix, suffix } = options;
     const prefix_data = prefix ? safe(` data-prefix="${prefix}"`) : "";
     const suffix_data = suffix ? safe(` data-suffix="${suffix}"`) : "";
     return html `<title${prefix_data}${suffix_data}>${prefix ?? ""}${title}${suffix ?? ""}</title>`;

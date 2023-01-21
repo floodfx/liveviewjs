@@ -1,0 +1,43 @@
+import {
+  autocompleteLiveView,
+  booksLiveView,
+  counterLiveView,
+  dashboardLiveView,
+  decarbLiveView,
+  helloNameLiveView,
+  helloToggleEmojiLiveView,
+  jsCmdsLiveView,
+  LiveViewRouter,
+  paginateLiveView,
+  photosLiveView,
+  printLiveView,
+  searchLiveView,
+  serversLiveView,
+  sortLiveView,
+  volumeLiveView,
+  volunteerLiveView,
+  xkcdLiveView,
+} from "../../deps.ts";
+import { rtCounterLiveView } from "../liveview/rtcounter.ts";
+
+// configure the LiveViewRouter with the LiveViews
+export const liveRouter: LiveViewRouter = {
+  "/autocomplete": autocompleteLiveView,
+  "/decarbonize": decarbLiveView,
+  "/prints": printLiveView,
+  "/volume": volumeLiveView,
+  "/paginate": paginateLiveView,
+  "/dashboard": dashboardLiveView,
+  "/search": searchLiveView,
+  "/servers": serversLiveView,
+  "/sort": sortLiveView,
+  "/volunteers": volunteerLiveView,
+  "/counter": counterLiveView,
+  "/jscmds": jsCmdsLiveView,
+  "/photos": photosLiveView,
+  "/xkcd": xkcdLiveView,
+  "/rtcounter": rtCounterLiveView,
+  "/books": booksLiveView,
+  "/helloToggle": helloToggleEmojiLiveView,
+  "/hi/:name": helloNameLiveView,
+};
