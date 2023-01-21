@@ -1,6 +1,6 @@
 {
   "name": "@liveviewjs/express",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "Library for easy integration of LiveView into Express.js applications",
   "exports": {
     "require": "./dist/liveviewjs-express.js",
