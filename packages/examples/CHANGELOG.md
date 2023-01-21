@@ -1,5 +1,16 @@
 # @liveviewjs/examples
 
+## 0.9.0
+
+### Minor Changes
+
+- 5689b18: Complete refactoring by adding support for LiveComponents
+
+### Patch Changes
+
+- Updated dependencies [5689b18]
+  - liveviewjs@0.9.0
+
 ## 0.8.2
 
 ### Patch Changes
