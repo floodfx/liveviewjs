@@ -1,5 +1,6 @@
-import { Phx } from "src/server/protocol/phx";
+import { Parts } from "src/server/templates";
 import { LiveViewTemplate } from "../../../server/live";
+import { Phx } from "../../../server/protocol/phx";
 import { UploadEntry } from "../../../server/upload";
 import { WsHandlerContext } from "./wsHandler";
 
@@ -48,7 +49,7 @@ type BlurPayload = Phx.EventPayload<"blur", { value: string }>;
 // {type: "hook", event: "edit", value: {id: "abc"}}
 type HookPayload = Phx.EventPayload<"hook", Record<string, string>>;
 
-export async function handleEvent(ctx: WsHandlerContext, payload: Phx.EventPayload): Promise<LiveViewTemplate> {
+export async function handleEvent(ctx: WsHandlerContext, payload: Phx.EventPayload): Promise<LiveViewTemplate | Parts> {
   const { type, event, cid } = payload;
 
   let value: { [key: string]: unknown } | string | number = {};
@@ -97,20 +98,23 @@ export async function handleEvent(ctx: WsHandlerContext, payload: Phx.EventPaylo
       throw new Error(`Unknown event type: ${type}`);
   }
 
-  // if the payload has a cid, then this event's target is a `LiveComponent`
-  // TODO - reimplement LiveComponent
-
   // for "lv:clear-flash" events we don't need to call handleEvent
   if (event === "lv:clear-flash") {
     const clearFlashPayload = payload as LVClearFlashPayload;
     const key = clearFlashPayload.value.key;
     ctx.clearFlash(key);
+    // render the live view with the cleared flash
+    return await ctx.liveView.render(ctx.socket.context, ctx.newMeta());
   } else {
     if (typeof value === "string" || typeof value === "number") {
       value = { value };
     }
-    await ctx.liveView.handleEvent({ type: event, ...value }, ctx.socket);
+    if (!cid) {
+      // target is the LiveView
+      await ctx.liveView.handleEvent({ type: event, ...value }, ctx.socket);
+      return await ctx.liveView.render(ctx.socket.context, ctx.newMeta());
+    }
+    // target is a LiveComponent
+    return await ctx.components.handleEvent(cid, { type: event, ...value });
   }
-
-  return await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
 }

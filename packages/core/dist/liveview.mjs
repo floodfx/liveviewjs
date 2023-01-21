@@ -1,8 +1,8 @@
 
 /// <reference types="./liveview.d.ts" />
+import crypto from 'crypto';
 import { match } from 'path-to-regexp';
 import { nanoid } from 'nanoid';
-import crypto from 'crypto';
 import EventEmitter from 'events';
 
 class BaseLiveComponentSocket {
@@ -59,6 +59,7 @@ class WsLiveComponentSocket extends BaseLiveComponentSocket {
  * perhaps `update` as well.  See `LiveComponent` for more details.
  */
 class BaseLiveComponent {
+    hash;
     // preload(contextsList: Context[]): Partial<Context>[] {
     //   return contextsList;
     // }
@@ -75,7 +76,10 @@ class BaseLiveComponent {
  * @returns the `LiveComponent` instance
  */
 const createLiveComponent = (params) => {
+    // calculate the component's hash
+    const hash = hashLiveComponent(params);
     return {
+        hash,
         // default imps
         mount: () => { },
         update: () => { },
@@ -83,6 +87,18 @@ const createLiveComponent = (params) => {
         ...params,
     };
 };
+/**
+ * Calculates the "hash" (opaque string) of a `LiveComponent` given its `CreateLiveComponentParams`.
+ * @param c
+ * @returns
+ */
+function hashLiveComponent(c) {
+    const code = (c.mount?.toString() ?? "") +
+        (c.update?.toString() ?? "") +
+        (c.render?.toString() ?? "") +
+        (c.handleEvent?.toString() ?? "");
+    return crypto.createHash("sha1").update(code).digest("hex");
+}
 
 /**
  * Abstract `LiveView` class that is easy to extend for any class-based `LiveView`
@@ -2957,21 +2973,207 @@ async function handleEvent(ctx, payload) {
         default:
             throw new Error(`Unknown event type: ${type}`);
     }
-    // if the payload has a cid, then this event's target is a `LiveComponent`
-    // TODO - reimplement LiveComponent
     // for "lv:clear-flash" events we don't need to call handleEvent
     if (event === "lv:clear-flash") {
         const clearFlashPayload = payload;
         const key = clearFlashPayload.value.key;
         ctx.clearFlash(key);
+        // render the live view with the cleared flash
+        return await ctx.liveView.render(ctx.socket.context, ctx.newMeta());
     }
     else {
         if (typeof value === "string" || typeof value === "number") {
             value = { value };
         }
-        await ctx.liveView.handleEvent({ type: event, ...value }, ctx.socket);
+        if (!cid) {
+            // target is the LiveView
+            await ctx.liveView.handleEvent({ type: event, ...value }, ctx.socket);
+            return await ctx.liveView.render(ctx.socket.context, ctx.newMeta());
+        }
+        // target is a LiveComponent
+        return await ctx.components.handleEvent(cid, { type: event, ...value });
     }
-    return await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
+}
+
+/**
+ * The LiveComponentsContext is used to manage the lifecycle of `LiveComponent`s
+ * for a `LiveView` instance.
+ */
+class LiveComponentsContext {
+    #hashToComponent = {};
+    #idToState = {};
+    #cidIndex = 1;
+    #joinId;
+    #onSendInfo;
+    #onPushEvent;
+    constructor(joinId, onSendInfo, onPushEvent) {
+        this.#joinId = joinId;
+        this.#onSendInfo = onSendInfo;
+        this.#onPushEvent = onPushEvent;
+    }
+    /**
+     * Returns an array of all the LiveComponent instances.
+     */
+    all() {
+        // TODO could be good place to "preload" all the components of the same type?
+        return Object.values(this.#idToState);
+    }
+    /**
+     * `load` runs a "stateless" or "stateful" lifecycle for the given `LiveComponent` and params
+     * based on the presence of an `id` param. For "stateful", components we run the lifecycle
+     * and store the state of the component and use it for subsequent renders and return a "placeholder"
+     * LiveViewTemplate.  For "stateless" components we run the lifecycle
+     * and simply return the rendered LiveViewTemplate.
+     * @param c the `LiveComponent` to load
+     * @param params the params to initialize the `LiveComponent` lifecycle with
+     */
+    async load(c, params = {}) {
+        // TODO - determine how to collect all the live components of the same type
+        // and preload them all at once
+        const pid = params.id;
+        delete params.id; // remove id from param to use as default context
+        // LiveComponents with "id" attributes are "stateful" which means the state of
+        // context is maintained across multiple renders and it can "handleEvents"
+        // Note: the id is how events are routed back to the `LiveComponent`
+        if (pid !== undefined) {
+            // stateful `LiveComponent`
+            // lifecycle is:
+            //   On First Load:
+            //     preload => mount => update => render
+            //   On Subsequent Loads:
+            //     update => render
+            //   On Events:
+            //     handleEvent => render
+            // check if component state exists for this component
+            const { hash } = c;
+            const id = `${hash}_${pid}`;
+            let state = this.#idToState[id];
+            let socket;
+            if (state === undefined) {
+                // if no state then this is the first load so we use the params
+                // and call preload (eventually) and mount
+                socket = this.newSocket(params);
+                await c.mount(socket);
+                // create component state
+                state = {
+                    id: id,
+                    // changed: true,
+                    cid: this.nextCid(),
+                    hash: hash,
+                    context: socket.context,
+                    parts: {},
+                };
+            }
+            // we only need the context and cid for update and render
+            const { context, cid } = state;
+            // We have either just mounted or are on a subsequent load
+            // and either case we continue with update => render
+            socket = this.newSocket(structuredClone(context));
+            await c.update(socket);
+            const newView = c.render({ ...socket.context }, { myself: cid });
+            // let's save the component and the state
+            this.saveComponent(hash, c);
+            this.saveState(id, {
+                ...state,
+                context: socket.context,
+                parts: newView.partsTree(true),
+            });
+            // since "stateful" components are sent back as part of the render
+            // tree (under the `c` key) we return a "placeholder" HtmlSafeString
+            // that includes the cid of the component
+            return new HtmlSafeString([String(cid)], [], true);
+        }
+        // If we've gotten here there was no "id" param
+        // so this is a "stateless" `LiveComponent`
+        // warn user if `handleEvent` is implemented that it cannot be called
+        if (c.handleEvent) {
+            console.warn(`a LiveComponent has a handleEvent method but no "id" attribute so it cannot be targeted.`);
+        }
+        // for "stateless" components lifecycle is always:
+        // preload => mount => update => render
+        // TODO preload
+        const socket = this.newSocket(structuredClone(params));
+        await c.mount(socket);
+        await c.update(socket);
+        // since this is a stateless component, we send back the LiveViewTemplate
+        return c.render(socket.context, { myself: pid });
+    }
+    /**
+     * handleEvent routes an event to the correct `LiveComponent` instance based on the
+     * `cid` (component id), runs the handleEvent => render lifecycle,
+     * saves the updated state of the component and returns the Parts "tree" to be
+     * sent back to the client.
+     *
+     * @param cid the component id from the client event
+     * @param event the event from the client
+     * @returns the Parts "tree" to be sent back to the client
+     */
+    async handleEvent(cid, event) {
+        // TODO - reimplement LiveComponent
+        // handleLiveComponentEvent()
+        // console.log("LiveComponent event", type, cid, event, value);
+        // find stateful component data by cid
+        const state = this.findState(cid);
+        if (state === undefined) {
+            throw new Error(`Could not find component for cid:${cid}`);
+        }
+        const { context, parts, id } = state;
+        const c = this.findComponent(id);
+        if (!c) {
+            throw new Error(`Could not find component for id:${id}, cid:${cid}`);
+        }
+        const socket = this.newSocket(structuredClone(context));
+        // check for handleEvent and call it if it exists
+        if (!c.handleEvent) {
+            // istanbul ignore next
+            console.warn(`LiveComponent with cid:${cid} has not implemented handleEvent() method`);
+        }
+        else {
+            // run handleEvent and render then update context for cid
+            await c.handleEvent(event, socket);
+        }
+        // re-render component
+        const newView = await c.render(socket.context, { myself: cid });
+        const newParts = newView.partsTree(true);
+        // store state for subsequent loads
+        this.saveState(id, {
+            ...state,
+            context: socket.context,
+            parts: newParts,
+        });
+        //diff the new view with the old view
+        const diff = deepDiff(parts, newParts);
+        return {
+            c: {
+                // use cid to identify component to update
+                [`${cid}`]: diff,
+            },
+        };
+    }
+    findComponent(id) {
+        const state = this.#idToState[id];
+        if (state) {
+            return this.#hashToComponent[state.hash];
+        }
+        return undefined;
+    }
+    saveComponent(hash, component) {
+        if (!this.#hashToComponent[hash]) {
+            this.#hashToComponent[hash] = component;
+        }
+    }
+    findState(cid) {
+        return Object.values(this.#idToState).find((state) => state.cid === cid);
+    }
+    saveState(id, state) {
+        this.#idToState[id] = state;
+    }
+    newSocket(context) {
+        return new WsLiveComponentSocket(this.#joinId, context, (info) => this.#onSendInfo(info), (event) => this.#onPushEvent(event));
+    }
+    nextCid() {
+        return this.#cidIndex++;
+    }
 }
 
 async function onUploadBinary(ctx, msg, fileSystem) {
@@ -3038,7 +3240,7 @@ async function onProgressUpload(ctx, payload) {
         // istanbul ignore next
         console.error("Received progress upload but could not find upload config for ref", ref);
     }
-    return await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
+    return await ctx.liveView.render(ctx.socket.context, ctx.newMeta());
 }
 async function onAllowUpload(ctx, payload) {
     const { ref, entries } = payload;
@@ -3061,7 +3263,7 @@ async function onAllowUpload(ctx, payload) {
             console.error("Error serializing entry", e);
         }
     });
-    const view = await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
+    const view = await ctx.liveView.render(ctx.socket.context, ctx.newMeta());
     return {
         entries: entriesReply,
         config: uc,
@@ -3102,12 +3304,13 @@ class WsHandlerContext {
     #pageTitleChanged = false;
     #flash;
     #sessionData;
+    components;
     url;
     pushEvents = [];
     activeUploadRef = null;
     uploadConfigs = {};
     parts = {};
-    constructor(liveView, socket, joinId, csrfToken, url, sessionData, flash) {
+    constructor(liveView, socket, joinId, csrfToken, url, sessionData, flash, onSendInfo, onPushEvent) {
         this.#liveView = liveView;
         this.#socket = socket;
         this.#joinId = joinId;
@@ -3115,6 +3318,7 @@ class WsHandlerContext {
         this.url = url;
         this.#sessionData = sessionData;
         this.#flash = flash;
+        this.components = new LiveComponentsContext(joinId, onSendInfo, onPushEvent);
     }
     get liveView() {
         return this.#liveView;
@@ -3144,13 +3348,10 @@ class WsHandlerContext {
     get sessionData() {
         return this.#sessionData;
     }
-    defaultLiveViewMeta() {
+    newMeta() {
         return {
             csrfToken: this.csrfToken,
-            live_component: async (liveComponent, params) => {
-                // TODO - reimplement live components
-                throw new Error("Not implemented");
-            },
+            live_component: async (liveComponent, params) => await this.components.load(liveComponent, params),
             url: this.url,
             uploads: this.uploadConfigs,
         };
@@ -3185,6 +3386,13 @@ class WsHandler {
         });
         this.#ws.subscribeToClose(() => this.close);
     }
+    /**
+     * handleMsg is the main entry point for handling messages from both the websocket
+     * and internal messages from the LiveView. It is responsible for routing messages
+     * based on the message event and topic. It also handles queuing messages if a message
+     * is already being processed since we want to ensure that messages are processed in order.
+     * @param msg a Phx.Msg to be routed
+     */
     async handleMsg(msg) {
         if (this.#config.debug) {
             try {
@@ -3202,6 +3410,7 @@ class WsHandler {
                 return;
             }
             this.#activeMsg = true;
+            // we route based on the event and topic
             const event = msg[Phx.MsgIdx.event];
             const topic = msg[Phx.MsgIdx.topic];
             switch (event) {
@@ -3234,13 +3443,13 @@ class WsHandler {
                             return;
                         }
                         // success! now let's initialize this liveview
-                        const socket = this.newLiveViewSocket(topic, url);
+                        const socket = this.newSocket(topic, url);
                         this.#ctx = new WsHandlerContext(liveView, socket, topic, // aka joinId
-                        payloadParams._csrf_token, url, sessionData, this.#config.flashAdaptor);
+                        payloadParams._csrf_token, url, sessionData, this.#config.flashAdaptor, this.handleSendInfo.bind(this), this.handlePushEvent.bind(this));
                         // run initial lifecycle steps for the liveview: mount => handleParams => render
                         await this.#ctx.liveView.mount(this.#ctx.socket, sessionData, { ...payloadParams, ...pathParams.params });
                         await this.#ctx.liveView.handleParams(url, this.#ctx.socket);
-                        const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.newLiveViewMeta());
+                        const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx.newMeta());
                         // convert the view into a parts tree
                         const rendered = await this.viewToRendered(view);
                         // send the response and cleanup
@@ -3272,8 +3481,12 @@ class WsHandler {
                 case "event":
                     try {
                         const payload = msg[Phx.MsgIdx.payload];
-                        const view = await handleEvent(this.#ctx, payload);
-                        const diff = await this.viewToDiff(view);
+                        let diff = await handleEvent(this.#ctx, payload);
+                        // check if diff is a LiveViewTemplate, if so, convert to a diff
+                        // note: using HtmlSafeString because instanceof requires a class not an interface/alias
+                        if (diff instanceof HtmlSafeString) {
+                            diff = await this.viewToDiff(diff);
+                        }
                         this.send(PhxReply.diffReply(msg, diff));
                         this.cleanupPostReply();
                     }
@@ -3286,7 +3499,7 @@ class WsHandler {
                         const payload = msg[Phx.MsgIdx.payload];
                         // lifecycle handleInfo => render
                         await this.#ctx.liveView.handleInfo(payload, this.#ctx.socket);
-                        const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx.defaultLiveViewMeta());
+                        const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx.newMeta());
                         const diff = await this.viewToDiff(view);
                         this.send(PhxReply.diff(null, this.#ctx.joinId, diff));
                         this.cleanupPostReply();
@@ -3315,7 +3528,7 @@ class WsHandler {
                             const url = new URL(payload.url);
                             this.#ctx.url = url;
                             await this.#ctx.liveView.handleParams(url, this.#ctx.socket);
-                            const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx.defaultLiveViewMeta());
+                            const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx.newMeta());
                             const diff = await this.viewToDiff(view);
                             this.send(PhxReply.diffReply(msg, diff));
                             this.cleanupPostReply();
@@ -3428,14 +3641,14 @@ class WsHandler {
     }
     send(reply) {
         try {
-            this.#ws.send(PhxReply.serialize(reply), this.maybeHandleError);
+            this.#ws.send(PhxReply.serialize(reply), this.maybeHandleError.bind(this));
         }
         catch (e) {
             this.maybeHandleError(e);
         }
     }
     maybeHandleError(err) {
-        if (err && this.#config.onError) {
+        if (err && this.#config && this.#config.onError) {
             this.#config.onError(err);
         }
     }
@@ -3451,7 +3664,8 @@ class WsHandler {
         let diff = deepDiff(this.#ctx.parts, newParts);
         // store newParts for future diffs
         this.#ctx.parts = newParts;
-        // TODO
+        // now add the components, events, and title parts
+        diff = this.maybeAddLiveComponentsToParts(diff);
         diff = this.maybeAddEventsToParts(diff);
         return this.maybeAddTitleToView(diff);
     }
@@ -3460,11 +3674,11 @@ class WsHandler {
         view = await this.maybeWrapView(view);
         // step 2: store parts for later diffing after rootTemplate is applied
         let parts = view.partsTree(true);
-        // TODO
         // step 3: add any `LiveComponent` renderings to the parts tree
-        // let rendered = this.maybeAddLiveComponentsToParts(parts);
+        parts = this.maybeAddLiveComponentsToParts(parts);
+        // step 4: add any push events to the parts tree
         parts = this.maybeAddEventsToParts(parts);
-        // step 4: if set, add the page title to the parts tree
+        // step 5: if set, add the page title to the parts tree
         parts = this.maybeAddTitleToView(parts);
         // set the parts tree on the context
         this.#ctx.parts = parts;
@@ -3502,18 +3716,21 @@ class WsHandler {
         }
         return view;
     }
-    // LiveViewMeta
-    newLiveViewMeta() {
+    maybeAddLiveComponentsToParts(parts) {
+        const components = this.#ctx.components.all();
+        if (components.length === 0) {
+            return parts;
+        }
+        const cParts = {};
+        // aggregate all the parts from the changed live components
+        Object.values(components).forEach((lc) => {
+            const { cid, parts } = lc;
+            cParts[`${cid}`] = parts;
+        });
+        // update parts tree with the changed live components
         return {
-            csrfToken: this.#ctx.csrfToken,
-            // live_component: async <TContext extends LiveContext = AnyLiveContext>(
-            //   liveComponent: LiveComponent<TContext>,
-            //   params?: Partial<TContext & { id: string | number }>
-            // ): Promise<LiveViewTemplate> => {
-            //   return await this.liveComponentProcessor<TContext>(liveComponent, params);
-            // },
-            url: this.#ctx.url,
-            uploads: this.#ctx.uploadConfigs,
+            ...parts,
+            c: cParts,
         };
     }
     async pushNav(navEvent, path, params, replaceHistory = false) {
@@ -3536,9 +3753,20 @@ class WsHandler {
             console.error(`Error handling ${navEvent}`, e);
         }
     }
+    handlePushEvent(event) {
+        this.#ctx.pushEvents.push(event);
+    }
+    handleSendInfo(info) {
+        // info can be a string or an object so check it
+        // if it's a string, we need to convert it to a LiveInfo object
+        if (typeof info === "string") {
+            info = { type: info };
+        }
+        this.handleMsg([null, null, this.#ctx.joinId, "info", info]);
+    }
     // liveview socket methods
     // TODO move this to context?
-    newLiveViewSocket(joinId, url) {
+    newSocket(joinId, url) {
         return new WsLiveViewSocket(
         // id
         joinId, 
@@ -3549,9 +3777,7 @@ class WsHandler {
             this.#ctx.pageTitle = newTitle;
         }, 
         // pushEventCallback
-        (pushEvent) => {
-            this.#ctx.pushEvents.push(pushEvent);
-        }, 
+        this.handlePushEvent.bind(this), 
         // pushPatchCallback
         async (path, params, replace) => {
             await this.pushNav("live_patch", path, params, replace);
@@ -3565,14 +3791,7 @@ class WsHandler {
             await this.#config.flashAdaptor.putFlash(this.#ctx.sessionData, key, value);
         }, 
         // sendInfoCallback
-        (info) => {
-            // info can be a string or an object so check it
-            // if it's a string, we need to convert it to a LiveInfo object
-            if (typeof info === "string") {
-                info = { type: info };
-            }
-            this.handleMsg([null, null, this.#ctx.joinId, "info", info]);
-        }, 
+        this.handleSendInfo.bind(this), 
         // subscribeCallback
         async (topic) => {
             const subId = await this.#config.pubSub.subscribe(topic, (info) => {
@@ -3756,4 +3975,4 @@ class WsMessageRouter {
     }
 }
 
-export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, JS, LiveViewManager, Phx, SessionFlashAdaptor, SingleProcessPubSub, UploadConfig, UploadEntry, WsHandler, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
+export { BaseLiveComponent, BaseLiveView, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, JS, LiveViewManager, Phx, SessionFlashAdaptor, SingleProcessPubSub, UploadConfig, UploadEntry, WsHandler, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, hashLiveComponent, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };

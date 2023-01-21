@@ -163,7 +163,7 @@ class TestHttpAdaptor implements HttpRequestAdaptor {
 }
 
 class TestLiveComponent extends BaseLiveComponent {
-  render(context: AnyLiveContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate> {
+  render(context: AnyLiveContext, meta: LiveComponentMeta): LiveViewTemplate {
     return html`<div>Test Live Component: ${meta.myself}</div>`;
   }
 }
