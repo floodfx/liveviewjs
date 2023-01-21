@@ -19,14 +19,13 @@ import {
   WsHandlerConfig,
 } from "liveviewjs";
 import { nanoid } from "nanoid";
-import { WebSocketServer } from "ws";
+import WebSocket from "ws";
 import { NodeFileSystemAdatptor as NodeFileSystemAdaptor } from "./fsAdaptor";
 import { NodeJwtSerDe } from "./jwtSerDe";
 import { NodeWsAdaptor } from "./wsAdaptor";
 
 interface NodeExpressLiveViewServerOptions {
   serDe?: SerDe;
-  serDeSigningSecret?: string;
   pubSub?: PubSub;
   flashAdaptor?: FlashAdaptor;
   fileSystemAdaptor?: FileSystemAdaptor;
@@ -35,9 +34,9 @@ interface NodeExpressLiveViewServerOptions {
   debug?: (msg: string) => void;
 }
 
-export class NodeExpressLiveViewServer
-  implements LiveViewServerAdaptor<RequestHandler, (wsServer: WebSocketServer) => Promise<void>>
-{
+type WsRequestHandler = (ws: WebSocket.WebSocket) => WsHandler;
+
+export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler, WsRequestHandler> {
   private router: LiveViewRouter;
   private serDe: SerDe;
   private flashAdapter: FlashAdaptor;
@@ -51,11 +50,12 @@ export class NodeExpressLiveViewServer
   constructor(
     router: LiveViewRouter,
     htmlPageTemplate: LiveViewHtmlPageTemplate,
+    signingSecret: string,
     liveTitleOptions: LiveTitleOptions,
     options?: NodeExpressLiveViewServerOptions
   ) {
     this.router = router;
-    this.serDe = options?.serDe ?? new NodeJwtSerDe(options?.serDeSigningSecret ?? nanoid());
+    this.serDe = options?.serDe ?? new NodeJwtSerDe(signingSecret);
     this.flashAdapter = options?.flashAdaptor ?? new SessionFlashAdaptor();
     this.pubSub = options?.pubSub ?? new SingleProcessPubSub();
     this.fileSystem = options?.fileSystemAdaptor ?? new NodeFileSystemAdaptor();
@@ -74,14 +74,11 @@ export class NodeExpressLiveViewServer
     };
   }
 
-  wsMiddleware(): (wsServer: WebSocketServer) => Promise<void> {
-    return async (wsServer: WebSocketServer) => {
-      // send websocket requests to the LiveViewJS message router
-      wsServer.on("connection", (ws) => new WsHandler(new NodeWsAdaptor(ws), this.#config));
-    };
+  get wsMiddleware(): WsRequestHandler {
+    return (ws) => new WsHandler(new NodeWsAdaptor(ws), this.#config);
   }
 
-  httpMiddleware(): RequestHandler {
+  get httpMiddleware(): RequestHandler {
     return async (req: Request, res: Response, next: NextFunction) => {
       try {
         const adaptor = new ExpressRequestAdaptor(req, res, this.serDe);

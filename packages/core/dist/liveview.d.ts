@@ -963,11 +963,7 @@ interface LiveTitleOptions {
     title: string;
 }
 
-interface LiveTitleTagOptions {
-    prefix?: string;
-    suffix?: string;
-}
-declare const live_title_tag: (title: string, options?: LiveTitleTagOptions) => HtmlSafeString;
+declare const live_title_tag: (options: LiveTitleOptions) => HtmlSafeString;
 
 declare type Options = string[] | Record<string, string>;
 declare type Selected = string | string[];
@@ -2035,8 +2031,8 @@ declare const mime: Mime;
  * e.g. NodeExpressServerAdaptor or DenoOakServerAdaptor
  */
 interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
-    httpMiddleware(): THttpMiddleware;
-    wsMiddleware(): TWsMiddleware;
+    httpMiddleware: THttpMiddleware;
+    wsMiddleware: TWsMiddleware;
 }
 
 export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, hashLiveComponent, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };

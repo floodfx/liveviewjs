@@ -31,6 +31,7 @@ interface DenoOakLiveViewServerOptions {
   fileSystemAdaptor?: FileSystemAdaptor;
   wrapperTemplate?: LiveViewWrapperTemplate;
   onError?: (err: any) => void;
+  debug?: (msg: string) => void;
 }
 
 type DenoMiddleware = (
@@ -89,10 +90,11 @@ export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddlewa
       flashAdaptor: this.flashAdapter,
       pubSub: this.pubSub,
       onError: options?.onError,
+      debug: options?.debug,
     };
   }
 
-  wsMiddleware(): (ctx: Context<Record<string, any>, Record<string, any>>) => Promise<void> {
+  get wsMiddleware(): (ctx: Context<Record<string, any>, Record<string, any>>) => Promise<void> {
     return async (ctx: Context<Record<string, any>, Record<string, any>>) => {
       // upgrade the request to a websocket connection
       const ws = await ctx.upgrade();
@@ -101,7 +103,7 @@ export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddlewa
     };
   }
 
-  httpMiddleware(): (
+  get httpMiddleware(): (
     ctx: Context<Record<string, any>, Record<string, any>>,
     next: () => Promise<unknown>
   ) => Promise<void> {
