@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.9.1
+
+### Patch Changes
+
+- 2920d49: Refactor LiveViewServer interface and NodeJS / Deno boilerplate
+
 ## 0.9.0
 
 ### Minor Changes

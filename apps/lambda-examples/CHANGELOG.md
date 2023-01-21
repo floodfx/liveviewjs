@@ -1,5 +1,15 @@
 # @liveviewjs/lambda-examples
 
+## 0.2.1
+
+### Patch Changes
+
+- 2920d49: Refactor LiveViewServer interface and NodeJS / Deno boilerplate
+- Updated dependencies [2920d49]
+  - liveviewjs@0.9.1
+  - @liveviewjs/examples@0.9.1
+  - @liveviewjs/express@0.9.1
+
 ## 0.2.0
 
 ### Minor Changes
