@@ -24,9 +24,6 @@ export const iosPageRenderer: LiveViewHtmlPageTemplate = (
   csrfToken: string,
   liveViewContent: LiveViewTemplate
 ): LiveViewTemplate => {
-  const pageTitle = liveTitleOptions?.title ?? "";
-  const pageTitlePrefix = liveTitleOptions?.prefix ?? "";
-  const pageTitleSuffix = liveTitleOptions?.suffix ?? "";
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -35,7 +32,7 @@ export const iosPageRenderer: LiveViewHtmlPageTemplate = (
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="csrf-token" content="${csrfToken}" />
-        ${live_title_tag(pageTitle, { prefix: pageTitlePrefix, suffix: pageTitleSuffix })}
+        ${live_title_tag(liveTitleOptions)}
         <script
           defer
           type="text/javascript"

@@ -133,14 +133,14 @@ _NodeWsAdaptor_ws = new WeakMap();
 
 var _NodeExpressLiveViewServer_config;
 class NodeExpressLiveViewServer {
-    constructor(router, htmlPageTemplate, liveTitleOptions, options) {
-        var _a, _b, _c, _d, _e;
+    constructor(router, htmlPageTemplate, signingSecret, liveTitleOptions, options) {
+        var _a, _b, _c, _d;
         _NodeExpressLiveViewServer_config.set(this, void 0);
         this.router = router;
-        this.serDe = (_a = options === null || options === void 0 ? void 0 : options.serDe) !== null && _a !== void 0 ? _a : new NodeJwtSerDe((_b = options === null || options === void 0 ? void 0 : options.serDeSigningSecret) !== null && _b !== void 0 ? _b : nanoid());
-        this.flashAdapter = (_c = options === null || options === void 0 ? void 0 : options.flashAdaptor) !== null && _c !== void 0 ? _c : new SessionFlashAdaptor();
-        this.pubSub = (_d = options === null || options === void 0 ? void 0 : options.pubSub) !== null && _d !== void 0 ? _d : new SingleProcessPubSub();
-        this.fileSystem = (_e = options === null || options === void 0 ? void 0 : options.fileSystemAdaptor) !== null && _e !== void 0 ? _e : new NodeFileSystemAdatptor();
+        this.serDe = (_a = options === null || options === void 0 ? void 0 : options.serDe) !== null && _a !== void 0 ? _a : new NodeJwtSerDe(signingSecret);
+        this.flashAdapter = (_b = options === null || options === void 0 ? void 0 : options.flashAdaptor) !== null && _b !== void 0 ? _b : new SessionFlashAdaptor();
+        this.pubSub = (_c = options === null || options === void 0 ? void 0 : options.pubSub) !== null && _c !== void 0 ? _c : new SingleProcessPubSub();
+        this.fileSystem = (_d = options === null || options === void 0 ? void 0 : options.fileSystemAdaptor) !== null && _d !== void 0 ? _d : new NodeFileSystemAdatptor();
         this.htmlPageTemplate = htmlPageTemplate;
         this.liveTitleOptions = liveTitleOptions;
         this.wrapperTemplate = options === null || options === void 0 ? void 0 : options.wrapperTemplate;
@@ -155,13 +155,10 @@ class NodeExpressLiveViewServer {
             debug: options === null || options === void 0 ? void 0 : options.debug,
         }, "f");
     }
-    wsMiddleware() {
-        return async (wsServer) => {
-            // send websocket requests to the LiveViewJS message router
-            wsServer.on("connection", (ws) => new WsHandler(new NodeWsAdaptor(ws), __classPrivateFieldGet(this, _NodeExpressLiveViewServer_config, "f")));
-        };
+    get wsMiddleware() {
+        return (ws) => new WsHandler(new NodeWsAdaptor(ws), __classPrivateFieldGet(this, _NodeExpressLiveViewServer_config, "f"));
     }
-    httpMiddleware() {
+    get httpMiddleware() {
         return async (req, res, next) => {
             try {
                 const adaptor = new ExpressRequestAdaptor(req, res, this.serDe);

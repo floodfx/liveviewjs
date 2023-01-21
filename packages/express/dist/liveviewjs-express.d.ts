@@ -1,8 +1,8 @@
 /// <reference types="node" />
-import { FileSystemAdaptor, SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, LiveViewHtmlPageTemplate, LiveTitleOptions, PubSub, FlashAdaptor, LiveViewWrapperTemplate, WsAdaptor, WsMsgListener, WsCloseListener } from 'liveviewjs';
+import { FileSystemAdaptor, SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, LiveViewHtmlPageTemplate, LiveTitleOptions, PubSub, FlashAdaptor, LiveViewWrapperTemplate, WsHandler, WsAdaptor, WsMsgListener, WsCloseListener } from 'liveviewjs';
 import { RedisClientOptions } from 'redis';
 import { RequestHandler } from 'express';
-import { WebSocketServer, WebSocket } from 'ws';
+import WebSocket, { WebSocket as WebSocket$1 } from 'ws';
 
 declare class NodeFileSystemAdatptor implements FileSystemAdaptor {
     tempPath(lastPathPart: string): string;
@@ -37,7 +37,6 @@ declare class RedisPubSub implements Subscriber, Publisher {
 
 interface NodeExpressLiveViewServerOptions {
     serDe?: SerDe;
-    serDeSigningSecret?: string;
     pubSub?: PubSub;
     flashAdaptor?: FlashAdaptor;
     fileSystemAdaptor?: FileSystemAdaptor;
@@ -45,7 +44,8 @@ interface NodeExpressLiveViewServerOptions {
     onError?: (err: any) => void;
     debug?: (msg: string) => void;
 }
-declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler, (wsServer: WebSocketServer) => Promise<void>> {
+declare type WsRequestHandler = (ws: WebSocket.WebSocket) => WsHandler;
+declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler, WsRequestHandler> {
     #private;
     private router;
     private serDe;
@@ -55,9 +55,9 @@ declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<Request
     private htmlPageTemplate;
     private liveTitleOptions;
     private wrapperTemplate?;
-    constructor(router: LiveViewRouter, htmlPageTemplate: LiveViewHtmlPageTemplate, liveTitleOptions: LiveTitleOptions, options?: NodeExpressLiveViewServerOptions);
-    wsMiddleware(): (wsServer: WebSocketServer) => Promise<void>;
-    httpMiddleware(): RequestHandler;
+    constructor(router: LiveViewRouter, htmlPageTemplate: LiveViewHtmlPageTemplate, signingSecret: string, liveTitleOptions: LiveTitleOptions, options?: NodeExpressLiveViewServerOptions);
+    get wsMiddleware(): WsRequestHandler;
+    get httpMiddleware(): RequestHandler;
 }
 
 /**
@@ -66,7 +66,7 @@ declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<Request
  */
 declare class NodeWsAdaptor implements WsAdaptor {
     #private;
-    constructor(ws: WebSocket);
+    constructor(ws: WebSocket$1);
     subscribeToMessages(msgListener: WsMsgListener): void | Promise<void>;
     subscribeToClose(closeListener: WsCloseListener): void | Promise<void>;
     send(message: string, errorHandler?: (err: any) => void): void;
