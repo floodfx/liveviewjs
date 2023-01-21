@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { LiveViewTemplate } from ".";
 import { Info } from "../socket";
 import {
@@ -155,6 +156,7 @@ export interface LiveComponent<
   TEvents extends LiveEvent = AnyLiveEvent,
   TInfo extends LiveInfo = AnyLiveInfo
 > {
+  readonly hash: string;
   /**
    * `preload` is useful when multiple `LiveComponent`s of the same type are loaded
    * within the same `LiveView` and you want to preload data for all of them in batch.
@@ -197,7 +199,7 @@ export interface LiveComponent<
    * @param context the current state for this `LiveComponent`
    * @param meta a `LiveComponentMeta` with additional meta data for this `LiveComponent`
    */
-  render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+  render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate;
 }
 
 /**
@@ -214,6 +216,7 @@ export abstract class BaseLiveComponent<
   TInfo extends LiveInfo = AnyLiveInfo
 > implements LiveComponent<TContext, TEvents, TInfo>
 {
+  readonly hash: string;
   // preload(contextsList: Context[]): Partial<Context>[] {
   //   return contextsList;
   // }
@@ -228,7 +231,7 @@ export abstract class BaseLiveComponent<
 
   // leave handleEvent unimplemented by default
 
-  abstract render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+  abstract render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate;
 }
 
 /**
@@ -244,7 +247,7 @@ interface CreateLiveComponentParams<
   mount?: (socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
   update?: (socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
   handleEvent?: (event: TEvents, socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
-  render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+  render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate;
 }
 
 /**
@@ -259,7 +262,10 @@ export const createLiveComponent = <
 >(
   params: CreateLiveComponentParams<TContext, TEvents, TInfos>
 ): LiveComponent<TContext, TEvents, TInfos> => {
+  // calculate the component's hash
+  const hash = hashLiveComponent(params);
   return {
+    hash,
     // default imps
     mount: () => {},
     update: () => {},
@@ -267,3 +273,21 @@ export const createLiveComponent = <
     ...params,
   };
 };
+
+/**
+ * Calculates the "hash" (opaque string) of a `LiveComponent` given its `CreateLiveComponentParams`.
+ * @param c
+ * @returns
+ */
+export function hashLiveComponent<
+  TContext extends LiveContext = AnyLiveContext,
+  TEvents extends LiveEvent = AnyLiveEvent,
+  TInfos extends LiveInfo = AnyLiveInfo
+>(c: CreateLiveComponentParams<TContext, TEvents, TInfos>): string {
+  const code =
+    (c.mount?.toString() ?? "") +
+    (c.update?.toString() ?? "") +
+    (c.render?.toString() ?? "") +
+    (c.handleEvent?.toString() ?? "");
+  return crypto.createHash("sha1").update(code).digest("hex");
+}

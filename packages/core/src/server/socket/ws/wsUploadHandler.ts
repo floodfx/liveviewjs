@@ -86,7 +86,7 @@ export async function onProgressUpload(
     console.error("Received progress upload but could not find upload config for ref", ref);
   }
 
-  return await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
+  return await ctx.liveView.render(ctx.socket.context, ctx.newMeta());
 }
 
 export type AllowUploadEntries = { [key: string]: string };
@@ -121,7 +121,7 @@ export async function onAllowUpload(
     }
   });
 
-  const view = await ctx.liveView.render(ctx.socket.context, ctx.defaultLiveViewMeta());
+  const view = await ctx.liveView.render(ctx.socket.context, ctx.newMeta());
   return {
     entries: entriesReply,
     config: uc,

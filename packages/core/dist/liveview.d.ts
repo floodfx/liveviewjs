@@ -1322,6 +1322,76 @@ declare namespace PhxReply {
     function serialize(msg: Reply): string;
 }
 
+/**
+ * State kept for each `LiveComponent` instance.
+ */
+declare class LiveComponentState<TContext extends LiveContext = AnyLiveContext> {
+    /**
+     * id (`${hash}_${params.id}`) of the component which is used to uniquely identify it
+     * across the entire application.
+     */
+    id: string;
+    /**
+     * The last calculated state of the component.
+     */
+    context: TContext;
+    /**
+     * The last `Parts` tree rendered by the component.
+     */
+    parts: Parts;
+    /**
+     * The internal componentId as calculated by the component manager as an
+     * index into when the component was parsed via render.
+     */
+    cid: number;
+    /**
+     * The hash of the component (based on the serialized code), used for grouping components of the
+     * same type together and running `handleEvent`s.
+     */
+    hash: string;
+}
+/**
+ * The LiveComponentsContext is used to manage the lifecycle of `LiveComponent`s
+ * for a `LiveView` instance.
+ */
+declare class LiveComponentsContext {
+    #private;
+    constructor(joinId: string, onSendInfo: (info: Info<AnyLiveInfo>) => void, onPushEvent: (event: AnyLivePushEvent) => void);
+    /**
+     * Returns an array of all the LiveComponent instances.
+     */
+    all(): LiveComponentState[];
+    /**
+     * `load` runs a "stateless" or "stateful" lifecycle for the given `LiveComponent` and params
+     * based on the presence of an `id` param. For "stateful", components we run the lifecycle
+     * and store the state of the component and use it for subsequent renders and return a "placeholder"
+     * LiveViewTemplate.  For "stateless" components we run the lifecycle
+     * and simply return the rendered LiveViewTemplate.
+     * @param c the `LiveComponent` to load
+     * @param params the params to initialize the `LiveComponent` lifecycle with
+     */
+    load<TContext extends LiveContext>(c: LiveComponent<TContext>, params?: Partial<TContext & {
+        id?: number | string;
+    }>): Promise<LiveViewTemplate>;
+    /**
+     * handleEvent routes an event to the correct `LiveComponent` instance based on the
+     * `cid` (component id), runs the handleEvent => render lifecycle,
+     * saves the updated state of the component and returns the Parts "tree" to be
+     * sent back to the client.
+     *
+     * @param cid the component id from the client event
+     * @param event the event from the client
+     * @returns the Parts "tree" to be sent back to the client
+     */
+    handleEvent(cid: number, event: AnyLiveEvent): Promise<Parts>;
+    private findComponent;
+    private saveComponent;
+    private findState;
+    private saveState;
+    private newSocket;
+    private nextCid;
+}
+
 interface WsHandlerConfig {
     serDe: SerDe;
     router: LiveViewRouter;
@@ -1334,6 +1404,7 @@ interface WsHandlerConfig {
 }
 declare class WsHandlerContext {
     #private;
+    components: LiveComponentsContext;
     url: URL;
     pushEvents: AnyLivePushEvent[];
     activeUploadRef: string | null;
@@ -1341,7 +1412,7 @@ declare class WsHandlerContext {
         [key: string]: UploadConfig;
     };
     parts: Parts;
-    constructor(liveView: LiveView, socket: WsLiveViewSocket, joinId: string, csrfToken: string, url: URL, sessionData: SessionData, flash: FlashAdaptor);
+    constructor(liveView: LiveView, socket: WsLiveViewSocket, joinId: string, csrfToken: string, url: URL, sessionData: SessionData, flash: FlashAdaptor, onSendInfo: (info: Info<AnyLiveInfo>) => void, onPushEvent: (event: AnyLivePushEvent) => void);
     get liveView(): LiveView<AnyLiveContext, AnyLiveEvent, AnyLiveInfo>;
     get socket(): WsLiveViewSocket<AnyLiveContext, AnyLiveInfo>;
     get joinId(): string;
@@ -1350,12 +1421,19 @@ declare class WsHandlerContext {
     get hasPageTitleChanged(): boolean;
     get pageTitle(): string;
     get sessionData(): SessionData;
-    defaultLiveViewMeta(): LiveViewMeta;
+    newMeta(): LiveViewMeta;
     clearFlash(key: string): Promise<void>;
 }
 declare class WsHandler {
     #private;
     constructor(ws: WsAdaptor, config: WsHandlerConfig);
+    /**
+     * handleMsg is the main entry point for handling messages from both the websocket
+     * and internal messages from the LiveView. It is responsible for routing messages
+     * based on the message event and topic. It also handles queuing messages if a message
+     * is already being processed since we want to ensure that messages are processed in order.
+     * @param msg a Phx.Msg to be routed
+     */
     handleMsg(msg: Phx.Msg<unknown>): Promise<void>;
     close(): Promise<void>;
     send(reply: PhxReply.Reply): void;
@@ -1366,9 +1444,11 @@ declare class WsHandler {
     private maybeAddEventsToParts;
     private maybeAddTitleToView;
     private maybeWrapView;
-    private newLiveViewMeta;
+    private maybeAddLiveComponentsToParts;
     private pushNav;
-    private newLiveViewSocket;
+    handlePushEvent(event: AnyLivePushEvent): void;
+    handleSendInfo(info: Info<AnyLiveInfo>): void;
+    private newSocket;
 }
 
 /**
@@ -1526,7 +1606,7 @@ interface LiveViewMeta<TEvents extends LiveEvent = AnyLiveEvent> {
     /**
      * A helper for loading `LiveComponent`s within a `LiveView`.
      */
-    live_component<TContext extends LiveContext = AnyLiveContext>(liveComponent: LiveComponent<TContext, any, any>, params?: Partial<TContext & {
+    live_component<TContext extends LiveContext = AnyLiveContext, TEvent extends LiveEvent = AnyLiveEvent, TInfo extends LiveInfo = AnyLiveInfo>(liveComponent: LiveComponent<TContext, TEvent, TInfo>, params?: Partial<TContext & {
         id: string | number;
     }>): Promise<LiveViewTemplate>;
     /**
@@ -1662,6 +1742,7 @@ declare class WsLiveComponentSocket<TContext extends LiveContext = AnyLiveContex
  * `LiveView` template.
  */
 interface LiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfo extends LiveInfo = AnyLiveInfo> {
+    readonly hash: string;
     /**
      * `preload` is useful when multiple `LiveComponent`s of the same type are loaded
      * within the same `LiveView` and you want to preload data for all of them in batch.
@@ -1699,7 +1780,7 @@ interface LiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents e
      * @param context the current state for this `LiveComponent`
      * @param meta a `LiveComponentMeta` with additional meta data for this `LiveComponent`
      */
-    render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+    render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate;
 }
 /**
  * Abstract base class implementation of a `LiveComponent` which can be used by
@@ -1710,9 +1791,10 @@ interface LiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents e
  * perhaps `update` as well.  See `LiveComponent` for more details.
  */
 declare abstract class BaseLiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfo extends LiveInfo = AnyLiveInfo> implements LiveComponent<TContext, TEvents, TInfo> {
+    readonly hash: string;
     mount(socket: LiveComponentSocket<TContext, TInfo>): void;
     update(socket: LiveComponentSocket<TContext, TInfo>): void;
-    abstract render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+    abstract render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate;
 }
 /**
  * Shape of parameters passed to the `createLiveComponent` factory function to create a `LiveComponent`.
@@ -1723,7 +1805,7 @@ interface CreateLiveComponentParams<TContext extends LiveContext = AnyLiveContex
     mount?: (socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
     update?: (socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
     handleEvent?: (event: TEvents, socket: LiveComponentSocket<TContext, TInfos>) => void | Promise<void>;
-    render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate | Promise<LiveViewTemplate>;
+    render(context: TContext, meta: LiveComponentMeta): LiveViewTemplate;
 }
 /**
  * Creates a `LiveComponent` given the `CreateLiveComponentParams` and shape of the `LiveContext`, `LiveEvent` and `LiveInfo`.
@@ -1731,6 +1813,12 @@ interface CreateLiveComponentParams<TContext extends LiveContext = AnyLiveContex
  * @returns the `LiveComponent` instance
  */
 declare const createLiveComponent: <TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo>(params: CreateLiveComponentParams<TContext, TEvents, TInfos>) => LiveComponent<TContext, TEvents, TInfos>;
+/**
+ * Calculates the "hash" (opaque string) of a `LiveComponent` given its `CreateLiveComponentParams`.
+ * @param c
+ * @returns
+ */
+declare function hashLiveComponent<TContext extends LiveContext = AnyLiveContext, TEvents extends LiveEvent = AnyLiveEvent, TInfos extends LiveInfo = AnyLiveInfo>(c: CreateLiveComponentParams<TContext, TEvents, TInfos>): string;
 
 /**
  * Maps a route to a LiveView.
@@ -1951,4 +2039,4 @@ interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
     wsMiddleware(): TWsMiddleware;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, hashLiveComponent, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };

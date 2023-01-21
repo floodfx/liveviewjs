@@ -16,12 +16,13 @@ import { Phx } from "../../protocol/phx";
 import { PhxReply } from "../../protocol/reply";
 import { PubSub } from "../../pubsub";
 import { SessionData } from "../../session";
-import { deepDiff, Parts, safe } from "../../templates";
+import { deepDiff, HtmlSafeString, Parts, safe } from "../../templates";
 import { UploadConfig, UploadEntry } from "../../upload";
-import { ConsumeUploadedEntriesMeta, WsLiveViewSocket } from "../liveSocket";
+import { ConsumeUploadedEntriesMeta, Info, WsLiveViewSocket } from "../liveSocket";
 import { maybeAddStructuredClone } from "../structuredClone";
 import { PhxJoinPayload } from "../types";
 import { handleEvent } from "./wsEventHandler";
+import { LiveComponentsContext } from "./wsLiveComponents";
 import { onAllowUpload, onProgressUpload, onUploadBinary } from "./wsUploadHandler";
 maybeAddStructuredClone();
 
@@ -45,6 +46,7 @@ export class WsHandlerContext {
   #pageTitleChanged: boolean = false;
   #flash: FlashAdaptor;
   #sessionData: SessionData;
+  components: LiveComponentsContext;
   url: URL;
   pushEvents: AnyLivePushEvent[] = [];
   activeUploadRef: string | null = null;
@@ -58,7 +60,9 @@ export class WsHandlerContext {
     csrfToken: string,
     url: URL,
     sessionData: SessionData,
-    flash: FlashAdaptor
+    flash: FlashAdaptor,
+    onSendInfo: (info: Info<AnyLiveInfo>) => void,
+    onPushEvent: (event: AnyLivePushEvent) => void
   ) {
     this.#liveView = liveView;
     this.#socket = socket;
@@ -67,6 +71,7 @@ export class WsHandlerContext {
     this.url = url;
     this.#sessionData = sessionData;
     this.#flash = flash;
+    this.components = new LiveComponentsContext(joinId, onSendInfo, onPushEvent);
   }
 
   get liveView() {
@@ -105,16 +110,13 @@ export class WsHandlerContext {
     return this.#sessionData;
   }
 
-  defaultLiveViewMeta(): LiveViewMeta {
+  newMeta(): LiveViewMeta {
     return {
       csrfToken: this.csrfToken,
       live_component: async <TContext extends LiveContext = AnyLiveContext>(
         liveComponent: LiveComponent<TContext>,
         params?: Partial<TContext & { id: string | number }>
-      ): Promise<LiveViewTemplate> => {
-        // TODO - reimplement live components
-        throw new Error("Not implemented");
-      },
+      ): Promise<LiveViewTemplate> => await this.components.load(liveComponent, params),
       url: this.url,
       uploads: this.uploadConfigs,
     } as LiveViewMeta;
@@ -152,7 +154,14 @@ export class WsHandler {
     this.#ws.subscribeToClose(() => this.close);
   }
 
-  async handleMsg(msg: Phx.Msg<unknown>) {
+  /**
+   * handleMsg is the main entry point for handling messages from both the websocket
+   * and internal messages from the LiveView. It is responsible for routing messages
+   * based on the message event and topic. It also handles queuing messages if a message
+   * is already being processed since we want to ensure that messages are processed in order.
+   * @param msg a Phx.Msg to be routed
+   */
+  async handleMsg(msg: Phx.Msg<unknown>): Promise<void> {
     if (this.#config.debug) {
       try {
         this.#config.debug(JSON.stringify(msg));
@@ -168,6 +177,8 @@ export class WsHandler {
         return;
       }
       this.#activeMsg = true;
+
+      // we route based on the event and topic
       const event = msg[Phx.MsgIdx.event];
       const topic = msg[Phx.MsgIdx.topic];
       switch (event) {
@@ -210,7 +221,7 @@ export class WsHandler {
             }
 
             // success! now let's initialize this liveview
-            const socket = this.newLiveViewSocket(topic, url);
+            const socket = this.newSocket(topic, url);
             this.#ctx = new WsHandlerContext(
               liveView,
               socket,
@@ -218,13 +229,15 @@ export class WsHandler {
               payloadParams._csrf_token,
               url,
               sessionData,
-              this.#config.flashAdaptor
+              this.#config.flashAdaptor,
+              this.handleSendInfo.bind(this),
+              this.handlePushEvent.bind(this)
             );
 
             // run initial lifecycle steps for the liveview: mount => handleParams => render
             await this.#ctx.liveView.mount(this.#ctx.socket, sessionData, { ...payloadParams, ...pathParams.params });
             await this.#ctx.liveView.handleParams(url, this.#ctx.socket);
-            const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.newLiveViewMeta());
+            const view = await this.#ctx.liveView.render(this.#ctx.socket.context, this.#ctx!.newMeta());
 
             // convert the view into a parts tree
             const rendered = await this.viewToRendered(view);
@@ -256,8 +269,12 @@ export class WsHandler {
         case "event":
           try {
             const payload = msg[Phx.MsgIdx.payload] as Phx.EventPayload;
-            const view = await handleEvent(this.#ctx!, payload);
-            const diff = await this.viewToDiff(view);
+            let diff = await handleEvent(this.#ctx!, payload);
+            // check if diff is a LiveViewTemplate, if so, convert to a diff
+            // note: using HtmlSafeString because instanceof requires a class not an interface/alias
+            if (diff instanceof HtmlSafeString) {
+              diff = await this.viewToDiff(diff);
+            }
             this.send(PhxReply.diffReply(msg, diff));
             this.cleanupPostReply();
           } catch (e) {
@@ -269,7 +286,7 @@ export class WsHandler {
             const payload = msg[Phx.MsgIdx.payload] as AnyLiveInfo;
             // lifecycle handleInfo => render
             await this.#ctx!.liveView.handleInfo(payload, this.#ctx!.socket);
-            const view = await this.#ctx!.liveView.render(this.#ctx!.socket.context, this.#ctx!.defaultLiveViewMeta());
+            const view = await this.#ctx!.liveView.render(this.#ctx!.socket.context, this.#ctx!.newMeta());
             const diff = await this.viewToDiff(view);
             this.send(PhxReply.diff(null, this.#ctx!.joinId, diff));
             this.cleanupPostReply();
@@ -297,10 +314,7 @@ export class WsHandler {
               const url = new URL((payload as Phx.LivePatchPayload).url);
               this.#ctx!.url = url;
               await this.#ctx!.liveView.handleParams(url, this.#ctx!.socket);
-              const view = await this.#ctx!.liveView.render(
-                this.#ctx!.socket.context,
-                this.#ctx!.defaultLiveViewMeta()
-              );
+              const view = await this.#ctx!.liveView.render(this.#ctx!.socket.context, this.#ctx!.newMeta());
               const diff = await this.viewToDiff(view);
               this.send(PhxReply.diffReply(msg, diff));
               this.cleanupPostReply();
@@ -408,14 +422,14 @@ export class WsHandler {
 
   send(reply: PhxReply.Reply) {
     try {
-      this.#ws.send(PhxReply.serialize(reply), this.maybeHandleError);
+      this.#ws.send(PhxReply.serialize(reply), this.maybeHandleError.bind(this));
     } catch (e) {
       this.maybeHandleError(e);
     }
   }
 
   private maybeHandleError(err: any) {
-    if (err && this.#config.onError) {
+    if (err && this.#config && this.#config.onError) {
       this.#config.onError(err);
     }
   }
@@ -435,7 +449,8 @@ export class WsHandler {
     // store newParts for future diffs
     this.#ctx!.parts = newParts;
 
-    // TODO
+    // now add the components, events, and title parts
+    diff = this.maybeAddLiveComponentsToParts(diff);
     diff = this.maybeAddEventsToParts(diff);
     return this.maybeAddTitleToView(diff);
   }
@@ -447,13 +462,13 @@ export class WsHandler {
     // step 2: store parts for later diffing after rootTemplate is applied
     let parts = view.partsTree(true);
 
-    // TODO
     // step 3: add any `LiveComponent` renderings to the parts tree
-    // let rendered = this.maybeAddLiveComponentsToParts(parts);
+    parts = this.maybeAddLiveComponentsToParts(parts);
 
+    // step 4: add any push events to the parts tree
     parts = this.maybeAddEventsToParts(parts);
 
-    // step 4: if set, add the page title to the parts tree
+    // step 5: if set, add the page title to the parts tree
     parts = this.maybeAddTitleToView(parts);
 
     // set the parts tree on the context
@@ -497,19 +512,22 @@ export class WsHandler {
     return view;
   }
 
-  // LiveViewMeta
-  private newLiveViewMeta(): LiveViewMeta {
+  private maybeAddLiveComponentsToParts(parts: Parts) {
+    const components = this.#ctx!.components.all();
+    if (components.length === 0) {
+      return parts;
+    }
+    const cParts: Parts = {};
+    // aggregate all the parts from the changed live components
+    Object.values(components).forEach((lc) => {
+      const { cid, parts } = lc;
+      cParts[`${cid}`] = parts;
+    });
+    // update parts tree with the changed live components
     return {
-      csrfToken: this.#ctx!.csrfToken,
-      // live_component: async <TContext extends LiveContext = AnyLiveContext>(
-      //   liveComponent: LiveComponent<TContext>,
-      //   params?: Partial<TContext & { id: string | number }>
-      // ): Promise<LiveViewTemplate> => {
-      //   return await this.liveComponentProcessor<TContext>(liveComponent, params);
-      // },
-      url: this.#ctx!.url,
-      uploads: this.#ctx!.uploadConfigs,
-    } as LiveViewMeta;
+      ...parts,
+      c: cParts,
+    };
   }
 
   private async pushNav(
@@ -537,9 +555,22 @@ export class WsHandler {
     }
   }
 
+  handlePushEvent(event: AnyLivePushEvent) {
+    this.#ctx!.pushEvents.push(event);
+  }
+
+  handleSendInfo(info: Info<AnyLiveInfo>) {
+    // info can be a string or an object so check it
+    // if it's a string, we need to convert it to a LiveInfo object
+    if (typeof info === "string") {
+      info = { type: info };
+    }
+    this.handleMsg([null, null, this.#ctx!.joinId, "info", info] as Phx.Msg);
+  }
+
   // liveview socket methods
   // TODO move this to context?
-  private newLiveViewSocket(joinId: string, url: URL) {
+  private newSocket(joinId: string, url: URL) {
     return new WsLiveViewSocket(
       // id
       joinId,
@@ -550,9 +581,7 @@ export class WsHandler {
         this.#ctx!.pageTitle = newTitle;
       },
       // pushEventCallback
-      (pushEvent) => {
-        this.#ctx!.pushEvents.push(pushEvent);
-      },
+      this.handlePushEvent.bind(this),
       // pushPatchCallback
       async (path, params, replace) => {
         await this.pushNav("live_patch", path, params, replace);
@@ -566,14 +595,7 @@ export class WsHandler {
         await this.#config.flashAdaptor.putFlash(this.#ctx!.sessionData, key, value);
       },
       // sendInfoCallback
-      (info) => {
-        // info can be a string or an object so check it
-        // if it's a string, we need to convert it to a LiveInfo object
-        if (typeof info === "string") {
-          info = { type: info };
-        }
-        this.handleMsg([null, null, this.#ctx!.joinId, "info", info] as Phx.Msg);
-      },
+      this.handleSendInfo.bind(this),
       // subscribeCallback
       async (topic: string) => {
         const subId = await this.#config.pubSub.subscribe<AnyLiveInfo>(topic, (info: AnyLiveInfo) => {
