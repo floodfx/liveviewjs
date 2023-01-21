@@ -1,6 +1,6 @@
-import { Parts } from "src/server/templates";
 import { LiveViewTemplate } from "../../../server/live";
 import { Phx } from "../../../server/protocol/phx";
+import { Parts } from "../../../server/templates";
 import { UploadEntry } from "../../../server/upload";
 import { WsHandlerContext } from "./wsHandler";
 
