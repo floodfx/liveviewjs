@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1674275714898" clover="3.2.0">
-  <project timestamp="1674275714898" name="All files">
-    <metrics statements="1474" coveredstatements="1190" conditionals="471" coveredconditionals="356" methods="311" coveredmethods="238" elements="2256" coveredelements="1784" complexity="0" loc="1474" ncloc="1474" packages="13" files="47" classes="47"/>
+<coverage generated="1674322371963" clover="3.2.0">
+  <project timestamp="1674322371963" name="All files">
+    <metrics statements="1474" coveredstatements="1190" conditionals="469" coveredconditionals="354" methods="311" coveredmethods="238" elements="2254" coveredelements="1782" complexity="0" loc="1474" ncloc="1474" packages="13" files="47" classes="47"/>
     <package name="server">
       <metrics statements="11" coveredstatements="11" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
       <file name="index.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/packages/core/src/server/index.ts">
@@ -194,7 +194,7 @@
         <line num="36" count="15" type="stmt"/>
         <line num="37" count="15" type="stmt"/>
         <line num="39" count="15" type="stmt"/>
-        <line num="48" count="11511" type="cond" truecount="2" falsecount="0"/>
+        <line num="48" count="9209" type="cond" truecount="2" falsecount="0"/>
         <line num="57" count="8" type="cond" truecount="2" falsecount="0"/>
         <line num="61" count="19" type="stmt"/>
         <line num="65" count="17" type="cond" truecount="0" falsecount="1"/>
@@ -203,13 +203,13 @@
         <line num="70" count="0" type="stmt"/>
         <line num="72" count="17" type="stmt"/>
         <line num="78" count="5" type="stmt"/>
-        <line num="82" count="5" type="stmt"/>
-        <line num="83" count="11510" type="stmt"/>
-        <line num="84" count="11510" type="stmt"/>
-        <line num="85" count="6175" type="cond" truecount="1" falsecount="0"/>
+        <line num="82" count="4" type="stmt"/>
+        <line num="83" count="9208" type="stmt"/>
+        <line num="84" count="9208" type="stmt"/>
+        <line num="85" count="4940" type="cond" truecount="1" falsecount="0"/>
         <line num="86" count="3567" type="stmt"/>
-        <line num="88" count="6175" type="stmt"/>
-        <line num="91" count="5" type="stmt"/>
+        <line num="88" count="4940" type="stmt"/>
+        <line num="91" count="4" type="stmt"/>
         <line num="106" count="15" type="stmt"/>
         <line num="107" count="1" type="stmt"/>
         <line num="108" count="1" type="stmt"/>
@@ -1391,7 +1391,7 @@
       </file>
     </package>
     <package name="server.templates.helpers">
-      <metrics statements="90" coveredstatements="90" conditionals="66" coveredconditionals="61" methods="24" coveredmethods="24"/>
+      <metrics statements="90" coveredstatements="90" conditionals="64" coveredconditionals="59" methods="24" coveredmethods="24"/>
       <file name="form_for.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/packages/core/src/server/templates/helpers/form_for.ts">
         <metrics statements="7" coveredstatements="7" conditionals="8" coveredconditionals="8" methods="1" coveredmethods="1"/>
         <line num="1" count="15" type="stmt"/>
@@ -1469,13 +1469,13 @@
         <line num="26" count="3" type="cond" truecount="2" falsecount="0"/>
       </file>
       <file name="live_title_tag.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/packages/core/src/server/templates/helpers/live_title_tag.ts">
-        <metrics statements="6" coveredstatements="6" conditionals="10" coveredconditionals="10" methods="1" coveredmethods="1"/>
+        <metrics statements="6" coveredstatements="6" conditionals="8" coveredconditionals="8" methods="1" coveredmethods="1"/>
         <line num="1" count="15" type="stmt"/>
-        <line num="8" count="15" type="stmt"/>
-        <line num="9" count="3" type="cond" truecount="2" falsecount="0"/>
-        <line num="10" count="3" type="cond" truecount="2" falsecount="0"/>
-        <line num="11" count="3" type="cond" truecount="2" falsecount="0"/>
-        <line num="12" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="4" count="15" type="stmt"/>
+        <line num="5" count="3" type="stmt"/>
+        <line num="6" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="7" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="8" count="3" type="cond" truecount="4" falsecount="0"/>
       </file>
       <file name="options_for_select.ts" path="/Users/donnie/src/github.com/floodfx/liveviewjs/packages/core/src/server/templates/helpers/options_for_select.ts">
         <metrics statements="16" coveredstatements="16" conditionals="11" coveredconditionals="11" methods="8" coveredmethods="8"/>
