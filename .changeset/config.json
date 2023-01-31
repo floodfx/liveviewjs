@@ -2,7 +2,9 @@
   "$schema": "https://unpkg.com/@changesets/config@2.0.1/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["liveviewjs", "@liveviewjs/examples", "@liveviewjs/express"]],
+  "fixed": [
+    ["liveviewjs", "@liveviewjs/examples", "@liveviewjs/express", "@liveviewjs/gen", "@liveviewjs/lambda-examples"]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
