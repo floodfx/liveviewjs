@@ -18,14 +18,14 @@ interface Context {
     matches: string[];
     loading: boolean;
 }
-declare type Events = {
+type Events = {
     type: "city-search";
     city: string;
 } | {
     type: "suggest-city";
     city: string;
 };
-declare type Infos = {
+type Infos = {
     type: "run_city_search";
     city: string;
 };
@@ -51,7 +51,7 @@ declare const BookSchema: z.ZodObject<{
     name: string;
     author: string;
 }>;
-declare type Book = z.infer<typeof BookSchema>;
+type Book = z.infer<typeof BookSchema>;
 declare const booksLiveView: liveviewjs.LiveView<{
     books: Book[];
     changeset: LiveViewChangeset<Book>;
@@ -107,12 +107,12 @@ declare const dashboardLiveView: liveviewjs.LiveView<{
     type: "tick";
 }>;
 
-declare type FootprintData = {
+type FootprintData = {
     vehicleCO2Tons: number;
     spaceHeatingCO2Tons: number;
     gridElectricityCO2Tons: number;
 };
-declare type FootprintUpdateInfo = {
+type FootprintUpdateInfo = {
     type: "update";
     footprintData: FootprintData;
 };
@@ -130,10 +130,10 @@ declare const helloNameLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, 
 
 declare const helloToggleEmojiLiveView: liveviewjs.LiveView<liveviewjs.AnyLiveContext, liveviewjs.AnyLiveEvent, liveviewjs.AnyLiveInfo>;
 
-declare type MyContext = {
+type MyContext = {
     count: number;
 };
-declare type MyEvent = {
+type MyEvent = {
     type: "increment";
 } | {
     type: "decrement";
@@ -188,11 +188,11 @@ declare const paginateLiveView: liveviewjs.LiveView<{
     perPage: string;
 }, liveviewjs.AnyLiveInfo>;
 
-declare type PhotosContext = {
+type PhotosContext = {
     photoGroups: PhotoGroup[];
     changeset: LiveViewChangeset<PhotoGroup>;
 };
-declare type PhotosEvents = {
+type PhotosEvents = {
     type: "validate";
     name: string;
 } | {
@@ -218,9 +218,9 @@ declare const PhotoGroupSchema: z.ZodObject<{
     urls?: string[] | undefined;
     name: string;
 }>;
-declare type PhotoGroup = z.infer<typeof PhotoGroupSchema>;
+type PhotoGroup = z.infer<typeof PhotoGroupSchema>;
 
-declare type PhotoSize = "4x6" | "5x7" | "8x10" | "10x13" | "11x14";
+type PhotoSize = "4x6" | "5x7" | "8x10" | "10x13" | "11x14";
 declare const printLiveView: liveviewjs.LiveView<{
     photoSizeIndex: number;
     photoSize: PhotoSize;
@@ -312,8 +312,8 @@ declare const VolunteerSchema: z.ZodObject<{
     name: string;
     phone: string;
 }>;
-declare type Volunteer = z.infer<typeof VolunteerSchema>;
-declare type VolunteerMutationInfo = {
+type Volunteer = z.infer<typeof VolunteerSchema>;
+type VolunteerMutationInfo = {
     type: "created";
     volunteer: Volunteer;
 } | {

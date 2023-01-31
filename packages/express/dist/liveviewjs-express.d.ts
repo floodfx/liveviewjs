@@ -44,7 +44,7 @@ interface NodeExpressLiveViewServerOptions {
     onError?: (err: any) => void;
     debug?: (msg: string) => void;
 }
-declare type WsRequestHandler = (ws: WebSocket.WebSocket) => WsHandler;
+type WsRequestHandler = (ws: WebSocket.WebSocket) => WsHandler;
 declare class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestHandler, WsRequestHandler> {
     #private;
     private router;

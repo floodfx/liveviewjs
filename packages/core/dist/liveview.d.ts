@@ -6,7 +6,7 @@ import { SomeZodObject } from 'zod';
  * Type that defines a function that returns a string value used for protecting requests against
  * Cross-site Request Forgery (CSRF) attacks.  Good concrete implementations are: crypto.randomBytes, uuidv4.
  */
-declare type CsrfGenerator = () => string;
+type CsrfGenerator = () => string;
 
 /**
  * Abstracts some simple file system operations.  Necessary to support
@@ -31,7 +31,7 @@ interface FileSystemAdaptor {
  * Generically represent session with `string` keys to `any` value and a named member called
  * `_csrf_token` that is used to protect against cross-site request forgery attacks.
  */
-declare type SessionData = {
+type SessionData = {
     /**
      * The CSRF token used to protect against cross-site request forgery attacks.
      */
@@ -52,7 +52,7 @@ interface FlashAdaptor {
 /**
  * Options for creating a new upload config.
  */
-declare type UploadConfigOptions = {
+type UploadConfigOptions = {
     /**
      * "accept" contains the unique file type specifiers that can be uploaded.
      * See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers
@@ -147,14 +147,14 @@ declare class UploadConfig implements UploadConfig {
     private validate;
 }
 
-declare type PhxIncomingMessage<Payload> = [
+type PhxIncomingMessage<Payload> = [
     joinRef: string | null,
     messageRef: string | null,
     topic: "phoenix" | string,
     event: "phx_join" | "event" | "heartbeat" | "live_patch" | "phx_leave" | "allow_upload" | "progress",
     payload: Payload
 ];
-declare type PhxFlash = {
+type PhxFlash = {
     info?: string;
     error?: string;
 };
@@ -166,26 +166,26 @@ interface PhxJoinPayload {
     redirect?: string;
     flash?: PhxFlash | null;
 }
-declare type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
-declare type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
-declare type PhxLivePatchIncoming = PhxIncomingMessage<{
+type PhxJoinIncoming = PhxIncomingMessage<PhxJoinPayload>;
+type PhxHeartbeatIncoming = PhxIncomingMessage<{}>;
+type PhxLivePatchIncoming = PhxIncomingMessage<{
     url: string;
 }>;
-declare type AllowUploadEntry = {
+type AllowUploadEntry = {
     last_modified: number;
     name: string;
     size: number;
     type: string;
     ref: string;
 };
-declare type PhxAllowUploadIncoming = PhxIncomingMessage<{
+type PhxAllowUploadIncoming = PhxIncomingMessage<{
     ref: string;
     entries: AllowUploadEntry[];
 }>;
-declare type PhxJoinUploadIncoming = PhxIncomingMessage<{
+type PhxJoinUploadIncoming = PhxIncomingMessage<{
     token: string;
 }>;
-declare type PhxProgressUploadIncoming = PhxIncomingMessage<{
+type PhxProgressUploadIncoming = PhxIncomingMessage<{
     event: string | null;
     ref: string;
     entry_ref: string;
@@ -197,7 +197,7 @@ interface PhxEventPayload<TType extends string, TValue, TEvent extends string = 
     value: TValue;
     cid?: number;
 }
-declare type PhxEventUpload = {
+type PhxEventUpload = {
     path: string;
     last_modified: number;
     ref: string;
@@ -210,29 +210,29 @@ interface PhxEventUploads {
         [key: string]: PhxEventUpload[];
     };
 }
-declare type PhxClickPayload = PhxEventPayload<"click", {
+type PhxClickPayload = PhxEventPayload<"click", {
     value: string;
 }>;
-declare type PhxLVClearFlashPayload = PhxEventPayload<"click", {
+type PhxLVClearFlashPayload = PhxEventPayload<"click", {
     key: string;
 }, "lv:clear-flash">;
-declare type PhxFormPayload = PhxEventPayload<"form", string> & PhxEventUploads;
-declare type PhxKeyUpPayload = PhxEventPayload<"keyup", {
+type PhxFormPayload = PhxEventPayload<"form", string> & PhxEventUploads;
+type PhxKeyUpPayload = PhxEventPayload<"keyup", {
     key: string;
     value?: string;
 }>;
-declare type PhxKeyDownPayload = PhxEventPayload<"keydown", {
+type PhxKeyDownPayload = PhxEventPayload<"keydown", {
     key: string;
     value?: string;
 }>;
-declare type PhxFocusPayload = PhxEventPayload<"focus", {
+type PhxFocusPayload = PhxEventPayload<"focus", {
     value: string;
 }>;
-declare type PhxBlurPayload = PhxEventPayload<"blur", {
+type PhxBlurPayload = PhxEventPayload<"blur", {
     value: string;
 }>;
-declare type PhxHookPayload = PhxEventPayload<"hook", Record<string, string>>;
-declare type PhxMessage = {
+type PhxHookPayload = PhxEventPayload<"hook", Record<string, string>>;
+type PhxMessage = {
     type: "phx_join";
     message: PhxJoinIncoming;
 } | {
@@ -350,11 +350,11 @@ declare class UploadEntry {
 /**
  *  Type that enables Info events to be passed as plain strings
  */
-declare type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
+type Info<TInfo extends LiveInfo> = TInfo["type"] | TInfo;
 /**
  * The type passed to the `consumeUploadedEntries` callback's "meta" parameter
  */
-declare type ConsumeUploadedEntriesMeta = {
+type ConsumeUploadedEntriesMeta = {
     /**
      * The location of the file on the server
      */
@@ -578,8 +578,8 @@ declare class WsLiveViewSocket<TContext extends LiveContext = AnyLiveContext, TI
     }>;
 }
 
-declare type WsMsgListener = (data: Buffer, isBinary: boolean) => void;
-declare type WsCloseListener = () => void;
+type WsMsgListener = (data: Buffer, isBinary: boolean) => void;
+type WsCloseListener = () => void;
 /**
  * Adaptor that enables sending websocket messages over a concrete websocket implementation.
  */
@@ -589,8 +589,8 @@ interface WsAdaptor {
     subscribeToClose(closeListener: WsCloseListener): Promise<void> | void;
 }
 
-declare type SubscriberFunction<T> = (data: T) => void;
-declare type SubscriberId = string;
+type SubscriberFunction<T> = (data: T) => void;
+type SubscriberId = string;
 /**
  * A Subscriber allows you to subscribe and unsubscribe to a PubSub topic providing a callback function.
  */
@@ -886,7 +886,7 @@ declare namespace Phx {
     function serialize(msg: Msg): string;
 }
 
-declare type AllowUploadEntries = {
+type AllowUploadEntries = {
     [key: string]: string;
 };
 
@@ -897,7 +897,7 @@ declare function diffArrays2<T extends Parts | string>(oldArray: T[], newArray: 
 declare function join(array: (string | HtmlSafeString)[], separator?: string | HtmlSafeString): HtmlSafeString;
 declare function safe(value: unknown): HtmlSafeString;
 declare function escapehtml(unsafe: unknown): string;
-declare type Parts = {
+type Parts = {
     [key: string]: unknown;
 };
 /**
@@ -965,8 +965,8 @@ interface LiveTitleOptions {
 
 declare const live_title_tag: (options: LiveTitleOptions) => HtmlSafeString;
 
-declare type Options = string[] | Record<string, string>;
-declare type Selected = string | string[];
+type Options = string[] | Record<string, string>;
+type Selected = string | string[];
 declare const options_for_select: (options: Options, selected?: Selected) => HtmlSafeString;
 
 interface SubmitOptions {
@@ -982,11 +982,11 @@ declare const submit: (label: string, options?: SubmitOptions) => HtmlSafeString
  * the transition, and the class to apply to end the transition.
  * e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
  */
-declare type Transition = string | [string, string, string];
+type Transition = string | [string, string, string];
 /**
  * Options for the "add_class" and "remove_class" commands
  */
-declare type ClassOptions = {
+type ClassOptions = {
     /**
      * The optional DOM selector element to add or remove the class from (defaults to current element).
      */
@@ -1006,7 +1006,7 @@ declare type ClassOptions = {
 /**
  * Options for the "show" command
  */
-declare type ShowOptions = {
+type ShowOptions = {
     /**
      * The optional DOM selector element to show (defaults to current element).
      */
@@ -1027,7 +1027,7 @@ declare type ShowOptions = {
      */
     display?: string;
 };
-declare type HideOptions = {
+type HideOptions = {
     /**
      * The optional DOM selector element to hide (defaults to current element).
      */
@@ -1047,7 +1047,7 @@ declare type HideOptions = {
 /**
  * Options for the "toggle" command
  */
-declare type ToggleOptions = {
+type ToggleOptions = {
     /**
      * The optional DOM selector element to toggle (defaults to current element).
      */
@@ -1078,7 +1078,7 @@ declare type ToggleOptions = {
 /**
  * Options for the "set_attribute" and "remove_attribute" commands
  */
-declare type AttributeOptions = {
+type AttributeOptions = {
     /**
      * The optional DOM selector element to set or remove the attribute from (defaults to current element).
      */
@@ -1087,7 +1087,7 @@ declare type AttributeOptions = {
 /**
  * Options for the "transition" command
  */
-declare type TransitionOptions = {
+type TransitionOptions = {
     /**
      * The optional DOM selector element to apply the transition to (defaults to current element).
      */
@@ -1100,7 +1100,7 @@ declare type TransitionOptions = {
 /**
  * Options for the "dispatch" command
  */
-declare type DispatchOptions = {
+type DispatchOptions = {
     /**
      * The optional DOM selector element to apply the dispatch to (defaults to current element).
      */
@@ -1119,7 +1119,7 @@ declare type DispatchOptions = {
 /**
  * Options for the "push" command
  */
-declare type PushOptions = {
+type PushOptions = {
     /**
      * The selector or component ID to push to
      */
@@ -1517,7 +1517,7 @@ interface AnyLivePushEvent extends LiveEvent {
 /**
  * Paramter passed into the `mount` function of a LiveView.
  */
-declare type LiveViewMountParams = {
+type LiveViewMountParams = {
     [key: string]: string | number;
     /**
      * The cross site request forgery token from the `LiveView` html page.
@@ -1647,14 +1647,14 @@ declare const createLiveView: <TContext extends LiveContext = AnyLiveContext, TE
  * the passed in `csrfToken` and  required that it embeds the passed in `LiveViewTemplate`
  * content.
  */
-declare type LiveViewHtmlPageTemplate = (pageTitleDefault: LiveTitleOptions, csrfToken: string, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
+type LiveViewHtmlPageTemplate = (pageTitleDefault: LiveTitleOptions, csrfToken: string, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
 /**
  * Define a renderer that can embed a rendered `LiveView` and is given access to the
  * session data.  Often used to as a common container for `LiveView`s that adds "flash"
  * messages and other common UI elements.  It is required that this renderer embeds the
  * passed in `LiveViewTemplate` content.
  */
-declare type LiveViewWrapperTemplate = (sessionData: SessionData, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
+type LiveViewWrapperTemplate = (sessionData: SessionData, content: LiveViewTemplate) => LiveViewTemplate | Promise<LiveViewTemplate>;
 
 interface LiveComponentMeta {
     /**
@@ -1830,7 +1830,7 @@ interface LiveViewRouter {
 /**
  * Type representing parameters extracted from a URL path.
  */
-declare type PathParams = {
+type PathParams = {
     [key: string]: string;
 };
 /**
@@ -1853,7 +1853,7 @@ interface LiveViewTemplate extends HtmlSafeString {
  * and/or websocket connection.  Should generate unique IDs for each request and connection.  Good
  * concrete implementations are: nanoid, shortid, uuidv4 (though these are long).
  */
-declare type IdGenerator = () => string;
+type IdGenerator = () => string;
 
 /**
  * A class that knows how to serialize (Ser) and deserialize (De) session data.  This is used to pass
@@ -1920,7 +1920,7 @@ declare class SessionFlashAdaptor implements FlashAdaptor {
 /**
  * Validation errors keyed by properties of T
  */
-declare type LiveViewChangesetErrors<T> = {
+type LiveViewChangesetErrors<T> = {
     [Property in keyof T]?: string;
 };
 /**
@@ -1958,7 +1958,7 @@ interface LiveViewChangeset<T> {
 /**
  * A factory for creating a changeset for a given existing data model, updated data model, and optional action.
  */
-declare type LiveViewChangesetFactory<T> = (existing: Partial<T>, newAttrs: Partial<T>, action?: string) => LiveViewChangeset<T>;
+type LiveViewChangesetFactory<T> = (existing: Partial<T>, newAttrs: Partial<T>, action?: string) => LiveViewChangeset<T>;
 /**
  * Generates a LiveViewChangesetFactory for the type T and the provided zod schema.  The provided schema
  * and type must have the same properties and generally the type is infered from the schema using zod's
@@ -1972,7 +1972,7 @@ declare type LiveViewChangesetFactory<T> = (existing: Partial<T>, newAttrs: Part
  */
 declare const newChangesetFactory: <T>(schema: SomeZodObject) => LiveViewChangesetFactory<T>;
 
-declare type MimeSource = "apache" | "iana" | "nginx";
+type MimeSource = "apache" | "iana" | "nginx";
 interface MimeDB {
     [key: string]: {
         /**
