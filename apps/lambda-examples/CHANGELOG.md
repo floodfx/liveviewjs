@@ -1,5 +1,18 @@
 # @liveviewjs/lambda-examples
 
+## 0.10.0
+
+### Minor Changes
+
+- 921e914: Initial LiveViewJS code gen infrastructure and nodejs project generator
+
+### Patch Changes
+
+- Updated dependencies [921e914]
+  - liveviewjs@0.10.0
+  - @liveviewjs/examples@0.10.0
+  - @liveviewjs/express@0.10.0
+
 ## 0.2.1
 
 ### Patch Changes
