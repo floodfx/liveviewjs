@@ -1,0 +1,47 @@
+{
+  "name": "@liveviewjs/gen",
+  "version": "0.0.1",
+  "description": "Code generators for LiveViewJS",
+  "homepage": "https://liveviewjs.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/floodfx/liveviewjs",
+    "directory": "packages/gen"
+  },
+  "bugs": {
+    "url": "https://github.com/floodfx/liveviewjs/issues"
+  },
+  "main": "./dist/cli.js",
+  "bin": "./dist/cli.js",
+  "types": "./dist/cli.d.ts",
+  "files": [
+    "dist/cli.js",
+    "_templates/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "dist": "npm run clean; npm run build",
+    "prepublish": "npm run dist",
+    "format": "prettier --write '**/*.{ts,js,json,html,css}'"
+  },
+  "keywords": [
+    "liveviewjs",
+    "liveview",
+    "phoenix",
+    "typescript",
+    "javascript",
+    "framework"
+  ],
+  "dependencies": {
+    "enquirer": "^2.3.6",
+    "hygen": "^6.2.11"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.18",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.4"
+  }
+}

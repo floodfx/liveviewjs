@@ -8,6 +8,7 @@
     "packages/deno",
     "packages/examples",
     "packages/express",
+    "packages/gen",
     "apps/liveviewjs.com",
     "apps/lambda-examples"
   ],
@@ -21,11 +22,11 @@
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "MIT",
   "scripts": {
-    "format":     "turbo run format",
-    "test":       "turbo run test",
-    "dist":       "turbo run dist",
-    "publish":    "turbo run publish",
-    "cs":         "changeset",
+    "format": "turbo run format",
+    "test": "turbo run test",
+    "dist": "turbo run dist",
+    "publish": "turbo run publish",
+    "cs": "changeset",
     "cs:version": "changeset version",
     "cs:publish": "changeset publish"
   },
