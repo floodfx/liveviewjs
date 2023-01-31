@@ -1519,26 +1519,24 @@ const isEmpty = o => Object.keys(o).length === 0;
 const isObject = o => o != null && typeof o === 'object';
 const hasOwnProperty = (o, ...args) => Object.prototype.hasOwnProperty.call(o, ...args);
 const isEmptyObject = (o) => isObject(o) && isEmpty(o);
+const makeObjectWithoutPrototype = () => Object.create(null);
 
 const updatedDiff = (lhs, rhs) => {
   if (lhs === rhs) return {};
 
   if (!isObject(lhs) || !isObject(rhs)) return rhs;
 
-  const l = lhs;
-  const r = rhs;
-
-  if (isDate(l) || isDate(r)) {
-    if (l.valueOf() == r.valueOf()) return {};
-    return r;
+  if (isDate(lhs) || isDate(rhs)) {
+    if (lhs.valueOf() == rhs.valueOf()) return {};
+    return rhs;
   }
 
-  return Object.keys(r).reduce((acc, key) => {
-    if (hasOwnProperty(l, key)) {
-      const difference = updatedDiff(l[key], r[key]);
+  return Object.keys(rhs).reduce((acc, key) => {
+    if (hasOwnProperty(lhs, key)) {
+      const difference = updatedDiff(lhs[key], rhs[key]);
 
       // If the difference is empty, and the lhs is an empty object or the rhs is not an empty object
-      if (isEmptyObject(difference) && !isDate(difference) && (isEmptyObject(l[key]) || !isEmptyObject(r[key])))
+      if (isEmptyObject(difference) && !isDate(difference) && (isEmptyObject(lhs[key]) || !isEmptyObject(rhs[key])))
         return acc; // return no diff
 
       acc[key] = difference;
@@ -1546,7 +1544,7 @@ const updatedDiff = (lhs, rhs) => {
     }
 
     return acc;
-  }, {});
+  }, makeObjectWithoutPrototype());
 };
 
 /**
