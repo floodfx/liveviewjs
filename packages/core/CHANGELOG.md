@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.10.4
+
+### Patch Changes
+
+- 87b658d: Detect closed sockets and handle more gracefully
+
 ## 0.10.3
 
 ### Patch Changes
