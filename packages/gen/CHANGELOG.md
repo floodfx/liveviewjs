@@ -1,5 +1,11 @@
 # @liveviewjs/gen
 
+## 0.10.2
+
+### Patch Changes
+
+- 10fefe0: Fix package bin, main, types, and files for gen package
+
 ## 0.10.1
 
 ### Patch Changes
