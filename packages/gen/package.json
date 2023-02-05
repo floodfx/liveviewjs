@@ -13,11 +13,11 @@
     "url": "https://github.com/floodfx/liveviewjs/issues"
   },
   "type": "module",
-  "main": "./dist/cli.js",
-  "bin": "./dist/cli.js",
-  "types": "./dist/cli.d.ts",
+  "main": "./dist/cli.mjs",
+  "bin": "./dist/cli.mjs",
+  "types": "./dist/cli.d.mts",
   "files": [
-    "dist/cli.js",
+    "dist/**/*",
     "_templates/**/*"
   ],
   "scripts": {
