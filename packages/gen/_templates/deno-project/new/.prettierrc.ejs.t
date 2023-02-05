@@ -1,5 +1,5 @@
 ---
-to: .prettierrc
+to: <%= h.changeCase.lower(name) %>/.prettierrc
 ---
 {
   "tabWidth": 2,

@@ -1,5 +1,5 @@
 ---
-to: src/deps.ts
+to: <%= h.changeCase.lower(name) %>/src/deps.ts
 ---
 // @liveviewjs/examples
 export {

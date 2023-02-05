@@ -1,21 +1,18 @@
 ---
-to: src/server/index.ts
+to: <%= h.changeCase.lower(name) %>/src/server/index.ts
 ---
-import { BroadcastChannelPubSub } from "../deno/broadcastChannelPubSub.ts";
-import { DenoOakLiveViewServer } from "../deno/server.ts";
+import { BroadcastChannelPubSub, DenoOakLiveViewServer } from "@liveviewjs/deno";
 import { Application, Router } from "../deps.ts";
-import { indexHandler } from "./indexHandler.ts";
-import { liveHtmlTemplate, wrapperTemplate } from "./liveTemplates.ts";
+import { htmlPageTemplate } from "./liveTemplates.ts";
 import { liveRouter } from "./liveview/router.ts";
 import { logRequests, serveStatic } from "./oak.ts";
 
 // initialize the LiveViewServer
 const liveServer = new DenoOakLiveViewServer(
   liveRouter,
-  liveHtmlTemplate,
+  htmlPageTemplate,
   { title: "Deno Demo", suffix: " · LiveViewJS" },
   {
-    wrapperTemplate,
     pubSub: new BroadcastChannelPubSub(),
     // onError: console.error, // uncomment to see errors
     // debug: console.log, // uncomment to see messages
@@ -26,8 +23,8 @@ const liveServer = new DenoOakLiveViewServer(
 const router = new Router();
 // send websocket requests to the LiveViewJS server
 router.get("/live/websocket", liveServer.wsMiddleware);
-// setup the index route
-router.get("/", indexHandler);
+// redirect index to /hello
+router.get("/", (ctx) => ctx.response.redirect("/hello"));
 // serve static files (images, js, and css) from public directory
 router.get("/(.*).(png|jpg|jpeg|gif|js|js.map|css)", serveStatic);
 

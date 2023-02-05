@@ -1,3 +1,3 @@
 ---
-to: public/.keep
+to: <%= h.changeCase.lower(name) %>/public/.keep
 ---

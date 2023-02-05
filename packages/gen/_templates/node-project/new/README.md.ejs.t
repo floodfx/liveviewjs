@@ -1,5 +1,5 @@
 ---
-to: README.md
+to: <%= h.changeCase.lower(name) %>/README.md
 ---
 # <%= h.inflection.camelize(name, false) %>
 

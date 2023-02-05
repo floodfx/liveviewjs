@@ -1,5 +1,5 @@
 ---
-to: package.json
+to: <%= h.changeCase.lower(name) %>/package.json
 ---
 {
   "name": "<%= name %>",
