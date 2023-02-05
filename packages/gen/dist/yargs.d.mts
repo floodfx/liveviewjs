@@ -5,7 +5,7 @@ export interface GenYargs {
     force?: boolean;
 }
 export declare const genYargs: (argv: string[]) => GenYargs;
-export interface NodeProjectYargs {
+export interface ProjectYargs {
     install?: boolean;
 }
-export declare const nodeYargs: (argv: string[]) => NodeProjectYargs;
+export declare const projYargs: (argv: string[]) => ProjectYargs;

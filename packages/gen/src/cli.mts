@@ -11,7 +11,7 @@ import * as url from "url";
 import { NullLogger } from "./null_logger.mjs";
 import { changeDirMsg, installMsg, runMsg } from "./post_exec.mjs";
 import { GeneratorType, GeneratorTypePromptOptions, NamePromptOptions, NpmInstallPromptOptions } from "./prompts.mjs";
-import { genYargs, nodeYargs } from "./yargs.mjs";
+import { genYargs, projYargs } from "./yargs.mjs";
 const { prompt } = enquirer;
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
@@ -50,9 +50,9 @@ const run = async () => {
 
     // check for common args
     const gyargs = genYargs(process.argv.slice(2));
-    let generator = gyargs.generator;
+    let generator: GeneratorType | undefined = gyargs.generator as GeneratorType | undefined;
     if (!generator) {
-      generator = ((await prompt(GeneratorTypePromptOptions)) as { generator: string }).generator;
+      generator = ((await prompt(GeneratorTypePromptOptions)) as { generator: GeneratorType }).generator;
     }
     hygenArgs.push(generator, "new");
     if (!gyargs.name) {
@@ -66,10 +66,15 @@ const run = async () => {
     }
 
     // depending on generator parse args
-    if (generator === "node-project") {
-      const yargs = nodeYargs(process.argv.slice(2));
+    if (generator === "node-project" || generator === "deno-project") {
+      const yargs = projYargs(process.argv.slice(2));
       if (yargs.install === undefined) {
-        yargs.install = ((await prompt(NpmInstallPromptOptions)) as { install: boolean }).install;
+        // change prompt message based on generator type
+        let message = NpmInstallPromptOptions.message;
+        if (generator === "deno-project") {
+          message += " (required for client-side javascript)";
+        }
+        yargs.install = ((await prompt({ ...NpmInstallPromptOptions, message })) as { install: boolean }).install;
       }
       msgs.push(installMsg(generator as GeneratorType, yargs.install));
       if (yargs.install) {

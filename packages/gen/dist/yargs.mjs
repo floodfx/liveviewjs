@@ -25,7 +25,7 @@ export const genYargs = (argv) => {
     })
         .parseSync();
 };
-export const nodeYargs = (argv) => {
+export const projYargs = (argv) => {
     return yargs(argv)
         .usage("Usage: $0 [generator] [args]")
         .options({

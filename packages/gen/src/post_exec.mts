@@ -14,6 +14,8 @@ export function installMsg(type: GeneratorType, install: boolean) {
   switch (type) {
     case "node-project":
       return install ? undefined : "Run `npm install` to install node dependencies.";
+    case "deno-project":
+      return install ? undefined : "Run `npm install` to install node dependencies for client-side javascript.";
     default:
       return undefined;
   }

@@ -10,7 +10,7 @@ import * as url from "url";
 import { NullLogger } from "./null_logger.mjs";
 import { changeDirMsg, installMsg, runMsg } from "./post_exec.mjs";
 import { GeneratorTypePromptOptions, NamePromptOptions, NpmInstallPromptOptions } from "./prompts.mjs";
-import { genYargs, nodeYargs } from "./yargs.mjs";
+import { genYargs, projYargs } from "./yargs.mjs";
 const { prompt } = enquirer;
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 const templates = path.join(__dirname, "../_templates");
@@ -60,10 +60,15 @@ const run = async () => {
             process.env.HYGEN_OVERWRITE = "1";
         }
         // depending on generator parse args
-        if (generator === "node-project") {
-            const yargs = nodeYargs(process.argv.slice(2));
+        if (generator === "node-project" || generator === "deno-project") {
+            const yargs = projYargs(process.argv.slice(2));
             if (yargs.install === undefined) {
-                yargs.install = (await prompt(NpmInstallPromptOptions)).install;
+                // change prompt message based on generator type
+                let message = NpmInstallPromptOptions.message;
+                if (generator === "deno-project") {
+                    message += " (required for client-side javascript)";
+                }
+                yargs.install = (await prompt({ ...NpmInstallPromptOptions, message })).install;
             }
             msgs.push(installMsg(generator, yargs.install));
             if (yargs.install) {
