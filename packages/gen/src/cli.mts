@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import chalk from "chalk";
 import cliSpinners from "cli-spinners";
 import enquirer from "enquirer";
