@@ -1,6 +1,6 @@
 {
   "name": "@liveviewjs/gen",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "description": "Code generators for LiveViewJS",
   "homepage": "https://liveviewjs.com",
   "license": "MIT",

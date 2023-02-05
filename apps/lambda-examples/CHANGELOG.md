@@ -1,5 +1,15 @@
 # @liveviewjs/lambda-examples
 
+## 0.10.4
+
+### Patch Changes
+
+- 87b658d: Detect closed sockets and handle more gracefully
+- Updated dependencies [87b658d]
+  - liveviewjs@0.10.4
+  - @liveviewjs/examples@0.10.4
+  - @liveviewjs/express@0.10.4
+
 ## 0.10.3
 
 ### Patch Changes
