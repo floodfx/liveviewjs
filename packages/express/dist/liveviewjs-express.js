@@ -10,6 +10,7 @@ var crypto = require('crypto');
 var redis = require('redis');
 var liveviewjs = require('liveviewjs');
 var nanoid = require('nanoid');
+var ws = require('ws');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -137,6 +138,9 @@ class NodeWsAdaptor {
     }
     send(message, errorHandler) {
         __classPrivateFieldGet(this, _NodeWsAdaptor_ws, "f").send(message, errorHandler);
+    }
+    isClosed() {
+        return __classPrivateFieldGet(this, _NodeWsAdaptor_ws, "f").readyState === ws.WebSocket.CLOSED;
     }
 }
 _NodeWsAdaptor_ws = new WeakMap();

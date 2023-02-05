@@ -6,13 +6,13 @@ import type { WsAdaptor, WsCloseListener, WsMsgListener } from "../deps.ts";
  * in the LiveViewJS WsMessageRouter.
  */
 export class DenoWsAdaptor implements WsAdaptor {
-  private ws: WebSocket;
+  #ws: WebSocket;
   constructor(ws: WebSocket) {
-    this.ws = ws;
+    this.#ws = ws;
   }
   send(message: string, errorHandler?: (err: any) => void): void {
     try {
-      this.ws.send(message);
+      this.#ws.send(message);
     } catch (e) {
       if (errorHandler) {
         errorHandler(e);
@@ -22,7 +22,7 @@ export class DenoWsAdaptor implements WsAdaptor {
     }
   }
   subscribeToMessages(msgListener: WsMsgListener): void | Promise<void> {
-    this.ws.onmessage = async (message) => {
+    this.#ws.onmessage = async (message) => {
       const isBinary = message.data instanceof ArrayBuffer;
       // prob a better way to take ArrayBuffer and turn it into a Buffer
       // but this works for now
@@ -31,6 +31,9 @@ export class DenoWsAdaptor implements WsAdaptor {
     };
   }
   subscribeToClose(closeListener: WsCloseListener): void | Promise<void> {
-    this.ws.onclose = closeListener;
+    this.#ws.onclose = closeListener;
+  }
+  isClosed(): boolean {
+    return this.#ws.readyState === WebSocket.CLOSED;
   }
 }

@@ -70,6 +70,7 @@ declare class NodeWsAdaptor implements WsAdaptor {
     subscribeToMessages(msgListener: WsMsgListener): void | Promise<void>;
     subscribeToClose(closeListener: WsCloseListener): void | Promise<void>;
     send(message: string, errorHandler?: (err: any) => void): void;
+    isClosed(): boolean;
 }
 
 export { NodeExpressLiveViewServer, NodeFileSystemAdatptor, NodeJwtSerDe, NodeWsAdaptor, RedisPubSub };

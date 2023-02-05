@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { createClient } from 'redis';
 import { SessionFlashAdaptor, SingleProcessPubSub, WsHandler, matchRoute, handleHttpLiveView } from 'liveviewjs';
 import { nanoid } from 'nanoid';
+import { WebSocket } from 'ws';
 
 class NodeFileSystemAdatptor {
     tempPath(lastPathPart) {
@@ -127,6 +128,9 @@ class NodeWsAdaptor {
     }
     send(message, errorHandler) {
         __classPrivateFieldGet(this, _NodeWsAdaptor_ws, "f").send(message, errorHandler);
+    }
+    isClosed() {
+        return __classPrivateFieldGet(this, _NodeWsAdaptor_ws, "f").readyState === WebSocket.CLOSED;
     }
 }
 _NodeWsAdaptor_ws = new WeakMap();

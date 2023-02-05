@@ -24,6 +24,7 @@ describe("test message router", () => {
   let send: jest.Mock;
   let subscribeToClose: jest.Mock;
   let subscribeToMessages: jest.Mock;
+  let isClosed: jest.Mock;
   let pubSub: PubSub;
   let flashAdaptor: FlashAdaptor;
   let filesAdaptor: TestNodeFileSystemAdatptor;
@@ -31,6 +32,7 @@ describe("test message router", () => {
     send = jest.fn();
     subscribeToClose = jest.fn();
     subscribeToMessages = jest.fn();
+    isClosed = jest.fn();
     pubSub = new SingleProcessPubSub();
     flashAdaptor = new SessionFlashAdaptor();
     filesAdaptor = new TestNodeFileSystemAdatptor();
@@ -38,6 +40,7 @@ describe("test message router", () => {
       send,
       subscribeToClose,
       subscribeToMessages,
+      isClosed,
     };
     mr = new WsMessageRouter(router, pubSub, flashAdaptor, new JsonSerDe(), filesAdaptor);
   });

@@ -97,6 +97,9 @@ class CallbackMessenger implements WsAdaptor {
   subscribeToMessages(msgListener: WsMsgListener): void | Promise<void> {
     throw new Error("Method not implemented.");
   }
+  isClosed(): boolean {
+    throw new Error("Method not implemented.");
+  }
 }
 
 function newManager(callback: (message: string) => void): LiveViewManager {

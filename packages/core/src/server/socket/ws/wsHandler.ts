@@ -162,13 +162,7 @@ export class WsHandler {
    * @param msg a Phx.Msg to be routed
    */
   async handleMsg(msg: Phx.Msg<unknown>): Promise<void> {
-    if (this.#config.debug) {
-      try {
-        this.#config.debug(JSON.stringify(msg));
-      } catch (e) {
-        console.error("error debugging message", e);
-      }
-    }
+    this.maybeDebug(JSON.stringify(msg));
     try {
       // attempt to prevent race conditions by queuing messages
       // if we are already processing a message
@@ -414,23 +408,53 @@ export class WsHandler {
     }
   }
 
-  async close() {
-    // redirect this through handleMsg after adding the joinId
-    const joinId = this.#ctx?.joinId ?? "unknown";
-    this.handleMsg([null, null, joinId, "phx_leave", null]);
-  }
-
   send(reply: PhxReply.Reply) {
     try {
-      this.#ws.send(PhxReply.serialize(reply), this.maybeHandleError.bind(this));
+      const shutdown = this.maybeShutdown();
+      if (!shutdown) {
+        this.#ws.send(PhxReply.serialize(reply), this.maybeHandleError.bind(this));
+      }
     } catch (e) {
       this.maybeHandleError(e);
     }
   }
 
+  private async close() {
+    // redirect this through handleMsg after adding the joinId
+    const joinId = this.#ctx?.joinId ?? "unknown";
+    this.handleMsg([null, null, joinId, "phx_leave", null]);
+  }
+
+  /**
+   * Check if the websocket is closed and if so, shutdown the liveview
+   */
+  private maybeShutdown() {
+    if (this.#ws.isClosed()) {
+      this.maybeDebug(`ws closed, shutting down liveview: ${this.#ctx?.joinId}`);
+      this.close();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Call the config.onError callback on send errors and if the
+   * websocket is closed, shutdown the liveview
+   */
   private maybeHandleError(err: any) {
+    this.maybeShutdown();
     if (err && this.#config && this.#config.onError) {
       this.#config.onError(err);
+    }
+  }
+
+  private maybeDebug(msg: string) {
+    if (this.#config.debug) {
+      try {
+        this.#config.debug(msg);
+      } catch (e) {
+        console.error("error debugging message", e);
+      }
     }
   }
 

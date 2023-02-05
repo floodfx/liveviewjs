@@ -19,4 +19,7 @@ export class NodeWsAdaptor implements WsAdaptor {
   send(message: string, errorHandler?: (err: any) => void): void {
     this.#ws.send(message, errorHandler);
   }
+  isClosed(): boolean {
+    return this.#ws.readyState === WebSocket.CLOSED;
+  }
 }

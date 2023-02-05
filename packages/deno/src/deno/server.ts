@@ -98,7 +98,6 @@ export class DenoOakLiveViewServer implements LiveViewServerAdaptor<DenoMiddlewa
     return async (ctx: Context<Record<string, any>, Record<string, any>>) => {
       // upgrade the request to a websocket connection
       const ws = await ctx.upgrade();
-      // const connectionId = nanoid();
       new WsHandler(new DenoWsAdaptor(ws), this.#config);
     };
   }
