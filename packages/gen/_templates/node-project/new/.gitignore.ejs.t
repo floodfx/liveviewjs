@@ -1,5 +1,5 @@
 ---
-to: .gitignore
+to: <%= h.changeCase.lower(name) %>/.gitignore
 ---
 public/*.png
 public/*.gif

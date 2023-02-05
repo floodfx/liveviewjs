@@ -1,5 +1,5 @@
 ---
-to: .gitignore
+to: <%= h.changeCase.lower(name) %>/.gitignore
 ---
 key.json
 local_import_map.json

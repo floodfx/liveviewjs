@@ -1,5 +1,5 @@
 ---
-to: import_map.json
+to: <%= h.changeCase.lower(name) %>/import_map.json
 ---
 {
   "imports": {
@@ -8,7 +8,8 @@ to: import_map.json
     "events": "https://deno.land/std@0.128.0/node/events.ts",
     "nanoid": "https://deno.land/x/nanoid@v3.0.0/mod.ts",
     "path-to-regexp": "https://deno.land/x/path_to_regexp@v6.2.1/index.ts",
-    "liveviewjs": "../core/dist/liveview.mjs",
-    "@liveviewjs/examples": "../examples/dist/liveviewjs-examples.mjs"
+    "liveviewjs": "https://raw.githubusercontent.com/floodfx/liveviewjs/main/packages/core/mod.ts",
+    "@liveviewjs/deno": "https://raw.githubusercontent.com/floodfx/liveviewjs/main/packages/deno/mod.ts",
+    "@liveviewjs/examples": "https://raw.githubusercontent.com/floodfx/liveviewjs/main/packages/examples/mod.ts"
   }
 }

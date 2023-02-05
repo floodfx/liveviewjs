@@ -1,5 +1,5 @@
 ---
-to: src/server/index.ts
+to: <%= h.changeCase.lower(name) %>/src/server/index.ts
 ---
 import { NodeExpressLiveViewServer } from "@liveviewjs/express";
 import { Server } from "http";

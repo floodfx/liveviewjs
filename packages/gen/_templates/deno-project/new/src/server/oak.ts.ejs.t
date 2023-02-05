@@ -1,5 +1,5 @@
 ---
-to: src/server/oak.ts
+to: <%= h.changeCase.lower(name) %>/src/server/oak.ts
 ---
 import { Context, LiveViewRouter, send } from "../deps.ts";
 

@@ -1,18 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "CommonJS",
-    "lib": ["ESNext"],
-    "declaration": true,
-    "types": ["node"],
-    "strict": true,
-    "moduleResolution": "node",
+    "module": "ESNext",
     "esModuleInterop": true,
     "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    "declaration": true,
+    "resolveJsonModule": true,
+    "strict": true,
     "skipLibCheck": true,
+    "target": "esnext",
+    "lib": ["esnext"],
+    "moduleResolution": "node",
+    "types": ["node"],
     "outDir": "./dist",
     "baseUrl": "."
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules", "**/*.test.ts"]
+  "exclude": ["dist", "node_modules/**/*", "**/*.test.ts"]
 }

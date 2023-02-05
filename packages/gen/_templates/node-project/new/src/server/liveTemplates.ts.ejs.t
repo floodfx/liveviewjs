@@ -1,5 +1,5 @@
 ---
-to: src/server/liveTemplates.ts
+to: <%= h.changeCase.lower(name) %>/src/server/liveTemplates.ts
 ---
 import { html, LiveTitleOptions, LiveViewHtmlPageTemplate, LiveViewTemplate, live_title_tag, safe } from "liveviewjs";
 

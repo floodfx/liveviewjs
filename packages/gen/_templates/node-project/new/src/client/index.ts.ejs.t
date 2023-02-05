@@ -1,5 +1,5 @@
 ---
-to: src/client/index.ts
+to: <%= h.changeCase.lower(name) %>/src/client/index.ts
 ---
 import NProgress from "nprogress";
 import { Socket } from "phoenix";

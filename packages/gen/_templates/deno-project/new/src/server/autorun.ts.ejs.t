@@ -1,5 +1,5 @@
 ---
-to: src/server/autorun.ts
+to: <%= h.changeCase.lower(name) %>/src/server/autorun.ts
 ---
 import * as esbuild from "https://deno.land/x/esbuild@v0.15.9/mod.js";
 

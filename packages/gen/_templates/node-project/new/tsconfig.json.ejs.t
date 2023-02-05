@@ -1,5 +1,5 @@
 ---
-to: tsconfig.json
+to: <%= h.changeCase.lower(name) %>/tsconfig.json
 ---
 {
   "compilerOptions": {

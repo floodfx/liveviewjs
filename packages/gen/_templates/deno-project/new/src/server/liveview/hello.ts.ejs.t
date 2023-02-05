@@ -1,5 +1,5 @@
 ---
-to: src/server/liveview/hello.ts
+to: <%= h.changeCase.lower(name) %>/src/server/liveview/hello.ts
 ---
 import { createLiveView, html } from "liveviewjs";
 

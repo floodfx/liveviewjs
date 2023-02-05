@@ -1,5 +1,5 @@
 ---
-to: src/server/autorun.ts
+to: <%= h.changeCase.lower(name) %>/src/server/autorun.ts
 ---
 import chalk from "chalk";
 import { ChildProcess, spawn } from "child_process";

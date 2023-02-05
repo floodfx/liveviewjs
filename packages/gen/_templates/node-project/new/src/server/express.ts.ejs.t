@@ -1,5 +1,5 @@
 ---
-to: src/server/express.ts
+to: <%= h.changeCase.lower(name) %>/src/server/express.ts
 ---
 import express, { NextFunction, Request, Response } from "express";
 import session, { MemoryStore } from "express-session";
