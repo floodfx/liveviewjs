@@ -34,11 +34,11 @@ export const genYargs = (argv: string[]): GenYargs => {
     .parseSync();
 };
 
-export interface NodeProjectYargs {
+export interface ProjectYargs {
   install?: boolean;
 }
 
-export const nodeYargs = (argv: string[]): NodeProjectYargs => {
+export const projYargs = (argv: string[]): ProjectYargs => {
   return yargs(argv)
     .usage("Usage: $0 [generator] [args]")
     .options({
