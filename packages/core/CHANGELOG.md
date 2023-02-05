@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.10.3
+
+### Patch Changes
+
+- 4673b8d: Run npm install for deno client-side javascript
+
 ## 0.10.2
 
 ### Patch Changes
