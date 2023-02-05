@@ -63,6 +63,7 @@ describe("test liveview manager", () => {
       send: jest.fn(),
       subscribeToClose: jest.fn(),
       subscribeToMessages: jest.fn(),
+      isClosed: jest.fn(),
     };
     cmLiveView = new LiveViewManager(
       new TestLiveViewComponent(),
@@ -511,6 +512,7 @@ describe("test liveview manager", () => {
       },
       subscribeToClose: () => {},
       subscribeToMessages: () => {},
+      isClosed: () => true,
     };
     const cm = new LiveViewManager(
       tc,
@@ -565,6 +567,7 @@ describe("test liveview manager", () => {
       },
       subscribeToClose: () => {},
       subscribeToMessages: () => {},
+      isClosed: () => false,
     };
     const cm = new LiveViewManager(
       testArrayOfLiveTemplatesLV,
@@ -592,6 +595,7 @@ describe("test liveview manager", () => {
       },
       subscribeToClose: () => {},
       subscribeToMessages: () => {},
+      isClosed: () => false,
     };
     const cm = new LiveViewManager(
       testArrayOfLCLV,
@@ -736,6 +740,7 @@ describe("test liveview manager", () => {
       },
       subscribeToClose: () => {},
       subscribeToMessages: () => {},
+      isClosed: () => false,
     };
     const c = new PutFlashComponent();
     const cm = new LiveViewManager(
@@ -1191,6 +1196,9 @@ class TestWsAdaptor implements WsAdaptor {
     throw new Error("Method not implemented.");
   }
   subscribeToClose(closeListener: WsCloseListener): void | Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  isClosed(): boolean {
     throw new Error("Method not implemented.");
   }
 

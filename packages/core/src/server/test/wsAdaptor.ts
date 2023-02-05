@@ -4,6 +4,7 @@ export class TestWsAdaptor implements WsAdaptor {
   private sendFn: (msg: string) => void;
   #closeListener: WsCloseListener;
   #msgListener: WsMsgListener;
+  closed: boolean = false;
   constructor(sendFn: (msg: string) => void) {
     this.sendFn = sendFn;
   }
@@ -15,6 +16,9 @@ export class TestWsAdaptor implements WsAdaptor {
   }
   subscribeToMessages(msgListener: WsMsgListener): void {
     this.#msgListener = msgListener;
+  }
+  isClosed(): boolean {
+    return this.closed;
   }
 
   async sendIncomingMsg(msg: string) {

@@ -7,4 +7,5 @@ export interface WsAdaptor {
   send(message: string, errorHandler?: (err: any) => void): void;
   subscribeToMessages(msgListener: WsMsgListener): Promise<void> | void;
   subscribeToClose(closeListener: WsCloseListener): Promise<void> | void;
+  isClosed(): boolean;
 }

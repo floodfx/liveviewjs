@@ -587,6 +587,7 @@ interface WsAdaptor {
     send(message: string, errorHandler?: (err: any) => void): void;
     subscribeToMessages(msgListener: WsMsgListener): Promise<void> | void;
     subscribeToClose(closeListener: WsCloseListener): Promise<void> | void;
+    isClosed(): boolean;
 }
 
 type SubscriberFunction<T> = (data: T) => void;
@@ -1431,9 +1432,18 @@ declare class WsHandler {
      * @param msg a Phx.Msg to be routed
      */
     handleMsg(msg: Phx.Msg<unknown>): Promise<void>;
-    close(): Promise<void>;
     send(reply: PhxReply.Reply): void;
+    private close;
+    /**
+     * Check if the websocket is closed and if so, shutdown the liveview
+     */
+    private maybeShutdown;
+    /**
+     * Call the config.onError callback on send errors and if the
+     * websocket is closed, shutdown the liveview
+     */
     private maybeHandleError;
+    private maybeDebug;
     private cleanupPostReply;
     private viewToDiff;
     private viewToRendered;

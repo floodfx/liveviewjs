@@ -391,7 +391,13 @@ function newMgr(opts?: NewMgrOpts): LiveViewManager {
   const serDe = opts?.serDe ?? new JsonSerDe();
   const fileSystemAdaptor = opts?.fileSystemAdaptor ?? new TestNodeFileSystemAdatptor();
   const wsAdaptor =
-    opts?.wsAdaptor ?? ({ send: jest.fn(), subscribeToClose: jest.fn(), subscribeToMessages: jest.fn() } as WsAdaptor);
+    opts?.wsAdaptor ??
+    ({
+      send: jest.fn(),
+      subscribeToClose: jest.fn(),
+      subscribeToMessages: jest.fn(),
+      isClosed: jest.fn(),
+    } as WsAdaptor);
   const lv = opts?.liveView ?? createLiveView({ render: () => html`` });
   const cid = opts?.cid ?? nanoid();
   return new LiveViewManager(
