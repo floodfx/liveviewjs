@@ -5,7 +5,7 @@
     "events": "https://deno.land/std@0.128.0/node/events.ts",
     "nanoid": "https://deno.land/x/nanoid@v3.0.0/mod.ts",
     "path-to-regexp": "https://deno.land/x/path_to_regexp@v6.2.1/index.ts",
-    "liveviewjs": "../core/dist/liveview.mjs",
-    "@liveviewjs/examples": "../examples/dist/liveviewjs-examples.mjs"
+    "liveviewjs": "../core/mod.ts",
+    "@liveviewjs/examples": "../examples/mod.ts"
   }
 }
