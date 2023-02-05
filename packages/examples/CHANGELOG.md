@@ -1,5 +1,13 @@
 # @liveviewjs/examples
 
+## 0.10.1
+
+### Patch Changes
+
+- 2fd427a: Revamp gen package and add deno project generator
+- Updated dependencies [2fd427a]
+  - liveviewjs@0.10.1
+
 ## 0.10.0
 
 ### Minor Changes
