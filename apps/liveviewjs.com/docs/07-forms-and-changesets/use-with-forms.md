@@ -251,25 +251,37 @@ There is a bit going on here so let's break it down. First we are pulling out th
 render the form. We are passing in the `changeset` and the `csrfToken` as well as setting the `phx_submit` and
 `phx_change` attributes to the events that will be called in `handleEvent`.
 
-:::tip Using the `form_for` helper is optional. You can use the `form` helper and set the `phx_submit` and `phx_change`
+:::tip
+
+Using the `form_for` helper is optional. You can use the `form` helper and set the `phx_submit` and `phx_change`
 attributes to the events that will be called in `handleEvent`. The `form_for` helper just makes it a little easier to
 render the form and automatically passes the `csrfToken` to the form.
 
 The **LiveViewJS** framework automatically validates the csrfToken (a.k.a. authenticity token) for you and will throw an
-error if the token is invalid. :::
+error if the token is invalid.
+
+:::
 
 Next we are using the `text_input` helper to render the input for the `name` property. We are passing in the `changeset`
 and the `name` property as well as the `placeholder`, `autocomplete`, and `phx_debounce` attributes.
 
-:::tip The `text_input` helper is optional but it provides type safefy and automatically works with the `changeset`. Of
+:::tip
+
+The `text_input` helper is optional but it provides type safefy and automatically works with the `changeset`. Of
 note, we use the `phx-debounce` attribute to only send the change event to the server after the user has stopped typing
-for 1000ms. This is a great way to reduce the number of events sent to the server and improve performance. :::
+for 1000ms. This is a great way to reduce the number of events sent to the server and improve performance.
+
+:::
 
 Next we are using the `error_tag` helper to optionally render the error message for the `name` property. We are passing
 in the `changeset` and the `name` property there as well.
 
-:::tip The `error_tag` helper is optional but it provides type safefy and automatically works with the `changeset` to
-pull out the error message for the property if there is one. :::
+:::tip
+
+The `error_tag` helper is optional but it provides type safefy and automatically works with the `changeset` to
+pull out the error message for the property if there is one.
+
+:::
 
 We follow the same pattern for the `author` property.
 
@@ -297,8 +309,12 @@ When `handleEvent` occurs with the `validate` event, we use the `bookCSF` change
 empty object `{}` first, along with the `event` data. Importantly, we set the `action` to `validate` and assign the
 result to the `changeset` in the `context`.
 
-:::info Remember if you don't set the `action` text in the `LiveViewChangesetFactory` call then returned
-`LiveViewChangeset` will always be valid. :::
+:::info
+
+Remember if you don't set the `action` text in the `LiveViewChangesetFactory` call then returned
+`LiveViewChangeset` will always be valid.
+
+:::
 
 The `LiveViewChangeset` works with the helpers in `render` to automatically render the error messages for the properties
 that have errors and set the value of the input fields to the values that were submitted.

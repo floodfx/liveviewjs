@@ -62,10 +62,14 @@ submission.
 Adding `phx-submit` to a form means that when the user submits the form, the `save` event will be sent to the server
 along with all the form values.
 
-:::info In LiveViewJS, Forms are typically used in conjunction with
+:::info
+
+In LiveViewJS, Forms are typically used in conjunction with
 [`LiveViewChangeset`](/docs/forms-and-changesets/changesets)s. `LiveViewChangeset`s are designed to work together with
 form events to make form validation and submission easy and powerful. We'll dive into more details later on in the next
-section. :::
+section.
+
+:::
 
 ### Key Events
 

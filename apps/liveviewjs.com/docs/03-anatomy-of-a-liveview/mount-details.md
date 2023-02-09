@@ -63,5 +63,9 @@ export const counterLiveView = createLiveView<
 });
 ```
 
-:::info The `LiveViewSocket` is passed into all methods except for `render`. `LiveViewSocket` is the swiss army knife of
-LiveViewJS. We will cover its [API in more detail](/docs/liveview-socket/liveviewsocket-api) shortly. :::
+:::info
+
+The `LiveViewSocket` is passed into all methods except for `render`. `LiveViewSocket` is the swiss army knife of
+LiveViewJS. We will cover its [API in more detail](/docs/liveview-socket/liveviewsocket-api) shortly.
+
+:::

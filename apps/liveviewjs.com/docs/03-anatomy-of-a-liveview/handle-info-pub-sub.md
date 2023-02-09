@@ -70,9 +70,13 @@ export const rtCounterLiveView = createLiveView<
 });
 ```
 
-:::info We're using a `SingleProcessPubSub` implementation for simplicity. In a real application, you would use a
+:::info
+
+We're using a `SingleProcessPubSub` implementation for simplicity. In a real application, you would use a
 `RedisPubSub` implementation in NodeJS or a `BroadcastChannelPubSub` implementation in for Deno. See the
-[Pub/Sub docs](/docs/real-time-multi-player-pub-sub/overview) for more details. :::
+[Pub/Sub docs](/docs/real-time-multi-player-pub-sub/overview) for more details.
+
+:::
 
 ## How it works
 

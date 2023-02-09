@@ -79,7 +79,11 @@ socket.pageTitle("My New Page Title");
 ...
 ```
 
-:::note The `pageTitle` method does not update the `prefix` or `suffix` part of the `live_title_tag`. :::
+:::note
+
+The `pageTitle` method does not update the `prefix` or `suffix` part of the `live_title_tag`.
+
+:::
 
 ## `putFlash` Method
 

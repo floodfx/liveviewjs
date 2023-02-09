@@ -4,9 +4,13 @@ sidebar_position: 1
 
 # LiveView API
 
-:::note We are going to be using Typescript in our examples because **LiveViewJS** is very thoroughly typed, which
+:::note
+
+We are going to be using Typescript in our examples because **LiveViewJS** is very thoroughly typed, which
 provides great type hints, autocompletion, etc. If the typescript syntax is confusing, just ignore it and focus on the
-code. :::
+code.
+
+:::
 
 ## LiveView API is Five Methods
 
@@ -15,7 +19,9 @@ The **LiveViewJS** API is extremely simple but very flexible. There are only fiv
 four methods (`mount`, `handleEvent`, `handleInfo`, `handleParams`) are optional but usually `mount` and at least one
 other `handle` method is defined to enable a dynamic experience.
 
-:::info The smallest, valid LiveView only defines `render` like so:
+:::info 
+
+The smallest, valid LiveView only defines `render` like so:
 
 ```ts
 const helloLiveView = createLiveView({
@@ -24,6 +30,7 @@ const helloLiveView = createLiveView({
 ```
 
 While "valid" a LiveView like this is not very useful nor particularly exciting. Let's look at a more useful example.
+
 :::
 
 ## Example LiveView Implementation

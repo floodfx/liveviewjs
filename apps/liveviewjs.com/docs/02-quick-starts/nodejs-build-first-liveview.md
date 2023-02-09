@@ -27,8 +27,8 @@ browser.
 
 ## Setup a new Route
 
-Let's add a route to this LiveView to see it in our browser. Edit `packages/express/src/example/index.ts` and
-make the following highlighted changes:
+Let's add a route to this LiveView to see it in our browser. Edit `packages/express/src/example/index.ts` and make the
+following highlighted changes:
 
 ```ts title="packages/express/src/example/index.ts" {3,7}
 ...
@@ -60,14 +60,18 @@ Then, start the express server:
 npm run start -w packages/express
 ```
 
-:::info You will probably see a warning from NodeJS about using an experimental feature:
+:::info
+
+You will probably see a warning from NodeJS about using an experimental feature:
 
 ```
 ExperimentalWarning: The Fetch API is an experimental feature. This feature could change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
 ```
 
-The feature we are using is the built-in `fetch` method. Feel free to ignore this warning. :::
+The feature we are using is the built-in `fetch` method. Feel free to ignore this warning.
+
+:::
 
 ## See the LiveView in Action
 
@@ -105,8 +109,12 @@ should look something like this:
 
 ![LiveViewJS Hello World Recording](/img/screenshots/liveviewjs_hello_toggle_liveview_rec.gif)
 
-:::info You'll notice that **LiveViewJS** automatically rebuilds and reloads the server when you make changes to your
-LiveView code. This is a great way to iterate quickly on your LiveView. :::
+:::info
+
+You'll notice that **LiveViewJS** automatically rebuilds and reloads the server when you make changes to your
+LiveView code. This is a great way to iterate quickly on your LiveView.
+
+:::
 
 ## Great start!
 

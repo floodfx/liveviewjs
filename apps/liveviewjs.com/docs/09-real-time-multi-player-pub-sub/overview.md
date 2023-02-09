@@ -19,14 +19,18 @@ There are two main ways to enable real-time, multi-player experiences in LiveVie
 - **broadcast to topics** - If you have a LiveView (or data model) that needs to send messages to a topic, you can
   broadcast to the topic using an implementation of the `PubSub` interface.
 
-:::info **LiveViewJS** ships with three implementations of the `PubSub` interface:
+:::info
+
+**LiveViewJS** ships with three implementations of the `PubSub` interface:
 
 - `SingleProcessPubSub` - A pub/sub implementation (backed by `EventEmitter` that is useful for testing and development
   (as it only works in a single process).
 - `RedisPubSub` - A pub/sub implementation that uses Redis as the pub/sub backend. This is useful for production
   deployments that are running on NodeJS
 - `BroadcastChannelPubSub` - A pub/sub implementation that uses the `BroadcastChannel` API which is a server enabled
-  pub/sub implementation that is useful for production deployments on Deno Deploy. :::
+  pub/sub implementation that is useful for production deployments on Deno Deploy.
+  
+:::
 
 ## Subscribe to Topics
 

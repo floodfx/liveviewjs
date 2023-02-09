@@ -7,9 +7,13 @@ sidebar_position: 2
 Sometimes you need to do something that is not supported by any of the existing user event bindings or that requires
 hooking into a client-side DOM event. LiveView has "Hooks" for these types of situations.
 
-:::caution The term "Hooks" comes from Phoenix/LiveView which this project is based on and whose client library we are
+:::caution
+
+The term "Hooks" comes from Phoenix/LiveView which this project is based on and whose client library we are
 utilizing. LiveView "Hooks" are in no way related to React "Hooks". It is unfortunate that "Hooks" is overloaded but we
-don't find it very confusing considering how different LiveView is from React. :::
+don't find it very confusing considering how different LiveView is from React.
+
+:::
 
 ## `phx-hook` Attribute
 
@@ -77,7 +81,9 @@ Inside the hook lifecycle methods you can reference many additional properties a
   where its value can be either a query selector or an actual DOM element. If the query selector returns more than one
   live file input, an error will be logged.
 
-:::tip The `@types/phoenix_live_view` package provides a (currently incomplete) type definition for a hook. You can use
+:::tip
+
+The `@types/phoenix_live_view` package provides a (currently incomplete) type definition for a hook. You can use
 it by importing the `ViewHook` type from the `phoenix_live_view` package.
 
 ```ts

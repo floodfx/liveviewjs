@@ -56,7 +56,11 @@ export const counterLiveView = createLiveView<
 });
 ```
 
-:::info You might have noticed the `phx-click` attributes present in the `<button>` elements in the example above. These
+:::info
+
+You might have noticed the `phx-click` attributes present in the `<button>` elements in the example above. These
 are examples of attributes (a.k.a "bindings") that are added to HTML elements that initiate server events based on user
 interaction. There are four main types of bindings: click, form, key, focus/blur. We will cover them in more detail
-in the [section on User Events](/docs/user-events-slash-bindings/overview). :::
+in the [section on User Events](/docs/user-events-slash-bindings/overview).
+
+:::

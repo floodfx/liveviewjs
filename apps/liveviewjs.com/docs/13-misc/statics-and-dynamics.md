@@ -25,9 +25,13 @@ render: (context, meta) => {
 ...
 ```
 
-:::info The `html` tag is a "tagged template literal" function which allows **LiveViewJS** to parse the template literal
+:::info
+
+The `html` tag is a "tagged template literal" function which allows **LiveViewJS** to parse the template literal
 into a tree of static and dynamic parts. For more information on tagged template literals, see
-[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#tagged_templates). :::
+[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#tagged_templates).
+
+:::
 
 ## Parts of the Template
 
