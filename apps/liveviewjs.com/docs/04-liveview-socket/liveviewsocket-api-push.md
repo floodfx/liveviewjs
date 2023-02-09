@@ -35,7 +35,11 @@ socket.pushEvent({
 });
 ```
 
-:::note Event names are prefixed with `phx:` so an event with the type `my-event` will be sent as `phx:my-event`. :::
+:::note
+
+Event names are prefixed with `phx:` so an event with the type `my-event` will be sent as `phx:my-event`.
+
+:::
 
 ### Listening for Events on the Client
 

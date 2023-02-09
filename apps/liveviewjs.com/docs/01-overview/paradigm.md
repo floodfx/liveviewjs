@@ -11,8 +11,12 @@ receives the events, it runs the business logic for that LiveView, calculates th
 the diffs to the client. The client automatically updates the page with the diffs. The server can also send diffs back
 to the client based on events on the server or received from other clients (think chat, or other pub/sub scenarios).
 
-:::info **LiveViewJS** solves the complex parts of LiveViews such as connecting and managing web sockets, diffing and
-patching the UI, routing events, real-time/multiplayer, file uploads, and more. :::
+:::info
+
+**LiveViewJS** solves the complex parts of LiveViews such as connecting and managing web sockets, diffing and
+patching the UI, routing events, real-time/multiplayer, file uploads, and more.
+
+:::
 
 ## How is this different from SPAs?
 

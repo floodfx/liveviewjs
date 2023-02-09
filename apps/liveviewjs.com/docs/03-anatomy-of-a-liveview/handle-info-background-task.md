@@ -52,8 +52,12 @@ export const dashboardLiveView = createLiveView<
 });
 ```
 
-:::note The `fetchLatestData` method is not shown here because the implementation is not important. Just assume it
-return the latest order, sales, and review data from a database, feed, API, etc. :::
+:::note
+
+The `fetchLatestData` method is not shown here because the implementation is not important. Just assume it
+return the latest order, sales, and review data from a database, feed, API, etc.
+
+:::
 
 ## How it works
 

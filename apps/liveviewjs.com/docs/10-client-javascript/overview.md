@@ -46,9 +46,13 @@ liveSocket.connect();
 (window as any).liveSocket = liveSocket;
 ```
 
-:::info The libraries used in **LiveViewJS** are exactly the same libraries used in Phoenix LiveView. Beyond ensuring we
+:::info
+
+The libraries used in **LiveViewJS** are exactly the same libraries used in Phoenix LiveView. Beyond ensuring we
 don't reinvent the wheel, this provides **LiveViewJS** with battle-tested, robust code that has proven extremely
-reliable. :::
+reliable.
+
+:::
 
 ## Walkthrough of the client-side JS
 
@@ -104,7 +108,9 @@ let liveSocket = new LiveSocket(url, Socket, { params: { _csrf_token: csrfToken 
 ...
 ```
 
-:::tip The options that we can pass into the LiveSocket are:
+:::tip
+
+The options that we can pass into the LiveSocket are:
 
 - `bindingPrefix` - the prefix to use for phoenix bindings. Defaults "phx-"
 - `params` - the connect_params to pass to the view's mount callback. May be a literal object or closure returning an
@@ -113,7 +119,9 @@ let liveSocket = new LiveSocket(url, Socket, { params: { _csrf_token: csrfToken 
   cover Hooks in a later section)
 - `uploaders` – a reference to a user-defined uploaders namespace, containing client callbacks for client-side
   direct-to-cloud uploads. (LiveViewJS currently does not support user-defined uploaders but we plan to add this in the
-  future) :::
+  future)
+  
+:::
 
 ### Progress Bar
 

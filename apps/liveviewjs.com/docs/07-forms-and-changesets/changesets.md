@@ -14,11 +14,15 @@ with static type inference" library.
 
 Let's go through the steps of creating a changeset helper for a Book data model.
 
-:::info The [basics of Zod](https://github.com/colinhacks/zod#basic-usage) are pretty easy to pick up especially if you
+:::info
+
+The [basics of Zod](https://github.com/colinhacks/zod#basic-usage) are pretty easy to pick up especially if you
 are familiar with Typescript. Even if you are not too familiar with Zod or Typescript, the concept is Zod is pretty
 straight forward. Essentially you are defining a schema and then parsing the input data against the schema. If the input
 data matches the schema then the data is valid. If the input data does not match the schema then the data is invalid and
-you can use the error messages to display validation errors to the user. :::
+you can use the error messages to display validation errors to the user.
+
+:::
 
 ## Create a Zod Schema
 
@@ -159,8 +163,12 @@ impact the `valid` property of the `LiveViewChangeset` returned by the `LiveView
 string is NOT set** the `valid` property will always return `true`. **If the action string IS set** the `valid` property
 will return `true` if the data is valid and `false` if the data is invalid.
 
-:::note We pass "empty" (i.e.,  no action string) changesets to form helpers in the `render` function otherwise there
-would be errors on the form when the page is first loaded. "Empty" changesets are always valid. :::
+:::note
+
+We pass "empty" (i.e.,  no action string) changesets to form helpers in the `render` function otherwise there
+would be errors on the form when the page is first loaded. "Empty" changesets are always valid.
+
+:::
 
 ## Next Steps
 

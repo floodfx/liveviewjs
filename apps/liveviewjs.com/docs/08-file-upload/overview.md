@@ -13,9 +13,13 @@ image previews, upload progress, drag and drop, error handling, and more. Handli
 We're going to start with a complete example and then walk through the code. The example LiveView allows you to create a
 new photo album with a name and up to 3 photos.
 
-:::info This example is available as part of the `packages/examples` directory in the
+:::info
+
+This example is available as part of the `packages/examples` directory in the
 [LiveViewJS repository](https://github.com/floodfx/liveviewjs) and runs on both the Express (NodeJS) and Oak (Deno)
-servers. :::
+servers.
+
+:::
 
 ## Example LiveView Code
 
@@ -297,12 +301,20 @@ referencing the `uploads.photos` config we configured in `mount` earlier.
 ...
 ```
 
-:::info 🤯 We just added a drag and drop target to our user interface with a single attribute (i.e.
-`phx-drop-target="${uploads.photos.ref}"`)! Pretty cool, right!? Thanks Phoenix LiveView team!! 🙌 :::
+:::info
 
-:::caution The `live_file_input` helper goes beyond just rendering the file input, it also adds some required attributes
+🤯 We just added a drag and drop target to our user interface with a single attribute (i.e.
+`phx-drop-target="${uploads.photos.ref}"`)! Pretty cool, right!? Thanks Phoenix LiveView team!! 🙌
+
+:::
+
+:::caution
+
+The `live_file_input` helper goes beyond just rendering the file input, it also adds some required attributes
 to the file input and works with the rest of **LiveViewJS** to handle uploads. You should always use it rather than
-rendering the file input yourself. :::
+rendering the file input yourself.
+
+:::
 
 ### Dynamic Help Text
 
@@ -385,15 +397,23 @@ handleEvent: (event, socket) => {
 ...
 ```
 
-:::note A user can cancel an upload anytime before the `socket.consumeUploadedEntries` method is called. :::
+:::note
+
+A user can cancel an upload anytime before the `socket.consumeUploadedEntries` method is called.
+
+:::
 
 ### `save` event
 
 The `save` event is automatically fired when the user submits the form. In the case of file uploads, this event is not
 sent to the `handleEvent` method until after all the files have been fully uploaded.
 
-:::info The upload progress for each entry will automatically be updated and the `render` method will be executed as
-they are uploaded allowing us to show the user the progress of the upload. :::
+:::info
+
+The upload progress for each entry will automatically be updated and the `render` method will be executed as
+they are uploaded allowing us to show the user the progress of the upload.
+
+:::
 
 Let's look at the `save` event handler:
 

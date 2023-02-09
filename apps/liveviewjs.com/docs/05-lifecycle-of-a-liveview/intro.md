@@ -65,11 +65,15 @@ Below is a sequence diagram showing the "Websocket Join" phase:
 
 ![Websocket Join](/img/diagrams/liveview-lifecycle-websocket-join.svg)
 
-:::info You may have noticed both the HTTP request phase and the Websocket Join phase run the same methods. This is
+:::info
+
+You may have noticed both the HTTP request phase and the Websocket Join phase run the same methods. This is
 because the LiveView is initialized (`mount` => `handleParams` => `render`) in both phases. The HTTP phase doesn't
 retain any state but the Websocket phase does keep state in memory so needs to re-run the initialization methods.
 Importantly, you may also want to handle HTTP vs Websocket differently in your LiveView so calling the initialization
-methods in both phases is important. :::
+methods in both phases is important.
+
+:::
 
 #### Interactive Phase
 

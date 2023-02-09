@@ -6,11 +6,15 @@ sidebar_position: 4
 
 Here is a table of all the bindings available in Phoenix LiveView and whether they are available in LiveViewJS.
 
-:::info These bindings actually come from [Phoenix LiveView](https://hexdocs.pm/phoenix_live_view/bindings.html) since
+:::info
+
+These bindings actually come from [Phoenix LiveView](https://hexdocs.pm/phoenix_live_view/bindings.html) since
 we use the same client-side JavaScript library. The table below denotes which bindings are "Supported" in **LiveViewJS**
 and which are not. Bindings below marked with ✅ are working and tested and most of them have example usage in the
 `examples` codebase. Those with `?`, we have not gotten around to testing so not sure if they work. Those marked with ❌
-are not yet implemented and known not to work. :::
+are not yet implemented and known not to work.
+
+:::
 
 | Binding         | Attribute            | Supported |
 | --------------- | -------------------- | --------- |
