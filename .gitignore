@@ -10,3 +10,5 @@ build/
 *.tgz
 .turbo
 .todo.md
+docs/
+!docs/CNAME
