@@ -40,10 +40,10 @@ LiveViewJS is broken up into the following packages:
 - `liveviewjs` [Node](https://www.npmjs.com/package/liveviewjs) and [Deno](https://deno.land/x/liveviewjs) - The core
   package that contains the **LiveViewJS** core server code. This package is runtime agnostic and can be used with
   either NodeJS or Deno.
+- `@liveviewjs/gen` [Link](https://www.npmjs.com/package/@liveviewjs/gen) - The code generator package that is used to
+  generate the LiveViewJS code including minimal project configuration for both NodeJS and Deno. This package will also add support for generating LiveViews and LiveComponents as well as other boilerplate code.
+- `@liveviewjs/express` [Node](https://www.npmjs.com/package/@liveviewjs/express) - The Express package contains [ExpressJS](https://expressjs.com/) integration code and NodeJS-specific utilities like Redis pub/sub. This package is used to integrate **LiveViewJS** with Express (NodeJS). To user this packages install via `npm install @liveviewjs/express` or `yarn add @liveviewjs/express`.
+- `deno` [Link](https://github.com/floodfx/liveviewjs/tree/main/packages/deno) - The Deno package contains [Oak](https://deno.land/x/oak) integration code and Deno-specific LiveViewJS utilities like BroadcastChannel pub/sub. This package is used to integrate **LiveViewJS** with Oak (Deno).  To use this package, import into your Deno project via `import { LiveViewJS } from "https://raw.githubusercontent.com/floodfx/liveviewjs/main/packages/deno/mod.ts";`. (Note: DenoLand is broken for mono-repos, so we're hosting the package on GitHub for now.)
 - `@liveviewjs/examples` [Node](https://www.npmjs.com/package/@liveviewjs/examples) or
-  [Deno](https://deno.land/x/liveviewjs/packages/examples/mod.ts) - The package contains all the example LiveViews that
-  can be run on either NodeJS or Deno. This package is runtime agnostic and can be used with either NodeJS or Deno.
-- `@liveviewjs/express` [Node](https://www.npmjs.com/package/@liveviewjs/express) - The Express package that contains
-  the Express server integration code. This package is used to integrate **LiveViewJS** with Express (NodeJS).
-- `https://deno.land/x/liveviewjs@VERSION/packages/deno/mod.ts` - The Deno package that contains the Oak server
-  integration code. This package is used to integrate **LiveViewJS** with Oak (Deno).
+  [Deno](https://raw.githubusercontent.com/floodfx/liveviewjs/main/packages/examples/mod.ts) - The package contains all the example LiveViews that
+  can be run on either NodeJS or Deno. This package is runtime agnostic and can be used with either NodeJS or Deno.  See the [examples](https://github.com/floodfx/liveviewjs/tree/main/packages/examples/src/liveviews) directory for the source code.

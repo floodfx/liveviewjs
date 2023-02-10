@@ -11,12 +11,31 @@ far less code and complexity and far more speed and efficiency**.
 
 ## What is a LiveView?
 
-A LiveView is a server-rendered HTML page that connects to the server via a persistent web socket. The web socket allows
-the client to send user events to the server and the server to send diffs in response. **LiveViewJS** is a LiveView
-framework that handles the complex part of this (handling websockets, diffing changes, applying DOM updates, etc.) so that
-you can focus on building your application.
+The LiveView pattern, [as popularized in Elixir’s Phoenix framework](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html), shifts your UI’s state management, event handling to the server, calculating minimal diffs to drive updates in your HTML over WebSockets.  
 
-Here's the typical "counter" example written as a LiveView in **LiveViewJS**:
+There are many benefits to this approach, including:
+ * extremely fast, SEO-friendly page loads
+ * simple state management that works well at any scale (not just small apps)
+ * minimal data transfer (only send diffs)
+ * no need to build (or operate) REST or GraphQL APIs
+
+There are also some drawbacks, including:
+ * requires a server (e.g. pure static sites are not the best fit)
+ * requires a internet connection (e.g. offline-first apps are not the best fit - though sporadic internet connectivity is fine)
+
+If you are building a web-based application, the LiveView approach is a super-powerful, some say "game-changing", way to build it and LiveViewJS is the best way to do it in NodeJS and Deno.
+
+### More detail
+
+As mentioned, a LiveView is a server-rendered HTML page that, when loaded, connects back to the server via a persistent web socket. As the user interacts with the LiveView, the client to sends user events (click, keys, etc) via the websocket back to the server and the server responds with diffs to the HTML page in return.
+
+### Websockets and Diffs? That sounds complicated!
+
+As a developer, you don't need to worry about connecting websockets or calculating diffs.  **LiveViewJS** handles all of the complex parts of this for you.  You just focus on implementing your business logic and rendering your views and LiveViewJS handles the rest.
+
+## Example "Counter" LiveView
+
+Here's the typical "counter" in **LiveViewJS**:
 
 ```ts
 import { createLiveView, html } from "liveviewjs";
@@ -24,10 +43,7 @@ import { createLiveView, html } from "liveviewjs";
 /**
  * A basic counter that increments and decrements a number.
  */
-export const counterLiveView = createLiveView<
-  { count: number }, // Define LiveView Context (a.k.a state)
-  { type: "increment" } | { type: "decrement" } // Define LiveView Events
->({
+export const counterLiveView = createLiveView({
   mount: (socket) => {
     // init state, set count to 0
     socket.assign({ count: 0 });
@@ -66,16 +82,20 @@ Yes, it "looks" like a React/Vue/Svelt UI but the main differences are:
 - This page was first rendered as plain HTML (not a bundle of JS)
 - The client is automatically connected to a server via a websocket
 - The click events are automatically shipped to the server
-- The server then runs the business logic to update the state
-- Using the new state, the server then renders a new view and calculates any diffs
-- Those diffs are shipped back to the client, where they are automatically applied
+- The server then runs the business logic to update the state 
+- The server automatically calculates the minimal diffs and sends them to the client
+- The client automatically applies the diffs to the DOM
 
 Pretty cool eh? We think so too! While this counter LiveView isn't particularly useful, it gives you a quick intro to how
-LiveViews work and what they look like both as code and in the browser. We've got a lot more to show you about
-**LiveViewJS** including: built-in real-time / multi-player support, built-in form validation with changesets, built-in
-file uploads with image previews and drag and drop support, and more!
+LiveViews work and what they look like both as code and in the browser. 
 
-But first, a bit more about LiveViews...
+We've got a lot more to show you about **LiveViewJS** including some amazing features built-in the framework like: 
+ 
+ * real-time / multi-player support
+ * simple, powerfil form validation with changesets
+ * file uploads with image previews and drag and drop support, and more!
+
+If you want more detail on LiveViews and how awesome they are feel free to keep reading.  If you want to jump right in, check out the [Quick Start](../02-quick-starts/get-liveviewjs-repo.md) guide.
 
 ## LiveView is already proven technology
 
@@ -115,9 +135,6 @@ Here is a quote from the author and inventor of LiveView, [Chris McCord](http://
 - **No client-side routing** - No need to use a library like React Router or Vue Router. LiveViews route like multi-page
   applications which is handled automatically by the browser and server. (Another major complication rendered
   unnecessary.)
-- **No component libraries (or Storybook) required** - Traditional SPAs require teams to adopt, build or buy and then
-  maintain, and customize a component library and use something like [Storybook](https://storybook.js.org/). LiveView
-  simplifies this greatly with server-side HTML templates.
 
 ## Disadvantages
 
@@ -134,11 +151,3 @@ and productivity of LiveView to the NodeJS and Deno ecosystems** and are obvious
 team that invented it. We believe in it so much that we think more developers should have access to the programming
 paradigm it enables.
 
-### Reach more developers
-
-Unfortunately, Elixir only represents
-[about 2%](https://survey.stackoverflow.co/2022/#section-most-popular-technologies-programming-scripting-and-markup-languages)
-of the programming language market share. We believe that **LiveViewJS** will help bring the productivity and magic of
-LiveView to the
-[65% of developers](https://survey.stackoverflow.co/2022/#section-most-popular-technologies-programming-scripting-and-markup-languages)
-that use Javascript (and Typescript).
