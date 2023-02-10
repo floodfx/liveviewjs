@@ -11,3 +11,5 @@ we can reuse on the client side.
 client code instead of reinventing!
 
 🙌 Thanks to [@blimmer](https://github.com/blimmer/) for the awesome feedback, documentation suggestions, and support!
+
+Thanks to you for checking out **LiveViewJS**! We hope you enjoy it as much as we do!

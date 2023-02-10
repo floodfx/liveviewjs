@@ -2,6 +2,22 @@
 sidebar_position: 1
 ---
 
+# Let's Build a LiveView
+
+Building a LiveView is easy with **LiveViewJS**.  You can get started in just a few minutes.
+
+## Create a New Project
+
+**LiveViewJS** has a project generation tool that will setup the project structure and install the required dependencies for either NodeJS or Deno.
+
+Run:
+```bash
+npx @liveviewjs/gen
+```
+
+You will be prompted to select the type of project you want to create and a couple other questions.  Then, voilà, you will have a new project that runs out of the box!
+
+
 # Download the Repo
 
 The fastest way to run the example or build your own LiveView is by downloading the **LiveViewJS** repo. This repo

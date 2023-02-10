@@ -1,0 +1,23 @@
+name: Test Docs Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  test-deploy:
+    name: Test Docs Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install dependencies in apps/liveviewjs.com
+        run: npm install -w apps/liveviewjs.com
+      - name: Build docusaurus website
+        run: npm run build -w apps/liveviewjs.com
