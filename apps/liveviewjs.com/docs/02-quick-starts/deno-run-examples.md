@@ -23,10 +23,16 @@ Navigate to the `packages/deno` directory:
 cd packages/deno
 ```
 
+Install dependencies:
+
+```bash
+npm install
+```
+
 Then, start the Deno server with the examples:
 
 ```bash
-deno run --allow-run --allow-read --allow-env  src/example/autorun.ts
+deno run --allow-run --allow-read --allow-write --allow-net --allow-env  src/example/autorun.ts
 ```
 
 Point your browser to [http://localhost:9001](http://localhost:9001)
