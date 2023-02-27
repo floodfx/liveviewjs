@@ -126,6 +126,9 @@ Check out the full LiveViewJS repository:
 `cd` to this package:
 `cd packages/deno`
 
+Install dependencies:
+`npm install`
+
 Then run the following command:
 `deno run --allow-run --allow-read --allow-write --allow-net --allow-env  src/example/autorun.ts`
 
