@@ -4,21 +4,23 @@ LiveViewJS enables developers to create great user experiences including file up
 
 ### Highlights
 
-* `add_class` - Add css classes to an element including optional transition classes
-* `remove_class` - Remove css classes from an element including optional transition classes
-* `set_attribute` - Set an attribute on an element
-* `remove_attribute` - Remove an attribute from an element
-* `show` - Show an element including optional transition classes
-* `hide` - Hide an element including optional transition classes
-* `toggle` - Toggle the visibility of an element
-* `dispatch` - Dispatch a DOM event from an element
-* `transition` - Apply transition classes to an element (i.e. animate it)
-* `push` - Push an event to the LiveView server (i.e. trigger a server round trip)
+- `add_class` - Add css classes to an element including optional transition classes
+- `remove_class` - Remove css classes from an element including optional transition classes
+- `set_attribute` - Set an attribute on an element
+- `remove_attribute` - Remove an attribute from an element
+- `show` - Show an element including optional transition classes
+- `hide` - Hide an element including optional transition classes
+- `toggle` - Toggle the visibility of an element
+- `dispatch` - Dispatch a DOM event from an element
+- `transition` - Apply transition classes to an element (i.e. animate it)
+- `push` - Push an event to the LiveView server (i.e. trigger a server round trip)
 
 ### JS Command Syntax
+
 JS Commands are used in the `render` function of a LiveView or LiveComponent:
+
 ```typescript
-import { JS } from 'lieviewjs';
+import { JS } from 'liveviewjs';
 
 //... render function of a LiveView
 render() {
@@ -32,9 +34,11 @@ render() {
 ```
 
 ### "Chainable" (i.e. fluent) Syntax
+
 JS Commands are "chainable" (i.e. fluent) so you can chain multiple commands together as needed and they will be executed in the order they are called:
+
 ```typescript
-import { JS } from 'lieviewjs';
+import { JS } from 'liveviewjs';
 
 //... render function of a LiveView
 render() {
@@ -48,22 +52,27 @@ render() {
 ```
 
 ### Example JS Commands LiveView
-See `packages/examples/src/liveviews/jsCommands` for a working, complete set of examples of using JS Commands.  These examples run on top of express and deno: see the "Run the LiveViewJS Examples in 30 seconds" section of the README for details on how to run them.
+
+See `packages/examples/src/liveviews/jsCommands` for a working, complete set of examples of using JS Commands. These examples run on top of express and deno: see the "Run the LiveViewJS Examples in 30 seconds" section of the README for details on how to run them.
 
 ## More Details on JS Commands
 
 ### Add Class Command
-The `add_class` command adds one or more css classes to an element.  
+
+The `add_class` command adds one or more css classes to an element.
+
 ```typescript
 new JS().add_class(names: string, options?: ClassOptions)
-``` 
-* `names` - A string of space separated css class names to add to the element
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to add the class to.  Defaults to the element that the JS Command is attached to.
-  * `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200   
-  * `transition` - The string of classes to apply before adding the classes, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+```
+
+- `names` - A string of space separated css class names to add to the element
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to add the class to. Defaults to the element that the JS Command is attached to.
+  - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
+  - `transition` - The string of classes to apply before adding the classes, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -80,17 +89,21 @@ Examples
 ```
 
 ### Remove Class Command
-The `remove_class` command removes one or more css classes from an element.  
+
+The `remove_class` command removes one or more css classes from an element.
+
 ```typescript
 new JS().remove_class(names: string, options?: ClassOptions)
-``` 
-* `names` - A string of space separated css class names to remove from the element
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to remove the class from.  Defaults to the element that the JS Command is attached to.
-  * `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200   
-  * `transition` - The string of classes to apply before removing the classes, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+```
+
+- `names` - A string of space separated css class names to remove from the element
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to remove the class from. Defaults to the element that the JS Command is attached to.
+  - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
+  - `transition` - The string of classes to apply before removing the classes, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -107,15 +120,19 @@ Examples
 ```
 
 ### Set Attribute Command
-The `set_attribute` command add or updates a single attribute on the target element.  
+
+The `set_attribute` command add or updates a single attribute on the target element.
+
 ```typescript
 new JS().set_attribute(attr: [string, string], options?: AttributeOptions)
-``` 
-* `attr` - the 2-tuple of the attribute name and value to set
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to set the attribute on.  Defaults to the element that the JS Command is attached to.  
+```
+
+- `attr` - the 2-tuple of the attribute name and value to set
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to set the attribute on. Defaults to the element that the JS Command is attached to.
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -131,15 +148,19 @@ Examples
 ```
 
 ### Remove Attribute Command
-The `remove_attribute` command removes a single attribute from the target element.  
+
+The `remove_attribute` command removes a single attribute from the target element.
+
 ```typescript
 new JS().remove_attribute(attr: string, options?: AttributeOptions)
-``` 
-* `attr` - the attribute name to remove
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to remove the attribute from.  Defaults to the element that the JS Command is attached to.  
+```
+
+- `attr` - the attribute name to remove
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to remove the attribute from. Defaults to the element that the JS Command is attached to.
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -155,17 +176,21 @@ Examples
 ```
 
 ### Show Command
+
 The `show` command makes the target element visible
+
 ```typescript
 new JS().show(options?: ShowOptions)
-``` 
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element make visible.  Defaults to the element that the JS Command is attached to.
-  * `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200   
-  * `transition` - The string of classes to apply before showing the element, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
-  * `display` - The display type to apply to the element. Defaults to "block"
+```
+
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element make visible. Defaults to the element that the JS Command is attached to.
+  - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
+  - `transition` - The string of classes to apply before showing the element, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+  - `display` - The display type to apply to the element. Defaults to "block"
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -175,24 +200,28 @@ Examples
 
 // show the target element with a transition on click
 <button phx-click="${new JS().show({
-  to: "#show_me2", 
-  transition: ["ease-out duration-300", "opacity-0", "opacity-100"], 
+  to: "#show_me2",
+  transition: ["ease-out duration-300", "opacity-0", "opacity-100"],
   time: 400
 })}">Show w/ Transition</button>
 <div id="show_me2" style="display: none;">Show Me2</div>
 ```
 
 ### Hide Command
+
 The `hide` command makes the target element hidden
+
 ```typescript
 new JS().hide(options?: ShowOptions)
-``` 
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to hide.  Defaults to the element that the JS Command is attached to.
-  * `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200   
-  * `transition` - The string of classes to apply before hiding the element, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-100", "opacity-0"]
+```
+
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to hide. Defaults to the element that the JS Command is attached to.
+  - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
+  - `transition` - The string of classes to apply before hiding the element, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-100", "opacity-0"]
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -202,26 +231,30 @@ Examples
 
 // hide the target element with a transition on click
 <button phx-click="${new JS().hide({
-  to: "#hide_me", 
-  transition: ["ease-out duration-300", "opacity-100", "opacity-0"], 
+  to: "#hide_me",
+  transition: ["ease-out duration-300", "opacity-100", "opacity-0"],
   time: 400
 })}">Hide w/ Transition</button>
 <div id="hide_me2">Hide Me2</div>
 ```
 
 ### Toggle Command
+
 The `toggle` command toggles the visibility of the target element
+
 ```typescript
 new JS().toggle(options?: ToggleOptions)
-``` 
-* `options` - Options for the command (optional)
-  * `to` - A css selector to identify the element to toggle.  Defaults to the element that the JS Command is attached to.
-  * `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200   
-  * `in` - The string of classes to apply when toggling to visible, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
-  * `out` - The string of classes to apply when toggling to hidden, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-100", "opacity-0"]
-  * `display` - The display type to apply to the element when toggling to visible. Defaults to "block"
+```
+
+- `options` - Options for the command (optional)
+  - `to` - A css selector to identify the element to toggle. Defaults to the element that the JS Command is attached to.
+  - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
+  - `in` - The string of classes to apply when toggling to visible, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-0", "opacity-100"]
+  - `out` - The string of classes to apply when toggling to hidden, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-100", "opacity-0"]
+  - `display` - The display type to apply to the element when toggling to visible. Defaults to "block"
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -231,30 +264,34 @@ Examples
 
 // toggle the target element with a transition in/out on click
 <button phx-click="${new JS().toggle({
-  to: "#toggle_me2",", 
-  in: ["ease-out duration-300", "opacity-0", "opacity-100"], 
-  out: ["ease-out duration-300", "opacity-100", "opacity-0"], 
+  to: "#toggle_me2",",
+  in: ["ease-out duration-300", "opacity-0", "opacity-100"],
+  out: ["ease-out duration-300", "opacity-100", "opacity-0"],
   time: 400
 })}">Toggle w/ Transition</button>
 <div id="toggle_me2">Toggle Me 2</div>
 ```
 
 ### Dispatch Command
+
 The `dispatch` command dispatches a DOM event from the target element
+
 ```typescript
 new JS().dispatch(event: string, options?: DispatchOptions)
-``` 
-* `event` - The name of the event to dispatch
-* `options` - Options for the command (optional)
-  * `to` - An optional css selector to identify the element from which to dispatch.  Defaults to the element that the JS Command is attached to.
-  * `detail` - A optional map of key/value pairs to include in the event's `detail` property
-  * `bubbles` - A optional boolean indicating whether the event should bubble up the DOM. Defaults to `true`
+```
+
+- `event` - The name of the event to dispatch
+- `options` - Options for the command (optional)
+  - `to` - An optional css selector to identify the element from which to dispatch. Defaults to the element that the JS Command is attached to.
+  - `detail` - A optional map of key/value pairs to include in the event's `detail` property
+  - `bubbles` - A optional boolean indicating whether the event should bubble up the DOM. Defaults to `true`
 
 **Note**: All events dispatched are of a type CustomEvent, with the exception of "click". For a "click", a MouseEvent is dispatched to properly simulate a UI click.
 
 For emitted CustomEvent's, the event detail will contain a dispatcher, which references the DOM node that dispatched the JS event to the target element.
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -269,16 +306,20 @@ Examples
 ```
 
 ### Transition Command
+
 The `transition` command dispatches a DOM event from the target element
+
 ```typescript
 new JS().transition(transition: Transition, options?: TransitionOptions)
-``` 
-* `transition` - The string of classes to apply to the element, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-100", "opacity-0"]
-* `options` - Options for the command (optional)
-  * `to` - An optional css selector to identify the element from which to transition.  Defaults to the element that the JS Command is attached to.
-  * `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
+```
+
+- `transition` - The string of classes to apply to the element, or a 3-tuple containing the transition class, the class to apply to start the transition, and the class to apply to end the transition. e.g. ["ease-out duration-300", "opacity-100", "opacity-0"]
+- `options` - Options for the command (optional)
+  - `to` - An optional css selector to identify the element from which to transition. Defaults to the element that the JS Command is attached to.
+  - `time` - The time (in milliseconds) over which to apply the transition options. Defaults to 200
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -306,18 +347,22 @@ Examples
 ```
 
 ### Push Command
+
 The `push` command sends an event to the server
+
 ```typescript
 new JS().push(event: string, options?: PushOptions)
-``` 
-* `event` - The name of the event to send to the server
-* `options` - Options for the command (optional)
-  * `target` - An optional selector or component ID to push to
-  * `loading` - An optional selector to apply the phx loading classes to
-  * `page_loading` - An optional boolean indicating whether to trigger the "phx:page-loading-start" and "phx:page-loading-stop" events. Defaults to `false`
-  * `value` An optional map of key/value pairs to include in the event's `value` property
+```
+
+- `event` - The name of the event to send to the server
+- `options` - Options for the command (optional)
+  - `target` - An optional selector or component ID to push to
+  - `loading` - An optional selector to apply the phx loading classes to
+  - `page_loading` - An optional boolean indicating whether to trigger the "phx:page-loading-start" and "phx:page-loading-stop" events. Defaults to `false`
+  - `value` An optional map of key/value pairs to include in the event's `value` property
 
 Examples
+
 ```html
 //... in your render function of a LiveView
 
@@ -332,7 +377,7 @@ Examples
   Increment then hide
 </button>
 
-// hide the button then push increment event 
+// hide the button then push increment event
 <button phx-click="${new JS().hide().push("increment")}">Hide then Increment</button>
 
 // push incremenet and show page loading indicator
@@ -340,7 +385,3 @@ Examples
   Page Loading Push
 </button>
 ```
-
-
-
-
