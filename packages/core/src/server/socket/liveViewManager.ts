@@ -476,6 +476,7 @@ export class LiveViewManager {
         // store newParts for future diffs
         this._parts = newParts;
 
+        diff = this.maybeAddLiveComponentsToParts(diff);
         diff = this.maybeAddPageTitleToParts(diff);
         diff = this.maybeAddEventsToParts(diff);
 
