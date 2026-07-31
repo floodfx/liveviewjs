@@ -1,0 +1,27 @@
+{
+  "name": "@liveviewjs/web",
+  "version": "0.10.4",
+  "description": "Universal Web Standard HTTP & WebSocket Adaptor for LiveViewJS",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@liveviewjs/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^7.0.0-rc"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@liveviewjs/vite",
+  "version": "0.10.4",
+  "description": "Vite HMR Plugin and Asset Bundler for LiveViewJS",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@liveviewjs/core": "workspace:*",
+    "jsx2ttl": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^7.0.0-rc",
+    "vite": "^6.0.0"
+  },
+  "license": "MIT"
+}

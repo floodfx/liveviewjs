@@ -1,45 +1,38 @@
 {
   "name": "liveviewjs-monorepo",
-  "version": "0.4.3",
-  "description": "LiveViewJS brings the power of LiveView to Typescript and Javascript developers and applications.",
+  "version": "0.10.4",
+  "description": "LiveViewJS brings the power of LiveView to TypeScript and JavaScript developers and applications.",
+  "private": true,
   "workspaces": [
-    "docs",
-    "packages/core",
-    "packages/deno",
-    "packages/examples",
-    "packages/express",
-    "packages/gen",
-    "apps/liveviewjs.com",
-    "apps/lambda-examples"
+    "packages/*",
+    "apps/*"
   ],
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "bench": "turbo run bench",
+    "lint": "turbo run lint",
+    "format": "prettier --write '**/*.{ts,tsx,js,json,md}'"
+  },
   "keywords": [
     "liveviewjs",
     "liveview",
     "phoenix",
     "typescript",
-    "javascript"
+    "javascript",
+    "bun",
+    "deno",
+    "cloudflare"
   ],
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "MIT",
-  "scripts": {
-    "format": "turbo run format",
-    "test": "turbo run test",
-    "dist": "turbo run dist",
-    "publish": "turbo run publish",
-    "cs": "changeset",
-    "cs:version": "changeset version",
-    "cs:publish": "changeset publish"
-  },
   "devDependencies": {
-    "@changesets/cli": "^2.23.1",
-    "@types/node": "^17.0.23",
-    "prettier": "^2.5.1",
-    "ts-node": "^10.7.0",
-    "turbo": "^1.4.3",
-    "typescript": "^4.9.5"
+    "@types/node": "^22.10.0",
+    "prettier": "^3.4.0",
+    "turbo": "^2.3.0",
+    "typescript": "^7.0.0-rc"
   },
   "engines": {
-    "npm": ">=8.5.0",
-    "node": ">=17.8.0"
+    "node": ">=22.0.0"
   }
 }
