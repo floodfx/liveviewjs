@@ -7,9 +7,9 @@ import { Hono } from "hono";
  * Empirical Runtime Integration Test Suite for @liveviewjs/web
  * 
  * Verifies end-to-end rendering across:
- * 1. Bun.serve (HTTP + WebSockets)
+ * 1. Bun.serve (HTTP + WebSockets over TCP)
  * 2. Hono Framework (HTTP route dispatch)
- * 3. Cloudflare Workers (WinterCG fetch event dispatch)
+ * 3. Cloudflare Workers (WinterCG fetch event in-memory dispatch)
  */
 describe("End-to-End Multi-Runtime Integration Suite (Bun, Hono, Cloudflare Workers)", () => {
   let server: any;
@@ -133,7 +133,7 @@ describe("End-to-End Multi-Runtime Integration Suite (Bun, Hono, Cloudflare Work
       const app = new Hono();
       app.all("*", (c) => handler.fetch(c.req.raw));
 
-      const req = new Request("http://localhost/counter", { method: "GET" });
+      const req = new Request("http://example.com/counter", { method: "GET" });
       const res = await app.fetch(req);
 
       expect(res.status).toBe(200);
@@ -147,13 +147,15 @@ describe("End-to-End Multi-Runtime Integration Suite (Bun, Hono, Cloudflare Work
 
   describe("3. Cloudflare Workers Integration", () => {
     test("Cloudflare Workers fetch handler returns 200 OK HTML", async () => {
+      // Simulates Cloudflare Workers export default { fetch(request) { ... } } entrypoint.
+      // Operates in-memory on Web Standard Request/Response primitives without external network calls.
       const worker = {
         async fetch(request: Request) {
           return handler.fetch(request);
         },
       };
 
-      const req = new Request("https://my-worker.workers.dev/counter", { method: "GET" });
+      const req = new Request("https://example.com/counter", { method: "GET" });
       const res = await worker.fetch(req);
 
       expect(res.status).toBe(200);
