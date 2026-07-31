@@ -1,7 +1,7 @@
 {
-  "name": "@liveviewjs/core",
+  "name": "liveviewjs",
   "version": "0.10.4",
-  "description": "LiveViewJS brings the power of LiveView to TypeScript and JavaScript developers and applications.",
+  "description": "LiveViewJS top-level meta-package bringing the power of LiveView to TypeScript and JavaScript developers.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -30,14 +30,12 @@
   "author": "Donnie Flood <donnie@floodfx.com>",
   "license": "MIT",
   "dependencies": {
-    "deep-object-diff": "^1.1.9",
-    "nanoid": "^5.0.9",
-    "path-to-regexp": "^8.2.0",
-    "zod": "^3.24.1"
+    "@liveviewjs/core": "workspace:*",
+    "@liveviewjs/router": "workspace:*",
+    "@liveviewjs/web": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "prettier": "^3.4.0",
     "typescript": "^7.0.0-rc"
   }
 }

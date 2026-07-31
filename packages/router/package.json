@@ -17,7 +17,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "liveviewjs": "workspace:*"
+    "@liveviewjs/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
