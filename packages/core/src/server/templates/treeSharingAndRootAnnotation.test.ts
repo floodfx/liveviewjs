@@ -3,6 +3,10 @@ import { html } from "./htmlSafeString";
 
 /**
  * Dashbit Optimization #6 & #7 Corner Case Test Suite
+ *
+ * Optimization #6: LiveComponent Tree-Sharing ("s": CID / "s": -CID)
+ * Optimization #7: Subtree Change-Tracking ("r": 1 Root Annotations)
+ * Reference: https://dashbit.co/blog/latency-rendering-liveview
  */
 describe("Dashbit Optimization #6 & #7 - Corner Cases & Edge Coverage", () => {
   test("1. Template with multiple root elements does NOT receive 'r': 1 annotation", () => {

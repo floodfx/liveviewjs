@@ -193,7 +193,8 @@ export class HtmlSafeString {
     // appends the statics to the parts tree
     if (includeStatics) {
       parts["s"] = this.statics;
-      // Optimization #7: Check if template has a single root HTML element tag
+      // Dashbit Optimization #7: Subtree Change-Tracking ("r": 1 Root Annotations)
+      // Reference: https://dashbit.co/blog/latency-rendering-liveview
       if (this.hasSingleRootElement()) {
         parts["r"] = 1;
       }
