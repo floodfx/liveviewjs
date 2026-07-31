@@ -35,32 +35,8 @@ describe("End-to-End Local Server & WebSocket Integration Suite", () => {
   });
 
   beforeAll(() => {
-    // Start real local Bun.serve server on random available port
-    server = Bun.serve({
-      port: 0,
-      fetch(req, serverRef) {
-        // Upgrade WebSocket if request is WebSocket
-        const url = new URL(req.url);
-        if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
-          const success = serverRef.upgrade(req, {
-            data: { pathName: url.pathname },
-          });
-          if (success) return undefined;
-        }
-        return handler.fetch(req);
-      },
-      websocket: {
-        open(ws) {
-          handler.websocket(ws, ws.data?.pathName);
-        },
-        async message(ws, message) {
-          await handler.handleMessage(ws, message as string);
-        },
-        close(ws) {
-          handler.handleClose(ws);
-        },
-      },
-    });
+    // Start real local server in ONE LINE using handler.bun()!
+    server = Bun.serve(handler.bun({ port: 0 }));
     serverPort = server.port;
   });
 
@@ -83,8 +59,9 @@ describe("End-to-End Local Server & WebSocket Integration Suite", () => {
     expect(htmlText).toContain('data-phx-session=');
   });
 
-  test("2. Real WebSocket TCP connection joins channel and receives live diff frames", async () => {
-    const wsUrl = `ws://localhost:${serverPort}/counter`;
+  test("2. Real WebSocket TCP connection joins channel at /live/websocket and receives live diff frames", async () => {
+    // Official Phoenix LiveView WebSocket endpoint path: /live/websocket
+    const wsUrl = `ws://localhost:${serverPort}/live/websocket`;
     const ws = new WebSocket(wsUrl);
 
     // Promise waiting for real WebSocket open

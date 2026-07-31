@@ -17,6 +17,7 @@ export interface WebHandlerOptions {
   router: Record<string, LiveView>;
   signingSecret?: string;
   pageTitleDefaults?: { title?: string; prefix?: string; suffix?: string };
+  wsPath?: string;
 }
 
 export class JsonSerDe implements SerDe {
@@ -71,7 +72,6 @@ export class WebStandardWsAdaptor implements WsAdaptor {
       }
     };
 
-    // Attach handler method directly to socket for Bun/Deno server wrappers
     socket._onMessage = onMessage;
     socket._onClose = onClose;
 
@@ -117,6 +117,7 @@ export class WebLiveViewHandler {
   private signingSecret: string;
   private serDe: SerDe;
   private pageTitleDefaults?: { title?: string; prefix?: string; suffix?: string };
+  private wsPath: string;
   private pubSub = new SingleProcessPubSub();
   private flashAdaptor = new SessionFlashAdaptor();
   private fileSysAdaptor = new DefaultFileSystemAdaptor();
@@ -126,13 +127,50 @@ export class WebLiveViewHandler {
     this.signingSecret = options.signingSecret ?? "default-secret-key-1234567890";
     this.serDe = new JsonSerDe();
     this.pageTitleDefaults = options.pageTitleDefaults;
+    this.wsPath = options.wsPath ?? "/live/websocket";
 
-    // Bind fetch and websocket methods for handler syntax (e.g. Bun.serve({ fetch: handler.fetch }))
+    // Bind fetch and websocket methods for handler syntax (e.g. Bun.serve(handler.bun()))
     this.fetch = this.fetch.bind(this);
     this.websocket = this.websocket.bind(this);
     this.ws = this.ws.bind(this);
     this.handleMessage = this.handleMessage.bind(this);
     this.handleClose = this.handleClose.bind(this);
+    this.bun = this.bun.bind(this);
+  }
+
+  /**
+   * One-line Bun.serve configuration options: Bun.serve(handler.bun({ port: 3000 }))
+   */
+  bun(options?: { port?: number; hostname?: string }): any {
+    const handlerSelf = this;
+    return {
+      port: options?.port ?? 3000,
+      hostname: options?.hostname,
+      fetch(req: Request, serverRef: any) {
+        const url = new URL(req.url);
+        if (
+          req.headers.get("upgrade")?.toLowerCase() === "websocket" ||
+          url.pathname.startsWith(handlerSelf.wsPath)
+        ) {
+          const success = serverRef.upgrade(req, {
+            data: { pathName: url.pathname },
+          });
+          if (success) return undefined;
+        }
+        return handlerSelf.fetch(req);
+      },
+      websocket: {
+        open(ws: any) {
+          handlerSelf.websocket(ws, ws.data?.pathName);
+        },
+        async message(ws: any, message: any) {
+          await handlerSelf.handleMessage(ws, message);
+        },
+        close(ws: any) {
+          handlerSelf.handleClose(ws);
+        },
+      },
+    };
   }
 
   /**
