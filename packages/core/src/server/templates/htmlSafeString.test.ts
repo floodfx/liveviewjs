@@ -7,7 +7,8 @@ import {
   LiveComponent,
   LiveViewMeta,
 } from "../live";
-import { html, HtmlSafeString, safe } from "./index";
+import { html, htmlFromString, HtmlSafeString, safe } from "./index";
+
 
 describe("test escapeHtml", () => {
   it("combines statics and dynamics properly", () => {
@@ -307,7 +308,60 @@ describe("test escapeHtml", () => {
       }
     `);
   });
+
+  describe("htmlFromString", () => {
+    it("evaluates a template string with variable substitutions", () => {
+      const result = htmlFromString("<h1>${title}</h1><p>${content}</p>", {
+        title: "Hello World",
+        content: "This is a test.",
+      });
+      expect(result.partsTree()).toEqual({
+        0: "Hello World",
+        1: "This is a test.",
+        s: ["<h1>", "</h1><p>", "</p>"],
+      });
+      expect(result.toString()).toBe("<h1>Hello World</h1><p>This is a test.</p>");
+    });
+
+    it("escapes unsafe HTML content passed via variables", () => {
+      const result = htmlFromString("<div>${xss}</div>", {
+        xss: "<script>alert('xss')</script>",
+      });
+      expect(result.toString()).toBe("<div>&lt;script&gt;alert(&#39;xss&#39;)&lt;&#x2F;script&gt;</div>");
+    });
+
+
+    it("supports nested HtmlSafeString in variables", () => {
+      const child = html`<span>${"nested"}</span>`;
+      const result = htmlFromString("<div>${child}</div>", { child });
+      expect(result.toString()).toBe("<div><span>nested</span></div>");
+      expect(result.partsTree()).toEqual({
+        0: {
+          0: "nested",
+          s: ["<span>", "</span>"],
+        },
+        s: ["<div>", "</div>"],
+      });
+    });
+
+    it("works with no variables provided", () => {
+      const result = htmlFromString("<div>static content</div>");
+      expect(result.partsTree()).toEqual({
+        s: ["<div>static content</div>"],
+      });
+      expect(result.toString()).toBe("<div>static content</div>");
+    });
+
+    it("handles multiple variable types (numbers, booleans, objects)", () => {
+      const result = htmlFromString("Count: ${count}, Active: ${active}", {
+        count: 42,
+        active: true,
+      });
+      expect(result.toString()).toBe("Count: 42, Active: true");
+    });
+  });
 });
+
 
 const testLC = createLiveComponent({
   render: () => {
