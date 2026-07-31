@@ -1,0 +1,15 @@
+{
+  "name": "@liveviewjs/benchmarks",
+  "version": "0.10.4",
+  "description": "Automated Microbenchmarks and WebSocket Load Suite for LiveViewJS",
+  "private": true,
+  "scripts": {
+    "bench": "node src/index.js"
+  },
+  "dependencies": {
+    "@liveviewjs/core": "workspace:*",
+    "@liveviewjs/web": "workspace:*",
+    "mitata": "^0.1.11"
+  },
+  "license": "MIT"
+}

@@ -1,20 +1,20 @@
 {
-  "$schema": "https://turborepo.org/schema.json",
+  "$schema": "https://turbo.build/schema.json",
   "pipeline": {
-    "format": {    
-    },
-    "dist": {
-      "dependsOn": ["^dist", "test"],
-      "outputs": ["dist/**", "build/**"],
-      "inputs": ["src/**/*.ts"]
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**"]
     },
     "test": {
-      "outputs": ["coverage/**"],
-      "inputs": ["src/**/*.ts"]
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**"]
     },
-    "publish": {
-      "dependsOn": ["test", "dist"],
-      "cache": false
+    "lint": {
+      "outputs": []
+    },
+    "bench": {
+      "dependsOn": ["build"],
+      "outputs": []
     }
   }
 }
