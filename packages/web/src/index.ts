@@ -1,2 +1,1 @@
-// Web Standard HTTP & WebSocket Adaptor Interface
-export {};
+export * from "./webLiveViewHandler";

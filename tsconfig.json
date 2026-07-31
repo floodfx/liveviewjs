@@ -5,6 +5,7 @@
     "moduleResolution": "NodeNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": true,
+    "strictPropertyInitialization": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,

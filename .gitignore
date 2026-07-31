@@ -3,10 +3,11 @@ node_modules
 .env
 .parcel-cache/
 .DS_Store
-coverage/lcov-report/
-coverage/lcov.info
+coverage/
 diffs/
 build/
+dist/
 *.tgz
 .turbo
 .todo.md
+*.tsbuildinfo

@@ -60,8 +60,7 @@ describe("test liveview manager uploads", () => {
     // second send response is the allow_upload response
     console.log("send", send.mock);
     expect(send.mock.calls[1][0]).toMatchInlineSnapshot(
-      `"[\\"joinRef\\",\\"msgRef\\",\\"phx-v70rBYbBXTaWKYkyZ-yy_\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{},\\"config\\":{\\"chunk_size\\":64000,\\"max_entries\\":10,\\"max_file_size\\":10485760},\\"entries\\":{\\"0\\":\\"{\\\\\\"name\\\\\\":\\\\\\"filename\\\\\\",\\\\\\"type\\\\\\":\\\\\\"mimetype\\\\\\",\\\\\\"size\\\\\\":1000,\\\\\\"last_modified\\\\\\":1661570303752,\\\\\\"ref\\\\\\":\\\\\\"0\\\\\\"}\\",\\"ref\\":\\"uploadRef\\"}},\\"status\\":\\"ok\\"}]"`
-    );
+      `"["joinRef","msgRef","phx-v70rBYbBXTaWKYkyZ-yy_","phx_reply",{"response":{"diff":{},"config":{"chunk_size":64000,"max_entries":10,"max_file_size":10485760},"entries":{"0":"{\\"name\\":\\"filename\\",\\"type\\":\\"mimetype\\",\\"size\\":1000,\\"last_modified\\":1661570303752,\\"ref\\":\\"0\\"}","ref":"uploadRef"}},"status":"ok"}]"`);
   });
 
   it("test onPhxJoinUpload", async () => {
@@ -73,8 +72,7 @@ describe("test liveview manager uploads", () => {
     });
     // second send response is the onPhxJoinUpload response
     expect(send.mock.calls[1][0]).toMatchInlineSnapshot(
-      `"[\\"joinRef\\",\\"msgRef\\",\\"lvu:phx-UfsaM3mwEygZi3w0ZSteZ\\",\\"phx_reply\\",{\\"response\\":{},\\"status\\":\\"ok\\"}]"`
-    );
+      `"["joinRef","msgRef","lvu:phx-UfsaM3mwEygZi3w0ZSteZ","phx_reply",{"response":{},"status":"ok"}]"`);
   });
 
   it("test onBinaryUpload", async () => {
@@ -225,8 +223,7 @@ describe("test liveview manager uploads", () => {
 
     // fifth send response is the onProgressUpload response
     expect(send.mock.calls[4][0]).toMatchInlineSnapshot(
-      `"[\\"joinRef\\",\\"msgRef\\",\\"lv:phx-o5LsszTRfwXyYXmj18vjA\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{\\"0\\":{\\"d\\":[[\\"17\\"]]}}},\\"status\\":\\"ok\\"}]"`
-    );
+      `"["joinRef","msgRef","lv:phx-o5LsszTRfwXyYXmj18vjA","phx_reply",{"response":{"diff":{"0":{"d":[["17"]]}}},"status":"ok"}]"`);
   });
 
   it("test cancelUpload", async () => {

@@ -3,6 +3,8 @@ export * from "./files";
 export * from "./flash";
 export * from "./http";
 export * from "./idGen";
+export * from "./jsonSerDe";
+export * from "./jwtSerDe";
 export * from "./serDe";
 export * from "./sessionFlashAdaptor";
 export * from "./websocket";

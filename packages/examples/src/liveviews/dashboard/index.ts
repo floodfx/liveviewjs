@@ -59,7 +59,7 @@ export const dashboardLiveView = createLiveView<
 
   shutdown: (id, context) => {
     // clear the interval when the LiveView is shut down
-    intervalRefs[id].forEach((interval) => clearInterval(interval));
+    intervalRefs[id].forEach((interval) => clearInterval(interval as any));
   },
 });
 

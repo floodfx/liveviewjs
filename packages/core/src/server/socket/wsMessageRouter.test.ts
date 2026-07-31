@@ -213,7 +213,7 @@ describe("test message router", () => {
     // live patch requires a join first
     const phxLeave: PhxIncomingMessage<{}> = ["4", "8", "lv:phx-AAAAAAAA", "phx_leave", {}];
     pubSub.subscribe("lv:phx-AAAAAAAA", (msg: PhxMessage) => {
-      fail("should not have received message");
+      throw new Error("should not have received message");
     });
     mr.onMessage("1234", JSON.stringify(phxLeave), ws);
     setTimeout(() => {
@@ -226,7 +226,7 @@ describe("test message router", () => {
     // live patch requires a join first
     const phxUnknown = ["4", "8", "lv:phx-AAAAAAAA", "blahblah", {}];
     pubSub.subscribe("lv:phx-AAAAAAAA", (msg: PhxMessage) => {
-      fail("should not have received message");
+      throw new Error("should not have received message");
     });
     mr.onMessage("1234", JSON.stringify(phxUnknown), ws);
     setTimeout(() => {
