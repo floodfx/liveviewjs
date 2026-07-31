@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { WebLiveViewHandler } from "./webLiveViewHandler";
+import { WebLiveViewHandler, DefaultFileSystemAdaptor, WebStandardWsAdaptor } from "./webLiveViewHandler";
 import { createLiveView, html, JwtSerDe } from "@liveviewjs/core";
 
 /**
@@ -143,6 +143,46 @@ describe("WebLiveViewHandler - WinterCG Web Standard Adaptor", () => {
       expect(eventReply[4].response.diff).toEqual({
         "0": "11",
       });
+    });
+  });
+
+  describe("3. FileSystemAdaptor & WebStandardWsAdaptor Helpers", () => {
+    test("DefaultFileSystemAdaptor returns temp file paths", () => {
+      const fs = new DefaultFileSystemAdaptor();
+      expect(fs.tempPath("test.tmp")).toBe("/tmp/test.tmp");
+      expect(() => fs.writeTempFile("/tmp/test.tmp", Buffer.from("test"))).not.toThrow();
+      expect(() => fs.createOrAppendFile("/tmp/dest", "/tmp/src")).not.toThrow();
+    });
+
+    test("WebStandardWsAdaptor tracks close events and handles send errors", () => {
+      let closeListener: Function | undefined;
+      const mockSocket = {
+        send: (msg: string) => {
+          if (msg === "fail") throw new Error("Send failed");
+        },
+        addEventListener: (event: string, callback: Function) => {
+          if (event === "close") closeListener = callback;
+        },
+      };
+
+      const adaptor = new WebStandardWsAdaptor(mockSocket);
+      expect(adaptor.isClosed()).toBe(false);
+
+      let closedNotified = false;
+      adaptor.subscribeToClose(() => {
+        closedNotified = true;
+      });
+
+      if (closeListener) closeListener();
+
+      expect(adaptor.isClosed()).toBe(true);
+      expect(closedNotified).toBe(true);
+
+      let errorCaught = false;
+      adaptor.send("fail", (err) => {
+        errorCaught = true;
+      });
+      expect(errorCaught).toBe(true);
     });
   });
 });
