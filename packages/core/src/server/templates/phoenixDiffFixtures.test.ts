@@ -182,6 +182,18 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
         s: ["<div>", "</div>"],
       });
     });
+
+    test("Timeline Timeline example: list comprehension rendering LiveComponents in c dictionary", () => {
+      const timelineLCs = [1, 2, 3, 4, 5].map((id) => new HtmlSafeString([String(id)], [], true));
+      const timelineTree = html`<h1>Timeline</h1>\n\n${timelineLCs}`;
+
+      expect(timelineTree.partsTree()).toEqual({
+        0: {
+          d: [[1], [2], [3], [4], [5]],
+        },
+        s: ["<h1>Timeline</h1>\n\n", ""],
+      });
+    });
   });
 
   describe("5. Differential Updates (deepDiff Calculation)", () => {

@@ -83,6 +83,34 @@
       }
     },
     {
+      "name": "timeline_comprehension_with_live_components_dictionary",
+      "description": "List comprehension rendering LiveComponent ID references mapped into top-level c dictionary",
+      "initial": {
+        "c": {
+          "1": { "0": "Post 1", "s": ["<article>", "</article>"] },
+          "2": { "0": "Post 2", "s": ["<article>", "</article>"] },
+          "3": { "0": "Post 3", "s": ["<article>", "</article>"] },
+          "4": { "0": "Post 4", "s": ["<article>", "</article>"] },
+          "5": { "0": "Post 5", "s": ["<article>", "</article>"] }
+        },
+        "s": ["<h1>Timeline</h1>\n\n", ""],
+        "0": {
+          "s": ["", ""],
+          "d": [[1], [2], [3], [4], [5]]
+        }
+      },
+      "updated": {
+        "c": {
+          "3": { "0": "Updated Post 3" }
+        }
+      },
+      "expectedDiff": {
+        "c": {
+          "3": { "0": "Updated Post 3" }
+        }
+      }
+    },
+    {
       "name": "nested_templates_tree",
       "description": "Multi-level nested template structures",
       "initial": {
