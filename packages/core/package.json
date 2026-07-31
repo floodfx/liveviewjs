@@ -1,5 +1,5 @@
 {
-  "name": "@liveviewjs/core",
+  "name": "liveviewjs",
   "version": "0.10.4",
   "description": "LiveViewJS brings the power of LiveView to TypeScript and JavaScript developers and applications.",
   "main": "dist/index.js",

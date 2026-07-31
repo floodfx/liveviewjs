@@ -17,8 +17,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@liveviewjs/core": "workspace:*",
-    "jsx2ttl": "^1.0.0"
+    "jsx2ttl": "^1.0.0",
+    "liveviewjs": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
