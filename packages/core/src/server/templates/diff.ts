@@ -112,6 +112,12 @@ export function diffArrays(oldArray: unknown[], newArray: unknown[]): boolean {
         return true;
       }
     }
+    // parts are both numbers (LiveComponent CID references)
+    else if (typeof newPart === "number" && typeof oldPart === "number") {
+      if (newPart !== oldPart) {
+        return true;
+      }
+    }
     // parts are both objects (potentially arrays or not)
     else if (typeof newPart === "object" && typeof oldPart === "object") {
       // both parts are arrays

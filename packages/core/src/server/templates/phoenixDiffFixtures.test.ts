@@ -183,7 +183,7 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
       });
     });
 
-    test("Timeline Timeline example: list comprehension rendering LiveComponents in c dictionary", () => {
+    test("Timeline example: list comprehension rendering LiveComponents in c dictionary", () => {
       const timelineLCs = [1, 2, 3, 4, 5].map((id) => new HtmlSafeString([String(id)], [], true));
       const timelineTree = html`<h1>Timeline</h1>\n\n${timelineLCs}`;
 
@@ -197,6 +197,21 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
   });
 
   describe("5. Differential Updates (deepDiff Calculation)", () => {
+    test("Dashbit timeline reorder example: reversing tweets sends only updated d array indices", () => {
+      const initialLCs = [1, 2, 3, 4, 5].map((id) => new HtmlSafeString([String(id)], [], true));
+      const initialTree = html`<h1>Timeline</h1>\n\n${initialLCs}`;
+
+      const reversedLCs = [5, 4, 3, 2, 1].map((id) => new HtmlSafeString([String(id)], [], true));
+      const reversedTree = html`<h1>Timeline</h1>\n\n${reversedLCs}`;
+
+      const diff = deepDiff(initialTree.partsTree(), reversedTree.partsTree());
+      expect(diff).toEqual({
+        0: {
+          d: [[5], [4], [3], [2], [1]],
+        },
+      });
+    });
+
     test("returns empty diff when state is unchanged", () => {
       const render = (val: number) => html`<div>Count: ${val}</div>`;
       const prev = render(10);
