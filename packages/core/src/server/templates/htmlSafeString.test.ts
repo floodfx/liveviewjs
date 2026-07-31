@@ -289,19 +289,19 @@ describe("test escapeHtml", () => {
   it("renders an array of dynamic promise", async () => {
     const result = html`a${await Promise.all(["b"].map(async (i) => await Promise.resolve(html`${i}`)))}`;
     expect(result.partsTree()).toMatchInlineSnapshot(`
-      Object {
-        "0": Object {
-          "d": Array [
-            Array [
+      {
+        "0": {
+          "d": [
+            [
               "b",
             ],
           ],
-          "s": Array [
+          "s": [
             "",
             "",
           ],
         },
-        "s": Array [
+        "s": [
           "a",
           "",
         ],

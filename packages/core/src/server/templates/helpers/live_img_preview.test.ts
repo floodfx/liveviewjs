@@ -18,11 +18,11 @@ describe("live_img_preview test", () => {
     expect(l.toString()).toMatchInlineSnapshot(`
       "
           <img
-            id=\\"phx-preview-0\\"
-            data-phx-upload-ref=\\"phx-testid\\"
-            data-phx-entry-ref=\\"0\\"
-            data-phx-hook=\\"Phoenix.LiveImgPreview\\"
-            data-phx-update=\\"ignore\\" />
+            id="phx-preview-0"
+            data-phx-upload-ref="phx-testid"
+            data-phx-entry-ref="0"
+            data-phx-hook="Phoenix.LiveImgPreview"
+            data-phx-update="ignore" />
         "
     `);
   });

@@ -23,25 +23,25 @@ describe("test diffs", () => {
 
     const previousState = html`${items.map(renderFooOrBar)}`;
     expect(previousState.partsTree()).toMatchInlineSnapshot(`
-      Object {
-        "0": Object {
-          "d": Array [
-            Array [
+      {
+        "0": {
+          "d": [
+            [
               "foo",
             ],
-            Array [
+            [
               "bar",
             ],
-            Array [
+            [
               "bar",
             ],
           ],
-          "s": Array [
+          "s": [
             "",
             "",
           ],
         },
-        "s": Array [
+        "s": [
           "",
           "",
         ],
@@ -62,16 +62,16 @@ describe("test diffs", () => {
       },
     });
     expect(diff).toMatchInlineSnapshot(`
-      Object {
-        "0": Object {
-          "d": Array [
-            Array [
+      {
+        "0": {
+          "d": [
+            [
               "foo",
             ],
-            Array [
+            [
               "foo",
             ],
-            Array [
+            [
               "foo",
             ],
           ],
@@ -87,7 +87,7 @@ describe("test diffs", () => {
 
     const diff = deepDiff(previousState.partsTree(), nextState.partsTree());
     expect(diff).toMatchInlineSnapshot(`
-      Object {
+      {
         "1": "bar",
       }
     `);
@@ -121,7 +121,7 @@ describe("test diffs", () => {
     // simulate a LiveComponent at the "1" key but with diff "0" keys
     let oldParts: Parts = { 0: "" };
     let newParts: Parts = { 0: "" };
-    expect(deepDiff(oldParts, newParts)).toMatchInlineSnapshot(`Object {}`);
+    expect(deepDiff(oldParts, newParts)).toMatchInlineSnapshot(`{}`);
   });
 
   it("diffs for live components", () => {
@@ -129,7 +129,7 @@ describe("test diffs", () => {
     let oldParts: Parts = { 0: "something", 1: 1 };
     let newParts: Parts = { 0: "something else", 1: 1 };
     expect(deepDiff(oldParts, newParts)).toMatchInlineSnapshot(`
-      Object {
+      {
         "0": "something else",
       }
     `);
@@ -138,7 +138,7 @@ describe("test diffs", () => {
     oldParts = { 0: "something", 1: 1 };
     newParts = { 0: "something else", 1: 2 };
     expect(deepDiff(oldParts, newParts)).toMatchInlineSnapshot(`
-      Object {
+      {
         "0": "something else",
         "1": 2,
       }
@@ -183,8 +183,7 @@ describe("test diffs", () => {
     };
 
     expect(JSON.stringify(deepDiff(oldParts, newParts))).toMatchInlineSnapshot(
-      `"{\\"2\\":{\\"1\\":{\\"0\\":\\"13\\",\\"s\\":[\\"\\\\n      <div>\\\\n        <h3>Carbon Footprint 👣</h3>\\\\n        <p>\\",\\" tons of CO2</p>\\\\n      </div>\\\\n    \\"]}}}"`
-    );
+      `"{"2":{"1":{"0":"13","s":["\\n      <div>\\n        <h3>Carbon Footprint 👣</h3>\\n        <p>"," tons of CO2</p>\\n      </div>\\n    "]}}}"`);
   });
 
   it("diffs arrays where both parts are objects but not arrays", () => {

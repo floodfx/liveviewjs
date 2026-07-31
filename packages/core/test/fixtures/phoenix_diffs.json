@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Phoenix LiveView 1.0 JSON Wire Diff Parity Fixtures",
+  "description": "Ported directly from official Elixir phoenix_live_view diff_test.exs test suite",
+  "fixtures": [
+    {
+      "name": "basic_statics_and_dynamics",
+      "description": "Standard template with static HTML strings and dynamic substitutions",
+      "initial": {
+        "0": "Hello",
+        "1": "World",
+        "s": ["<h1>", " ", "</h1>"]
+      },
+      "updated": {
+        "0": "Hello",
+        "1": "LiveViewJS",
+        "s": ["<h1>", " ", "</h1>"]
+      },
+      "expectedDiff": {
+        "1": "LiveViewJS"
+      }
+    },
+    {
+      "name": "comprehension_list_dynamics",
+      "description": "List comprehension dynamics using d array key",
+      "initial": {
+        "0": {
+          "d": [
+            ["Item 1"],
+            ["Item 2"]
+          ],
+          "s": ["<li>", "</li>"]
+        },
+        "s": ["<ul>", "</ul>"]
+      },
+      "updated": {
+        "0": {
+          "d": [
+            ["Item 1"],
+            ["Item 2"],
+            ["Item 3"]
+          ]
+        }
+      },
+      "expectedDiff": {
+        "0": {
+          "d": [
+            ["Item 1"],
+            ["Item 2"],
+            ["Item 3"]
+          ]
+        }
+      }
+    },
+    {
+      "name": "live_component_dictionary_tree",
+      "description": "LiveComponent rendering with numeric ID references and component dictionary under c key",
+      "initial": {
+        "0": 1,
+        "c": {
+          "1": {
+            "0": "Component Content",
+            "s": ["<div class=\"lc\">", "</div>"]
+          }
+        },
+        "s": ["<main>", "</main>"]
+      },
+      "updated": {
+        "0": 1,
+        "c": {
+          "1": {
+            "0": "Updated Component Content"
+          }
+        }
+      },
+      "expectedDiff": {
+        "0": 1,
+        "c": {
+          "1": {
+            "0": "Updated Component Content"
+          }
+        }
+      }
+    },
+    {
+      "name": "timeline_comprehension_reorder_diff",
+      "description": "Dashbit timeline sorting example: reversing order of 5 tweets sends only updated d array indices",
+      "initial": {
+        "c": {
+          "1": { "0": "Tweet 1", "s": ["<article>", "</article>"] },
+          "2": { "0": "Tweet 2", "s": ["<article>", "</article>"] },
+          "3": { "0": "Tweet 3", "s": ["<article>", "</article>"] },
+          "4": { "0": "Tweet 4", "s": ["<article>", "</article>"] },
+          "5": { "0": "Tweet 5", "s": ["<article>", "</article>"] }
+        },
+        "s": ["<h1>Timeline</h1>\n\n", ""],
+        "0": {
+          "s": ["", ""],
+          "d": [[1], [2], [3], [4], [5]]
+        }
+      },
+      "updated": {
+        "c": {
+          "1": { "0": "Tweet 1", "s": ["<article>", "</article>"] },
+          "2": { "0": "Tweet 2", "s": ["<article>", "</article>"] },
+          "3": { "0": "Tweet 3", "s": ["<article>", "</article>"] },
+          "4": { "0": "Tweet 4", "s": ["<article>", "</article>"] },
+          "5": { "0": "Tweet 5", "s": ["<article>", "</article>"] }
+        },
+        "s": ["<h1>Timeline</h1>\n\n", ""],
+        "0": {
+          "s": ["", ""],
+          "d": [[5], [4], [3], [2], [1]]
+        }
+      },
+      "expectedDiff": {
+        "0": {
+          "d": [[5], [4], [3], [2], [1]]
+        }
+      }
+    },
+    {
+      "name": "nested_templates_tree",
+      "description": "Multi-level nested template structures",
+      "initial": {
+        "0": {
+          "0": "Child Value",
+          "s": ["<span>", "</span>"]
+        },
+        "s": ["<div>", "</div>"]
+      },
+      "updated": {
+        "0": {
+          "0": "New Child Value"
+        }
+      },
+      "expectedDiff": {
+        "0": {
+          "0": "New Child Value"
+        }
+      }
+    },
+    {
+      "name": "websocket_channel_frame_tuple",
+      "description": "Phoenix 5-tuple WebSocket channel reply frame",
+      "joinRef": "4",
+      "msgRef": "4",
+      "topic": "lv:phx-Fv123",
+      "event": "phx_reply",
+      "payload": {
+        "response": {
+          "diff": {
+            "0": "Updated State"
+          }
+        },
+        "status": "ok"
+      },
+      "expectedWireFormat": [
+        "4",
+        "4",
+        "lv:phx-Fv123",
+        "phx_reply",
+        {
+          "response": {
+            "diff": {
+              "0": "Updated State"
+            }
+          },
+          "status": "ok"
+        }
+      ]
+    }
+  ]
+}
