@@ -27,7 +27,7 @@ server round trip. These functions are:
 JS Commands are used in the `render` function of a LiveView or LiveComponent:
 
 ```typescript
-import { JS } from 'lieviewjs';
+import { JS } from 'liveviewjs';
 
 //... render function of a LiveView
 render() {
@@ -46,7 +46,7 @@ JS Commands are "chainable" (i.e.,  fluent) so you can chain multiple commands t
 executed in the order they are called:
 
 ```typescript
-import { JS } from 'lieviewjs';
+import { JS } from 'liveviewjs';
 
 //... render function of a LiveView
 render() {

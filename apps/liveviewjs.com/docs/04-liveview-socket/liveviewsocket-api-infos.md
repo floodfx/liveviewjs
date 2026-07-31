@@ -10,10 +10,12 @@ updates based on a webhook or action from another user.
 
 ## LiveViewSocket Properties and Methods
 
-There are two LiveViewSocket API methods that help facilitate server events: | Name | Description | |---|---| |
-`sendInfo(info: Info<TInfos>): void;` | Send an internal event (a.k.a "Info") to the LiveView's `handleInfo` method | |
-`subscribe(topic: string): Promise<void>;` | Subscribe to the given topic using pub/sub. Events published to this topic
-will be delivered to `handleInfo`. |
+There are two LiveViewSocket API methods that help facilitate server events: 
+
+| Name | Description | 
+|---|---| 
+| `sendInfo(info: Info<TInfos>): void;` | Send an internal event (a.k.a "Info") to the LiveView's `handleInfo` method | 
+| `subscribe(topic: string): Promise<void>;` | Subscribe to the given topic using pub/sub. Events published to this topic will be delivered to `handleInfo`. |
 
 ## `sendInfo` Method
 

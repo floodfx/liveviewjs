@@ -18,7 +18,7 @@ JS Commands support a number of client-side DOM manipulation function that can b
 ### JS Command Syntax
 JS Commands are used in the `render` function of a LiveView or LiveComponent:
 ```typescript
-import { JS } from 'lieviewjs';
+import { JS } from 'liveviewjs';
 
 //... render function of a LiveView
 render() {
@@ -34,7 +34,7 @@ render() {
 ### "Chainable" (i.e. fluent) Syntax
 JS Commands are "chainable" (i.e. fluent) so you can chain multiple commands together as needed and they will be executed in the order they are called:
 ```typescript
-import { JS } from 'lieviewjs';
+import { JS } from 'liveviewjs';
 
 //... render function of a LiveView
 render() {
