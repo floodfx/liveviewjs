@@ -165,9 +165,10 @@ export class HtmlSafeString {
             }
             // not an array of LiveComponents so return the statics too
             s = cur.map((c: HtmlSafeString) => c.statics)[0];
+            const hasRoot = cur[0]?.hasSingleRootElement?.();
             return {
               ...acc,
-              [`${index}`]: { d, s },
+              [`${index}`]: hasRoot ? { d, s, r: 1 } : { d, s },
             };
           } else {
             // probably added an array of objects directly
@@ -192,8 +193,23 @@ export class HtmlSafeString {
     // appends the statics to the parts tree
     if (includeStatics) {
       parts["s"] = this.statics;
+      // Optimization #7: Check if template has a single root HTML element tag
+      if (this.hasSingleRootElement()) {
+        parts["r"] = 1;
+      }
     }
     return parts;
+  }
+
+  private hasSingleRootElement(): boolean {
+    if (!this.statics || this.statics.length === 0) return false;
+    const first = this.statics[0].trim();
+    const last = this.statics[this.statics.length - 1].trim();
+    // Quick check if starts with opening tag <tag... and ends with matching closing tag </...
+    const openMatch = first.match(/^<([a-zA-Z0-9-]+)[^>]*>/);
+    if (!openMatch) return false;
+    const tagName = openMatch[1];
+    return last.endsWith(`</${tagName}>`);
   }
 
   toString(): string {

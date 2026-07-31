@@ -82,6 +82,7 @@ describe("test escapeHtml", () => {
         0: "1",
         1: "2",
         2: "3",
+        r: 1,
         s: ["<a>", "", "", "</a>"],
       },
       s: ["", ""],
@@ -192,6 +193,7 @@ describe("test escapeHtml", () => {
             stores[6].phone_number,
           ],
         ],
+        r: 1,
         s: renderStore(stores[3]).statics,
       },
       s: [...loaded.statics],
@@ -223,6 +225,7 @@ describe("test escapeHtml", () => {
             xssStore.phone_number,
           ],
         ],
+        r: 1,
         s: renderStore(xssStore).statics,
       },
       s: [...loaded.statics],
@@ -236,6 +239,7 @@ describe("test escapeHtml", () => {
 
     expect(liveView.partsTree()).toEqual({
       0: 1, // LiveComponents result in a single number
+      r: 1,
       s: ["<div>", "</div>"],
     });
   });
@@ -250,6 +254,7 @@ describe("test escapeHtml", () => {
 
     expect(liveView.partsTree()).toEqual({
       0: { d: [[1], [2]] },
+      r: 1,
       s: ["<div>", "</div>"],
     });
   });
@@ -338,8 +343,10 @@ describe("test escapeHtml", () => {
       expect(result.partsTree()).toEqual({
         0: {
           0: "nested",
+          r: 1,
           s: ["<span>", "</span>"],
         },
+        r: 1,
         s: ["<div>", "</div>"],
       });
     });

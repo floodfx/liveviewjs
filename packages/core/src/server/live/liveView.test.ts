@@ -32,8 +32,7 @@ describe("test LiveViewMeta", () => {
     ] as PhxJoinIncoming);
 
     expect(msgs[0]).toMatchInlineSnapshot(
-      `"[null,null,\\"test\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":1,\\"s\\":[\\" <div>\\",\\"</div> \\"],\\"c\\":{\\"1\\":{\\"0\\":\\"called:0\\",\\"s\\":[\\"<div>\\",\\"</div>\\"]}}}},\\"status\\":\\"ok\\"}]"`
-    );
+      `"[null,null,"test","phx_reply",{"response":{"rendered":{"0":1,"s":[" <div>","</div> "],"r":1,"c":{"1":{"0":"called:0","s":["<div>","</div>"],"r":1}}}},"status":"ok"}]"`);
   });
 
   it("test handleInfo", async () => {
