@@ -134,7 +134,10 @@ export class WsMessageRouter {
     if (!matchResult) {
       throw Error(`no LiveView found for ${url}`);
     }
-    const [liveView, mr] = matchResult;
+    let [liveView, mr] = matchResult;
+    if (typeof (liveView as any) === "function") {
+      liveView = (liveView as any)();
+    }
 
     // create a LiveViewManager for this connection / LiveView
     const liveViewManager = new LiveViewManager(

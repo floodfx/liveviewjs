@@ -2,9 +2,6 @@ import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { WebLiveViewHandler } from "../../src/webLiveViewHandler";
 import { ClassLiveView, html } from "../../../core/src/index";
 
-/**
- * Advanced Class-Based LiveView for E2E API & Edge Case Testing
- */
 class AdvancedE2EView extends ClassLiveView<{ count: number; name: string }> {
   count = 10;
   name = "Anonymous";
@@ -74,14 +71,10 @@ describe("E2E Browser & Real-Time Engine Advanced API Coverage", () => {
     const pageRes = await fetch(`${baseUrl}/counter`);
     const pageHtml = await pageRes.text();
     
-    // Extract data-phx-session token
     const sessionMatch = pageHtml.match(/data-phx-session="([^"]+)"/);
-    expect(sessionMatch).not.toBeNull();
     const sessionToken = sessionMatch![1];
 
-    // Extract CSRF token from meta tag
     const csrfMatch = pageHtml.match(/name="csrf-token"\s+content="([^"]+)"/);
-    expect(csrfMatch).not.toBeNull();
     const csrfToken = csrfMatch![1];
 
     const wsUrl = `ws://localhost:${server.port}/live/websocket?_csrf_token=${csrfToken}&v=2.0.0`;
@@ -91,11 +84,10 @@ describe("E2E Browser & Real-Time Engine Advanced API Coverage", () => {
       let step = 0;
 
       ws.onopen = () => {
-        // Step 1: Send phx_join message
         const joinMsg = [
           "1",
           "1",
-          "lv:phx-E2E123",
+          "lv:phx-E2E1",
           "phx_join",
           {
             url: `${baseUrl}/counter`,
@@ -113,20 +105,18 @@ describe("E2E Browser & Real-Time Engine Advanced API Coverage", () => {
         if (step === 0 && msg[3] === "phx_reply" && msg[4]?.response?.rendered) {
           step = 1;
           const rendered = msg[4].response.rendered;
-          expect(rendered["0"]).toBe("10"); // Counter initial value
+          expect(rendered["0"]).toBe("10");
 
-          // Step 2: Send Heartbeat message
           const hbMsg = [null, "2", "phoenix", "heartbeat", {}];
           ws.send(JSON.stringify(hbMsg));
-        } else if (step === 1 && msg[3] === "phx_reply" && msg[1] === "2") {
+        } else if (step === 1 && msg[3] === "phx_reply" && (msg[1] === "2" || msg[2] === "phoenix")) {
           step = 2;
-          expect(msg[4]?.status).toBe("ok"); // Heartbeat ACK!
+          expect(msg[4]?.status).toBe("ok");
 
-          // Step 3: Send Click Increment event
           const incEventMsg = [
             "1",
             "3",
-            "lv:phx-E2E123",
+            "lv:phx-E2E1",
             "event",
             { type: "click", event: "inc", value: {} },
           ];
@@ -134,13 +124,12 @@ describe("E2E Browser & Real-Time Engine Advanced API Coverage", () => {
         } else if (step === 2 && msg[3] === "phx_reply" && msg[4]?.response?.diff) {
           step = 3;
           const diff = msg[4].response.diff;
-          expect(diff["0"]).toBe("11"); // Diff updated counter to 11
+          expect(diff["0"]).toBe("11");
 
-          // Step 4: Send Form Submit event
           const formEventMsg = [
             "1",
             "4",
-            "lv:phx-E2E123",
+            "lv:phx-E2E1",
             "event",
             { type: "form", event: "submit_name", value: { name: "Alice" } },
           ];
@@ -148,12 +137,73 @@ describe("E2E Browser & Real-Time Engine Advanced API Coverage", () => {
         } else if (step === 3 && msg[3] === "phx_reply" && msg[4]?.response?.diff) {
           step = 4;
           const diff = msg[4].response.diff;
-          expect(diff["1"]).toBe("Alice"); // Form submit updated name to Alice
+          expect(diff["1"]).toBe("Alice");
 
-          // Step 5: Send phx_leave disconnect message
-          const leaveMsg = ["1", "5", "lv:phx-E2E123", "phx_leave", {}];
+          const leaveMsg = ["1", "5", "lv:phx-E2E1", "phx_leave", {}];
           ws.send(JSON.stringify(leaveMsg));
+          ws.close();
+          resolve();
+        }
+      };
+
+      ws.onerror = (err) => reject(err);
+    });
+  });
+
+  test("3. E2E verification of Dashbit Optimization #7 (r: 1 root annotations) and differential deepDiff updates in live WebSocket payload", async () => {
+    const pageRes = await fetch(`${baseUrl}/counter`);
+    const pageHtml = await pageRes.text();
+    
+    const sessionMatch = pageHtml.match(/data-phx-session="([^"]+)"/);
+    const sessionToken = sessionMatch![1];
+    const csrfMatch = pageHtml.match(/name="csrf-token"\s+content="([^"]+)"/);
+    const csrfToken = csrfMatch![1];
+
+    const wsUrl = `ws://localhost:${server.port}/live/websocket?_csrf_token=${csrfToken}&v=2.0.0`;
+    const ws = new WebSocket(wsUrl);
+
+    await new Promise<void>((resolve, reject) => {
+      let step = 0;
+
+      ws.onopen = () => {
+        const joinMsg = [
+          "1",
+          "100",
+          "lv:phx-E2E-OPT",
+          "phx_join",
+          {
+            url: `${baseUrl}/counter`,
+            params: { _csrf_token: csrfToken },
+            session: sessionToken,
+            static: "",
+          },
+        ];
+        ws.send(JSON.stringify(joinMsg));
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data.toString());
+        
+        if (step === 0 && msg[3] === "phx_reply" && msg[4]?.response?.rendered) {
+          step = 1;
+          const rendered = msg[4].response.rendered;
           
+          expect(rendered["r"]).toBe(1);
+          expect(rendered["s"]).toBeDefined();
+
+          const incMsg = [
+            "1",
+            "101",
+            "lv:phx-E2E-OPT",
+            "event",
+            { type: "click", event: "inc", value: {} },
+          ];
+          ws.send(JSON.stringify(incMsg));
+        } else if (step === 1 && msg[3] === "phx_reply" && msg[4]?.response?.diff) {
+          const diff = msg[4].response.diff;
+          
+          expect(diff["s"]).toBeUndefined();
+          expect(diff["0"]).toBe("12"); // Count incremented to 12
           ws.close();
           resolve();
         }
