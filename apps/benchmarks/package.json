@@ -11,5 +11,9 @@
     "@liveviewjs/web": "workspace:*",
     "mitata": "^0.1.11"
   },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^7.0.0-rc"
+  },
   "license": "MIT"
 }
