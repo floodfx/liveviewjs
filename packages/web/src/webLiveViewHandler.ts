@@ -3,6 +3,7 @@ import {
   LiveView,
   SessionData,
   SerDe,
+  JwtSerDe,
   WsAdaptor,
   WsHandler,
   SingleProcessPubSub,
@@ -18,20 +19,6 @@ export interface WebHandlerOptions {
   signingSecret?: string;
   pageTitleDefaults?: { title?: string; prefix?: string; suffix?: string };
   wsPath?: string;
-}
-
-export class JsonSerDe implements SerDe {
-  async serialize(data: any): Promise<string> {
-    return JSON.stringify(data);
-  }
-  async deserialize(data: string): Promise<any> {
-    if (!data || data === "") return {};
-    try {
-      return JSON.parse(data);
-    } catch {
-      return {};
-    }
-  }
 }
 
 export class DefaultFileSystemAdaptor implements FileSystemAdaptor {
@@ -125,7 +112,7 @@ export class WebLiveViewHandler {
   constructor(options: WebHandlerOptions) {
     this.router = options.router;
     this.signingSecret = options.signingSecret ?? "default-secret-key-1234567890";
-    this.serDe = new JsonSerDe();
+    this.serDe = new JwtSerDe(this.signingSecret);
     this.pageTitleDefaults = options.pageTitleDefaults;
     this.wsPath = options.wsPath ?? "/live/websocket";
 
@@ -206,8 +193,25 @@ export class WebLiveViewHandler {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>${pageTitle.title ?? "LiveViewJS"}</title>
+            <title>${pageTitle.title ?? "LiveViewJS Counter Demo"}</title>
             <meta name="csrf-token" content="${csrfToken}" />
+            <script src="https://cdn.jsdelivr.net/npm/phoenix@1.7.10/priv/static/phoenix.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/phoenix_live_view@0.20.14/priv/static/phoenix_live_view.min.js"></script>
+            <style>
+              body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+              .card { background: #1e293b; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); text-align: center; border: 1px solid #334155; max-width: 400px; width: 100%; }
+              h1 { margin-top: 0; color: #38bdf8; }
+              .count-display { font-size: 4rem; font-weight: bold; margin: 1rem 0; color: #f43f5e; }
+              button { background: #0284c7; color: white; border: none; padding: 0.75rem 1.5rem; font-size: 1.25rem; font-weight: bold; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s; }
+              button:hover { background: #0369a1; }
+            </style>
+            <script>
+              document.addEventListener("DOMContentLoaded", () => {
+                let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
+                let liveSocket = new window.LiveView.LiveSocket("/live", window.Phoenix.Socket, {params: {_csrf_token: csrfToken}});
+                liveSocket.connect();
+              });
+            </script>
           </head>
           <body>
             ${safe(content)}

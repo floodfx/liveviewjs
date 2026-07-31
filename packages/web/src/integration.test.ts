@@ -1,6 +1,6 @@
 import { describe, test, expect, afterAll, beforeAll } from "bun:test";
 import { WebLiveViewHandler } from "./webLiveViewHandler";
-import { createLiveView, html } from "@liveviewjs/core";
+import { createLiveView, html, JwtSerDe } from "@liveviewjs/core";
 
 /**
  * Empirical Runtime Integration Test Suite for @liveviewjs/web
@@ -12,6 +12,9 @@ import { createLiveView, html } from "@liveviewjs/core";
 describe("End-to-End Local Server & WebSocket Integration Suite", () => {
   let server: any;
   let serverPort: number;
+
+  const secret = "integration-test-secret-1234567890";
+  const jwtSerDe = new JwtSerDe(secret);
 
   const CounterLV = createLiveView({
     mount: (socket) => {
@@ -31,7 +34,7 @@ describe("End-to-End Local Server & WebSocket Integration Suite", () => {
     router: {
       "/counter": CounterLV,
     },
-    signingSecret: "integration-test-secret-1234567890",
+    signingSecret: secret,
   });
 
   beforeAll(() => {
@@ -78,8 +81,7 @@ describe("End-to-End Local Server & WebSocket Integration Suite", () => {
     };
 
     const csrfToken = "test-csrf-token-123456";
-    const sessionData = { _csrf_token: csrfToken };
-    const serializedSession = JSON.stringify(sessionData);
+    const serializedSession = await jwtSerDe.serialize({ _csrf_token: csrfToken });
 
     // 1. Send real phx_join frame over real WebSocket
     const phxJoinFrame = JSON.stringify([

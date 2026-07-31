@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { WebLiveViewHandler } from "./webLiveViewHandler";
-import { createLiveView, html } from "@liveviewjs/core";
+import { createLiveView, html, JwtSerDe } from "@liveviewjs/core";
 
 /**
  * Universal Web Standard WebLiveViewHandler TDD Test Suite
@@ -28,9 +28,12 @@ describe("WebLiveViewHandler - WinterCG Web Standard Adaptor", () => {
     "/counter": CounterLV,
   };
 
+  const secret = "test-secret-key-12345678901234567890";
+  const jwtSerDe = new JwtSerDe(secret);
+
   const handler = new WebLiveViewHandler({
     router,
-    signingSecret: "test-secret-key-12345678901234567890",
+    signingSecret: secret,
   });
 
   describe("1. HTTP Fetch Handling (Request -> Response)", () => {
@@ -89,8 +92,7 @@ describe("WebLiveViewHandler - WinterCG Web Standard Adaptor", () => {
       handler.ws(mockSocket, "/counter");
 
       const csrfToken = "test-csrf-token-123456";
-      const sessionData = { _csrf_token: csrfToken };
-      const serializedSession = JSON.stringify(sessionData);
+      const serializedSession = await jwtSerDe.serialize({ _csrf_token: csrfToken });
 
       // Client sends phx_join frame
       const phxJoinFrame = JSON.stringify([
