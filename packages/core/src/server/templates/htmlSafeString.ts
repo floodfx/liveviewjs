@@ -207,3 +207,14 @@ export class HtmlSafeString {
 export function html(statics: TemplateStringsArray, ...dynamics: unknown[]) {
   return new HtmlSafeString(statics, dynamics);
 }
+
+/**
+ * Creates a HtmlSafeString from a template string and object.
+ * This allows templates to be loaded directly from a file or other
+ * source not typically supported by tagged template literals.
+ */
+export function htmlFromString(template: string, vars: Record<string, unknown> = {}): HtmlSafeString {
+  const func = new Function(...Object.keys(vars), "html", "return html`" + template + "`;");
+  return func(...Object.values(vars), html);
+}
+
