@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import { html, HtmlSafeString, safe } from "./index";
 import { deepDiff } from "./diff";
+import { createLiveComponent, createLiveView } from "../live";
 
 /**
  * Phoenix LiveView 1.0 JSON Wire Protocol Test Fixture Suite
@@ -183,15 +184,45 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
       });
     });
 
-    test("Timeline example: list comprehension rendering LiveComponents in c dictionary", () => {
-      const timelineLCs = [1, 2, 3, 4, 5].map((id) => new HtmlSafeString([String(id)], [], true));
-      const timelineTree = html`<h1>Timeline</h1>\n\n${timelineLCs}`;
+    test("end-to-end LiveComponent rendering via createLiveComponent and createLiveView", async () => {
+      const TweetLC = createLiveComponent<{ id: number; text: string }>({
+        render: (context) => html`<article id="tweet-${context.id}">${context.text}</article>`,
+      });
 
-      expect(timelineTree.partsTree()).toEqual({
-        0: {
-          d: [[1], [2], [3], [4], [5]],
+      const TimelineLV = createLiveView({
+        render: async (context: { tweets: Array<{ id: number; text: string }> }, meta) => {
+          const tweetComponents = await Promise.all(
+            context.tweets.map((t) => meta.live_component(TweetLC, { id: t.id, text: t.text }))
+          );
+          return html`<h1>Timeline</h1>${tweetComponents}`;
         },
-        s: ["<h1>Timeline</h1>\n\n", ""],
+      });
+
+      const url = new URL("http://example.com/timeline");
+      let cidCounter = 0;
+      const res = await TimelineLV.render(
+        {
+          tweets: [
+            { id: 1, text: "First tweet" },
+            { id: 2, text: "Second tweet" },
+          ],
+        },
+        {
+          csrfToken: "",
+          live_component: async (lc, params) => {
+            cidCounter++;
+            return new HtmlSafeString([String(cidCounter)], [], true);
+          },
+          url,
+          uploads: {},
+        }
+      );
+
+      expect(res.partsTree()).toEqual({
+        0: {
+          d: [[1], [2]],
+        },
+        s: ["<h1>Timeline</h1>", ""],
       });
     });
   });
