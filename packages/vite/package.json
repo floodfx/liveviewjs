@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.mjs",
+    "build": "tsc",
     "test": "jest"
   },
   "dependencies": {
