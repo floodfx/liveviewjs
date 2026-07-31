@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { html, HtmlSafeString, safe } from "./index";
+import { deepDiff } from "./diff";
 
 /**
  * Phoenix LiveView 1.0 JSON Wire Protocol Test Fixture Suite
@@ -180,6 +181,33 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
         },
         s: ["<div>", "</div>"],
       });
+    });
+  });
+
+  describe("5. Differential Updates (deepDiff Calculation)", () => {
+    test("returns empty diff when state is unchanged", () => {
+      const render = (val: number) => html`<div>Count: ${val}</div>`;
+      const prev = render(10);
+      const curr = render(10);
+      const diff = deepDiff(prev.partsTree(), curr.partsTree());
+      expect(diff).toEqual({});
+    });
+
+    test("returns only changed dynamic keys and omits statics (s key)", () => {
+      const render = (count: number, name: string) => html`<div>Count: ${count}, Name: ${name}</div>`;
+      const prev = render(1, "Alice");
+      const curr = render(2, "Alice");
+      const diff = deepDiff(prev.partsTree(), curr.partsTree());
+      expect(diff).toEqual({
+        0: "2",
+      });
+    });
+
+    test("returns full tree if statics count or structure changes", () => {
+      const prev = html`<div>${"a"}</div>`;
+      const curr = html`<div>${"a"} ${"b"}</div>`;
+      const diff = deepDiff(prev.partsTree(), curr.partsTree());
+      expect(diff).toEqual(curr.partsTree());
     });
   });
 });
