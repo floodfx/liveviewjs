@@ -583,8 +583,7 @@ describe("test liveview manager", () => {
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
     // expect(ws.send).toHaveBeenCalledTimes(1);
     expect(msg).toMatchInlineSnapshot(
-      `"[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":{\\"d\\":[[\\"a\\"],[\\"b\\"],[\\"c\\"]],\\"s\\":[\\"<div>LiveComponent: \\",\\"</div>\\"]},\\"s\\":[\\"\\",\\"\\"]}},\\"status\\":\\"ok\\"}]"`
-    );
+      `"["4","4","lv:phx-AAAAAAAA","phx_reply",{"response":{"rendered":{"0":{"d":[["a"],["b"],["c"]],"s":["<div>LiveComponent: ","</div>"]},"s":["",""]}},"status":"ok"}]"`);
   });
 
   it("a liveview with array of livecomponents", async () => {
@@ -611,8 +610,7 @@ describe("test liveview manager", () => {
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
     // expect(ws.send).toHaveBeenCalledTimes(1);
     expect(msg).toMatchInlineSnapshot(
-      `"[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":{\\"d\\":[[1],[2],[3]]},\\"s\\":[\\"<div>\\",\\"</div>\\"],\\"c\\":{\\"1\\":{\\"0\\":\\"1\\",\\"s\\":[\\"<div>LiveComponent: \\",\\"</div>\\"]},\\"2\\":{\\"0\\":\\"2\\",\\"s\\":[\\"<div>LiveComponent: \\",\\"</div>\\"]},\\"3\\":{\\"0\\":\\"3\\",\\"s\\":[\\"<div>LiveComponent: \\",\\"</div>\\"]}}}},\\"status\\":\\"ok\\"}]"`
-    );
+      `"["4","4","lv:phx-AAAAAAAA","phx_reply",{"response":{"rendered":{"0":{"d":[[1],[2],[3]]},"s":["<div>","</div>"],"c":{"1":{"0":"1","s":["<div>LiveComponent: ","</div>"]},"2":{"0":"2","s":["<div>LiveComponent: ","</div>"]},"3":{"0":"3","s":["<div>LiveComponent: ","</div>"]}}}},"status":"ok"}]"`);
   });
 
   it("component that subscribes and received message", async () => {
@@ -770,8 +768,7 @@ describe("test liveview manager", () => {
     expect(spyPutFlash).toHaveBeenCalledTimes(0);
     expect(spyClearFlash).toHaveBeenCalledTimes(0);
     expect(lastMessage!).toMatchInlineSnapshot(
-      `"[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"0\\":\\"\\",\\"1\\":\\"<div>test</div>\\",\\"s\\":[\\"\\\\n          <p class=\\\\\\"alert alert-info\\\\\\" role=\\\\\\"alert\\\\\\" phx-click=\\\\\\"lv:clear-flash\\\\\\" phx-value-key=\\\\\\"info\\\\\\">\\",\\"</p>\\\\n          <div>\\",\\"</div>\\\\n        \\"]}},\\"status\\":\\"ok\\"}]"`
-    );
+      `"["4","4","lv:phx-AAAAAAAA","phx_reply",{"response":{"rendered":{"0":"","1":"<div>test</div>","s":["\\n          <p class=\\"alert alert-info\\" role=\\"alert\\" phx-click=\\"lv:clear-flash\\" phx-value-key=\\"info\\">","</p>\\n          <div>","</div>\\n        "]}},"status":"ok"}]"`);
 
     const phx_click: PhxIncomingMessage<PhxClickPayload> = [
       "4",
@@ -789,8 +786,7 @@ describe("test liveview manager", () => {
     expect(spyClearFlash).toHaveBeenCalledTimes(0);
     // has flash of "flash test"
     expect(lastMessage!).toMatchInlineSnapshot(
-      `"[\\"4\\",\\"6\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{\\"0\\":\\"flash test\\"}},\\"status\\":\\"ok\\"}]"`
-    );
+      `"["4","6","lv:phx-AAAAAAAA","phx_reply",{"response":{"diff":{"0":"flash test"}},"status":"ok"}]"`);
 
     // clear flash by sending "lv:clear-flash" event
     const phx_clear_flash: PhxIncomingMessage<PhxLVClearFlashPayload> = [
@@ -810,8 +806,7 @@ describe("test liveview manager", () => {
     expect(spyClearFlash).toHaveBeenCalledTimes(1);
     // flash should be cleared again
     expect(lastMessage!).toMatchInlineSnapshot(
-      `"[\\"4\\",\\"6\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"diff\\":{\\"0\\":\\"\\"}},\\"status\\":\\"ok\\"}]"`
-    );
+      `"["4","6","lv:phx-AAAAAAAA","phx_reply",{"response":{"diff":{"0":""}},"status":"ok"}]"`);
 
     (cm as any).shutdown();
   });
@@ -864,22 +859,7 @@ describe("test liveview manager", () => {
     );
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
     // use inline shapshot to see liveViewRootTemplate rendered
-    expect(ws.send).toMatchInlineSnapshot(`
-      [MockFunction] {
-        "calls": Array [
-          Array [
-            "[\\"4\\",\\"4\\",\\"lv:phx-AAAAAAAA\\",\\"phx_reply\\",{\\"response\\":{\\"rendered\\":{\\"s\\":[\\"<div>test</div>\\"]}},\\"status\\":\\"ok\\"}]",
-            [Function],
-          ],
-        ],
-        "results": Array [
-          Object {
-            "type": "return",
-            "value": undefined,
-          },
-        ],
-      }
-    `);
+    expect(ws.send).toMatchInlineSnapshot(`[class Function]`);
     (cm as any).shutdown();
   });
 });

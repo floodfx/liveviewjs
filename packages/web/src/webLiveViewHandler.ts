@@ -227,7 +227,7 @@ export class WebLiveViewHandler {
       adaptor,
       defaultPageRenderer,
       {},
-      this.pageTitleDefaults
+      this.pageTitleDefaults ? { title: this.pageTitleDefaults.title ?? "", prefix: this.pageTitleDefaults.prefix, suffix: this.pageTitleDefaults.suffix } : undefined
     );
 
     if (redirectedUrl) {
