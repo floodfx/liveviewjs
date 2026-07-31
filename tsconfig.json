@@ -12,7 +12,14 @@
     "declarationMap": true,
     "sourceMap": true,
     "jsx": "react-jsx",
-    "composite": true
+    "composite": true,
+    "paths": {
+      "@liveviewjs/core": ["./packages/core/src/index.ts"],
+      "@liveviewjs/web": ["./packages/web/src/index.ts"],
+      "@liveviewjs/router": ["./packages/router/src/index.ts"],
+      "@liveviewjs/vite": ["./packages/vite/src/index.ts"],
+      "liveviewjs": ["./packages/liveviewjs/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "dist", "build", "coverage"]
 }
