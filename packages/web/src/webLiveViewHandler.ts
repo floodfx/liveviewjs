@@ -3,14 +3,19 @@ import {
   LiveView,
   SessionData,
   SerDe,
+  WsAdaptor,
+  WsHandler,
+  SingleProcessPubSub,
+  SessionFlashAdaptor,
+  FileSystemAdaptor,
+  nanoid,
   safe,
   html,
 } from "@liveviewjs/core";
-import { nanoid } from "nanoid";
 
 export interface WebHandlerOptions {
   router: Record<string, LiveView>;
-  signingSecret: string;
+  signingSecret?: string;
   pageTitleDefaults?: { title?: string; prefix?: string; suffix?: string };
 }
 
@@ -19,7 +24,82 @@ export class JsonSerDe implements SerDe {
     return JSON.stringify(data);
   }
   async deserialize(data: string): Promise<any> {
-    return JSON.parse(data);
+    if (!data || data === "") return {};
+    try {
+      return JSON.parse(data);
+    } catch {
+      return {};
+    }
+  }
+}
+
+export class DefaultFileSystemAdaptor implements FileSystemAdaptor {
+  tempPath(lastPathPart: string): string {
+    return `/tmp/${lastPathPart}`;
+  }
+  writeTempFile(dest: string, data: Buffer): void {}
+  createOrAppendFile(dest: string, src: string): void {}
+}
+
+/**
+ * Web Standard WebSocket Adaptor bridging native WebSockets to LiveViewJS WsHandler.
+ */
+export class WebStandardWsAdaptor implements WsAdaptor {
+  private socket: any;
+  private messageListeners: Array<(data: Buffer, isBinary: boolean) => Promise<void> | void> = [];
+  private closeListeners: Array<() => void> = [];
+  private isClosedState = false;
+
+  constructor(socket: any) {
+    this.socket = socket;
+
+    const onMessage = async (event: { data: string | ArrayBuffer }) => {
+      const isBinary = typeof event.data !== "string";
+      const buffer = isBinary
+        ? Buffer.from(event.data as ArrayBuffer)
+        : Buffer.from(event.data as string, "utf-8");
+
+      for (const listener of this.messageListeners) {
+        await listener(buffer, isBinary);
+      }
+    };
+
+    const onClose = () => {
+      this.isClosedState = true;
+      for (const listener of this.closeListeners) {
+        listener();
+      }
+    };
+
+    if (socket.addEventListener) {
+      socket.addEventListener("message", onMessage);
+      socket.addEventListener("close", onClose);
+    } else if (socket.on) {
+      socket.on("message", (data: any, isBinary?: boolean) => {
+        onMessage({ data });
+      });
+      socket.on("close", onClose);
+    }
+  }
+
+  subscribeToMessages(cb: (data: Buffer, isBinary: boolean) => void): void {
+    this.messageListeners.push(cb);
+  }
+
+  subscribeToClose(cb: () => void): void {
+    this.closeListeners.push(cb);
+  }
+
+  send(message: string, errorHandler?: (err: any) => void): void {
+    try {
+      this.socket.send(message);
+    } catch (err) {
+      if (errorHandler) errorHandler(err);
+    }
+  }
+
+  isClosed(): boolean {
+    return this.isClosedState;
   }
 }
 
@@ -33,10 +113,13 @@ export class WebLiveViewHandler {
   private signingSecret: string;
   private serDe: SerDe;
   private pageTitleDefaults?: { title?: string; prefix?: string; suffix?: string };
+  private pubSub = new SingleProcessPubSub();
+  private flashAdaptor = new SessionFlashAdaptor();
+  private fileSysAdaptor = new DefaultFileSystemAdaptor();
 
   constructor(options: WebHandlerOptions) {
     this.router = options.router;
-    this.signingSecret = options.signingSecret;
+    this.signingSecret = options.signingSecret ?? "default-secret-key-1234567890";
     this.serDe = new JsonSerDe();
     this.pageTitleDefaults = options.pageTitleDefaults;
 
@@ -112,67 +195,21 @@ export class WebLiveViewHandler {
   }
 
   /**
-   * Handles Web Standard WebSocket connections for Phoenix protocol frames.
+   * Handles Web Standard WebSocket connections using core WsHandler engine.
    */
   ws(socket: any, pathName?: string): void {
     this.websocket(socket, pathName);
   }
 
   websocket(socket: any, pathName?: string): void {
-    const onMessageCallback = async (event: { data: string | ArrayBuffer }) => {
-      try {
-        const rawMsg = typeof event.data === "string" ? event.data : new TextDecoder().decode(event.data);
-        const parsed = JSON.parse(rawMsg);
+    const wsAdaptor = new WebStandardWsAdaptor(socket);
 
-        if (Array.isArray(parsed) && parsed.length === 5) {
-          const [joinRef, msgRef, topic, eventName, payload] = parsed;
-
-          if (eventName === "phx_join") {
-            const liveView = this.router[pathName ?? "/counter"] ?? Object.values(this.router)[0];
-            let renderedPartsTree = {};
-
-            if (liveView) {
-              const mockSocket = {
-                context: { count: 10 },
-                assign: (ctx: any) => {
-                  Object.assign(mockSocket.context, ctx);
-                },
-              };
-
-              const rendered = await liveView.render(mockSocket.context, {
-                csrfToken: "",
-                live_component: async () => html``,
-                url: new URL("http://localhost:3000"),
-                uploads: {},
-              });
-              renderedPartsTree = rendered.partsTree();
-            }
-
-            const replyFrame = JSON.stringify([
-              joinRef,
-              msgRef,
-              topic,
-              "phx_reply",
-              {
-                response: {
-                  rendered: renderedPartsTree,
-                },
-                status: "ok",
-              },
-            ]);
-
-            socket.send(replyFrame);
-          }
-        }
-      } catch (err) {
-        console.error("Error processing WebSocket frame:", err);
-      }
-    };
-
-    if (socket.addEventListener) {
-      socket.addEventListener("message", onMessageCallback);
-    } else if (socket.on) {
-      socket.on("message", (data: any) => onMessageCallback({ data }));
-    }
+    const wsHandler = new WsHandler(wsAdaptor, {
+      serDe: this.serDe,
+      router: this.router,
+      fileSysAdaptor: this.fileSysAdaptor,
+      flashAdaptor: this.flashAdaptor,
+      pubSub: this.pubSub,
+    });
   }
 }
