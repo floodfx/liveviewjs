@@ -71,6 +71,10 @@ export class WebStandardWsAdaptor implements WsAdaptor {
       }
     };
 
+    // Attach handler method directly to socket for Bun/Deno server wrappers
+    socket._onMessage = onMessage;
+    socket._onClose = onClose;
+
     if (socket.addEventListener) {
       socket.addEventListener("message", onMessage);
       socket.addEventListener("close", onClose);
@@ -127,6 +131,8 @@ export class WebLiveViewHandler {
     this.fetch = this.fetch.bind(this);
     this.websocket = this.websocket.bind(this);
     this.ws = this.ws.bind(this);
+    this.handleMessage = this.handleMessage.bind(this);
+    this.handleClose = this.handleClose.bind(this);
   }
 
   /**
@@ -192,6 +198,24 @@ export class WebLiveViewHandler {
         "content-type": "text/html; charset=utf-8",
       },
     });
+  }
+
+  /**
+   * Direct message dispatch helper for Bun.serve / Deno.serve websocket options.
+   */
+  async handleMessage(socket: any, message: string | Buffer): Promise<void> {
+    if (socket._onMessage) {
+      await socket._onMessage({ data: message });
+    }
+  }
+
+  /**
+   * Direct close dispatch helper for Bun.serve / Deno.serve websocket options.
+   */
+  handleClose(socket: any): void {
+    if (socket._onClose) {
+      socket._onClose();
+    }
   }
 
   /**
