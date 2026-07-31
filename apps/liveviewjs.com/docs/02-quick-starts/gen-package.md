@@ -1,4 +1,8 @@
-# LiveViewJS Code Generation Package
+---
+sidebar_position: 6
+---
+
+# Project and LiveView Generation
 
 **LiveViewJS** code generation command line interface for NodeJS and Deno.  Currently, the `@liveviewjs/gen` can generate a new LiveViewJS project or add new LiveViews to an existing project.
 
@@ -10,7 +14,7 @@ The `@liveviewjs/gen` package is a command line interface that will generate a n
 npx @liveviewjs/gen@latest
 ```
 
-### Auto-accept npx package insall 
+:::tip 
 
 Auto-accept npx package insall
 
@@ -20,6 +24,7 @@ If you don't want `npx` to ask you to install the `@liveviewjs/gen` package you 
 npx --yes @liveviewjs/gen@latest
 ```
 
+:::
 
 ## Command Line Options
 
@@ -115,24 +120,14 @@ When creating a new liveview, the generator needs to know what runtime you are t
 npx --yes @liveviewjs/gen@latest -g liveview -n deno
 ```
 
-##### Note
+:::note
 
 There are slight differences between "import" across NodeJS and Deno - Node eschews file extensions, while Deno requires them.  Unfortunately, the generator doesn't detect the runtime yet so you will need to specify it.  We hope to add detection in the future.
 
+:::
 
 ## Future Generators
 
 We expect to add more generators in the future particularly for the following:
 - `example` - pick an example LiveView from our examples to add to your project
 - `livecomponent` - generate a LiveComponent
-
-
-## Local Development
-
-Run `npm run build` to build the package.  The build artifacts will be stored in the `dist/` directory.
-
-Run dist code with `node dist/cli.mjs`
-
-## More Information
-
-There is a lot more information about LiveViewJS in the [LiveViewJS documentation](https://liveviewjs.com).

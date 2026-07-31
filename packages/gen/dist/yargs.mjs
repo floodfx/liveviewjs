@@ -1,4 +1,5 @@
 import yargs from "yargs/yargs";
+import { RuntimeTypes, TemplateTypes } from "./prompts.mjs";
 export const genYargs = (argv) => {
     return yargs(argv)
         .options({
@@ -33,6 +34,30 @@ export const projYargs = (argv) => {
             type: "boolean",
             alias: "i",
             description: "Run npm install",
+        },
+    })
+        .parseSync();
+};
+export const lvYargs = (argv) => {
+    return yargs(argv)
+        .usage("Usage: $0 [generator] [args]")
+        .options({
+        route: {
+            type: "string",
+            alias: "r",
+            description: "Route to load LiveView",
+        },
+        runtime: {
+            type: "string",
+            alias: "n",
+            description: `Target runtime: ${RuntimeTypes.join(", ")}`,
+            choices: RuntimeTypes,
+        },
+        template: {
+            type: "string",
+            alias: "t",
+            description: `Template to use: ${TemplateTypes.join(", ")}`,
+            choices: TemplateTypes,
         },
     })
         .parseSync();

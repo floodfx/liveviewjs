@@ -3,7 +3,7 @@ import * as path from "path";
 const MIN_VERSION = 16;
 async function createApp({ projectType, projectDir, install, quiet }) {
     let versions = process.versions;
-    if (projectType === "node-project" && versions?.node && parseInt(versions.node) < MIN_VERSION) {
+    if (projectType === "node" && versions?.node && parseInt(versions.node) < MIN_VERSION) {
         console.log(`️🚨 Oops, Node v${versions.node} detected. LiveViewJS requires a Node version greater than ${MIN_VERSION}.`);
         process.exit(1);
     }
@@ -20,14 +20,14 @@ async function createApp({ projectType, projectDir, install, quiet }) {
             cdFirstMessage = ` \`cd\` into "${path.relative(process.cwd(), projectDir ?? "")}". `;
         }
         let installMessage = "";
-        if (projectType === "node-project" && !install) {
+        if (projectType === "node" && !install) {
             installMessage = `Run \`npm install\` to install dependencies.`;
         }
         let runMessage = "";
-        if (projectType === "node-project") {
+        if (projectType === "node") {
             runMessage = ` Run \`npm run dev\` to start your LiveViewJS project.`;
         }
-        if (projectType === "deno-project") {
+        if (projectType === "deno") {
             runMessage = ` Run \`deno run --allow-run --allow-read --allow-write --allow-net --allow-env  src/server/autorun.ts\` to start your LiveViewJS project.`;
         }
         console.log(`🖼 LiveViewJS app created!${cdFirstMessage}${installMessage}${runMessage} Check out the README for more details!`);

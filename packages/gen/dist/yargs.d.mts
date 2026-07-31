@@ -9,3 +9,9 @@ export interface ProjectYargs {
     install?: boolean;
 }
 export declare const projYargs: (argv: string[]) => ProjectYargs;
+export interface LiveViewYargs {
+    route?: string;
+    runtime?: string;
+    template?: string;
+}
+export declare const lvYargs: (argv: string[]) => LiveViewYargs;

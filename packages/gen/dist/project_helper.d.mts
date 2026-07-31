@@ -1,5 +1,6 @@
+import { RuntimeType } from "./prompts.mjs";
 export type CreateAppArgs = {
-    projectType: "node-project" | "deno-project";
+    projectType: RuntimeType;
     projectDir?: string;
     install?: boolean;
     quiet?: boolean;

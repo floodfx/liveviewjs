@@ -1,8 +1,15 @@
 import { Prompt } from "enquirer";
 type PromptOptions = NonNullable<ConstructorParameters<typeof Prompt>[0]>;
-export declare const GeneratorTypes: readonly ["node-project", "deno-project"];
+export declare const TemplateTypes: readonly ["min", "max"];
+export type TemplateType = typeof TemplateTypes[number];
+export declare const RuntimeTypes: readonly ["node", "deno"];
+export type RuntimeType = typeof RuntimeTypes[number];
+export declare const GeneratorTypes: readonly ["node", "deno", "liveview"];
 export type GeneratorType = typeof GeneratorTypes[number];
 export declare const GeneratorTypePromptOptions: PromptOptions;
 export declare const NamePromptOptions: PromptOptions;
 export declare const NpmInstallPromptOptions: PromptOptions;
+export declare const RoutePrompt: PromptOptions;
+export declare const RuntimePrompt: PromptOptions;
+export declare const TemplatePrompt: PromptOptions;
 export {};

@@ -9,8 +9,8 @@ import path from "path";
 import * as url from "url";
 import { NullLogger } from "./null_logger.mjs";
 import { changeDirMsg, installMsg, runMsg } from "./post_exec.mjs";
-import { GeneratorTypePromptOptions, NamePromptOptions, NpmInstallPromptOptions } from "./prompts.mjs";
-import { genYargs, projYargs } from "./yargs.mjs";
+import { GeneratorTypePromptOptions, NamePromptOptions, NpmInstallPromptOptions, RoutePrompt, RuntimePrompt, TemplatePrompt, } from "./prompts.mjs";
+import { genYargs, lvYargs, projYargs } from "./yargs.mjs";
 const { prompt } = enquirer;
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 const templates = path.join(__dirname, "../_templates");
@@ -34,7 +34,7 @@ async function runExeca(action) {
     const { stderr, stdout, failed, exitCode } = await execa(action[0], action.slice(1));
     console.log(stdout);
     if (failed) {
-        console.error(stderr);
+        console.error(chalk.red(stderr));
         process.exit(exitCode);
     }
 }
@@ -43,13 +43,14 @@ const run = async () => {
         const hygenArgs = [];
         const postExec = [];
         const msgs = [];
+        let generatorTemplate = "new";
         // check for common args
         const gyargs = genYargs(process.argv.slice(2));
         let generator = gyargs.generator;
         if (!generator) {
             generator = (await prompt(GeneratorTypePromptOptions)).generator;
         }
-        hygenArgs.push(generator, "new");
+        // need name?
         if (!gyargs.name) {
             gyargs.name = (await prompt(NamePromptOptions)).name;
         }
@@ -60,12 +61,12 @@ const run = async () => {
             process.env.HYGEN_OVERWRITE = "1";
         }
         // depending on generator parse args
-        if (generator === "node-project" || generator === "deno-project") {
+        if (generator === "node" || generator === "deno") {
             const yargs = projYargs(process.argv.slice(2));
             if (yargs.install === undefined) {
                 // change prompt message based on generator type
                 let message = NpmInstallPromptOptions.message;
-                if (generator === "deno-project") {
+                if (generator === "deno") {
                     message += " (required for client-side javascript)";
                 }
                 yargs.install = (await prompt({ ...NpmInstallPromptOptions, message })).install;
@@ -73,7 +74,7 @@ const run = async () => {
             msgs.push(installMsg(generator, yargs.install));
             if (yargs.install) {
                 postExec.push(async () => {
-                    const spinner = cliSpinners.squareCorners;
+                    const spinner = cliSpinners.point;
                     let i = 0;
                     const ref = setInterval(() => {
                         const { frames } = spinner;
@@ -85,8 +86,27 @@ const run = async () => {
                 });
             }
         }
+        else if (generator === "liveview") {
+            // parse args to see if we need to prompt more
+            const yargs = lvYargs(process.argv.slice(2));
+            // need route?
+            if (!yargs.route) {
+                yargs.route = (await prompt(RoutePrompt)).route;
+            }
+            hygenArgs.push("--route", yargs.route);
+            // need template?
+            if (!yargs.template) {
+                yargs.template = (await prompt(TemplatePrompt)).template;
+            }
+            generatorTemplate = yargs.template;
+            // need runtime?
+            if (!yargs.runtime) {
+                yargs.runtime = (await prompt(RuntimePrompt)).runtime;
+            }
+            hygenArgs.push("--runtime", yargs.runtime);
+        }
         msgs.push(runMsg(generator));
-        const result = await runHygen(hygenArgs, !!gyargs.quiet);
+        const result = await runHygen([generator, generatorTemplate, ...hygenArgs], !!gyargs.quiet);
         // exit if we have errors
         if (result.failure || !result.success) {
             console.error("Error: ", result.failure ?? "unknown error");
@@ -103,7 +123,7 @@ const run = async () => {
             m += `\n\t- ${val}`;
             return m;
         }, "");
-        console.log(chalk.green(`\n\nSuccess! Created "${gyargs.name}" LiveViewJS project! ${msg}`));
+        console.log(chalk.cyanBright(`\n\nSuccess! Created "${gyargs.name}"! ${msg}`));
     }
     catch (e) {
         console.error("Error: ", e);

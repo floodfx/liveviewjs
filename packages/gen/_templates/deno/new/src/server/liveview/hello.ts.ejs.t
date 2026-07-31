@@ -10,7 +10,7 @@ export const helloLive = createLiveView({
   mount: (socket, _, params) => {
     socket.assign({ name: params.name || "<%= h.inflection.camelize(name, false) %>", useEmoji: true });
   },
-  handleEvent(event, socket) {
+  handleEvent: (event, socket) => {
     if (event.type === "toggle") {
       socket.assign({ useEmoji: !socket.context.useEmoji });
     }
