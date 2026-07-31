@@ -3,6 +3,10 @@
   "version": "0.10.4",
   "description": "LiveViewJS brings the power of LiveView to TypeScript and JavaScript developers and applications.",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
@@ -29,7 +33,6 @@
     "typescript": "^7.0.0-rc"
   },
   "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=10.0.0"
+    "node": ">=22.0.0"
   }
 }
