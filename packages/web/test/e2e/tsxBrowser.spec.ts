@@ -2,7 +2,10 @@ import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { WebLiveViewHandler } from "../../src/webLiveViewHandler";
 import { ClassLiveView, html, transformJsxToLiveViewHtml } from "../../../core/src/index";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const currentDir = dirname(fileURLToPath(import.meta.url));
 
 /**
  * ClassLiveView created from a genuine .tsx file transpiled by jsx2ttl
@@ -54,7 +57,7 @@ describe("E2E Real-Time Engine with Genuine .tsx Files Transpiled by jsx2ttl", (
   });
 
   test("1. jsx2ttl parses and transforms genuine .tsx file into LiveViewJS html`...` code", () => {
-    const tsxPath = join(import.meta.dir, "./tsxView.tsx");
+    const tsxPath = join(currentDir, "./tsxView.tsx");
     const tsxCode = readFileSync(tsxPath, "utf-8");
 
     const transpiled = transformJsxToLiveViewHtml(tsxCode);
