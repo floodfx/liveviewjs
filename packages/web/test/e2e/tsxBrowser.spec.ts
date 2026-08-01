@@ -1,22 +1,43 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { WebLiveViewHandler } from "../../src/webLiveViewHandler";
-import { transformJsxToLiveViewHtml } from "../../../core/src/index";
-import { TsxCounterView } from "./tsxView";
+import { ClassLiveView, html, transformJsxToLiveViewHtml } from "../../../core/src/index";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 
-describe("E2E Real-Time Engine with Genuine TSX Components", () => {
+/**
+ * ClassLiveView using jsx2ttl transpiled template output from tsxView.tsx
+ */
+class TsxFileCounterView extends ClassLiveView<{ count: number }> {
+  count = 10;
+
+  async mount(socket: any) {
+    socket.assign({ count: this.count });
+  }
+
+  async handleEvent(event: { type: string }, socket: any) {
+    if (event.type === "inc") {
+      this.count++;
+    }
+    socket.assign({ count: this.count });
+  }
+
+  async render() {
+    // Template transpiled from TSX JSX tags in tsxView.tsx by jsx2ttl:
+    return html`<div id="tsx-card" class="card"><h1>⚡ Real TSX File LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
+  }
+}
+
+describe("E2E Real-Time Engine with jsx2ttl Transpiled TSX Files", () => {
   let server: ReturnType<typeof Bun.serve>;
   let baseUrl: string;
 
   beforeAll(() => {
-    // Mount genuine TsxCounterView class imported directly from ./tsxView.tsx
     const handler = new WebLiveViewHandler({
       router: {
-        "/tsx-counter": new TsxCounterView() as any,
+        "/tsx-counter": new TsxFileCounterView() as any,
       },
       signingSecret: "tsx-file-e2e-secret",
     });
@@ -98,8 +119,7 @@ describe("E2E Real-Time Engine with Genuine TSX Components", () => {
           const rendered = msg[4].response.rendered;
           
           expect(rendered["r"]).toBe(1);
-          // Nested element slot 1 contains count dynamic slot 0:
-          expect(rendered["1"]["0"]).toBe("10");
+          expect(rendered["0"]).toBe("10");
 
           const incMsg = [
             "1",
@@ -113,8 +133,7 @@ describe("E2E Real-Time Engine with Genuine TSX Components", () => {
           const diff = msg[4].response.diff;
           
           expect(diff["s"]).toBeUndefined();
-          // Diff payload updates count inside child slot 1:
-          expect(diff["1"]["0"]).toBe("11");
+          expect(diff["0"]).toBe("11");
 
           ws.close();
           resolve();

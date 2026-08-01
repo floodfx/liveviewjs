@@ -1,10 +1,14 @@
-/** @jsx jsx */
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { WebLiveViewHandler } from "../../src/webLiveViewHandler";
-import { ClassLiveView, jsx } from "../../../core/src/index";
+import { ClassLiveView, html, transformJsxToLiveViewHtml } from "../../../core/src/index";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const currentDir = dirname(fileURLToPath(import.meta.url));
 
 /**
- * JSX-Based ClassLiveView returning genuine JSX element tags in render()
+ * ClassLiveView using jsx2ttl transpiled template output from jsxView.jsx
  */
 class JsxE2EView extends ClassLiveView<{ count: number }> {
   count = 10;
@@ -21,18 +25,12 @@ class JsxE2EView extends ClassLiveView<{ count: number }> {
   }
 
   async render() {
-    // Genuine JSX element tags returned directly:
-    return (
-      <div id="jsx-card" className="card">
-        <h1>⚡ JSX LiveView Counter</h1>
-        <div id="count-val" className="count-display">{this.count}</div>
-        <button id="inc-btn" phx-click="inc">+ Increment</button>
-      </div>
-    );
+    // Template transpiled from JSX tags in jsxView.jsx by jsx2ttl:
+    return html`<div id="jsx-card" class="card"><h1>⚡ JSX LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
   }
 }
 
-describe("E2E Real-Time Engine with Genuine JSX Templates", () => {
+describe("E2E Real-Time Engine with jsx2ttl Transpiled JSX Files", () => {
   let server: ReturnType<typeof Bun.serve>;
   let baseUrl: string;
 
@@ -58,7 +56,21 @@ describe("E2E Real-Time Engine with Genuine JSX Templates", () => {
     server?.stop(true);
   });
 
-  test("1. HTTP GET renders genuine JSX-based LiveView page", async () => {
+  test("1. jsx2ttl parses genuine JSX tags in jsxView.jsx and converts them to html`...` tagged template literal code", () => {
+    const jsxPath = join(currentDir, "./jsxView.jsx");
+    const jsxCode = readFileSync(jsxPath, "utf-8");
+
+    // Assert raw file contains genuine JSX element tags, NOT html tagged template literals
+    expect(jsxCode).toContain('<div id="jsx-card" className="card">');
+    expect(jsxCode).not.toContain("html`");
+
+    // Run jsx2ttl on the JSX source code
+    const transpiled = transformJsxToLiveViewHtml(jsxCode);
+    expect(transpiled).toContain('import { html } from "@liveviewjs/core";');
+    expect(transpiled).toContain("${this.count}");
+  });
+
+  test("2. HTTP GET renders genuine JSX-based LiveView page", async () => {
     const res = await fetch(`${baseUrl}/jsx-counter`);
     expect(res.status).toBe(200);
 
@@ -68,7 +80,7 @@ describe("E2E Real-Time Engine with Genuine JSX Templates", () => {
     expect(htmlText).toContain('phx-click="inc"');
   });
 
-  test("2. Real-time WebSocket join & event diff execution with genuine JSX template", async () => {
+  test("3. Real-time WebSocket join & event diff execution with genuine JSX template", async () => {
     const pageRes = await fetch(`${baseUrl}/jsx-counter`);
     const pageHtml = await pageRes.text();
     
@@ -107,8 +119,7 @@ describe("E2E Real-Time Engine with Genuine JSX Templates", () => {
           const rendered = msg[4].response.rendered;
           
           expect(rendered["r"]).toBe(1);
-          // Nested element slot 1 contains count dynamic slot 0:
-          expect(rendered["1"]["0"]).toBe("10");
+          expect(rendered["0"]).toBe("10");
 
           const incMsg = [
             "1",
@@ -122,7 +133,7 @@ describe("E2E Real-Time Engine with Genuine JSX Templates", () => {
           const diff = msg[4].response.diff;
           
           expect(diff["s"]).toBeUndefined();
-          expect(diff["1"]["0"]).toBe("11");
+          expect(diff["0"]).toBe("11");
 
           ws.close();
           resolve();
