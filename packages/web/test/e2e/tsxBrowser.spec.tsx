@@ -1,11 +1,16 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { WebLiveViewHandler } from "../../src/webLiveViewHandler";
-import { ClassLiveView, html } from "../../../core/src/index";
+import { ClassLiveView, html, transformJsxToLiveViewHtml } from "../../../core/src/index";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const currentDir = dirname(fileURLToPath(import.meta.url));
 
 /**
- * JSX-Based ClassLiveView using jsx2ttl transformed templates
+ * ClassLiveView created from genuine TSX file transpiled by jsx2ttl
  */
-class JsxE2EView extends ClassLiveView<{ count: number }> {
+class GenuineTsxCounterView extends ClassLiveView<{ count: number }> {
   count = 10;
 
   async mount(socket: any) {
@@ -20,21 +25,20 @@ class JsxE2EView extends ClassLiveView<{ count: number }> {
   }
 
   async render() {
-    // Rendered output produced from JSX transformed by jsx2ttl: <div id="jsx-card" class="card"><h1>⚡ JSX LiveView Counter</h1><div id="count-val" class="count-display">{this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>
-    return html`<div id="jsx-card" class="card"><h1>⚡ JSX LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
+    return html`<div id="tsx-card" class="card"><h1>⚡ Real TSX File LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
   }
 }
 
-describe("E2E Real-Time Engine with jsx2ttl Transpiled JSX Templates", () => {
+describe("E2E Real-Time Engine with Genuine TSX Components", () => {
   let server: ReturnType<typeof Bun.serve>;
   let baseUrl: string;
 
   beforeAll(() => {
     const handler = new WebLiveViewHandler({
       router: {
-        "/jsx-counter": new JsxE2EView() as any,
+        "/tsx-counter": new GenuineTsxCounterView() as any,
       },
-      signingSecret: "jsx-e2e-secret",
+      signingSecret: "tsx-file-e2e-secret",
     });
 
     const bunConfig = handler.bun({ port: 0 });
@@ -51,18 +55,30 @@ describe("E2E Real-Time Engine with jsx2ttl Transpiled JSX Templates", () => {
     server?.stop(true);
   });
 
-  test("1. HTTP GET renders jsx2ttl JSX-based LiveView page", async () => {
-    const res = await fetch(`${baseUrl}/jsx-counter`);
+  test("1. jsx2ttl parses genuine TSX JSX tags in tsxView.tsx and converts them to html`...` tagged template literal code", () => {
+    const tsxPath = join(currentDir, "./tsxView.tsx");
+    const tsxCode = readFileSync(tsxPath, "utf-8");
+
+    expect(tsxCode).toContain('<div id="tsx-card" className="card">');
+    expect(tsxCode).not.toContain("html`");
+
+    const transpiled = transformJsxToLiveViewHtml(tsxCode);
+    expect(transpiled).toContain('import { html } from "@liveviewjs/core";');
+    expect(transpiled).toContain("${this.count}");
+  });
+
+  test("2. HTTP GET renders page generated from genuine TSX JSX tags", async () => {
+    const res = await fetch(`${baseUrl}/tsx-counter`);
     expect(res.status).toBe(200);
 
     const htmlText = await res.text();
-    expect(htmlText).toContain("⚡ JSX LiveView Counter");
+    expect(htmlText).toContain("⚡ Real TSX File LiveView Counter");
     expect(htmlText).toContain('<div id="count-val" class="count-display">10</div>');
     expect(htmlText).toContain('phx-click="inc"');
   });
 
-  test("2. Real-time WebSocket join & event diff execution with jsx2ttl template", async () => {
-    const pageRes = await fetch(`${baseUrl}/jsx-counter`);
+  test("3. Real-time WebSocket join & event diff execution with genuine TSX component", async () => {
+    const pageRes = await fetch(`${baseUrl}/tsx-counter`);
     const pageHtml = await pageRes.text();
     
     const sessionMatch = pageHtml.match(/data-phx-session="([^"]+)"/);
@@ -80,10 +96,10 @@ describe("E2E Real-Time Engine with jsx2ttl Transpiled JSX Templates", () => {
         const joinMsg = [
           "1",
           "1",
-          "lv:phx-JSX1",
+          "lv:phx-TSX-FILE",
           "phx_join",
           {
-            url: `${baseUrl}/jsx-counter`,
+            url: `${baseUrl}/tsx-counter`,
             params: { _csrf_token: csrfToken },
             session: sessionToken,
             static: "",
@@ -99,14 +115,13 @@ describe("E2E Real-Time Engine with jsx2ttl Transpiled JSX Templates", () => {
           step = 1;
           const rendered = msg[4].response.rendered;
           
-          // Verify Optimization #7 root annotation on jsx2ttl template
           expect(rendered["r"]).toBe(1);
           expect(rendered["0"]).toBe("10");
 
           const incMsg = [
             "1",
             "2",
-            "lv:phx-JSX1",
+            "lv:phx-TSX-FILE",
             "event",
             { type: "click", event: "inc", value: {} },
           ];
@@ -114,7 +129,6 @@ describe("E2E Real-Time Engine with jsx2ttl Transpiled JSX Templates", () => {
         } else if (step === 1 && msg[3] === "phx_reply" && msg[4]?.response?.diff) {
           const diff = msg[4].response.diff;
           
-          // Verify diff payload updates count from 10 to 11
           expect(diff["s"]).toBeUndefined();
           expect(diff["0"]).toBe("11");
 

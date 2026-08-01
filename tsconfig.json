@@ -12,7 +12,8 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "jsx": "react-jsx",
+    "jsx": "react",
+    "jsxFactory": "jsx",
     "composite": true,
     "baseUrl": ".",
     "paths": {
