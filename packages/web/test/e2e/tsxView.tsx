@@ -1,5 +1,4 @@
-/** @jsx jsx */
-import { ClassLiveView, jsx } from "../../../core/src/index";
+import { ClassLiveView } from "../../../core/src/index";
 
 export class TsxCounterView extends ClassLiveView<{ count: number }> {
   count = 10;

@@ -8,7 +8,7 @@ describe("JSX to Tagged Template Literal Conversion using jsx2ttl", () => {
     const jsxCode = `<div id="card"><h1>Count: {count}</h1></div>`;
     const transformed = transformJsxToLiveViewHtml(jsxCode);
 
-    expect(transformed).toContain("html`<div id=\"card\">${html`<h1>Count: ${count}</h1>`}</div>`");
+    expect(transformed).toContain('html`<div id="card">${html`<h1>Count: ${count}</h1>`}</div>`');
   });
 
   test("2. Evaluated jsx2ttl template output maintains Optimization #7 'r': 1 single root element annotation", () => {

@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 
 /**
- * ClassLiveView using jsx2ttl transpiled template output from jsxView.jsx
+ * ClassLiveView using jsx2ttl transpiled template output
  */
 class JsxE2EView extends ClassLiveView<{ count: number }> {
   count = 10;
@@ -25,7 +25,7 @@ class JsxE2EView extends ClassLiveView<{ count: number }> {
   }
 
   async render() {
-    // Template transpiled from JSX tags in jsxView.jsx by jsx2ttl:
+    // Template transpiled from JSX tags by jsx2ttl:
     return html`<div id="jsx-card" class="card"><h1>⚡ JSX LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
   }
 }
@@ -56,16 +56,16 @@ describe("E2E Real-Time Engine with jsx2ttl Transpiled JSX Files", () => {
     server?.stop(true);
   });
 
-  test("1. jsx2ttl parses genuine JSX tags in jsxView.jsx and converts them to html`...` tagged template literal code", () => {
-    const jsxPath = join(currentDir, "./jsxView.jsx");
-    const jsxCode = readFileSync(jsxPath, "utf-8");
+  test("1. jsx2ttl parses genuine TSX JSX tags in tsxView.tsx and converts them to html`...` tagged template literal code", () => {
+    const tsxPath = join(currentDir, "./tsxView.tsx");
+    const tsxCode = readFileSync(tsxPath, "utf-8");
 
     // Assert raw file contains genuine JSX element tags, NOT html tagged template literals
-    expect(jsxCode).toContain('<div id="jsx-card" className="card">');
-    expect(jsxCode).not.toContain("html`");
+    expect(tsxCode).toContain('<div id="tsx-card" className="card">');
+    expect(tsxCode).not.toContain("html`");
 
-    // Run jsx2ttl on the JSX source code
-    const transpiled = transformJsxToLiveViewHtml(jsxCode);
+    // Run jsx2ttl on the TSX source code
+    const transpiled = transformJsxToLiveViewHtml(tsxCode);
     expect(transpiled).toContain('import { html } from "@liveviewjs/core";');
     expect(transpiled).toContain("${this.count}");
   });
