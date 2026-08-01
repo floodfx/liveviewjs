@@ -1,9 +1,10 @@
+/** @jsx jsx */
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { WebLiveViewHandler } from "../../src/webLiveViewHandler";
-import { ClassLiveView, html } from "../../../core/src/index";
+import { ClassLiveView, jsx } from "../../../core/src/index";
 
 /**
- * JSX-Based ClassLiveView using jsx2ttl transpiled template output
+ * JSX-Based ClassLiveView returning genuine JSX element tags in render()
  */
 class JsxE2EView extends ClassLiveView<{ count: number }> {
   count = 10;
@@ -20,7 +21,14 @@ class JsxE2EView extends ClassLiveView<{ count: number }> {
   }
 
   async render() {
-    return html`<div id="jsx-card" class="card"><h1>⚡ JSX LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
+    // Genuine JSX element tags returned directly:
+    return (
+      <div id="jsx-card" className="card">
+        <h1>⚡ JSX LiveView Counter</h1>
+        <div id="count-val" className="count-display">{this.count}</div>
+        <button id="inc-btn" phx-click="inc">+ Increment</button>
+      </div>
+    );
   }
 }
 
@@ -99,7 +107,8 @@ describe("E2E Real-Time Engine with Genuine JSX Templates", () => {
           const rendered = msg[4].response.rendered;
           
           expect(rendered["r"]).toBe(1);
-          expect(rendered["0"]).toBe("10");
+          // Nested element slot 1 contains count dynamic slot 0:
+          expect(rendered["1"]["0"]).toBe("10");
 
           const incMsg = [
             "1",
@@ -113,7 +122,7 @@ describe("E2E Real-Time Engine with Genuine JSX Templates", () => {
           const diff = msg[4].response.diff;
           
           expect(diff["s"]).toBeUndefined();
-          expect(diff["0"]).toBe("11");
+          expect(diff["1"]["0"]).toBe("11");
 
           ws.close();
           resolve();

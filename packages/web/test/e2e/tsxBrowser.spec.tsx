@@ -1,42 +1,22 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { WebLiveViewHandler } from "../../src/webLiveViewHandler";
-import { ClassLiveView, html, transformJsxToLiveViewHtml } from "../../../core/src/index";
+import { transformJsxToLiveViewHtml } from "../../../core/src/index";
+import { TsxCounterView } from "./tsxView";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 
-/**
- * ClassLiveView created from genuine TSX file transpiled by jsx2ttl
- */
-class GenuineTsxCounterView extends ClassLiveView<{ count: number }> {
-  count = 10;
-
-  async mount(socket: any) {
-    socket.assign({ count: this.count });
-  }
-
-  async handleEvent(event: { type: string }, socket: any) {
-    if (event.type === "inc") {
-      this.count++;
-    }
-    socket.assign({ count: this.count });
-  }
-
-  async render() {
-    return html`<div id="tsx-card" class="card"><h1>⚡ Real TSX File LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
-  }
-}
-
 describe("E2E Real-Time Engine with Genuine TSX Components", () => {
   let server: ReturnType<typeof Bun.serve>;
   let baseUrl: string;
 
   beforeAll(() => {
+    // Mount genuine TsxCounterView class imported directly from ./tsxView.tsx
     const handler = new WebLiveViewHandler({
       router: {
-        "/tsx-counter": new GenuineTsxCounterView() as any,
+        "/tsx-counter": new TsxCounterView() as any,
       },
       signingSecret: "tsx-file-e2e-secret",
     });
@@ -59,15 +39,17 @@ describe("E2E Real-Time Engine with Genuine TSX Components", () => {
     const tsxPath = join(currentDir, "./tsxView.tsx");
     const tsxCode = readFileSync(tsxPath, "utf-8");
 
+    // Assert raw file contains genuine JSX element tags, NOT html tagged template literals
     expect(tsxCode).toContain('<div id="tsx-card" className="card">');
     expect(tsxCode).not.toContain("html`");
 
+    // Run jsx2ttl on the TSX source code
     const transpiled = transformJsxToLiveViewHtml(tsxCode);
     expect(transpiled).toContain('import { html } from "@liveviewjs/core";');
     expect(transpiled).toContain("${this.count}");
   });
 
-  test("2. HTTP GET renders page generated from genuine TSX JSX tags", async () => {
+  test("2. HTTP GET renders page generated from genuine TSX JSX tags in ./tsxView.tsx", async () => {
     const res = await fetch(`${baseUrl}/tsx-counter`);
     expect(res.status).toBe(200);
 
@@ -77,7 +59,7 @@ describe("E2E Real-Time Engine with Genuine TSX Components", () => {
     expect(htmlText).toContain('phx-click="inc"');
   });
 
-  test("3. Real-time WebSocket join & event diff execution with genuine TSX component", async () => {
+  test("3. Real-time WebSocket join & event diff execution with genuine TSX component from ./tsxView.tsx", async () => {
     const pageRes = await fetch(`${baseUrl}/tsx-counter`);
     const pageHtml = await pageRes.text();
     
@@ -116,7 +98,8 @@ describe("E2E Real-Time Engine with Genuine TSX Components", () => {
           const rendered = msg[4].response.rendered;
           
           expect(rendered["r"]).toBe(1);
-          expect(rendered["0"]).toBe("10");
+          // Nested element slot 1 contains count dynamic slot 0:
+          expect(rendered["1"]["0"]).toBe("10");
 
           const incMsg = [
             "1",
@@ -130,7 +113,8 @@ describe("E2E Real-Time Engine with Genuine TSX Components", () => {
           const diff = msg[4].response.diff;
           
           expect(diff["s"]).toBeUndefined();
-          expect(diff["0"]).toBe("11");
+          // Diff payload updates count inside child slot 1:
+          expect(diff["1"]["0"]).toBe("11");
 
           ws.close();
           resolve();
