@@ -556,7 +556,7 @@ describe("test liveview manager", () => {
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
     expect(ws.send).toHaveBeenCalledTimes(1);
     expect(spyMaybeAddPageTitleToParts).toHaveBeenCalledTimes(1);
-    expect(spyMaybeAddPageTitleToParts).toReturnWith({ s: ["<div>test</div>"], t: "new page title" });
+    expect(spyMaybeAddPageTitleToParts).toHaveReturnedWith({ s: ["<div>test</div>"], t: "new page title" });
   });
 
   it("a liveview with array of LiveTemplates", async () => {
@@ -583,7 +583,7 @@ describe("test liveview manager", () => {
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
     // expect(ws.send).toHaveBeenCalledTimes(1);
     expect(msg).toMatchInlineSnapshot(
-      `"["4","4","lv:phx-AAAAAAAA","phx_reply",{"response":{"rendered":{"0":{"d":[["a"],["b"],["c"]],"s":["<div>LiveComponent: ","</div>"]},"s":["",""]}},"status":"ok"}]"`);
+      `"["4","4","lv:phx-AAAAAAAA","phx_reply",{"response":{"rendered":{"0":{"d":[["a"],["b"],["c"]],"s":["<div>LiveComponent: ","</div>"],"r":1},"s":["",""]}},"status":"ok"}]"`);
   });
 
   it("a liveview with array of livecomponents", async () => {
@@ -610,7 +610,7 @@ describe("test liveview manager", () => {
     await cm.handleJoin(newPhxJoin("my csrf token", "my signing secret", { url: "http://localhost:4444/test" }));
     // expect(ws.send).toHaveBeenCalledTimes(1);
     expect(msg).toMatchInlineSnapshot(
-      `"["4","4","lv:phx-AAAAAAAA","phx_reply",{"response":{"rendered":{"0":{"d":[[1],[2],[3]]},"s":["<div>","</div>"],"c":{"1":{"0":"1","s":["<div>LiveComponent: ","</div>"]},"2":{"0":"2","s":["<div>LiveComponent: ","</div>"]},"3":{"0":"3","s":["<div>LiveComponent: ","</div>"]}}}},"status":"ok"}]"`);
+      `"["4","4","lv:phx-AAAAAAAA","phx_reply",{"response":{"rendered":{"0":{"d":[[1],[2],[3]]},"s":["<div>","</div>"],"r":1,"c":{"1":{"0":"1","s":["<div>LiveComponent: ","</div>"],"r":1},"2":{"0":"2","s":["<div>LiveComponent: ","</div>"],"r":1},"3":{"0":"3","s":["<div>LiveComponent: ","</div>"],"r":1}}}},"status":"ok"}]"`);
   });
 
   it("component that subscribes and received message", async () => {

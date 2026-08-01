@@ -320,7 +320,7 @@ describe("test liveview manager uploads", () => {
     await mgr.onPhxJoinUpload(["joinRef", "msgRef", `lvu:${uploadRef}`, "phx_join", { token: "token" }]);
 
     // try to consume entries before complete which throws
-    await expect(() =>
+    await expect(
       ((mgr as any).socket as LiveViewSocket).consumeUploadedEntries(uploadName, async (_, e) => e)
     ).rejects.toThrow();
 

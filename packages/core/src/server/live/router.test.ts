@@ -7,7 +7,7 @@ describe("test matchRoute", () => {
     "/foo": createLiveView({ render: () => html`` }),
     "/bar/:name": createLiveView({ render: () => html`` }),
     "/blah/:id": createLiveView({ render: () => html`` }),
-    "/zee/(\\d+)": createLiveView({ render: () => html`` }),
+    "/zee/:id": createLiveView({ render: () => html`` }),
   };
   it("test plain route", () => {
     let m = matchRoute(router, "/foo");
@@ -42,7 +42,7 @@ describe("test matchRoute", () => {
     let [lv, mr] = m!;
     expect(lv).toBeDefined();
     expect(mr).toBeDefined();
-    expect(mr!.params[0]).toBe("123");
+    expect(mr!.params.id).toBe("123");
   });
 
   it("test no match", () => {

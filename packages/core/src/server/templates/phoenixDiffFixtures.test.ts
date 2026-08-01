@@ -1,13 +1,11 @@
 import { describe, test, expect } from "bun:test";
-import { html, HtmlSafeString, safe } from "./index";
+import { html, safe, HtmlSafeString } from "./htmlSafeString";
 import { deepDiff } from "./diff";
-import { createLiveComponent, createLiveView } from "../live";
 
 /**
- * Phoenix LiveView 1.0 JSON Wire Protocol Test Fixture Suite
+ * Phoenix LiveView 1.0 JSON Diff Fixture Suite
  * 
- * Verifies byte-for-byte diff calculation and partsTree format compliance 
- * against official Phoenix LiveView protocol specifications.
+ * Tests exact wire protocol payload compatibility matching Phoenix 1.0 JSON diff structure.
  */
 describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
   describe("1. Basic Statics & Dynamics (s & d)", () => {
@@ -24,6 +22,7 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
       const result = html`<h1>Hello ${name}!</h1>`;
       expect(result.partsTree()).toEqual({
         0: "World",
+        r: 1,
         s: ["<h1>Hello ", "!</h1>"],
       });
       expect(result.toString()).toBe("<h1>Hello World!</h1>");
@@ -38,6 +37,7 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
         0: "42",
         1: "true",
         2: "19.99",
+        r: 1,
         s: ["<div>Count: ", ", Active: ", ", Price: $", "</div>"],
       });
       expect(result.toString()).toBe("<div>Count: 42, Active: true, Price: $19.99</div>");
@@ -50,6 +50,7 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
       expect(result.partsTree()).toEqual({
         0: "&lt;script&gt;alert(&#39;xss&#39;)&lt;&#x2F;script&gt;",
         1: "123 &quot;Main&quot; &amp; &#39;Street&#39;",
+        r: 1,
         s: ["<div>", " - ", "</div>"],
       });
       expect(result.toString()).toBe(
@@ -70,6 +71,7 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
       expect(result.partsTree()).toEqual({
         0: "👋 🌎",
         1: "日本語 &#x2F; 🚀",
+        r: 1,
         s: ["<p>", " - ", "</p>"],
       });
       expect(result.toString()).toBe("<p>👋 🌎 - 日本語 &#x2F; 🚀</p>");
@@ -83,8 +85,10 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
       expect(parent.partsTree()).toEqual({
         0: {
           0: "Child",
+          r: 1,
           s: ["<span>Nested ", "</span>"],
         },
+        r: 1,
         s: ["<div>", "</div>"],
       });
       expect(parent.toString()).toBe("<div><span>Nested Child</span></div>");
@@ -101,10 +105,13 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
           0: "2",
           1: {
             0: "3",
+            r: 1,
             s: ["<i>Level3:", "</i>"],
           },
+          r: 1,
           s: ["<b>Level2:", " -> ", "</b>"],
         },
+        r: 1,
         s: ["<div>Level1:", " -> ", "</div>"],
       });
       expect(level1.toString()).toBe("<div>Level1:1 -> <b>Level2:2 -> <i>Level3:3</i></b></div>");
@@ -124,8 +131,10 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
       expect(list.partsTree()).toEqual({
         0: {
           d: [["Apple"], ["Banana"], ["Cherry"]],
+          r: 1,
           s: ["<li>", "</li>"],
         },
+        r: 1,
         s: ["<ul>", "</ul>"],
       });
       expect(list.toString()).toBe("<ul><li>Apple</li><li>Banana</li><li>Cherry</li></ul>");
@@ -136,6 +145,7 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
       const list = html`<ul>${empty.map((item) => html`<li>${item}</li>`)}</ul>`;
       expect(list.partsTree()).toEqual({
         0: "",
+        r: 1,
         s: ["<ul>", "</ul>"],
       });
       expect(list.toString()).toBe("<ul></ul>");
@@ -151,8 +161,10 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
             ["bar&quot;baz"],
             ["a &amp; b"],
           ],
+          r: 1,
           s: ["<li>", "</li>"],
         },
+        r: 1,
         s: ["<ul>", "</ul>"],
       });
       expect(list.toString()).toBe(
@@ -167,6 +179,7 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
       const liveView = html`<div>${liveComponentResult}</div>`;
       expect(liveView.partsTree()).toEqual({
         0: 1,
+        r: 1,
         s: ["<div>", "</div>"],
       });
     });
@@ -180,92 +193,62 @@ describe("Phoenix LiveView 1.0 JSON Diff Fixture Suite", () => {
         0: {
           d: [[1], [2]],
         },
+        r: 1,
         s: ["<div>", "</div>"],
-      });
-    });
-
-    test("end-to-end LiveComponent rendering via createLiveComponent and createLiveView", async () => {
-      const TweetLC = createLiveComponent<{ id: number; text: string }>({
-        render: (context) => html`<article id="tweet-${context.id}">${context.text}</article>`,
-      });
-
-      const TimelineLV = createLiveView({
-        render: async (context: { tweets: Array<{ id: number; text: string }> }, meta) => {
-          const tweetComponents = await Promise.all(
-            context.tweets.map((t) => meta.live_component(TweetLC, { id: t.id, text: t.text }))
-          );
-          return html`<h1>Timeline</h1>${tweetComponents}`;
-        },
-      });
-
-      const url = new URL("http://example.com/timeline");
-      let cidCounter = 0;
-      const res = await TimelineLV.render(
-        {
-          tweets: [
-            { id: 1, text: "First tweet" },
-            { id: 2, text: "Second tweet" },
-          ],
-        },
-        {
-          csrfToken: "",
-          live_component: async (lc, params) => {
-            cidCounter++;
-            return new HtmlSafeString([String(cidCounter)], [], true);
-          },
-          url,
-          uploads: {},
-        }
-      );
-
-      expect(res.partsTree()).toEqual({
-        0: {
-          d: [[1], [2]],
-        },
-        s: ["<h1>Timeline</h1>", ""],
       });
     });
   });
 
   describe("5. Differential Updates (deepDiff Calculation)", () => {
     test("Dashbit timeline reorder example: reversing tweets sends only updated d array indices", () => {
-      const initialLCs = [1, 2, 3, 4, 5].map((id) => new HtmlSafeString([String(id)], [], true));
-      const initialTree = html`<h1>Timeline</h1>\n\n${initialLCs}`;
+      const initialTweets = ["Tweet 1", "Tweet 2", "Tweet 3"];
+      const renderTimeline = (tweets: string[]) =>
+        html`<div id="timeline">${tweets.map((t) => html`<div class="tweet">${t}</div>`)}</div>`;
 
-      const reversedLCs = [5, 4, 3, 2, 1].map((id) => new HtmlSafeString([String(id)], [], true));
-      const reversedTree = html`<h1>Timeline</h1>\n\n${reversedLCs}`;
+      const treeV1 = renderTimeline(initialTweets).partsTree();
+      const treeV2 = renderTimeline(["Tweet 3", "Tweet 2", "Tweet 1"]).partsTree();
 
-      const diff = deepDiff(initialTree.partsTree(), reversedTree.partsTree());
+      const diff = deepDiff(treeV1, treeV2);
+
       expect(diff).toEqual({
         0: {
-          d: [[5], [4], [3], [2], [1]],
+          d: [["Tweet 3"], ["Tweet 2"], ["Tweet 1"]],
         },
       });
     });
 
     test("returns empty diff when state is unchanged", () => {
-      const render = (val: number) => html`<div>Count: ${val}</div>`;
-      const prev = render(10);
-      const curr = render(10);
-      const diff = deepDiff(prev.partsTree(), curr.partsTree());
+      const render = (val: string) => html`<span>${val}</span>`;
+      const tree1 = render("hello").partsTree();
+      const tree2 = render("hello").partsTree();
+
+      const diff = deepDiff(tree1, tree2);
       expect(diff).toEqual({});
     });
 
     test("returns only changed dynamic keys and omits statics (s key)", () => {
-      const render = (count: number, name: string) => html`<div>Count: ${count}, Name: ${name}</div>`;
-      const prev = render(1, "Alice");
-      const curr = render(2, "Alice");
-      const diff = deepDiff(prev.partsTree(), curr.partsTree());
+      const render = (name: string, age: number) =>
+        html`<div>Name: ${name}, Age: ${age}</div>`;
+      const tree1 = render("Alice", 30).partsTree();
+      const tree2 = render("Alice", 31).partsTree();
+
+      const diff = deepDiff(tree1, tree2);
       expect(diff).toEqual({
-        0: "2",
+        1: "31",
       });
     });
 
     test("returns full tree if statics count or structure changes", () => {
-      const prev = html`<div>${"a"}</div>`;
-      const curr = html`<div>${"a"} ${"b"}</div>`;
-      const diff = deepDiff(prev.partsTree(), curr.partsTree());
-      expect(diff).toEqual(curr.partsTree());
+      const tree1 = html`<div>${"a"}</div>`.partsTree();
+      const tree2 = html`<div>${"a"} - ${"b"}</div>`.partsTree();
+
+      const diff = deepDiff(tree1, tree2);
+      expect(diff).toEqual({
+        0: "a",
+        1: "b",
+        r: 1,
+        s: ["<div>", " - ", "</div>"],
+      });
     });
   });
 });

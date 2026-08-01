@@ -1,3 +1,4 @@
+export * from "./classLiveView";
 export * from "./liveComponent";
 export * from "./liveView";
 export * from "./router";

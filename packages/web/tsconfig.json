@@ -3,8 +3,10 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "types": ["bun-types", "node"]
+    "types": ["bun-types", "node"],
+    "jsx": "react",
+    "jsxFactory": "jsx"
   },
-  "include": ["src/**/*"],
-  "exclude": ["**/*.test.ts", "dev.ts"]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["dev.ts"]
 }
