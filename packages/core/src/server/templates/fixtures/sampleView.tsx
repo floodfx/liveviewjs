@@ -1,4 +1,4 @@
-import { ClassLiveView } from "../../../core/src/index";
+import { ClassLiveView } from "../../live/classLiveView";
 
 export class TsxCounterView extends ClassLiveView<{ count: number }> {
   count = 10;
@@ -15,6 +15,12 @@ export class TsxCounterView extends ClassLiveView<{ count: number }> {
   }
 
   async render() {
-    return html`<div id="tsx-card" class="card"><h1>⚡ Real TSX File LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
+    return (
+      <div id="tsx-card" className="card">
+        <h1>⚡ Real TSX File LiveView Counter</h1>
+        <div id="count-val" className="count-display">{this.count}</div>
+        <button id="inc-btn" phx-click="inc">+ Increment</button>
+      </div>
+    );
   }
 }

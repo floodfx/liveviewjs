@@ -54,7 +54,7 @@ describe("E2E Real-Time Engine with Genuine .tsx Files Transpiled by jsx2ttl", (
   });
 
   test("1. jsx2ttl parses and transforms genuine .tsx file into LiveViewJS html`...` code", () => {
-    const tsxPath = join(import.meta.dir, "tsxView.tsx");
+    const tsxPath = join(import.meta.dir, "./tsxView.tsx");
     const tsxCode = readFileSync(tsxPath, "utf-8");
 
     const transpiled = transformJsxToLiveViewHtml(tsxCode);
