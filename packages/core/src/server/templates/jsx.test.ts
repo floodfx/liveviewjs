@@ -1,11 +1,11 @@
 import { describe, test, expect } from "bun:test";
-import { jsx, jsxs } from "./jsx";
+import { jsx, liveViewJsx2TtlOptions } from "./jsx";
 import { deepDiff } from "./diff";
 
-describe("JSX Template Rendering & Tree Optimization Unit Suite", () => {
+describe("JSX Template Rendering & jsx2ttl Integration Suite", () => {
   test("1. Basic JSX element renders with statics and dynamics in partsTree", () => {
     const count = 42;
-    // Equivalent to <div id="card"><h1>Count: {count}</h1></div>
+    // Equivalent to <div id="card">Count: {count}</div>
     const tmpl = jsx("div", { id: "card" }, "Count: ", count);
 
     const tree = tmpl.partsTree();
@@ -43,5 +43,11 @@ describe("JSX Template Rendering & Tree Optimization Unit Suite", () => {
     const diff = deepDiff(oldTree, newTree);
     expect(diff["s"]).toBeUndefined(); // Statics omitted in diff!
     expect(diff["0"]).toBe("11"); // Only dynamic slot 0 updated!
+  });
+
+  test("5. jsx2ttl integration options provide correct importPath, importName, and taggedTemplate mode", () => {
+    expect(liveViewJsx2TtlOptions.importPath).toBe("@liveviewjs/core");
+    expect(liveViewJsx2TtlOptions.importName).toBe("html");
+    expect(liveViewJsx2TtlOptions.mode).toBe("taggedTemplate");
   });
 });
