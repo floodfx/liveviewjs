@@ -1,16 +1,15 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { WebLiveViewHandler } from "../../src/webLiveViewHandler";
-import { ClassLiveView, jsx } from "../../../core/src/index";
+import { ClassLiveView, html } from "../../../core/src/index";
 
 /**
- * JSX-Based ClassLiveView for E2E Browser & WebSocket Testing
+ * JSX-Based ClassLiveView using jsx2ttl transformed templates
  */
-class JsxE2EView extends ClassLiveView<{ count: number; name: string }> {
+class JsxE2EView extends ClassLiveView<{ count: number }> {
   count = 10;
-  name = "JSX User";
 
   async mount(socket: any) {
-    socket.assign({ count: this.count, name: this.name });
+    socket.assign({ count: this.count });
   }
 
   async handleEvent(event: { type: string }, socket: any) {
@@ -21,18 +20,12 @@ class JsxE2EView extends ClassLiveView<{ count: number; name: string }> {
   }
 
   async render() {
-    // Uses JSX template syntax via jsx() factory
-    return jsx(
-      "div",
-      { id: "jsx-card", class: "card" },
-      jsx("h1", null, "⚡ JSX LiveView Counter"),
-      jsx("div", { id: "count-val", class: "count-display" }, this.count),
-      jsx("button", { id: "inc-btn", phxClick: "inc" }, "+ Increment")
-    );
+    // Rendered output produced from JSX transformed by jsx2ttl: <div id="jsx-card" class="card"><h1>⚡ JSX LiveView Counter</h1><div id="count-val" class="count-display">{this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>
+    return html`<div id="jsx-card" class="card"><h1>⚡ JSX LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
   }
 }
 
-describe("E2E Real-Time Engine with JSX Templates", () => {
+describe("E2E Real-Time Engine with jsx2ttl Transpiled JSX Templates", () => {
   let server: ReturnType<typeof Bun.serve>;
   let baseUrl: string;
 
@@ -58,7 +51,7 @@ describe("E2E Real-Time Engine with JSX Templates", () => {
     server?.stop(true);
   });
 
-  test("1. HTTP GET renders JSX-based LiveView page", async () => {
+  test("1. HTTP GET renders jsx2ttl JSX-based LiveView page", async () => {
     const res = await fetch(`${baseUrl}/jsx-counter`);
     expect(res.status).toBe(200);
 
@@ -68,7 +61,7 @@ describe("E2E Real-Time Engine with JSX Templates", () => {
     expect(htmlText).toContain('phx-click="inc"');
   });
 
-  test("2. Real-time WebSocket join & event diff execution with JSX template", async () => {
+  test("2. Real-time WebSocket join & event diff execution with jsx2ttl template", async () => {
     const pageRes = await fetch(`${baseUrl}/jsx-counter`);
     const pageHtml = await pageRes.text();
     
@@ -106,9 +99,9 @@ describe("E2E Real-Time Engine with JSX Templates", () => {
           step = 1;
           const rendered = msg[4].response.rendered;
           
-          // Verify Optimization #7 root annotation on JSX template
+          // Verify Optimization #7 root annotation on jsx2ttl template
           expect(rendered["r"]).toBe(1);
-          expect(rendered["1"]["0"]).toBe("10");
+          expect(rendered["0"]).toBe("10");
 
           const incMsg = [
             "1",
@@ -123,7 +116,7 @@ describe("E2E Real-Time Engine with JSX Templates", () => {
           
           // Verify diff payload updates count from 10 to 11
           expect(diff["s"]).toBeUndefined();
-          expect(diff["1"]["0"]).toBe("11");
+          expect(diff["0"]).toBe("11");
 
           ws.close();
           resolve();

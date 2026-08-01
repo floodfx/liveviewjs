@@ -31,6 +31,7 @@
   "license": "MIT",
   "dependencies": {
     "deep-object-diff": "^1.1.9",
+    "jsx2ttl": "file:../../../jsx2ttl",
     "nanoid": "^5.0.9",
     "path-to-regexp": "^8.2.0",
     "zod": "^3.24.1"

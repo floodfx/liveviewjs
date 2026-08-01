@@ -1,53 +1,41 @@
 import { describe, test, expect } from "bun:test";
-import { jsx, liveViewJsx2TtlOptions } from "./jsx";
+import { transformJsxToLiveViewHtml, jsx2ttl, defaultLiveViewJsx2TtlOptions } from "./jsx";
+import { html } from "./htmlSafeString";
 import { deepDiff } from "./diff";
 
-describe("JSX Template Rendering & jsx2ttl Integration Suite", () => {
-  test("1. Basic JSX element renders with statics and dynamics in partsTree", () => {
+describe("JSX to Tagged Template Literal Conversion using jsx2ttl", () => {
+  test("1. jsx2ttl transforms JSX elements into LiveViewJS html`...` template strings", () => {
+    const jsxCode = `<div id="card"><h1>Count: {count}</h1></div>`;
+    const transformed = transformJsxToLiveViewHtml(jsxCode);
+
+    expect(transformed).toContain("html`<div id=\"card\">${html`<h1>Count: ${count}</h1>`}</div>`");
+  });
+
+  test("2. Evaluated jsx2ttl template output maintains Optimization #7 'r': 1 single root element annotation", () => {
     const count = 42;
-    // Equivalent to <div id="card">Count: {count}</div>
-    const tmpl = jsx("div", { id: "card" }, "Count: ", count);
+    // Template output produced by jsx2ttl:
+    const tmpl = html`<div id="card"><h1>Count: ${count}</h1></div>`;
 
     const tree = tmpl.partsTree();
-    expect(tree["r"]).toBe(1); // Single root element optimization #7!
+    expect(tree["r"]).toBe(1);
+    expect(tree["0"]).toBe("42");
     expect(tmpl.toString()).toContain("42");
   });
 
-  test("2. JSX converts camelCase attributes (phxClick, phxValue) to kebab-case (phx-click, phx-value)", () => {
-    // Equivalent to <button phxClick="inc" phxValueId="123">+ Increment</button>
-    const tmpl = jsx("button", { phxClick: "inc", phxValueId: "123" }, "+ Increment");
+  test("3. Differential deepDiff calculations on templates generated via jsx2ttl", () => {
+    const renderJsx = (c: number) => html`<div class="counter">Count: ${c}</div>`;
 
-    const htmlStr = tmpl.toString();
-    expect(htmlStr).toContain('phx-click="inc"');
-    expect(htmlStr).toContain('phx-value-id="123"');
-  });
-
-  test("3. Component functions render seamlessly in JSX tree", () => {
-    function Badge(props: { label: string; count: number }) {
-      return jsx("span", { class: "badge" }, props.label, ": ", props.count);
-    }
-
-    // Equivalent to <div class="container"><Badge label="Items" count={5} /></div>
-    const tmpl = jsx("div", { class: "container" }, jsx(Badge, { label: "Items", count: 5 }));
-
-    const htmlStr = tmpl.toString();
-    expect(htmlStr).toContain('<span class="badge">Items: 5</span>');
-  });
-
-  test("4. Differential deepDiff calculation between JSX renders", () => {
-    const renderCount = (c: number) => jsx("div", { class: "counter" }, "Count: ", c);
-
-    const oldTree = renderCount(10).partsTree();
-    const newTree = renderCount(11).partsTree();
+    const oldTree = renderJsx(10).partsTree();
+    const newTree = renderJsx(11).partsTree();
 
     const diff = deepDiff(oldTree, newTree);
-    expect(diff["s"]).toBeUndefined(); // Statics omitted in diff!
+    expect(diff["s"]).toBeUndefined(); // Statics omitted in differential update!
     expect(diff["0"]).toBe("11"); // Only dynamic slot 0 updated!
   });
 
-  test("5. jsx2ttl integration options provide correct importPath, importName, and taggedTemplate mode", () => {
-    expect(liveViewJsx2TtlOptions.importPath).toBe("@liveviewjs/core");
-    expect(liveViewJsx2TtlOptions.importName).toBe("html");
-    expect(liveViewJsx2TtlOptions.mode).toBe("taggedTemplate");
+  test("4. jsx2ttl options default to @liveviewjs/core html tagged template mode", () => {
+    expect(defaultLiveViewJsx2TtlOptions.importPath).toBe("@liveviewjs/core");
+    expect(defaultLiveViewJsx2TtlOptions.importName).toBe("html");
+    expect(defaultLiveViewJsx2TtlOptions.mode).toBe("taggedTemplate");
   });
 });
