@@ -87,7 +87,7 @@
       "version": "0.10.4",
       "dependencies": {
         "deep-object-diff": "^1.1.9",
-        "jsx2ttl": "file:../../../jsx2ttl",
+        "jsx2ttl": "^0.3.0",
         "nanoid": "^5.0.9",
         "path-to-regexp": "^8.2.0",
         "zod": "^3.24.1",
@@ -936,8 +936,6 @@
     "@types/body-parser": ["@types/body-parser@1.19.6", "", { "dependencies": { "@types/connect": "*", "@types/node": "*" } }, "sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g=="],
 
     "@types/bonjour": ["@types/bonjour@3.5.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-z9fJ5Im06zvUL548KvYNecEVlA7cVDkGUi6kZusb04mpyEFKCIZJvloCcmpmLaIahDpOQGHaHmG6imtPMmPXGQ=="],
-
-    "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
     "@types/connect": ["@types/connect@3.4.38", "", { "dependencies": { "@types/node": "*" } }, "sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug=="],
 
@@ -2114,6 +2112,8 @@
     "jsonschema": ["jsonschema@1.5.0", "", {}, "sha512-K+A9hhqbn0f3pJX17Q/7H6yQfD/5OXgdrR5UE12gMXCiN9D5Xq2o5mddV2QEcX/bjla99ASsAAQUyMCCRWAEhw=="],
 
     "jsonwebtoken": ["jsonwebtoken@8.5.1", "", { "dependencies": { "jws": "^3.2.2", "lodash.includes": "^4.3.0", "lodash.isboolean": "^3.0.3", "lodash.isinteger": "^4.0.4", "lodash.isnumber": "^3.0.3", "lodash.isplainobject": "^4.0.6", "lodash.isstring": "^4.0.1", "lodash.once": "^4.0.0", "ms": "^2.1.1", "semver": "^5.6.0" } }, "sha512-XjwVfRS6jTMsqYs0EsuJ4LGxXV14zQybNd4L2r0UvbVnSF9Af8x7p5MzbJ90Ioz/9TI41/hTCvznF/loiSzn8w=="],
+
+    "jsx2ttl": ["jsx2ttl@0.3.0", "", { "dependencies": { "@babel/core": "^8.0.1", "@babel/generator": "^8.0.0", "@babel/plugin-transform-react-jsx": "^8.0.1", "@babel/preset-env": "^8.0.2", "@babel/preset-typescript": "^8.0.1", "@babel/traverse": "^8.0.4", "@babel/types": "^8.0.4" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-rIKUdjQcT/B60IDLkVpvblpe6aFq30TFfeBMeyFmV5LlYHddDO+nbXH+bOohqQt2956KTGXCDg2tgAGcnru3xA=="],
 
     "jwa": ["jwa@1.4.2", "", { "dependencies": { "buffer-equal-constant-time": "^1.0.1", "ecdsa-sig-formatter": "1.0.11", "safe-buffer": "^5.0.1" } }, "sha512-eeH5JO+21J78qMvTIDdBXidBd6nG2kZjg5Ohz/1fpa28Z4CcsWUzJ1ZZyFq/3z3N17aZy+ZuBoHljASbL1WfOw=="],
 
@@ -3382,8 +3382,6 @@
     "@jest/transform/convert-source-map": ["convert-source-map@1.9.0", "", {}, "sha512-ASFBup0Mz1uyiIjANan1jzLQami9z1PoYSZCiiYW2FczPbenXc45FZdBZLzOT+r6+iciuEModtmCti+hjaAk0A=="],
 
     "@jest/types/@types/yargs": ["@types/yargs@16.0.11", "", { "dependencies": { "@types/yargs-parser": "*" } }, "sha512-sbtvk8wDN+JvEdabmZExoW/HNr1cB7D/j4LT08rMiuikfA7m/JNJg7ATQcgzs34zHnoScDkY0ZRSl29Fkmk36g=="],
-
-    "@liveviewjs/core/jsx2ttl": ["jsx2ttl@file:../jsx2ttl", { "dependencies": { "@babel/core": "^8.0.1", "@babel/generator": "^8.0.0", "@babel/plugin-transform-react-jsx": "^8.0.1", "@babel/preset-env": "^8.0.2", "@babel/preset-typescript": "^8.0.1", "@babel/traverse": "^8.0.4", "@babel/types": "^8.0.4" }, "devDependencies": { "@types/bun": "latest", "@types/react": "^19.0.0", "typescript": "^7.0.2" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0 || ^7.0.0" } }],
 
     "@liveviewjs/deno-client/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
 
