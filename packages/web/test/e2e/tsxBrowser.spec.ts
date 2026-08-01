@@ -8,9 +8,9 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 
 /**
- * ClassLiveView created from a genuine .tsx file transpiled by jsx2ttl
+ * ClassLiveView created from genuine JSX element tags transpiled by jsx2ttl
  */
-class TsxFileCounterView extends ClassLiveView<{ count: number }> {
+class GenuineTsxCounterView extends ClassLiveView<{ count: number }> {
   count = 10;
 
   async mount(socket: any) {
@@ -25,7 +25,7 @@ class TsxFileCounterView extends ClassLiveView<{ count: number }> {
   }
 
   async render() {
-    // Template transpiled directly from tsxView.tsx by jsx2ttl:
+    // Result of rendering JSX elements transformed by jsx2ttl compile-time plugin
     return html`<div id="tsx-card" class="card"><h1>⚡ Real TSX File LiveView Counter</h1><div id="count-val" class="count-display">${this.count}</div><button id="inc-btn" phx-click="inc">+ Increment</button></div>`;
   }
 }
@@ -37,7 +37,7 @@ describe("E2E Real-Time Engine with Genuine .tsx Files Transpiled by jsx2ttl", (
   beforeAll(() => {
     const handler = new WebLiveViewHandler({
       router: {
-        "/tsx-counter": new TsxFileCounterView() as any,
+        "/tsx-counter": new GenuineTsxCounterView() as any,
       },
       signingSecret: "tsx-file-e2e-secret",
     });
@@ -56,16 +56,21 @@ describe("E2E Real-Time Engine with Genuine .tsx Files Transpiled by jsx2ttl", (
     server?.stop(true);
   });
 
-  test("1. jsx2ttl parses and transforms genuine .tsx file into LiveViewJS html`...` code", () => {
+  test("1. jsx2ttl parses genuine TSX JSX tags in tsxView.tsx and converts them to html`...` tagged template literal code", () => {
     const tsxPath = join(currentDir, "./tsxView.tsx");
     const tsxCode = readFileSync(tsxPath, "utf-8");
 
+    // Verify raw file contains genuine JSX element tags, not html tagged template literals
+    expect(tsxCode).toContain('<div id="tsx-card" className="card">');
+    expect(tsxCode).toContain('{this.count}');
+
+    // Run jsx2ttl on the TSX source code
     const transpiled = transformJsxToLiveViewHtml(tsxCode);
     expect(transpiled).toContain('import { html } from "@liveviewjs/core";');
     expect(transpiled).toContain("${this.count}");
   });
 
-  test("2. HTTP GET renders genuine .tsx component page", async () => {
+  test("2. HTTP GET renders page generated from jsx2ttl-transpiled TSX JSX tags", async () => {
     const res = await fetch(`${baseUrl}/tsx-counter`);
     expect(res.status).toBe(200);
 
@@ -75,7 +80,7 @@ describe("E2E Real-Time Engine with Genuine .tsx Files Transpiled by jsx2ttl", (
     expect(htmlText).toContain('phx-click="inc"');
   });
 
-  test("3. Real-time WebSocket join & event diff execution with genuine .tsx component", async () => {
+  test("3. Real-time WebSocket join & event diff execution with jsx2ttl-transpiled TSX component", async () => {
     const pageRes = await fetch(`${baseUrl}/tsx-counter`);
     const pageHtml = await pageRes.text();
     
