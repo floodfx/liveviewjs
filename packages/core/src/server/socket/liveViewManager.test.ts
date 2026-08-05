@@ -104,6 +104,70 @@ describe("test liveview manager", () => {
     expect(spyDefaultLiveViewMeta).toHaveBeenCalledTimes(1);
   });
 
+  it("deduplicates rendered statics on handleJoin when matching signed static token is provided", async () => {
+    const renderedView = await (cmLiveView as any).liveView.render({}, (cmLiveView as any).defaultLiveViewMeta());
+    const wrappedView = await (cmLiveView as any).maybeWrapInRootTemplate(renderedView);
+    const parts = wrappedView.partsTree(true);
+    const staticToken = await serDe.serialize(parts.s);
+
+    await cmLiveView.handleJoin(
+      newPhxJoin("my csrf token", "my signing secret", {
+        url: "http://localhost:4444/test",
+        staticOverride: staticToken,
+      })
+    );
+
+    expect(ws.send).toHaveBeenCalledTimes(1);
+    const sentMessageStr = (ws.send as any).mock.calls[0][0];
+    const sentMsg = JSON.parse(sentMessageStr);
+    const renderedPayload = sentMsg[4].response.rendered;
+
+    // Verify statics array `s` is included on join to populate client template cache
+    expect(renderedPayload.s).toBeDefined();
+    expect(renderedPayload.r).toBe(1);
+  });
+
+  it("recursively retains statics 's' on handleJoin with valid matching static token", async () => {
+    // Create a mock LiveView that returns known template statics
+    const mockStatics = ["<div class=\"card\">", "</div>"];
+    const staticToken = await serDe.serialize(mockStatics);
+
+    const nestedLiveView = {
+      mount: async () => {},
+      handleParams: async () => {},
+      render: async () => ({
+        partsTree: () => ({
+          0: "dynamic content",
+          s: mockStatics,
+        }),
+      }),
+    };
+
+    const cm = new LiveViewManager(
+      nestedLiveView as any,
+      "connectionId",
+      ws as any,
+      serDe,
+      new SingleProcessPubSub()
+    );
+
+    await cm.handleJoin(
+      newPhxJoin("my csrf token", "my signing secret", {
+        url: "http://localhost:4444/test",
+        staticOverride: staticToken,
+      })
+    );
+
+    expect(ws.send).toHaveBeenCalledTimes(1);
+    const sentMessageStr = (ws.send as any).mock.calls[0][0];
+    const sentMsg = JSON.parse(sentMessageStr);
+    const renderedPayload = sentMsg[4].response.rendered;
+
+    // Statics array `s` is included on join to populate client template cache
+    expect(renderedPayload.s).toBeDefined();
+    expect(renderedPayload[0]).toBe("dynamic content");
+  });
+
   it("handle join works for liveViewAndLiveComponent", async () => {
     const spyDefaultLiveViewMeta = jest.spyOn(cmLiveViewAndLiveComponent as any, "defaultLiveViewMeta");
     await cmLiveViewAndLiveComponent.handleJoin(
@@ -1095,6 +1159,7 @@ interface NewPhxJoinOptions {
   flash?: PhxFlash | null;
   paramCsrfOverride?: string;
   signingSecretOverride?: string;
+  staticOverride?: string;
 }
 const newPhxJoin = (csrfToken: string, signingSecret: string, options: NewPhxJoinOptions): PhxJoinIncoming => {
   const session: Partial<SessionData> = {
@@ -1115,7 +1180,7 @@ const newPhxJoin = (csrfToken: string, signingSecret: string, options: NewPhxJoi
       url,
       params,
       session: jwtSession,
-      static: "",
+      static: options.staticOverride ?? "",
     },
   ];
 };

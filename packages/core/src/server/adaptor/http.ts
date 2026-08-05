@@ -10,7 +10,7 @@ import {
 } from "../live";
 import { SessionData } from "../session";
 import { HttpLiveViewSocket } from "../socket/liveSocket";
-import { html, safe } from "../templates";
+import { html, safe, autoRegisterJsxCompiler } from "../templates";
 import { LiveTitleOptions } from "../templates/helpers/live_title";
 import { CsrfGenerator } from "./csrfGen";
 import { IdGenerator } from "./idGen";
@@ -66,6 +66,7 @@ export const handleHttpLiveView = async (
   pageTitleDefaults?: LiveTitleOptions,
   rootRenderer?: LiveViewWrapperTemplate
 ) => {
+  autoRegisterJsxCompiler();
   const { getSessionData, getRequestUrl, onRedirect } = adaptor;
   // new LiveViewId for each request
   const liveViewId = idGenerator();

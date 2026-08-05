@@ -38,4 +38,40 @@ describe("JSX to Tagged Template Literal Conversion using jsx2ttl", () => {
     expect(defaultLiveViewJsx2TtlOptions.importName).toBe("html");
     expect(defaultLiveViewJsx2TtlOptions.mode).toBe("taggedTemplate");
   });
+
+  test("5. Multi-Runtime Test Coverage: Node.js, Deno, and Bun JSX transpilation parity", () => {
+    const tsxSource = `
+      export function WeatherCard(props: { temp: number; city: string }) {
+        return (
+          <div className="weather-card">
+            <h2>{props.city}</h2>
+            <p>{props.temp}°C</p>
+          </div>
+        );
+      }
+    `;
+
+    // 1. Node.js target transpilation (NPM / Express / Fastify)
+    const nodeOutput = transformJsxToLiveViewHtml(tsxSource, {
+      importPath: "@liveviewjs/core",
+      importName: "html",
+    });
+    expect(nodeOutput).toContain('import { html } from "@liveviewjs/core";');
+    expect(nodeOutput).toContain('props.city');
+    expect(nodeOutput).toContain('props.temp');
+
+    // 2. Deno target transpilation (Deno.serve)
+    const denoOutput = transformJsxToLiveViewHtml(tsxSource, {
+      importPath: "https://deno.land/x/liveviewjs/mod.ts",
+      importName: "html",
+    });
+    expect(denoOutput).toContain('import { html } from "https://deno.land/x/liveviewjs/mod.ts";');
+
+    // 3. Bun target transpilation (Bun.serve)
+    const bunOutput = transformJsxToLiveViewHtml(tsxSource, {
+      importPath: "@liveviewjs/web",
+      importName: "html",
+    });
+    expect(bunOutput).toContain('import { html } from "@liveviewjs/web";');
+  });
 });
