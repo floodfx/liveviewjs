@@ -17,7 +17,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@liveviewjs/core": "workspace:*"
+    "@liveviewjs/core": "workspace:*",
+    "path-to-regexp": "^8.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
