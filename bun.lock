@@ -247,6 +247,7 @@
       "version": "0.10.4",
       "dependencies": {
         "@liveviewjs/core": "workspace:*",
+        "path-to-regexp": "^8.2.0",
       },
       "devDependencies": {
         "@types/node": "^22.10.0",
