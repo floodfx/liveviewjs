@@ -15,7 +15,7 @@
     "jsx": "react",
     "jsxFactory": "jsx",
     "composite": true,
-    "baseUrl": ".",
+    "outDir": "./dist",
     "paths": {
       "@liveviewjs/core": ["./packages/core/src/index.ts"],
       "@liveviewjs/web": ["./packages/web/src/index.ts"],

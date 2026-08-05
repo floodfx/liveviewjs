@@ -5,8 +5,14 @@
     "rootDir": "./src",
     "types": ["bun-types", "node"],
     "jsx": "react",
-    "jsxFactory": "jsx"
+    "jsxFactory": "jsx",
+    "paths": {
+      "@liveviewjs/core": ["../core/src/index.ts"]
+    }
   },
-  "include": ["src/**/*", "test/**/*"],
-  "exclude": ["dev.ts"]
+  "references": [
+    { "path": "../core" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["dev.ts", "**/*.test.ts", "test/**/*"]
 }
