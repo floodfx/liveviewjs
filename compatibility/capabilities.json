@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "targetPhoenixLiveViewVersion": "1.2.9",
+  "trackingIssue": "https://github.com/floodfx/liveviewjs/issues/187",
+  "statuses": ["supported", "partial", "missing", "not-applicable"],
+  "requiredEvidenceForSupported": [
+    "types",
+    "conformance",
+    "integration",
+    "browser",
+    "runtimes",
+    "documentation",
+    "examples",
+    "security"
+  ],
+  "capabilities": [
+    {
+      "id": "protocol.client-interoperability",
+      "area": "Protocol",
+      "title": "Protocol and browser-client interoperability",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/182",
+      "summary": "LiveViewJS implements an older Phoenix protocol surface, but current client compatibility has not been demonstrated.",
+      "gaps": ["Upgrade to the pinned client", "Generate upstream conformance fixtures", "Prove joins, events, diffs, heartbeats, reconnects, and errors"],
+      "evidence": {}
+    },
+    {
+      "id": "lifecycle.callbacks",
+      "area": "Lifecycle",
+      "title": "Mount, params, events, messages, connected state, and termination",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html#module-life-cycle",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/187",
+      "summary": "Core lifecycle callbacks exist, but parity and cleanup semantics have not been catalogued against the pinned upstream release.",
+      "gaps": ["Complete callback inventory", "Document connected and disconnected behavior", "Add lifecycle browser evidence"],
+      "evidence": {}
+    },
+    {
+      "id": "components.stateful-and-stateless",
+      "area": "Components",
+      "title": "Stateful and stateless component composition",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveComponent.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/187",
+      "summary": "Live components exist, but update, preload, targeting, composition, and type-safety parity are not verified.",
+      "gaps": ["Inventory component lifecycle semantics", "Verify targeting and diff behavior", "Add typed composition examples"],
+      "evidence": {}
+    },
+    {
+      "id": "rendering.diff-and-statics",
+      "area": "Rendering",
+      "title": "Diff rendering, comprehensions, and template statics",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.Engine.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/177",
+      "summary": "Diff rendering exists, while signed statics and current DOM protocol behavior remain incomplete.",
+      "gaps": ["Sign data-phx-static tokens", "Verify statics deduplication", "Add current-client DOM conformance tests"],
+      "evidence": {}
+    },
+    {
+      "id": "collections.streams",
+      "area": "Collections",
+      "title": "Streams and stream DOM semantics",
+      "status": "missing",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html#module-streams",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/164",
+      "summary": "Phoenix-compatible stream operations and DOM semantics are not implemented.",
+      "gaps": ["Implement stream lifecycle and limits", "Implement insert, delete, reset, and refetch semantics", "Verify DOM behavior in real browsers"],
+      "evidence": {}
+    },
+    {
+      "id": "async.operations",
+      "area": "Async",
+      "title": "Async assigns, tasks, streams, and cancellation",
+      "status": "missing",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html#module-async-operations",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/165",
+      "summary": "The current API does not provide the Phoenix async lifecycle or cancellation model.",
+      "gaps": ["Design idiomatic typed async results", "Implement cancellation and replacement", "Verify disconnect cleanup and failure behavior"],
+      "evidence": {}
+    },
+    {
+      "id": "forms.validation-and-recovery",
+      "area": "Forms",
+      "title": "Forms, validation, recovery, debounce, and throttle",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/form-bindings.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/187",
+      "summary": "Form helpers and changesets exist, but current client semantics and recovery behavior are not proven.",
+      "gaps": ["Inventory nested input and recovery semantics", "Verify CSRF and validation errors", "Add browser tests for debounce and throttle"],
+      "evidence": {}
+    },
+    {
+      "id": "uploads.lifecycle",
+      "area": "Uploads",
+      "title": "Upload selection, progress, cancellation, and consumption",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/uploads.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/185",
+      "summary": "Upload primitives exist, but storage, limits, security, cleanup, and current-client behavior are not production verified.",
+      "gaps": ["Harden persistence and limits", "Verify cancellation and disconnect cleanup", "Add browser tests for internal and external uploads"],
+      "evidence": {}
+    },
+    {
+      "id": "navigation.patch-and-redirect",
+      "area": "Navigation",
+      "title": "Patch, redirect, flash, title, history, and reconnect behavior",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/live-navigation.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/187",
+      "summary": "Navigation helpers exist, but the complete current browser-client lifecycle is not documented or tested.",
+      "gaps": ["Catalogue patch and redirect semantics", "Verify flash and page-title updates", "Test browser history and reconnect behavior"],
+      "evidence": {}
+    },
+    {
+      "id": "client.hooks",
+      "area": "Client",
+      "title": "Client hooks and DOM patch interoperability",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/js-interop.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/187",
+      "summary": "Hook examples exist, but lifecycle callbacks and DOM patch behavior are not verified against the pinned client.",
+      "gaps": ["Inventory hook lifecycle callbacks", "Verify pushEvent and handleEvent behavior", "Test DOM patch options and cleanup"],
+      "evidence": {}
+    },
+    {
+      "id": "client.js-commands",
+      "area": "Client",
+      "title": "Phoenix LiveView JS command parity",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.JS.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/166",
+      "summary": "A subset of JS commands exists, but the pinned upstream command surface and serialization contract are incomplete.",
+      "gaps": ["Inventory all upstream commands and options", "Implement missing commands", "Verify composed commands in real browsers"],
+      "evidence": {}
+    },
+    {
+      "id": "messaging.pubsub",
+      "area": "Messaging",
+      "title": "Server messages, PubSub, and distribution boundaries",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html#c:handle_info/2",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/187",
+      "summary": "Single-process PubSub and messages exist, but runtime and distributed semantics are not defined as a parity contract.",
+      "gaps": ["Define single-process and distributed guarantees", "Verify subscription cleanup", "Document adapter boundaries"],
+      "evidence": {}
+    },
+    {
+      "id": "assets.static-change-tracking",
+      "area": "Deployment",
+      "title": "Tracked static assets and static_changed behavior",
+      "status": "missing",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html#static_changed?/1",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/42",
+      "summary": "The server does not provide the current tracked-static deployment change contract.",
+      "gaps": ["Track asset digests", "Expose static change detection", "Verify reconnect behavior across deployments"],
+      "evidence": {}
+    },
+    {
+      "id": "runtime.adapters",
+      "area": "Runtime",
+      "title": "Production adapters for Node, Bun, and Deno",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.Socket.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/160",
+      "summary": "Node and Deno integration code exists, but runtime-neutral production behavior is not proven across all target runtimes.",
+      "gaps": ["Remove Node-only assumptions from shared code", "Define adapter contracts", "Run identical protocol and browser suites under each runtime"],
+      "evidence": {}
+    },
+    {
+      "id": "routing.typed-params-and-layouts",
+      "area": "Routing",
+      "title": "Typed route params, layouts, and cross-runtime discovery",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.Router.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/163",
+      "summary": "Routing exists, but typed parameters, layouts, and runtime-neutral discovery are incomplete.",
+      "gaps": ["Type route parameters", "Implement documented layout composition", "Verify Node, Bun, and Deno behavior"],
+      "evidence": {}
+    },
+    {
+      "id": "testing.browser-and-runtime",
+      "area": "Testing",
+      "title": "Black-box browser and cross-runtime verification",
+      "status": "missing",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveViewTest.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/184",
+      "summary": "The project has unit tests but no required real-browser suite spanning Node, Bun, and Deno servers.",
+      "gaps": ["Build the hermetic Playwright reference application", "Exercise all server runtimes", "Collect deterministic failure artifacts"],
+      "evidence": {}
+    },
+    {
+      "id": "developer-experience.typed-api",
+      "area": "Developer Experience",
+      "title": "Idiomatic, strongly typed TypeScript and JavaScript APIs",
+      "status": "partial",
+      "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html",
+      "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/187",
+      "summary": "LiveViewJS provides TypeScript APIs, but end-to-end typing and an explicit JavaScript fallback contract are not measured capability by capability.",
+      "gaps": ["Eliminate public any-based completeness claims", "Add type-level contract tests", "Document idiomatic deviations from Phoenix APIs"],
+      "evidence": {}
+    }
+  ]
+}

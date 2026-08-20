@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: LiveViewJS roadmap
+    url: https://github.com/floodfx/liveviewjs/issues/188
+    about: Review the compatibility and capability roadmap before proposing new work.

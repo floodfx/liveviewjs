@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "lastReviewed": "2026-08-19",
+  "trackingIssue": "https://github.com/floodfx/liveviewjs/issues/182",
+  "target": {
+    "status": "target",
+    "phoenixLiveViewVersion": "1.2.9",
+    "phoenixClientVersion": "1.2.9",
+    "referenceDocumentation": "https://hexdocs.pm/phoenix_live_view/1.2.9/"
+  },
+  "release": {
+    "liveViewJsVersion": "0.10.4",
+    "verifiedPhoenixLiveViewVersions": []
+  },
+  "runtimePolicy": {
+    "node": ["22", "24"],
+    "bun": "pinned by CI before runtime verification is enabled",
+    "deno": "pinned by CI before runtime verification is enabled",
+    "browsers": ["chromium", "firefox", "webkit"]
+  },
+  "implementation": {
+    "status": "legacy-client-versions-present",
+    "clientDependencies": [
+      {
+        "manifest": "packages/deno/package.json",
+        "range": "^0.18.0"
+      },
+      {
+        "manifest": "packages/examples/package.json",
+        "range": "^0.17.6"
+      },
+      {
+        "manifest": "packages/express/package.json",
+        "range": "^0.18.0"
+      },
+      {
+        "manifest": "packages/create-liveviewjs/templates/liveviewjs-app/package.json",
+        "range": "^0.17.7"
+      },
+      {
+        "manifest": "apps/lambda-examples/package.json",
+        "range": "^0.18.0"
+      }
+    ],
+    "scaffoldClientDependencies": [
+      {
+        "template": "packages/gen/_templates/node-project/new/package.json.ejs.t",
+        "range": "^0.18.0"
+      },
+      {
+        "template": "packages/gen/_templates/deno-project/new/package.json.ejs.t",
+        "range": "^0.18.0"
+      }
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+name: Phoenix LiveView compatibility gap
+description: Report behavior that differs from the pinned Phoenix LiveView release or client.
+title: "[Compatibility]: "
+labels: ["type:compatibility"]
+body:
+  - type: input
+    id: upstream
+    attributes:
+      label: Upstream Phoenix LiveView reference
+      description: Link the documentation, source, test, fixture, or release note that defines the behavior.
+    validations:
+      required: true
+  - type: input
+    id: capability
+    attributes:
+      label: LiveViewJS capability ID
+      description: Use an ID from compatibility/capabilities.json or explain that a new entry is needed.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: LiveViewJS and Phoenix client versions
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Runtime and browser
+    validations:
+      required: true
+  - type: textarea
+    id: comparison
+    attributes:
+      label: Semantic comparison
+      description: Describe upstream behavior, LiveViewJS behavior, and the observable difference.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction or conformance fixture
+    validations:
+      required: true

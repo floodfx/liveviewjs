@@ -1,0 +1,45 @@
+name: Feature or developer-experience proposal
+description: Propose protocol parity, capability parity, or TypeScript/JavaScript-specific DX.
+title: "[Feature]: "
+labels: ["type:feature"]
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: Proposal category
+      options:
+        - Phoenix protocol/client compatibility
+        - Phoenix LiveView capability parity
+        - TypeScript/JavaScript developer experience
+    validations:
+      required: true
+  - type: input
+    id: upstream
+    attributes:
+      label: Upstream reference or capability ID
+      description: Link Phoenix behavior or name the compatibility/capabilities.json ID. Use N/A with a reason for JS-specific DX.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Developer problem and desired outcome
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: Proposed TypeScript/JavaScript experience
+      description: Show the public API or application code you want developers to write.
+    validations:
+      required: true
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: Verification impact considered
+      options:
+        - label: Public API and type-level behavior
+        - label: Protocol or conformance behavior
+        - label: Real-browser behavior
+        - label: Node, Bun, and Deno behavior
+        - label: Documentation, examples, errors, cleanup, and security

@@ -1,0 +1,54 @@
+name: Bug report
+description: Report reproducible behavior that is incorrect in LiveViewJS.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping make LiveViewJS verifiable. Please provide a minimal reproduction.
+  - type: input
+    id: liveviewjs-version
+    attributes:
+      label: LiveViewJS version or commit
+    validations:
+      required: true
+  - type: input
+    id: phoenix-version
+    attributes:
+      label: Phoenix LiveView client version
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Server runtime
+      options: ["Node", "Bun", "Deno", "Other / not runtime-specific"]
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      description: Use N/A only when the behavior does not reach a browser.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include a repository, failing test, or the smallest code and exact commands needed.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include browser console, WebSocket/server logs, trace, screenshots, and deterministic seed when available.
+    validations:
+      required: true
