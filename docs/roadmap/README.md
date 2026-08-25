@@ -51,7 +51,6 @@ Exit gate: the project can prove what it supports.
 - [#184](https://github.com/floodfx/liveviewjs/issues/184): cross-runtime real-browser E2E harness
 - [#172](https://github.com/floodfx/liveviewjs/issues/172): required CI and merge gates
 - [#173](https://github.com/floodfx/liveviewjs/issues/173): releases, changelogs, provenance, and publishing
-- [#189](https://github.com/floodfx/liveviewjs/issues/189): evidence-based contribution templates
 
 ### Phase 1: Runtime correctness
 

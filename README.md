@@ -16,4 +16,3 @@ experience for TypeScript and JavaScript.
 - [Phoenix LiveView compatibility baseline](compatibility/liveview.json)
 - [Capability parity ledger](docs/roadmap/capabilities.md)
 - [Verification-first architecture decision](docs/architecture/verification-first-parity.md)
-- [Contributing](CONTRIBUTING.md)

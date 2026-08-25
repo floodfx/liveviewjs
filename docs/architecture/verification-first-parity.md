@@ -66,7 +66,6 @@ Required pull-request coverage begins with:
 
 | Browser | Server runtime |
 | --- | --- |
-| Chromium | Node 22 |
 | Chromium | Node 24 |
 | Chromium | Bun |
 | Chromium | Deno |
