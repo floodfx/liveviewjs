@@ -26,6 +26,8 @@
     "test": "turbo run test",
     "dist": "turbo run dist",
     "publish": "turbo run publish",
+    "roadmap:write": "node scripts/validate-roadmap.mjs --write",
+    "verify:roadmap": "node scripts/validate-roadmap.mjs --check",
     "cs": "changeset",
     "cs:version": "changeset version",
     "cs:publish": "changeset publish"
