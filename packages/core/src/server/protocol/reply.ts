@@ -30,6 +30,7 @@ export namespace PhxReply {
    */
   export type Response = {
     rendered?: { [key: string]: unknown };
+    liveview_version?: string;
     diff?: { [key: string]: unknown };
     config?: UploadConfigOptions;
     entries?: { [key: string]: unknown };
@@ -44,9 +45,10 @@ export namespace PhxReply {
    * renderedReply builds a reply that contains the full rendered HTML for a LiveView.
    * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
    * @param parts the "tree" of parts that will be used to render the client-side LiveView
+   * @param liveViewVersion optional Phoenix LiveView version advertised to the client
    * @returns the reply message
    */
-  export function renderedReply(msg: Phx.Msg, parts: Parts): Reply {
+  export function renderedReply(msg: Phx.Msg, parts: Parts, liveViewVersion?: string): Reply {
     return [
       msg[Phx.MsgIdx.joinRef],
       msg[Phx.MsgIdx.msgRef],
@@ -56,6 +58,7 @@ export namespace PhxReply {
         status: "ok",
         response: {
           rendered: parts,
+          ...(liveViewVersion ? { liveview_version: liveViewVersion } : {}),
         },
       },
     ];

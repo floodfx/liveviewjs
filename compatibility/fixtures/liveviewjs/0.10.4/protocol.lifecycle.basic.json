@@ -2,7 +2,7 @@
   "capabilityId": "protocol.client-interoperability",
   "domCheckpoints": [
     {
-      "dom": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta name=\"csrf-token\" content=\"CSRF_2\">\n    <title data-default=\"LiveViewOracle\" data-suffix=\" · Phoenix Framework\">LiveViewOracle · Phoenix Framework</title>\n    <script defer=\"\" phx-track-static=\"\" type=\"text/javascript\" src=\"/assets/js/app.js\">\n    </script>\n  </head>\n  <body>\n    <div id=\"VIEW_2\" data-phx-main=\"\" data-phx-session=\"SESSION_2\" data-phx-static=\"STATIC_2\"><main id=\"oracle-root\" data-capability-id=\"protocol.lifecycle.basic\">\n  <h1>Protocol lifecycle</h1>\n  <p id=\"connection-state\">disconnected</p>\n  <output id=\"count\">0</output>\n  <button id=\"increment\" type=\"button\" phx-click=\"increment\">Increment</button>\n</main></div>\n  \n</body></html>",
+      "dom": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta name=\"csrf-token\" content=\"CSRF_2\">\n    <title data-default=\"LiveViewOracle\" data-suffix=\" · Phoenix Framework\">LiveViewOracle · Phoenix Framework</title>\n    <script defer=\"\" phx-track-static=\"\" type=\"text/javascript\" src=\"/assets/app.js\"></script>\n  </head>\n  <body>\n    <div data-phx-main=\"true\" data-phx-session=\"SESSION_2\" data-phx-static=\"STATIC_1\" id=\"VIEW_2\">\n      <main id=\"oracle-root\" data-capability-id=\"protocol.lifecycle.basic\">\n  <h1>Protocol lifecycle</h1>\n  <p id=\"connection-state\">disconnected</p>\n  <output id=\"count\">0</output>\n  <button id=\"increment\" type=\"button\" phx-click=\"increment\">Increment</button>\n</main>\n    </div>\n  \n</body></html>",
       "name": "before-connection",
       "outcome": {
         "activeElement": "body",
@@ -29,7 +29,7 @@
       }
     },
     {
-      "dom": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta name=\"csrf-token\" content=\"CSRF_1\">\n    <title data-default=\"LiveViewOracle\" data-suffix=\" · Phoenix Framework\">LiveViewOracle · Phoenix Framework</title>\n    <script defer=\"\" phx-track-static=\"\" type=\"text/javascript\" src=\"/assets/js/app.js\">\n    </script>\n  </head>\n  <body data-phx-root-id=\"\">\n    <div id=\"VIEW_1\" data-phx-main=\"\" data-phx-session=\"SESSION_1\" data-phx-static=\"STATIC_1\" data-phx-root-id=\"VIEW_1\" class=\"phx-connected\"><main id=\"oracle-root\" data-capability-id=\"protocol.lifecycle.basic\">\n  <h1>Protocol lifecycle</h1>\n  <p id=\"connection-state\">connected</p>\n  <output id=\"count\">0</output>\n  <button id=\"increment\" type=\"button\" phx-click=\"increment\">Increment</button>\n</main></div>\n  \n</body></html>",
+      "dom": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta name=\"csrf-token\" content=\"CSRF_1\">\n    <title data-default=\"LiveViewOracle\" data-suffix=\" · Phoenix Framework\">LiveViewOracle · Phoenix Framework</title>\n    <script defer=\"\" phx-track-static=\"\" type=\"text/javascript\" src=\"/assets/app.js\"></script>\n  </head>\n  <body data-phx-root-id=\"\">\n    <div data-phx-main=\"true\" data-phx-session=\"SESSION_1\" data-phx-static=\"STATIC_1\" id=\"VIEW_1\" data-phx-root-id=\"VIEW_1\" class=\"phx-connected\"><main id=\"oracle-root\" data-capability-id=\"protocol.lifecycle.basic\">\n  <h1>Protocol lifecycle</h1>\n  <p id=\"connection-state\">connected</p>\n  <output id=\"count\">0</output>\n  <button id=\"increment\" type=\"button\" phx-click=\"increment\">Increment</button>\n</main></div>\n  \n</body></html>",
       "name": "after-connected-mount",
       "outcome": {
         "activeElement": "body",
@@ -56,7 +56,7 @@
       }
     },
     {
-      "dom": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta name=\"csrf-token\" content=\"CSRF_1\">\n    <title data-default=\"LiveViewOracle\" data-suffix=\" · Phoenix Framework\">LiveViewOracle · Phoenix Framework</title>\n    <script defer=\"\" phx-track-static=\"\" type=\"text/javascript\" src=\"/assets/js/app.js\">\n    </script>\n  </head>\n  <body data-phx-root-id=\"\">\n    <div id=\"VIEW_1\" data-phx-main=\"\" data-phx-session=\"SESSION_1\" data-phx-static=\"STATIC_1\" data-phx-root-id=\"VIEW_1\" class=\"phx-connected\"><main id=\"oracle-root\" data-capability-id=\"protocol.lifecycle.basic\">\n  <h1>Protocol lifecycle</h1>\n  <p id=\"connection-state\">connected</p>\n  <output id=\"count\">1</output>\n  <button id=\"increment\" type=\"button\" phx-click=\"increment\">Increment</button>\n</main></div>\n  \n</body></html>",
+      "dom": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta name=\"csrf-token\" content=\"CSRF_1\">\n    <title data-default=\"LiveViewOracle\" data-suffix=\" · Phoenix Framework\">LiveViewOracle · Phoenix Framework</title>\n    <script defer=\"\" phx-track-static=\"\" type=\"text/javascript\" src=\"/assets/app.js\"></script>\n  </head>\n  <body data-phx-root-id=\"\">\n    <div data-phx-main=\"true\" data-phx-session=\"SESSION_1\" data-phx-static=\"STATIC_1\" id=\"VIEW_1\" data-phx-root-id=\"VIEW_1\" class=\"phx-connected\"><main id=\"oracle-root\" data-capability-id=\"protocol.lifecycle.basic\">\n  <h1>Protocol lifecycle</h1>\n  <p id=\"connection-state\">connected</p>\n  <output id=\"count\">1</output>\n  <button id=\"increment\" type=\"button\" phx-click=\"increment\">Increment</button>\n</main></div>\n  \n</body></html>",
       "name": "after-increment",
       "outcome": {
         "activeElement": "#increment",
@@ -89,7 +89,7 @@
         "cookieValue": "COOKIE_1",
         "domain": "localhost",
         "httpOnly": true,
-        "name": "_liveview_oracle_key",
+        "name": "connect.sid",
         "path": "/",
         "sameSite": "Lax",
         "secure": false
@@ -106,23 +106,19 @@
     },
     "response": {
       "headers": {
-        "cache-control": "max-age=0, private, must-revalidate",
         "content-type": "text/html; charset=utf-8",
         "date": "TIMESTAMP_1",
-        "set-cookie": "_liveview_oracle_key=COOKIE_1; path=/; HttpOnly; SameSite=Lax"
+        "set-cookie": "connect.sid=COOKIE_1; Path=/; HttpOnly; SameSite=Lax"
       },
-      "html": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta name=\"csrf-token\" content=\"CSRF_1\">\n    <title data-default=\"LiveViewOracle\" data-suffix=\" · Phoenix Framework\">LiveViewOracle · Phoenix Framework</title>\n    <script defer phx-track-static type=\"text/javascript\" src=\"/assets/js/app.js\">\n    </script>\n  </head>\n  <body>\n    <div id=\"VIEW_1\" data-phx-main data-phx-session=\"SESSION_1\" data-phx-static=\"STATIC_1\"><main id=\"oracle-root\" data-capability-id=\"protocol.lifecycle.basic\">\n  <h1>Protocol lifecycle</h1>\n  <p id=\"connection-state\">disconnected</p>\n  <output id=\"count\">0</output>\n  <button id=\"increment\" type=\"button\" phx-click=\"increment\">Increment</button>\n</main></div>\n  </body>\n</html>",
+      "html": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <meta name=\"csrf-token\" content=\"CSRF_1\" />\n    <title data-default=\"LiveViewOracle\" data-suffix=\" · Phoenix Framework\">LiveViewOracle · Phoenix Framework</title>\n    <script defer phx-track-static type=\"text/javascript\" src=\"/assets/app.js\"></script>\n  </head>\n  <body>\n    <div\n      data-phx-main=\"true\"\n      data-phx-session=\"SESSION_1\"\n      data-phx-static=\"STATIC_1\"\n      id=\"VIEW_1\">\n      <main id=\"oracle-root\" data-capability-id=\"protocol.lifecycle.basic\">\n  <h1>Protocol lifecycle</h1>\n  <p id=\"connection-state\">disconnected</p>\n  <output id=\"count\">0</output>\n  <button id=\"increment\" type=\"button\" phx-click=\"increment\">Increment</button>\n</main>\n    </div>\n  </body>\n</html>",
       "status": 200
     }
   },
   "metadata": {
     "browser": "chromium",
     "browserVersion": "151.0.7922.34",
+    "liveViewJsVersion": "0.10.4",
     "phoenixClientVersion": "1.2.9",
-    "phoenixLiveViewSourceChecksum": "2f9528c3d7046edabbb30a91710ca33988f8d8bc20a964a1fc48b32134572afa",
-    "phoenixLiveViewVersion": "1.2.9",
-    "phoenixSourceChecksum": "ad14e24d10e5a52d5f80429053bbe3a5d124311a2868fceb0a01a2e859c44539",
-    "phoenixVersion": "1.8.13",
     "playwrightVersion": "1.62.1",
     "recorderVersion": "1.0.0",
     "seed": 182
@@ -148,11 +144,11 @@
               "_mount_attempts": 0,
               "_mounts": 0,
               "_track_static": [
-                "http://HOST:PORT/assets/js/app.js"
+                "http://HOST:PORT/assets/app.js"
               ]
             },
             "session": "SESSION_1",
-            "static": "STATIC_1",
+            "static": null,
             "sticky": false,
             "url": "http://HOST:PORT/scenarios/protocol.lifecycle.basic"
           }
@@ -251,6 +247,6 @@
         "type": "close"
       }
     ],
-    "url": "ws://HOST:PORT/live/websocket?_csrf_token=CSRF_1&_track_static%5B0%5D=http%3A%2F%2FHOST%3APORT%2Fassets%2Fjs%2Fapp.js&_mounts=0&_mount_attempts=0&_live_referer=undefined&vsn=2.0.0"
+    "url": "ws://HOST:PORT/live/websocket?_csrf_token=CSRF_1&_track_static%5B0%5D=http%3A%2F%2FHOST%3APORT%2Fassets%2Fapp.js&_mounts=0&_mount_attempts=0&_live_referer=undefined&vsn=2.0.0"
   }
 }

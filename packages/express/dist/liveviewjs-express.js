@@ -165,6 +165,7 @@ class NodeExpressLiveViewServer {
             wrapperTemplate: this.wrapperTemplate,
             flashAdaptor: this.flashAdapter,
             pubSub: this.pubSub,
+            liveViewVersion: options === null || options === void 0 ? void 0 : options.liveViewVersion,
             onError: options === null || options === void 0 ? void 0 : options.onError,
             debug: options === null || options === void 0 ? void 0 : options.debug,
         }, "f");

@@ -28,3 +28,55 @@ export function assertFixtureMatches(actual, expected, scenarioId) {
   const difference = firstDifference(actual, expected);
   if (difference) throw new Error(`fixture drift: ${scenarioId} at ${difference}`);
 }
+
+export function assertBrowserOutcomesMatch(actualCheckpoints, oracleCheckpoints, scenarioId) {
+  const actual = actualCheckpoints.map(({ name, outcome }) => ({ name, outcome }));
+  const oracle = oracleCheckpoints.map(({ name, outcome }) => ({ name, outcome }));
+  const difference = firstDifference(actual, oracle, "outcomes");
+  if (difference) throw new Error(`browser outcome drift: ${scenarioId} at ${difference}`);
+}
+
+function protocolLifecycle(events) {
+  return events.map((frame) => {
+    if (!frame.payload) return { type: frame.type };
+    const [joinRef, msgRef, topic, event, payload] = frame.payload;
+    const lifecycle = {
+      direction: frame.direction,
+      joinRef,
+      msgRef,
+      topic,
+      event,
+    };
+
+    if (event === "phx_join") {
+      lifecycle.payload = {
+        keys: Object.keys(payload).sort(),
+        parameterKeys: Object.keys(payload.params ?? {}).sort(),
+      };
+    } else if (event === "event") {
+      lifecycle.payload = {
+        event: payload.event,
+        type: payload.type,
+        valueKeys: Object.keys(payload.value ?? {}).sort(),
+      };
+    } else if (event === "phx_reply") {
+      lifecycle.payload = {
+        status: payload.status,
+        responseKeys: Object.keys(payload.response ?? {}).sort(),
+        liveViewVersion: payload.response?.liveview_version,
+        tree: payload.response?.rendered ?? payload.response?.diff,
+      };
+    }
+
+    return lifecycle;
+  });
+}
+
+export function assertProtocolLifecycleMatches(actualEvents, oracleEvents, scenarioId) {
+  const difference = firstDifference(
+    protocolLifecycle(actualEvents),
+    protocolLifecycle(oracleEvents),
+    "protocolLifecycle",
+  );
+  if (difference) throw new Error(`protocol lifecycle drift: ${scenarioId} at ${difference}`);
+}

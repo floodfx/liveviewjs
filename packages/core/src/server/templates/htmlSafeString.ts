@@ -58,6 +58,45 @@ export function escapehtml(unsafe: unknown): string {
 export type Parts = { [key: string]: unknown };
 
 /**
+ * Encodes statics using the shared-template representation used by the current
+ * Phoenix LiveView protocol. Dynamic values retain their original tree shape.
+ */
+export function encodeTemplateStatics(parts: Parts, root: boolean): Parts {
+  const encoded = structuredClone(parts);
+  const templates: Record<string, readonly string[]> = {};
+  const positions = new Map<string, number>();
+
+  function visit(value: unknown): void {
+    if (Array.isArray(value)) {
+      for (const entry of value) visit(entry);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+
+    const node = value as Parts;
+    for (const [key, entry] of Object.entries(node)) {
+      if (key !== "s") visit(entry);
+    }
+
+    if (Array.isArray(node.s)) {
+      const fingerprint = JSON.stringify(node.s);
+      let position = positions.get(fingerprint);
+      if (position === undefined) {
+        position = positions.size;
+        positions.set(fingerprint, position);
+        templates[String(position)] = node.s as readonly string[];
+      }
+      node.s = position;
+    }
+  }
+
+  visit(encoded);
+  if (root) encoded.r = 1;
+  if (Object.keys(templates).length > 0) encoded.p = templates;
+  return encoded;
+}
+
+/**
  * HtmlSafeString is what a `LiveView` returns from its `render` function.
  * It is based on "tagged template literals" and is what allows LiveViewJS
  * to minimize the amount of data sent to the client.
@@ -217,4 +256,3 @@ export function htmlFromString(template: string, vars: Record<string, unknown> =
   const func = new Function(...Object.keys(vars), "html", "return html`" + template + "`;");
   return func(...Object.values(vars), html);
 }
-

@@ -7,7 +7,7 @@ import {
   LiveComponent,
   LiveViewMeta,
 } from "../live";
-import { html, htmlFromString, HtmlSafeString, safe } from "./index";
+import { encodeTemplateStatics, html, htmlFromString, HtmlSafeString, safe } from "./index";
 
 
 describe("test escapeHtml", () => {
@@ -34,6 +34,47 @@ describe("test escapeHtml", () => {
         s: ["sub", ""],
       },
       s: ["a", "b", "c"],
+    });
+  });
+
+  it("shares current-protocol statics and marks the root", () => {
+    expect(
+      encodeTemplateStatics(
+        {
+          0: "connected",
+          1: "0",
+          s: ["<main>", "</main>"],
+        },
+        true
+      )
+    ).toEqual({
+      0: "connected",
+      1: "0",
+      p: { 0: ["<main>", "</main>"] },
+      r: 1,
+      s: 0,
+    });
+  });
+
+  it("reuses identical nested templates", () => {
+    expect(
+      encodeTemplateStatics(
+        {
+          0: { 0: "first", s: ["<p>", "</p>"] },
+          1: { 0: "second", s: ["<p>", "</p>"] },
+          s: ["<main>", "", "</main>"],
+        },
+        true
+      )
+    ).toEqual({
+      0: { 0: "first", s: 0 },
+      1: { 0: "second", s: 0 },
+      p: {
+        0: ["<p>", "</p>"],
+        1: ["<main>", "", "</main>"],
+      },
+      r: 1,
+      s: 1,
     });
   });
 

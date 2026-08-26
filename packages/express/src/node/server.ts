@@ -24,12 +24,14 @@ import { NodeFileSystemAdatptor as NodeFileSystemAdaptor } from "./fsAdaptor";
 import { NodeJwtSerDe } from "./jwtSerDe";
 import { NodeWsAdaptor } from "./wsAdaptor";
 
-interface NodeExpressLiveViewServerOptions {
+export interface NodeExpressLiveViewServerOptions {
   serDe?: SerDe;
   pubSub?: PubSub;
   flashAdaptor?: FlashAdaptor;
   fileSystemAdaptor?: FileSystemAdaptor;
   wrapperTemplate?: LiveViewWrapperTemplate;
+  /** Phoenix LiveView protocol version advertised in successful join replies. */
+  liveViewVersion?: string;
   onError?: (err: any) => void;
   debug?: (msg: string) => void;
 }
@@ -69,6 +71,7 @@ export class NodeExpressLiveViewServer implements LiveViewServerAdaptor<RequestH
       wrapperTemplate: this.wrapperTemplate,
       flashAdaptor: this.flashAdapter,
       pubSub: this.pubSub,
+      liveViewVersion: options?.liveViewVersion,
       onError: options?.onError,
       debug: options?.debug,
     };

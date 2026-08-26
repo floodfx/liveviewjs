@@ -836,6 +836,45 @@ function escapehtml(unsafe) {
     return String(unsafe).replace(ENT_REGEX, (char) => ENTITIES[char]);
 }
 /**
+ * Encodes statics using the shared-template representation used by the current
+ * Phoenix LiveView protocol. Dynamic values retain their original tree shape.
+ */
+function encodeTemplateStatics(parts, root) {
+    const encoded = structuredClone(parts);
+    const templates = {};
+    const positions = new Map();
+    function visit(value) {
+        if (Array.isArray(value)) {
+            for (const entry of value)
+                visit(entry);
+            return;
+        }
+        if (!value || typeof value !== "object")
+            return;
+        const node = value;
+        for (const [key, entry] of Object.entries(node)) {
+            if (key !== "s")
+                visit(entry);
+        }
+        if (Array.isArray(node.s)) {
+            const fingerprint = JSON.stringify(node.s);
+            let position = positions.get(fingerprint);
+            if (position === undefined) {
+                position = positions.size;
+                positions.set(fingerprint, position);
+                templates[String(position)] = node.s;
+            }
+            node.s = position;
+        }
+    }
+    visit(encoded);
+    if (root)
+        encoded.r = 1;
+    if (Object.keys(templates).length > 0)
+        encoded.p = templates;
+    return encoded;
+}
+/**
  * HtmlSafeString is what a `LiveView` returns from its `render` function.
  * It is based on "tagged template literals" and is what allows LiveViewJS
  * to minimize the amount of data sent to the client.
@@ -981,6 +1020,15 @@ class HtmlSafeString {
 }
 function html(statics, ...dynamics) {
     return new HtmlSafeString(statics, dynamics);
+}
+/**
+ * Creates a HtmlSafeString from a template string and object.
+ * This allows templates to be loaded directly from a file or other
+ * source not typically supported by tagged template literals.
+ */
+function htmlFromString(template, vars = {}) {
+    const func = new Function(...Object.keys(vars), "html", "return html`" + template + "`;");
+    return func(...Object.values(vars), html);
 }
 
 const form_for = (action, csrfToken, options) => {
@@ -2825,9 +2873,10 @@ var PhxReply;
      * renderedReply builds a reply that contains the full rendered HTML for a LiveView.
      * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
      * @param parts the "tree" of parts that will be used to render the client-side LiveView
+     * @param liveViewVersion optional Phoenix LiveView version advertised to the client
      * @returns the reply message
      */
-    function renderedReply(msg, parts) {
+    function renderedReply(msg, parts, liveViewVersion) {
         return [
             msg[exports.Phx.MsgIdx.joinRef],
             msg[exports.Phx.MsgIdx.msgRef],
@@ -2837,6 +2886,7 @@ var PhxReply;
                 status: "ok",
                 response: {
                     rendered: parts,
+                    ...(liveViewVersion ? { liveview_version: liveViewVersion } : {}),
                 },
             },
         ];
@@ -3451,7 +3501,7 @@ class WsHandler {
                         // convert the view into a parts tree
                         const rendered = await this.viewToRendered(view);
                         // send the response and cleanup
-                        this.send(PhxReply.renderedReply(msg, rendered));
+                        this.send(PhxReply.renderedReply(msg, rendered, this.#config.liveViewVersion));
                         this.cleanupPostReply();
                         // start heartbeat interval
                         this.#lastHB = Date.now();
@@ -3694,7 +3744,8 @@ class WsHandler {
         // now add the components, events, and title parts
         diff = this.maybeAddLiveComponentsToParts(diff);
         diff = this.maybeAddEventsToParts(diff);
-        return this.maybeAddTitleToView(diff);
+        diff = this.maybeAddTitleToView(diff);
+        return encodeTemplateStatics(diff, Array.isArray(diff.s));
     }
     async viewToRendered(view) {
         // step 1: if provided, wrap the rendered `LiveView` inside the root template
@@ -3709,7 +3760,7 @@ class WsHandler {
         parts = this.maybeAddTitleToView(parts);
         // set the parts tree on the context
         this.#ctx.parts = parts;
-        return parts;
+        return encodeTemplateStatics(parts, true);
     }
     maybeAddEventsToParts(parts) {
         if (this.#ctx.pushEvents.length > 0) {
@@ -4023,12 +4074,14 @@ exports.createLiveView = createLiveView;
 exports.deepDiff = deepDiff;
 exports.diffArrays = diffArrays;
 exports.diffArrays2 = diffArrays2;
+exports.encodeTemplateStatics = encodeTemplateStatics;
 exports.error_tag = error_tag;
 exports.escapehtml = escapehtml;
 exports.form_for = form_for;
 exports.handleHttpLiveView = handleHttpLiveView;
 exports.hashLiveComponent = hashLiveComponent;
 exports.html = html;
+exports.htmlFromString = htmlFromString;
 exports.join = join;
 exports.live_file_input = live_file_input;
 exports.live_img_preview = live_img_preview;

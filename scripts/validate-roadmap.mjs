@@ -204,6 +204,11 @@ expect(
   Array.isArray(compatibility.clientPolicy?.verifiedAgainstLiveViewJs),
   "client policy verifiedAgainstLiveViewJs must be an array",
 );
+expect(
+  Array.isArray(compatibility.clientPolicy?.testedAgainstLiveViewJs) &&
+    compatibility.clientPolicy.testedAgainstLiveViewJs.includes(compatibility.target?.phoenixClientVersion),
+  "client policy must record the target as tested against LiveViewJS",
+);
 for (const version of compatibility.clientPolicy?.verifiedAgainstLiveViewJs ?? []) {
   expect(exactVersion(version), `LiveViewJS-verified browser client version must be exact semver: ${version}`);
 }
@@ -227,10 +232,28 @@ if (compatibility.target?.status === "verified") {
 const oracleMixPath = resolve(root, "compatibility/phoenix/mix.exs");
 const oracleMixLockPath = resolve(root, "compatibility/phoenix/mix.lock");
 const oracleAssetsPath = resolve(root, "compatibility/phoenix/assets/package-lock.json");
+const liveViewJsTargetPath = resolve(root, "compatibility/liveviewjs/package-lock.json");
 const recorderPackagePath = resolve(root, "compatibility/recorder/package.json");
 const recorderLockPath = resolve(root, "compatibility/recorder/package-lock.json");
-for (const path of [oracleMixPath, oracleMixLockPath, oracleAssetsPath, recorderPackagePath, recorderLockPath]) {
+for (const path of [oracleMixPath, oracleMixLockPath, oracleAssetsPath, liveViewJsTargetPath, recorderPackagePath, recorderLockPath]) {
   expect(existsSync(path), `compatibility input is missing: ${relative(root, path)}`);
+}
+
+if (existsSync(liveViewJsTargetPath)) {
+  const targetLock = loadJson(liveViewJsTargetPath);
+  const dependencies = targetLock.packages?.[""]?.dependencies ?? {};
+  expect(dependencies.phoenix === compatibility.target?.phoenixVersion, "LiveViewJS target JavaScript Phoenix version must match the target");
+  expect(dependencies.phoenix_live_view === compatibility.target?.phoenixClientVersion, "LiveViewJS target JavaScript LiveView version must match the target client");
+  expect(
+    targetLock.packages?.["node_modules/phoenix_live_view"]?.integrity?.startsWith("sha512-"),
+    "LiveViewJS target JavaScript client must have locked integrity",
+  );
+  expect(
+    /^git\+https:\/\/github\.com\/SteffenDE\/morphdom\.git#[a-f0-9]{40}$/.test(
+      targetLock.packages?.["node_modules/morphdom"]?.resolved ?? "",
+    ),
+    "LiveViewJS target morphdom dependency must use HTTPS and an immutable commit SHA",
+  );
 }
 
 if (existsSync(oracleMixPath)) {
