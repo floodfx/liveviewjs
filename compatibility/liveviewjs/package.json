@@ -1,0 +1,30 @@
+{
+  "name": "liveviewjs-compatibility-target",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node build/server.cjs"
+  },
+  "dependencies": {
+    "deep-object-diff": "1.1.9",
+    "esbuild": "0.14.54",
+    "express": "4.18.1",
+    "express-session": "1.17.3",
+    "jsonwebtoken": "8.5.1",
+    "nanoid": "3.3.4",
+    "path-to-regexp": "6.2.1",
+    "phoenix": "1.8.13",
+    "phoenix_html": "4.3.0",
+    "phoenix_live_view": "1.2.9",
+    "ws": "8.8.1",
+    "zod": "3.17.3"
+  },
+  "overrides": {
+    "morphdom": "git+https://github.com/SteffenDE/morphdom.git#3a35c8bbd3f2621f5eab967f777eb8ce7e1b9430"
+  }
+}

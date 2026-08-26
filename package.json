@@ -28,7 +28,7 @@
     "publish": "turbo run publish",
     "roadmap:write": "node scripts/validate-roadmap.mjs --write",
     "verify:roadmap": "node scripts/validate-roadmap.mjs --check",
-    "compatibility:setup": "npm --prefix compatibility/phoenix/assets ci && npm --prefix compatibility/recorder ci && cd compatibility/phoenix && mix deps.get && mix assets.setup && mix assets.build",
+    "compatibility:setup": "npm --prefix compatibility/phoenix/assets ci && npm --prefix compatibility/liveviewjs ci && npm --prefix compatibility/liveviewjs run build && npm --prefix compatibility/recorder ci && cd compatibility/phoenix && mix deps.get && mix assets.setup && mix assets.build",
     "compatibility:record": "npm --prefix compatibility/recorder run record",
     "compatibility:check": "npm --prefix compatibility/recorder test && npm --prefix compatibility/recorder run check",
     "cs": "changeset",

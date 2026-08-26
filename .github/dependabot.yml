@@ -13,6 +13,12 @@ updates:
     labels:
       - "type:compatibility"
   - package-ecosystem: npm
+    directory: /compatibility/liveviewjs
+    schedule:
+      interval: weekly
+    labels:
+      - "type:compatibility"
+  - package-ecosystem: npm
     directory: /compatibility/recorder
     schedule:
       interval: weekly

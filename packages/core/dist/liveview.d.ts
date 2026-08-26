@@ -902,6 +902,11 @@ type Parts = {
     [key: string]: unknown;
 };
 /**
+ * Encodes statics using the shared-template representation used by the current
+ * Phoenix LiveView protocol. Dynamic values retain their original tree shape.
+ */
+declare function encodeTemplateStatics(parts: Parts, root: boolean): Parts;
+/**
  * HtmlSafeString is what a `LiveView` returns from its `render` function.
  * It is based on "tagged template literals" and is what allows LiveViewJS
  * to minimize the amount of data sent to the client.
@@ -915,6 +920,12 @@ declare class HtmlSafeString {
     toString(): string;
 }
 declare function html(statics: TemplateStringsArray, ...dynamics: unknown[]): HtmlSafeString;
+/**
+ * Creates a HtmlSafeString from a template string and object.
+ * This allows templates to be loaded directly from a file or other
+ * source not typically supported by tagged template literals.
+ */
+declare function htmlFromString(template: string, vars?: Record<string, unknown>): HtmlSafeString;
 
 interface FormForOptions {
     phx_submit?: string;
@@ -1257,6 +1268,7 @@ declare namespace PhxReply {
         rendered?: {
             [key: string]: unknown;
         };
+        liveview_version?: string;
         diff?: {
             [key: string]: unknown;
         };
@@ -1273,9 +1285,10 @@ declare namespace PhxReply {
      * renderedReply builds a reply that contains the full rendered HTML for a LiveView.
      * @param msg the original, incoming message (used to get the joinRef, msgRef, and topic)
      * @param parts the "tree" of parts that will be used to render the client-side LiveView
+     * @param liveViewVersion optional Phoenix LiveView version advertised to the client
      * @returns the reply message
      */
-    function renderedReply(msg: Phx.Msg, parts: Parts): Reply;
+    function renderedReply(msg: Phx.Msg, parts: Parts, liveViewVersion?: string): Reply;
     /**
      * diff builds a diff message which only contains the parts of the LiveView that have changed.
      * As opposed to "diffReply" messages, "diff" messages are sent without an original, incoming message but rather because of
@@ -1396,6 +1409,7 @@ interface WsHandlerConfig {
     wrapperTemplate?: LiveViewWrapperTemplate;
     flashAdaptor: FlashAdaptor;
     pubSub: PubSub;
+    liveViewVersion?: string;
     onError?: (err: any) => void;
     debug?(msg: string): void;
 }
@@ -2045,4 +2059,4 @@ interface LiveViewServerAdaptor<THttpMiddleware, TWsMiddleware> {
     wsMiddleware: TWsMiddleware;
 }
 
-export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, error_tag, escapehtml, form_for, handleHttpLiveView, hashLiveComponent, html, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };
+export { AnyLiveContext, AnyLiveEvent, AnyLiveInfo, AnyLivePushEvent, BaseLiveComponent, BaseLiveView, ConsumeUploadedEntriesMeta, CsrfGenerator, FileSystemAdaptor, FlashAdaptor, HtmlSafeString, HttpLiveComponentSocket, HttpLiveViewSocket, HttpRequestAdaptor, IdGenerator, Info, JS, LiveComponent, LiveComponentMeta, LiveComponentSocket, LiveContext, LiveEvent, LiveInfo, LiveTitleOptions, LiveView, LiveViewChangeset, LiveViewChangesetErrors, LiveViewChangesetFactory, LiveViewHtmlPageTemplate, LiveViewManager, LiveViewMeta, LiveViewMountParams, LiveViewRouter, LiveViewServerAdaptor, LiveViewSocket, LiveViewTemplate, LiveViewWrapperTemplate, MimeSource, Parts, PathParams, Phx, PubSub, Publisher, SerDe, SessionData, SessionFlashAdaptor, SingleProcessPubSub, Subscriber, SubscriberFunction, SubscriberId, UploadConfig, UploadConfigOptions, UploadEntry, WsAdaptor, WsCloseListener, WsHandler, WsHandlerConfig, WsHandlerContext, WsLiveComponentSocket, WsLiveViewSocket, WsMessageRouter, WsMsgListener, createLiveComponent, createLiveView, deepDiff, diffArrays, diffArrays2, encodeTemplateStatics, error_tag, escapehtml, form_for, handleHttpLiveView, hashLiveComponent, html, htmlFromString, join, live_file_input, live_img_preview, live_patch, live_title_tag, matchRoute, mime, newChangesetFactory, nodeHttpFetch, options_for_select, safe, submit, telephone_input, text_input };

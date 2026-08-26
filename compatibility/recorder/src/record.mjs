@@ -4,14 +4,19 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { assertFixtureMatches } from "./compare.mjs";
+import {
+  assertBrowserOutcomesMatch,
+  assertFixtureMatches,
+  assertProtocolLifecycleMatches,
+} from "./compare.mjs";
 import { binaryRecord, normalizeTrace } from "./normalize.mjs";
 
 const recorderRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(recorderRoot, "../..");
 const phoenixRoot = resolve(repositoryRoot, "compatibility/phoenix");
+const liveViewJsRoot = resolve(repositoryRoot, "compatibility/liveviewjs");
 const rawRoot = resolve(repositoryRoot, "compatibility/artifacts/raw");
-const fixtureRoot = resolve(repositoryRoot, "compatibility/fixtures/phoenix-live-view");
+const fixtureRoot = resolve(repositoryRoot, "compatibility/fixtures");
 const compatibility = readJson(resolve(repositoryRoot, "compatibility/liveview.json"));
 const scenarioManifest = readJson(resolve(repositoryRoot, "compatibility/scenarios.json"));
 const recorderPackage = readJson(resolve(recorderRoot, "package.json"));
@@ -39,10 +44,10 @@ function guardFixtures() {
   assert.equal(result.stdout, "", `refusing to regenerate while fixtures have uncommitted changes`);
 }
 
-async function waitForServer(baseUrl, process) {
+async function waitForServer(baseUrl, process, label) {
   const deadline = Date.now() + 30_000;
   while (Date.now() < deadline) {
-    if (process.exitCode !== null) throw new Error(`Phoenix exited before becoming ready (${process.exitCode})`);
+    if (process.exitCode !== null) throw new Error(`${label} exited before becoming ready (${process.exitCode})`);
     try {
       const response = await fetch(baseUrl, { redirect: "manual" });
       if (response.status < 500) return;
@@ -51,7 +56,7 @@ async function waitForServer(baseUrl, process) {
     }
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
   }
-  throw new Error(`Phoenix did not become ready at ${baseUrl}`);
+  throw new Error(`${label} did not become ready at ${baseUrl}`);
 }
 
 function selectedHeaders(headers, names) {
@@ -87,10 +92,57 @@ async function redirectRecords(request) {
   return redirects;
 }
 
-async function recordScenario(browser, baseUrl, scenario, metadata) {
+async function browserOutcome(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector("#oracle-root");
+    assertPresent(root, "#oracle-root");
+
+    function assertPresent(value, selector) {
+      if (!value) throw new Error(`missing scenario element: ${selector}`);
+    }
+
+    function activeElementSelector() {
+      const active = document.activeElement;
+      if (!active) return null;
+      if (active.id) return `#${active.id}`;
+      return active.tagName.toLowerCase();
+    }
+
+    return {
+      location: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      title: document.title,
+      activeElement: activeElementSelector(),
+      root: {
+        id: root.id,
+        tagName: root.tagName.toLowerCase(),
+        capabilityId: root.getAttribute("data-capability-id"),
+      },
+      connectionState: document.querySelector("#connection-state")?.textContent?.trim() ?? null,
+      count: document.querySelector("#count")?.textContent?.trim() ?? null,
+      controls: Array.from(root.querySelectorAll("button")).map((control) => ({
+        id: control.id,
+        tagName: control.tagName.toLowerCase(),
+        type: control.getAttribute("type"),
+        text: control.textContent?.trim() ?? "",
+        click: control.getAttribute("phx-click"),
+      })),
+      forms: Array.from(root.querySelectorAll("form")).map((form) => ({
+        id: form.id,
+        fields: Array.from(new FormData(form).entries()),
+      })),
+      hooks: Array.from(root.querySelectorAll("[phx-hook]")).map((hook) => ({
+        id: hook.id,
+        name: hook.getAttribute("phx-hook"),
+      })),
+    };
+  });
+}
+
+async function recordScenario(browser, baseUrl, scenario, metadata, expectedLiveViewVersion) {
   const disconnectedPage = await browser.newPage({ javaScriptEnabled: false });
   await disconnectedPage.goto(`${baseUrl}${scenario.path}`, { waitUntil: "domcontentloaded" });
   const disconnectedDom = await disconnectedPage.locator("html").evaluate((element) => element.outerHTML);
+  const disconnectedOutcome = await browserOutcome(disconnectedPage);
   await disconnectedPage.close();
 
   const page = await browser.newPage();
@@ -131,8 +183,8 @@ async function recordScenario(browser, baseUrl, scenario, metadata) {
   const cookies = await page.context().cookies(baseUrl);
   const redirects = await redirectRecords(request);
   const domCheckpoints = [
-    { name: "before-connection", dom: disconnectedDom },
-    { name: "after-connected-mount", dom: connectedDom },
+    { name: "before-connection", dom: disconnectedDom, outcome: disconnectedOutcome },
+    { name: "after-connected-mount", dom: connectedDom, outcome: await browserOutcome(page) },
   ];
 
   for (const action of scenario.actions) {
@@ -146,6 +198,7 @@ async function recordScenario(browser, baseUrl, scenario, metadata) {
     domCheckpoints.push({
       name: action.checkpoint,
       dom: await page.locator("html").evaluate((element) => element.outerHTML),
+      outcome: await browserOutcome(page),
     });
   }
 
@@ -162,8 +215,8 @@ async function recordScenario(browser, baseUrl, scenario, metadata) {
   )?.payload?.[4]?.response?.liveview_version;
   assert.equal(
     reportedLiveViewVersion,
-    metadata.phoenixLiveViewVersion,
-    `incompatible Phoenix LiveView protocol: expected server ${metadata.phoenixLiveViewVersion}, received ${reportedLiveViewVersion ?? "no version"}`,
+    expectedLiveViewVersion,
+    `incompatible Phoenix LiveView protocol: expected server ${expectedLiveViewVersion}, received ${reportedLiveViewVersion ?? "no version"}`,
   );
 
   return {
@@ -199,59 +252,108 @@ async function recordScenario(browser, baseUrl, scenario, metadata) {
   };
 }
 
-const baseUrl = `http://localhost:${port}`;
 if (mode === "--write") guardFixtures();
-const phoenixOutput = [];
-const phoenix = spawn("mix", ["phx.server"], {
-  cwd: phoenixRoot,
-  env: { ...process.env, MIX_ENV: "test", PHX_SERVER: "true", PORT: String(port) },
-  stdio: ["ignore", "pipe", "pipe"],
+const commonMetadata = {
+  phoenixClientVersion: compatibility.target.phoenixClientVersion,
+  browser: "chromium",
+  recorderVersion: recorderPackage.version,
+  playwrightVersion: recorderPackage.dependencies.playwright,
+  seed: scenarioManifest.seed,
+};
+const targets = [
+  {
+    id: "phoenix-live-view",
+    label: "Phoenix",
+    cwd: phoenixRoot,
+    command: "mix",
+    args: ["phx.server"],
+    port,
+    env: { MIX_ENV: "test", PHX_SERVER: "true" },
+    fixtureVersion: compatibility.target.phoenixLiveViewVersion,
+    expectedLiveViewVersion: compatibility.target.phoenixLiveViewVersion,
+    metadata: {
+      phoenixVersion: compatibility.target.phoenixVersion,
+      phoenixSourceChecksum: compatibility.target.phoenixSourceChecksum,
+      phoenixLiveViewVersion: compatibility.target.phoenixLiveViewVersion,
+      phoenixLiveViewSourceChecksum: compatibility.target.phoenixLiveViewSourceChecksum,
+      ...commonMetadata,
+    },
+  },
+  {
+    id: "liveviewjs",
+    label: "LiveViewJS",
+    cwd: liveViewJsRoot,
+    command: "node",
+    args: ["build/server.cjs"],
+    port: port + 1,
+    env: {},
+    fixtureVersion: compatibility.release.liveViewJsVersion,
+    expectedLiveViewVersion: compatibility.target.phoenixClientVersion,
+    metadata: {
+      liveViewJsVersion: compatibility.release.liveViewJsVersion,
+      ...commonMetadata,
+    },
+  },
+].map((target) => {
+  const output = [];
+  const process = spawn(target.command, target.args, {
+    cwd: target.cwd,
+    env: { ...globalThis.process.env, ...target.env, PORT: String(target.port) },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  process.stdout.on("data", (chunk) => output.push(chunk.toString()));
+  process.stderr.on("data", (chunk) => output.push(chunk.toString()));
+  return { ...target, output, process, baseUrl: `http://localhost:${target.port}` };
 });
-phoenix.stdout.on("data", (chunk) => phoenixOutput.push(chunk.toString()));
-phoenix.stderr.on("data", (chunk) => phoenixOutput.push(chunk.toString()));
 
 let browser;
 try {
-  await waitForServer(baseUrl, phoenix);
+  await Promise.all(targets.map((target) => waitForServer(target.baseUrl, target.process, target.label)));
   browser = await chromium.launch();
-  const metadata = {
-    phoenixVersion: compatibility.target.phoenixVersion,
-    phoenixSourceChecksum: compatibility.target.phoenixSourceChecksum,
-    phoenixLiveViewVersion: compatibility.target.phoenixLiveViewVersion,
-    phoenixLiveViewSourceChecksum: compatibility.target.phoenixLiveViewSourceChecksum,
-    phoenixClientVersion: compatibility.target.phoenixClientVersion,
-    browser: "chromium",
-    browserVersion: browser.version(),
-    recorderVersion: recorderPackage.version,
-    playwrightVersion: recorderPackage.dependencies.playwright,
-    seed: scenarioManifest.seed,
-  };
-
+  const traces = new Map();
   for (const scenario of scenarioManifest.scenarios) {
-    const raw = await recordScenario(browser, baseUrl, scenario, metadata);
-    const normalized = normalizeTrace(raw);
-    const rawPath = resolve(rawRoot, `${scenario.id}.json`);
-    const fixturePath = resolve(
-      fixtureRoot,
-      compatibility.target.phoenixLiveViewVersion,
-      `${scenario.id}.json`,
-    );
-    mkdirSync(dirname(rawPath), { recursive: true });
-    writeFileSync(rawPath, prettyJson({ ...raw, serverOutput: phoenixOutput }), "utf8");
+    for (const target of targets) {
+      const metadata = { ...target.metadata, browserVersion: browser.version() };
+      const raw = await recordScenario(
+        browser,
+        target.baseUrl,
+        scenario,
+        metadata,
+        target.expectedLiveViewVersion,
+      );
+      const normalized = normalizeTrace(raw);
+      traces.set(`${target.id}:${scenario.id}`, normalized);
+      const rawPath = resolve(rawRoot, target.id, `${scenario.id}.json`);
+      const fixturePath = resolve(fixtureRoot, target.id, target.fixtureVersion, `${scenario.id}.json`);
+      mkdirSync(dirname(rawPath), { recursive: true });
+      writeFileSync(rawPath, prettyJson({ ...raw, serverOutput: target.output }), "utf8");
 
-    if (mode === "--write") {
-      mkdirSync(dirname(fixturePath), { recursive: true });
-      writeFileSync(fixturePath, prettyJson(normalized), "utf8");
-      console.log(`wrote ${fixturePath.slice(repositoryRoot.length + 1)}`);
-    } else {
-      assertFixtureMatches(normalized, readJson(fixturePath), scenario.id);
-      console.log(`verified ${fixturePath.slice(repositoryRoot.length + 1)}`);
+      if (mode === "--write") {
+        mkdirSync(dirname(fixturePath), { recursive: true });
+        writeFileSync(fixturePath, prettyJson(normalized), "utf8");
+        console.log(`wrote ${fixturePath.slice(repositoryRoot.length + 1)}`);
+      } else {
+        assertFixtureMatches(normalized, readJson(fixturePath), scenario.id);
+        console.log(`verified ${fixturePath.slice(repositoryRoot.length + 1)}`);
+      }
     }
+
+    assertBrowserOutcomesMatch(
+      traces.get(`liveviewjs:${scenario.id}`).domCheckpoints,
+      traces.get(`phoenix-live-view:${scenario.id}`).domCheckpoints,
+      scenario.id,
+    );
+    assertProtocolLifecycleMatches(
+      traces.get(`liveviewjs:${scenario.id}`).webSocket.events,
+      traces.get(`phoenix-live-view:${scenario.id}`).webSocket.events,
+      scenario.id,
+    );
+    console.log(`verified differential protocol lifecycle and browser outcomes for ${scenario.id}`);
   }
 } catch (error) {
-  console.error(phoenixOutput.join(""));
+  for (const target of targets) console.error(target.output.join(""));
   throw error;
 } finally {
   await browser?.close();
-  phoenix.kill("SIGTERM");
+  for (const target of targets) target.process.kill("SIGTERM");
 }

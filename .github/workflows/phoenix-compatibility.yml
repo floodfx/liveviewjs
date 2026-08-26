@@ -1,4 +1,4 @@
-name: Phoenix Compatibility
+name: LiveView Compatibility
 
 on:
   pull_request:
@@ -6,6 +6,8 @@ on:
       - ".github/workflows/phoenix-compatibility.yml"
       - ".tool-versions"
       - "compatibility/**"
+      - "packages/core/src/**"
+      - "packages/express/src/**"
       - "package.json"
       - "scripts/validate-roadmap.mjs"
   push:
@@ -18,7 +20,7 @@ permissions:
   contents: read
 
 jobs:
-  phoenix-oracle:
+  liveview-differential:
     name: ci / compatibility
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -37,6 +39,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             compatibility/phoenix/assets/package-lock.json
+            compatibility/liveviewjs/package-lock.json
             compatibility/recorder/package-lock.json
       - name: Install oracle and recorder
         run: npm run compatibility:setup
@@ -44,12 +47,12 @@ jobs:
         run: npm --prefix compatibility/recorder exec playwright install --with-deps chromium
       - name: Verify roadmap pins
         run: npm run verify:roadmap
-      - name: Verify oracle tests and normalized fixture
+      - name: Verify oracle, LiveViewJS, and differential fixtures
         run: npm run compatibility:check
       - name: Upload raw trace
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phoenix-compatibility-raw
+          name: liveview-compatibility-raw
           path: compatibility/artifacts/raw/
           if-no-files-found: ignore

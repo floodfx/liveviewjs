@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { FileSystemAdaptor, SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, LiveViewServerAdaptor, LiveViewRouter, LiveViewHtmlPageTemplate, LiveTitleOptions, PubSub, FlashAdaptor, LiveViewWrapperTemplate, WsHandler, WsAdaptor, WsMsgListener, WsCloseListener } from 'liveviewjs';
+import { FileSystemAdaptor, SerDe, SessionData, Subscriber, Publisher, SubscriberFunction, PubSub, FlashAdaptor, LiveViewWrapperTemplate, LiveViewServerAdaptor, LiveViewRouter, LiveViewHtmlPageTemplate, LiveTitleOptions, WsHandler, WsAdaptor, WsMsgListener, WsCloseListener } from 'liveviewjs';
 import { RedisClientOptions } from 'redis';
 import { RequestHandler } from 'express';
 import WebSocket, { WebSocket as WebSocket$1 } from 'ws';
@@ -41,6 +41,8 @@ interface NodeExpressLiveViewServerOptions {
     flashAdaptor?: FlashAdaptor;
     fileSystemAdaptor?: FileSystemAdaptor;
     wrapperTemplate?: LiveViewWrapperTemplate;
+    /** Phoenix LiveView protocol version advertised in successful join replies. */
+    liveViewVersion?: string;
     onError?: (err: any) => void;
     debug?: (msg: string) => void;
 }
@@ -73,4 +75,4 @@ declare class NodeWsAdaptor implements WsAdaptor {
     isClosed(): boolean;
 }
 
-export { NodeExpressLiveViewServer, NodeFileSystemAdatptor, NodeJwtSerDe, NodeWsAdaptor, RedisPubSub };
+export { NodeExpressLiveViewServer, NodeExpressLiveViewServerOptions, NodeFileSystemAdatptor, NodeJwtSerDe, NodeWsAdaptor, RedisPubSub };

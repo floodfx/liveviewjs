@@ -16,7 +16,7 @@ import { Phx } from "../../protocol/phx";
 import { PhxReply } from "../../protocol/reply";
 import { PubSub } from "../../pubsub";
 import { SessionData } from "../../session";
-import { deepDiff, HtmlSafeString, Parts, safe } from "../../templates";
+import { deepDiff, encodeTemplateStatics, HtmlSafeString, Parts, safe } from "../../templates";
 import { UploadConfig, UploadEntry } from "../../upload";
 import { ConsumeUploadedEntriesMeta, Info, WsLiveViewSocket } from "../liveSocket";
 import { maybeAddStructuredClone } from "../structuredClone";
@@ -33,6 +33,7 @@ export interface WsHandlerConfig {
   wrapperTemplate?: LiveViewWrapperTemplate;
   flashAdaptor: FlashAdaptor;
   pubSub: PubSub;
+  liveViewVersion?: string;
   onError?: (err: any) => void;
   debug?(msg: string): void;
 }
@@ -237,7 +238,7 @@ export class WsHandler {
             const rendered = await this.viewToRendered(view);
 
             // send the response and cleanup
-            this.send(PhxReply.renderedReply(msg, rendered));
+            this.send(PhxReply.renderedReply(msg, rendered, this.#config.liveViewVersion));
             this.cleanupPostReply();
             // start heartbeat interval
             this.#lastHB = Date.now();
@@ -476,7 +477,8 @@ export class WsHandler {
     // now add the components, events, and title parts
     diff = this.maybeAddLiveComponentsToParts(diff);
     diff = this.maybeAddEventsToParts(diff);
-    return this.maybeAddTitleToView(diff);
+    diff = this.maybeAddTitleToView(diff);
+    return encodeTemplateStatics(diff, Array.isArray(diff.s));
   }
 
   private async viewToRendered(view: LiveViewTemplate): Promise<Parts> {
@@ -498,7 +500,7 @@ export class WsHandler {
     // set the parts tree on the context
     this.#ctx!.parts = parts;
 
-    return parts;
+    return encodeTemplateStatics(parts, true);
   }
 
   private maybeAddEventsToParts(parts: Parts) {

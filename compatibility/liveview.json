@@ -18,6 +18,7 @@
   "clientPolicy": {
     "targetVersion": "1.2.9",
     "testedAgainstPhoenixOracle": ["1.2.9"],
+    "testedAgainstLiveViewJs": ["1.2.9"],
     "verifiedAgainstLiveViewJs": [],
     "olderVersions": "not-tested",
     "unlistedVersions": "rejected"
@@ -31,6 +32,10 @@
   "implementation": {
     "status": "legacy-client-versions-present",
     "clientDependencies": [
+      {
+        "manifest": "compatibility/liveviewjs/package.json",
+        "range": "1.2.9"
+      },
       {
         "manifest": "packages/deno/package.json",
         "range": "^0.18.0"
