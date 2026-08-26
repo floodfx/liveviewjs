@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const compatibilityPath = resolve(root, "compatibility/liveview.json");
 const capabilitiesPath = resolve(root, "compatibility/capabilities.json");
+const scenariosPath = resolve(root, "compatibility/scenarios.json");
 const generatedPath = resolve(root, "docs/roadmap/capabilities.md");
 const mode = process.argv[2] ?? "--check";
 const errors = [];
@@ -49,6 +50,10 @@ function expect(condition, message) {
 
 function exactVersion(value) {
   return typeof value === "string" && /^\d+\.\d+\.\d+$/.test(value);
+}
+
+function sha256(value) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 }
 
 function issueUrl(value) {
@@ -157,11 +162,15 @@ Run \`npm run roadmap:write\` after changing it and
 
 const compatibility = loadJson(compatibilityPath);
 const manifest = loadJson(capabilitiesPath);
+const scenarios = loadJson(scenariosPath);
 const corePackage = loadJson(resolve(root, "packages/core/package.json"));
 
 expect(compatibility.schemaVersion === 1, "liveview.json schemaVersion must be 1");
 expect(issueUrl(compatibility.trackingIssue), "liveview.json trackingIssue must be a repository issue URL");
+expect(exactVersion(compatibility.target?.phoenixVersion), "target Phoenix version must be exact semver");
+expect(sha256(compatibility.target?.phoenixSourceChecksum), "target Phoenix source checksum must be SHA-256");
 expect(exactVersion(compatibility.target?.phoenixLiveViewVersion), "target Phoenix LiveView version must be exact semver");
+expect(sha256(compatibility.target?.phoenixLiveViewSourceChecksum), "target Phoenix LiveView source checksum must be SHA-256");
 expect(exactVersion(compatibility.target?.phoenixClientVersion), "target Phoenix client version must be exact semver");
 expect(
   new Set(["target", "verified"]).has(compatibility.target?.status),
@@ -182,12 +191,96 @@ expect(
 for (const version of compatibility.release?.verifiedPhoenixLiveViewVersions ?? []) {
   expect(exactVersion(version), `verified Phoenix LiveView version must be exact semver: ${version}`);
 }
+expect(
+  compatibility.clientPolicy?.targetVersion === compatibility.target?.phoenixClientVersion,
+  "client policy target must match the pinned browser client",
+);
+expect(
+  Array.isArray(compatibility.clientPolicy?.testedAgainstPhoenixOracle) &&
+    compatibility.clientPolicy.testedAgainstPhoenixOracle.includes(compatibility.target?.phoenixClientVersion),
+  "client policy must record the target as tested against the Phoenix oracle",
+);
+expect(
+  Array.isArray(compatibility.clientPolicy?.verifiedAgainstLiveViewJs),
+  "client policy verifiedAgainstLiveViewJs must be an array",
+);
+for (const version of compatibility.clientPolicy?.verifiedAgainstLiveViewJs ?? []) {
+  expect(exactVersion(version), `LiveViewJS-verified browser client version must be exact semver: ${version}`);
+}
+expect(
+  new Set(["not-tested", "tolerated", "rejected"]).has(compatibility.clientPolicy?.olderVersions),
+  "client policy must classify older versions",
+);
+expect(
+  new Set(["tolerated", "rejected"]).has(compatibility.clientPolicy?.unlistedVersions),
+  "client policy must classify unlisted versions",
+);
 if (compatibility.target?.status === "verified") {
   expect(
     compatibility.release.verifiedPhoenixLiveViewVersions.includes(
       compatibility.target.phoenixLiveViewVersion,
     ),
     "a verified target must appear in verifiedPhoenixLiveViewVersions",
+  );
+}
+
+const oracleMixPath = resolve(root, "compatibility/phoenix/mix.exs");
+const oracleMixLockPath = resolve(root, "compatibility/phoenix/mix.lock");
+const oracleAssetsPath = resolve(root, "compatibility/phoenix/assets/package-lock.json");
+const recorderPackagePath = resolve(root, "compatibility/recorder/package.json");
+const recorderLockPath = resolve(root, "compatibility/recorder/package-lock.json");
+for (const path of [oracleMixPath, oracleMixLockPath, oracleAssetsPath, recorderPackagePath, recorderLockPath]) {
+  expect(existsSync(path), `compatibility input is missing: ${relative(root, path)}`);
+}
+
+if (existsSync(oracleMixPath)) {
+  const oracleMix = readFileSync(oracleMixPath, "utf8");
+  expect(
+    oracleMix.includes(`{:phoenix, "== ${compatibility.target?.phoenixVersion}"}`),
+    "Phoenix oracle mix.exs must pin the declared exact Phoenix version",
+  );
+  expect(
+    oracleMix.includes(`{:phoenix_live_view, "== ${compatibility.target?.phoenixLiveViewVersion}"}`),
+    "Phoenix oracle mix.exs must pin the declared exact Phoenix LiveView version",
+  );
+}
+
+if (existsSync(oracleMixLockPath)) {
+  const oracleMixLock = readFileSync(oracleMixLockPath, "utf8");
+  for (const [packageName, version, checksum] of [
+    ["phoenix", compatibility.target?.phoenixVersion, compatibility.target?.phoenixSourceChecksum],
+    ["phoenix_live_view", compatibility.target?.phoenixLiveViewVersion, compatibility.target?.phoenixLiveViewSourceChecksum],
+  ]) {
+    const line = oracleMixLock.split("\n").find((entry) => entry.trimStart().startsWith(`"${packageName}":`));
+    expect(line?.includes(`"${version}"`), `Phoenix oracle mix.lock must resolve ${packageName} ${version}`);
+    expect(line?.includes(`"hexpm", "${checksum}"`), `Phoenix oracle mix.lock checksum drift for ${packageName}`);
+  }
+}
+
+if (existsSync(oracleAssetsPath)) {
+  const oracleAssets = loadJson(oracleAssetsPath);
+  const dependencies = oracleAssets.packages?.[""]?.dependencies ?? {};
+  expect(dependencies.phoenix === compatibility.target?.phoenixVersion, "oracle JavaScript Phoenix version must match the target");
+  expect(dependencies.phoenix_live_view === compatibility.target?.phoenixClientVersion, "oracle JavaScript LiveView version must match the target client");
+  expect(
+    oracleAssets.packages?.["node_modules/phoenix_live_view"]?.integrity?.startsWith("sha512-"),
+    "oracle JavaScript LiveView client must have locked integrity",
+  );
+  expect(
+    /^git\+https:\/\/github\.com\/SteffenDE\/morphdom\.git#[a-f0-9]{40}$/.test(
+      oracleAssets.packages?.["node_modules/morphdom"]?.resolved ?? "",
+    ),
+    "oracle morphdom dependency must use HTTPS and an immutable commit SHA",
+  );
+}
+
+if (existsSync(recorderPackagePath) && existsSync(recorderLockPath)) {
+  const recorderPackage = loadJson(recorderPackagePath);
+  const recorderLock = loadJson(recorderLockPath);
+  expect(exactVersion(recorderPackage.dependencies?.playwright), "recorder Playwright dependency must be exact semver");
+  expect(
+    recorderLock.packages?.["node_modules/playwright"]?.version === recorderPackage.dependencies?.playwright,
+    "recorder Playwright package and lockfile must match",
   );
 }
 
@@ -233,6 +326,7 @@ for (const dependency of compatibility.implementation?.clientDependencies ?? [])
 
 for (const path of discoverPackageManifests(root)) {
   const relativePath = relative(root, path);
+  if (relativePath === "compatibility/phoenix/assets/package.json") continue;
   const packageManifest = loadJson(path);
   const actual = dependencyVersion(packageManifest, "phoenix_live_view");
   if (actual !== undefined) {
@@ -323,6 +417,25 @@ for (const capability of manifest.capabilities ?? []) {
         );
       }
     }
+  }
+}
+
+expect(scenarios.schemaVersion === 1, "scenarios.json schemaVersion must be 1");
+expect(Number.isInteger(scenarios.seed), "scenarios.json seed must be an integer");
+expect(Array.isArray(scenarios.scenarios) && scenarios.scenarios.length > 0, "scenarios.json must contain scenarios");
+const scenarioIds = new Set();
+for (const scenario of scenarios.scenarios ?? []) {
+  const prefix = scenario.id ? `scenario ${scenario.id}` : "scenario <missing-id>";
+  expect(typeof scenario.id === "string" && /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(scenario.id), `${prefix} has an invalid id`);
+  expect(!scenarioIds.has(scenario.id), `${prefix} has a duplicate id`);
+  scenarioIds.add(scenario.id);
+  expect(capabilityIds.has(scenario.capabilityId), `${prefix} references an unknown capability`);
+  expect(typeof scenario.path === "string" && scenario.path.startsWith("/"), `${prefix} needs an absolute route path`);
+  expect(Array.isArray(scenario.actions), `${prefix} actions must be an array`);
+  for (const action of scenario.actions ?? []) {
+    expect(action.type === "click", `${prefix} has unsupported action type ${action.type}`);
+    expect(typeof action.selector === "string" && action.selector.length > 0, `${prefix} action needs a selector`);
+    expect(typeof action.checkpoint === "string" && action.checkpoint.length > 0, `${prefix} action needs a checkpoint`);
   }
 }
 

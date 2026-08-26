@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "seed": 182,
+  "scenarios": [
+    {
+      "id": "protocol.lifecycle.basic",
+      "capabilityId": "protocol.client-interoperability",
+      "path": "/scenarios/protocol.lifecycle.basic",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#increment",
+          "checkpoint": "after-increment"
+        }
+      ]
+    }
+  ]
+}

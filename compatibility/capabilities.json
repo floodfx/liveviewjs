@@ -22,8 +22,13 @@
       "upstream": "https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html",
       "ownerIssue": "https://github.com/floodfx/liveviewjs/issues/182",
       "summary": "LiveViewJS implements an older Phoenix protocol surface, but current client compatibility has not been demonstrated.",
-      "gaps": ["Upgrade to the pinned client", "Generate upstream conformance fixtures", "Prove joins, events, diffs, heartbeats, reconnects, and errors"],
-      "evidence": {}
+      "gaps": ["Upgrade LiveViewJS examples and scaffolds to the pinned client", "Add the equivalent LiveViewJS differential target", "Expand fixtures through reconnect and error behavior"],
+      "evidence": {
+        "conformance": ["compatibility/fixtures/phoenix-live-view/1.2.9/protocol.lifecycle.basic.json#protocol.lifecycle.basic"],
+        "integration": ["compatibility/phoenix/test/liveview_oracle_web/live/protocol_lifecycle_live_test.exs#deterministic disconnected and connected lifecycle"],
+        "browser": ["compatibility/fixtures/phoenix-live-view/1.2.9/protocol.lifecycle.basic.json#after-connected-mount"],
+        "documentation": ["compatibility/README.md#Scenarios and traces"]
+      }
     },
     {
       "id": "lifecycle.callbacks",

@@ -6,7 +6,7 @@ Target Phoenix LiveView: **1.2.9**
 
 Compatibility status: **target**
 
-Last reviewed: **2026-08-19**
+Last reviewed: **2026-08-25**
 
 Status meanings:
 
@@ -28,7 +28,7 @@ Status meanings:
 | `lifecycle.callbacks` | Lifecycle | [Mount, params, events, messages, connected state, and termination](https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html#module-life-cycle) | partial | [#187](https://github.com/floodfx/liveviewjs/issues/187) | Complete callback inventory; Document connected and disconnected behavior; Add lifecycle browser evidence |
 | `messaging.pubsub` | Messaging | [Server messages, PubSub, and distribution boundaries](https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html#c:handle_info/2) | partial | [#187](https://github.com/floodfx/liveviewjs/issues/187) | Define single-process and distributed guarantees; Verify subscription cleanup; Document adapter boundaries |
 | `navigation.patch-and-redirect` | Navigation | [Patch, redirect, flash, title, history, and reconnect behavior](https://hexdocs.pm/phoenix_live_view/1.2.9/live-navigation.html) | partial | [#187](https://github.com/floodfx/liveviewjs/issues/187) | Catalogue patch and redirect semantics; Verify flash and page-title updates; Test browser history and reconnect behavior |
-| `protocol.client-interoperability` | Protocol | [Protocol and browser-client interoperability](https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html) | partial | [#182](https://github.com/floodfx/liveviewjs/issues/182) | Upgrade to the pinned client; Generate upstream conformance fixtures; Prove joins, events, diffs, heartbeats, reconnects, and errors |
+| `protocol.client-interoperability` | Protocol | [Protocol and browser-client interoperability](https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.html) | partial | [#182](https://github.com/floodfx/liveviewjs/issues/182) | Upgrade LiveViewJS examples and scaffolds to the pinned client; Add the equivalent LiveViewJS differential target; Expand fixtures through reconnect and error behavior |
 | `rendering.diff-and-statics` | Rendering | [Diff rendering, comprehensions, and template statics](https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.Engine.html) | partial | [#177](https://github.com/floodfx/liveviewjs/issues/177) | Sign data-phx-static tokens; Verify statics deduplication; Add current-client DOM conformance tests |
 | `routing.typed-params-and-layouts` | Routing | [Typed route params, layouts, and cross-runtime discovery](https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.Router.html) | partial | [#163](https://github.com/floodfx/liveviewjs/issues/163) | Type route parameters; Implement documented layout composition; Verify Node, Bun, and Deno behavior |
 | `runtime.adapters` | Runtime | [Production adapters for Node, Bun, and Deno](https://hexdocs.pm/phoenix_live_view/1.2.9/Phoenix.LiveView.Socket.html) | partial | [#160](https://github.com/floodfx/liveviewjs/issues/160) | Remove Node-only assumptions from shared code; Define adapter contracts; Run identical protocol and browser suites under each runtime |

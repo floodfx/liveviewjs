@@ -1,0 +1,55 @@
+name: Phoenix Compatibility
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/phoenix-compatibility.yml"
+      - ".tool-versions"
+      - "compatibility/**"
+      - "package.json"
+      - "scripts/validate-roadmap.mjs"
+  push:
+    branches:
+      - main
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phoenix-oracle:
+    name: ci / compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup BEAM
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28.1.1"
+          elixir-version: "1.19.5"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.12.0"
+          cache: npm
+          cache-dependency-path: |
+            compatibility/phoenix/assets/package-lock.json
+            compatibility/recorder/package-lock.json
+      - name: Install oracle and recorder
+        run: npm run compatibility:setup
+      - name: Install Chromium
+        run: npm --prefix compatibility/recorder exec playwright install --with-deps chromium
+      - name: Verify roadmap pins
+        run: npm run verify:roadmap
+      - name: Verify oracle tests and normalized fixture
+        run: npm run compatibility:check
+      - name: Upload raw trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phoenix-compatibility-raw
+          path: compatibility/artifacts/raw/
+          if-no-files-found: ignore
