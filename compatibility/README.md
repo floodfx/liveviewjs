@@ -8,9 +8,9 @@ Phoenix LiveView release declared in `liveview.json`.
 - `phoenix/mix.exs` and `phoenix/mix.lock` pin the Phoenix server and Phoenix
   LiveView packages.
 - `phoenix/assets/package.json` and its lockfile pin the locally served Phoenix
-  JavaScript clients. The transitive morphdom dependency is overridden to the
-  exact upstream commit over HTTPS. The oracle never loads client code from a
-  CDN or a mutable branch.
+  JavaScript clients. When the selected client has a transitive morphdom
+  dependency, its lockfile must resolve an immutable upstream commit over
+  HTTPS. The oracle never loads client code from a CDN or a mutable branch.
 - `liveviewjs/package.json` and its lockfile independently pin the same browser
   client for the differential target and bundle the repository sources under
   review.
@@ -20,7 +20,7 @@ Phoenix LiveView release declared in `liveview.json`.
 The static roadmap validator rejects version or source-checksum drift between
 these inputs and `liveview.json`.
 
-`liveview.json` also publishes the compatibility policy. At present 1.2.9 is
+`liveview.json` also publishes the compatibility policy. At present 1.2.10 is
 tested against both the Phoenix oracle and the basic LiveViewJS differential
 target, but is not yet declared fully verified against LiveViewJS. Older clients
 are untested and unlisted clients are rejected. The recorder fails with an

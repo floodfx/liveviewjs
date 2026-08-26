@@ -1,24 +1,24 @@
 {
   "schemaVersion": 1,
-  "lastReviewed": "2026-08-25",
+  "lastReviewed": "2026-08-26",
   "trackingIssue": "https://github.com/floodfx/liveviewjs/issues/182",
   "target": {
     "status": "target",
     "phoenixVersion": "1.8.13",
     "phoenixSourceChecksum": "ad14e24d10e5a52d5f80429053bbe3a5d124311a2868fceb0a01a2e859c44539",
-    "phoenixLiveViewVersion": "1.2.9",
-    "phoenixLiveViewSourceChecksum": "2f9528c3d7046edabbb30a91710ca33988f8d8bc20a964a1fc48b32134572afa",
-    "phoenixClientVersion": "1.2.9",
-    "referenceDocumentation": "https://hexdocs.pm/phoenix_live_view/1.2.9/"
+    "phoenixLiveViewVersion": "1.2.10",
+    "phoenixLiveViewSourceChecksum": "bcf9d64846b770bc64b1a58dc40af406d80eb61b6e516f7aea4cc8cc15e0a1d9",
+    "phoenixClientVersion": "1.2.10",
+    "referenceDocumentation": "https://hexdocs.pm/phoenix_live_view/1.2.10/"
   },
   "release": {
     "liveViewJsVersion": "0.10.4",
     "verifiedPhoenixLiveViewVersions": []
   },
   "clientPolicy": {
-    "targetVersion": "1.2.9",
-    "testedAgainstPhoenixOracle": ["1.2.9"],
-    "testedAgainstLiveViewJs": ["1.2.9"],
+    "targetVersion": "1.2.10",
+    "testedAgainstPhoenixOracle": ["1.2.10"],
+    "testedAgainstLiveViewJs": ["1.2.10"],
     "verifiedAgainstLiveViewJs": [],
     "olderVersions": "not-tested",
     "unlistedVersions": "rejected"
@@ -34,7 +34,7 @@
     "clientDependencies": [
       {
         "manifest": "compatibility/liveviewjs/package.json",
-        "range": "1.2.9"
+        "range": "1.2.10"
       },
       {
         "manifest": "packages/deno/package.json",

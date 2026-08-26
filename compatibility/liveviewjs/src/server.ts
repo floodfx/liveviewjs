@@ -51,7 +51,7 @@ const liveServer = new NodeExpressLiveViewServer(
   pageTemplate,
   signingSecret,
   { title: "LiveViewOracle", suffix: " · Phoenix Framework" },
-  { liveViewVersion: "1.2.9" }
+  { liveViewVersion: "1.2.10" }
 );
 
 const app = express();

@@ -239,6 +239,22 @@ for (const path of [oracleMixPath, oracleMixLockPath, oracleAssetsPath, liveView
   expect(existsSync(path), `compatibility input is missing: ${relative(root, path)}`);
 }
 
+function validateMorphdomLock(lock, label) {
+  const liveViewClient = lock.packages?.["node_modules/phoenix_live_view"];
+  const morphdomDependency = liveViewClient?.dependencies?.morphdom;
+  const lockedMorphdom = lock.packages?.["node_modules/morphdom"];
+  if (morphdomDependency === undefined) {
+    expect(lockedMorphdom === undefined, `${label} must not retain an unreferenced morphdom package`);
+    return;
+  }
+  expect(
+    /^git\+https:\/\/github\.com\/SteffenDE\/morphdom\.git#[a-f0-9]{40}$/.test(
+      lockedMorphdom?.resolved ?? "",
+    ),
+    `${label} morphdom dependency must use HTTPS and an immutable commit SHA`,
+  );
+}
+
 if (existsSync(liveViewJsTargetPath)) {
   const targetLock = loadJson(liveViewJsTargetPath);
   const dependencies = targetLock.packages?.[""]?.dependencies ?? {};
@@ -248,12 +264,7 @@ if (existsSync(liveViewJsTargetPath)) {
     targetLock.packages?.["node_modules/phoenix_live_view"]?.integrity?.startsWith("sha512-"),
     "LiveViewJS target JavaScript client must have locked integrity",
   );
-  expect(
-    /^git\+https:\/\/github\.com\/SteffenDE\/morphdom\.git#[a-f0-9]{40}$/.test(
-      targetLock.packages?.["node_modules/morphdom"]?.resolved ?? "",
-    ),
-    "LiveViewJS target morphdom dependency must use HTTPS and an immutable commit SHA",
-  );
+  validateMorphdomLock(targetLock, "LiveViewJS target");
 }
 
 if (existsSync(oracleMixPath)) {
@@ -289,12 +300,7 @@ if (existsSync(oracleAssetsPath)) {
     oracleAssets.packages?.["node_modules/phoenix_live_view"]?.integrity?.startsWith("sha512-"),
     "oracle JavaScript LiveView client must have locked integrity",
   );
-  expect(
-    /^git\+https:\/\/github\.com\/SteffenDE\/morphdom\.git#[a-f0-9]{40}$/.test(
-      oracleAssets.packages?.["node_modules/morphdom"]?.resolved ?? "",
-    ),
-    "oracle morphdom dependency must use HTTPS and an immutable commit SHA",
-  );
+  validateMorphdomLock(oracleAssets, "oracle");
 }
 
 if (existsSync(recorderPackagePath) && existsSync(recorderLockPath)) {
