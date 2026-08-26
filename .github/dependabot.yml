@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: mix
+    directory: /compatibility/phoenix
+    schedule:
+      interval: weekly
+    labels:
+      - "type:compatibility"
+  - package-ecosystem: npm
+    directory: /compatibility/phoenix/assets
+    schedule:
+      interval: weekly
+    labels:
+      - "type:compatibility"
+  - package-ecosystem: npm
+    directory: /compatibility/recorder
+    schedule:
+      interval: weekly
+    labels:
+      - "type:compatibility"

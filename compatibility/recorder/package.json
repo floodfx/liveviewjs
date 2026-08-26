@@ -1,0 +1,17 @@
+{
+  "name": "liveviewjs-compatibility-recorder",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "record": "node src/record.mjs --write",
+    "check": "node src/record.mjs --check",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "playwright": "1.62.1"
+  }
+}

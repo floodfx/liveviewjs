@@ -1,0 +1,13 @@
+{
+  "name": "liveviewjs-phoenix-oracle-assets",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "phoenix": "1.8.13",
+    "phoenix_html": "4.3.0",
+    "phoenix_live_view": "1.2.9"
+  },
+  "overrides": {
+    "morphdom": "git+https://github.com/SteffenDE/morphdom.git#3a35c8bbd3f2621f5eab967f777eb8ce7e1b9430"
+  }
+}
