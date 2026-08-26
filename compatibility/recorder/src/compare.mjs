@@ -12,8 +12,8 @@ function firstDifference(actual, expected, path = "trace") {
   }
 
   if (typeof actual === "object") {
-    const actualKeys = Object.keys(actual);
-    const expectedKeys = Object.keys(expected);
+    const actualKeys = Object.keys(actual).sort();
+    const expectedKeys = Object.keys(expected).sort();
     if (actualKeys.join("\0") !== expectedKeys.join("\0")) return `${path}.keys`;
     for (const key of actualKeys) {
       const difference = firstDifference(actual[key], expected[key], `${path}.${key}`);

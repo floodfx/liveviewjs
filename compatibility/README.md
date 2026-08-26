@@ -36,7 +36,8 @@ maps correlated CSRF tokens, signed sessions/statics, cookies, LiveView topics,
 join references, message references, hosts, ports, and timestamps to stable
 symbols. The platform-specific user-agent is normalized while the exact browser
 and Playwright versions remain in trace metadata. Binary frames retain encoding,
-byte length, and SHA-256.
+byte length, and SHA-256. Arrays retain protocol order; JSON object members are
+sorted because their wire order is not semantically significant.
 
 ## Commands
 

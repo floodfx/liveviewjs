@@ -17,6 +17,18 @@ export function binaryRecord(value) {
   };
 }
 
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonicalize(value[key])]),
+    );
+  }
+  return value;
+}
+
 export function normalizeTrace(raw) {
   const csrf = symbolTable("CSRF");
   const sessions = symbolTable("SESSION");
@@ -87,7 +99,7 @@ export function normalizeTrace(raw) {
     return { ...frame, payload };
   }
 
-  return {
+  return canonicalize({
     schemaVersion: raw.schemaVersion,
     scenarioId: raw.scenarioId,
     capabilityId: raw.capabilityId,
@@ -98,5 +110,5 @@ export function normalizeTrace(raw) {
       events: raw.webSocket.events.map(normalizeFrame),
     },
     domCheckpoints: raw.domCheckpoints.map((checkpoint) => normalizeValue(checkpoint)),
-  };
+  });
 }

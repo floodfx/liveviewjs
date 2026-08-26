@@ -19,3 +19,9 @@ test("an identical normalized fixture passes", () => {
   const trace = { http: { response: { status: 200 } }, webSocket: { events: [] } };
   assert.doesNotThrow(() => assertFixtureMatches(structuredClone(trace), trace, "protocol.lifecycle.basic"));
 });
+
+test("JSON object member order is not treated as protocol ordering", () => {
+  const actual = { response: { rendered: {}, liveview_version: "1.2.9" } };
+  const expected = { response: { liveview_version: "1.2.9", rendered: {} } };
+  assert.doesNotThrow(() => assertFixtureMatches(actual, expected, "protocol.lifecycle.basic"));
+});
