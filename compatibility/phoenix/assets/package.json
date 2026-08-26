@@ -6,8 +6,5 @@
     "phoenix": "1.8.13",
     "phoenix_html": "4.3.0",
     "phoenix_live_view": "1.2.10"
-  },
-  "overrides": {
-    "morphdom": "git+https://github.com/SteffenDE/morphdom.git#3a35c8bbd3f2621f5eab967f777eb8ce7e1b9430"
   }
 }
