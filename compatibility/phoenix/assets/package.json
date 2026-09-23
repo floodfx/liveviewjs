@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "dependencies": {
-    "phoenix": "1.8.13",
+    "phoenix": "1.8.14",
     "phoenix_html": "4.3.0",
     "phoenix_live_view": "1.2.10"
   }
