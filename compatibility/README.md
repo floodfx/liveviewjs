@@ -20,7 +20,7 @@ Phoenix LiveView release declared in `liveview.json`.
 The static roadmap validator rejects version or source-checksum drift between
 these inputs and `liveview.json`.
 
-`liveview.json` also publishes the compatibility policy. At present 1.2.10 is
+`liveview.json` also publishes the compatibility policy. At present 1.2.12 is
 tested against both the Phoenix oracle and the basic LiveViewJS differential
 target, but is not yet declared fully verified against LiveViewJS. Older clients
 are untested and unlisted clients are rejected. The recorder fails with an
