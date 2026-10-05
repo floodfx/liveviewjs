@@ -1,5 +1,11 @@
 # liveviewjs
 
+## 0.10.5
+
+### Patch Changes
+
+- 88bd96e: Advertise a configured Phoenix LiveView version and emit current shared-template rendered trees.
+
 ## 0.10.4
 
 ### Patch Changes
