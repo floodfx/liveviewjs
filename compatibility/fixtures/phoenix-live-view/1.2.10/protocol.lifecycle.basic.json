@@ -117,13 +117,13 @@
   },
   "metadata": {
     "browser": "chromium",
-    "browserVersion": "151.0.7922.34",
+    "browserVersion": "153.0.8010.12",
     "phoenixClientVersion": "1.2.10",
     "phoenixLiveViewSourceChecksum": "bcf9d64846b770bc64b1a58dc40af406d80eb61b6e516f7aea4cc8cc15e0a1d9",
     "phoenixLiveViewVersion": "1.2.10",
     "phoenixSourceChecksum": "ad14e24d10e5a52d5f80429053bbe3a5d124311a2868fceb0a01a2e859c44539",
     "phoenixVersion": "1.8.13",
-    "playwrightVersion": "1.62.1",
+    "playwrightVersion": "1.63.0",
     "recorderVersion": "1.0.0",
     "seed": 182
   },

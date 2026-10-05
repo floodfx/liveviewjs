@@ -116,10 +116,10 @@
   },
   "metadata": {
     "browser": "chromium",
-    "browserVersion": "151.0.7922.34",
+    "browserVersion": "153.0.8010.12",
     "liveViewJsVersion": "0.10.4",
     "phoenixClientVersion": "1.2.10",
-    "playwrightVersion": "1.62.1",
+    "playwrightVersion": "1.63.0",
     "recorderVersion": "1.0.0",
     "seed": 182
   },
