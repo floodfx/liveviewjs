@@ -21,7 +21,7 @@
     "phoenix": "1.8.13",
     "phoenix_html": "4.3.0",
     "phoenix_live_view": "1.2.10",
-    "ws": "8.8.1",
+    "ws": "8.21.3",
     "zod": "3.17.3"
   }
 }
