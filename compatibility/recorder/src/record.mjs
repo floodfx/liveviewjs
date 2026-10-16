@@ -287,7 +287,7 @@ const targets = [
     args: ["build/server.cjs"],
     port: port + 1,
     env: {},
-    fixtureVersion: compatibility.release.liveViewJsVersion,
+    fixtureVersion: compatibility.target.phoenixClientVersion,
     expectedLiveViewVersion: compatibility.target.phoenixClientVersion,
     metadata: {
       liveViewJsVersion: compatibility.release.liveViewJsVersion,
