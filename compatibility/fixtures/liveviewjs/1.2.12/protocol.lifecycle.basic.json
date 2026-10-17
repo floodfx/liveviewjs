@@ -98,7 +98,7 @@
     "redirects": [],
     "request": {
       "headers": {
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/jxl,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "user-agent": "BROWSER_USER_AGENT_1"
       },
       "method": "GET",
@@ -116,10 +116,10 @@
   },
   "metadata": {
     "browser": "chromium",
-    "browserVersion": "151.0.7922.34",
+    "browserVersion": "156.0.8078.4",
     "liveViewJsVersion": "0.10.4",
     "phoenixClientVersion": "1.2.12",
-    "playwrightVersion": "1.62.1",
+    "playwrightVersion": "1.64.0",
     "recorderVersion": "1.0.0",
     "seed": 182
   },
