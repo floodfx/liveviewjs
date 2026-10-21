@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "deep-object-diff": "1.1.9",
-    "esbuild": "0.14.54",
+    "esbuild": "0.28.2",
     "express": "5.2.1",
     "express-session": "1.17.3",
     "jsonwebtoken": "9.0.3",
