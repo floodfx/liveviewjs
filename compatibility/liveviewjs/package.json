@@ -17,7 +17,7 @@
     "express-session": "1.17.3",
     "jsonwebtoken": "9.0.3",
     "nanoid": "3.3.4",
-    "path-to-regexp": "6.2.1",
+    "path-to-regexp": "8.4.2",
     "phoenix": "1.8.15",
     "phoenix_html": "4.3.0",
     "phoenix_live_view": "1.2.12",
