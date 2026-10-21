@@ -6,7 +6,7 @@ Target Phoenix LiveView: **1.2.12**
 
 Compatibility status: **target**
 
-Last reviewed: **2026-10-05**
+Last reviewed: **2026-10-21**
 
 Status meanings:
 
