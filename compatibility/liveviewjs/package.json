@@ -20,7 +20,7 @@
     "path-to-regexp": "6.2.1",
     "phoenix": "1.8.15",
     "phoenix_html": "4.3.0",
-    "phoenix_live_view": "1.2.12",
+    "phoenix_live_view": "1.2.13",
     "ws": "8.22.0",
     "zod": "4.4.3"
   }
