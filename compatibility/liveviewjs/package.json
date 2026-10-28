@@ -18,7 +18,7 @@
     "jsonwebtoken": "9.0.3",
     "nanoid": "3.3.4",
     "path-to-regexp": "6.2.1",
-    "phoenix": "1.8.15",
+    "phoenix": "1.8.16",
     "phoenix_html": "4.3.0",
     "phoenix_live_view": "1.2.12",
     "ws": "8.22.0",
