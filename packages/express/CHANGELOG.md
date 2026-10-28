@@ -1,5 +1,13 @@
 # @liveviewjs/express
 
+## 0.10.5
+
+### Patch Changes
+
+- 88bd96e: Advertise a configured Phoenix LiveView version and emit current shared-template rendered trees.
+- Updated dependencies [88bd96e]
+  - liveviewjs@0.10.5
+
 ## 0.10.4
 
 ### Patch Changes
