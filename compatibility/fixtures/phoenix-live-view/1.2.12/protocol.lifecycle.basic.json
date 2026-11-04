@@ -121,8 +121,8 @@
     "phoenixClientVersion": "1.2.12",
     "phoenixLiveViewSourceChecksum": "656810d716e3369545dd63981196a5d68b77fdb253afe02ef0c6fa14cfd8dc2b",
     "phoenixLiveViewVersion": "1.2.12",
-    "phoenixSourceChecksum": "7b83ed6b3d544f24a29277eab7f051be38b76f390bb511bb6ddb7ec6e8e05b95",
-    "phoenixVersion": "1.8.15",
+    "phoenixSourceChecksum": "e7355c35889305bc539eb09dae2393abcbaf0f65f6874a3f0dcb5f0ec53737fe",
+    "phoenixVersion": "1.8.16",
     "playwrightVersion": "1.64.0",
     "recorderVersion": "1.0.0",
     "seed": 182
