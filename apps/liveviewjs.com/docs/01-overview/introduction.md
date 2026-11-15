@@ -92,7 +92,7 @@ LiveViews work and what they look like both as code and in the browser.
 We've got a lot more to show you about **LiveViewJS** including some amazing features built-in the framework like: 
  
  * real-time / multi-player support
- * simple, powerfil form validation with changesets
+ * simple, powerful form validation with changesets
  * file uploads with image previews and drag and drop support, and more!
 
 If you want more detail on LiveViews and how awesome they are feel free to keep reading.  If you want to jump right in, check out the [Quick Start](../02-quick-starts/get-liveviewjs-repo.md) guide.
