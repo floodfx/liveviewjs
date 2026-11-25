@@ -211,7 +211,10 @@ async function recordScenario(browser, baseUrl, scenario, metadata, expectedLive
   assert.ok(webSocket.url, "the Phoenix LiveView WebSocket was not opened");
   assert.equal(webSocket.events.at(-1)?.type, "close", "the WebSocket close event was not captured");
   const reportedLiveViewVersion = webSocket.events.find(
-    (event) => event.direction === "server-to-client" && event.payload?.[3] === "phx_reply",
+    (event) =>
+      event.direction === "server-to-client" &&
+      event.payload?.[2]?.startsWith("lv:") &&
+      event.payload?.[3] === "phx_reply",
   )?.payload?.[4]?.response?.liveview_version;
   assert.equal(
     reportedLiveViewVersion,
