@@ -134,8 +134,19 @@
         "direction": "client-to-server",
         "encoding": "text",
         "payload": [
-          "JOIN_1",
+          null,
           "REF_1",
+          "phoenix",
+          "heartbeat",
+          {}
+        ]
+      },
+      {
+        "direction": "client-to-server",
+        "encoding": "text",
+        "payload": [
+          "JOIN_1",
+          "REF_2",
           "lv:VIEW_1",
           "phx_join",
           {
@@ -155,14 +166,17 @@
         ]
       },
       {
-        "direction": "client-to-server",
+        "direction": "server-to-client",
         "encoding": "text",
         "payload": [
           null,
-          "REF_2",
+          "REF_1",
           "phoenix",
-          "heartbeat",
-          {}
+          "phx_reply",
+          {
+            "response": {},
+            "status": "ok"
+          }
         ]
       },
       {
@@ -170,7 +184,7 @@
         "encoding": "text",
         "payload": [
           "JOIN_1",
-          "REF_1",
+          "REF_2",
           "lv:VIEW_1",
           "phx_reply",
           {
@@ -190,20 +204,6 @@
                 "s": 0
               }
             },
-            "status": "ok"
-          }
-        ]
-      },
-      {
-        "direction": "server-to-client",
-        "encoding": "text",
-        "payload": [
-          null,
-          "REF_2",
-          "phoenix",
-          "phx_reply",
-          {
-            "response": {},
             "status": "ok"
           }
         ]
