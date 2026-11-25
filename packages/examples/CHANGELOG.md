@@ -1,5 +1,12 @@
 # @liveviewjs/examples
 
+## 0.10.5
+
+### Patch Changes
+
+- Updated dependencies [88bd96e]
+  - liveviewjs@0.10.5
+
 ## 0.10.4
 
 ### Patch Changes
